@@ -12,6 +12,12 @@ import {
   apiUpload,
   parseApiErrorDetail,
 } from '@/utils/apiClient'
+import {
+  parseSeminarBriefCard,
+  parseSeminarSummaryCard,
+  seminarBriefPlainText,
+  seminarSummaryPlainText,
+} from '@/utils/mindmateSeminarCards'
 
 export const SEMINAR_BACKGROUND_FILE_ACCEPT =
   '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.png,.jpg,.jpeg,.webp,.gif'
@@ -112,9 +118,26 @@ export function splitSeminarMessageFiles(content: string): {
 }
 
 export function seminarBubblePlainText(content: string): string {
-  const split = splitSeminarMessageFiles(content)
+  const raw = (content || '').trim()
+  if (!raw) {
+    return ''
+  }
+  const summary = parseSeminarSummaryCard(raw)
+  if (summary) {
+    return seminarSummaryPlainText(summary)
+  }
+  const brief = parseSeminarBriefCard(raw)
+  if (brief) {
+    return seminarBriefPlainText(brief)
+  }
+  const split = splitSeminarMessageFiles(raw)
+  const text = split.text
+    .replace(/!\[[^\]]*]\([^)]+\)/g, '')
+    .replace(/<!--\s*mg-diagram-id:[a-f0-9-]+\s*-->/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
   const names = split.files.map((file) => file.filename).filter(Boolean)
-  return [split.text, ...names].filter(Boolean).join('\n')
+  return [text, ...names].filter(Boolean).join('\n')
 }
 
 export function formatSeminarFileSize(bytes: number): string {
@@ -447,21 +470,29 @@ export async function deleteSeminarBackgroundFile(
   }
 }
 
-export async function fetchSeminarBackgroundBlob(sessionId: string, fileId: string): Promise<Blob> {
+async function fetchSeminarBackgroundBytes(
+  sessionId: string,
+  fileId: string,
+  kind: 'content' | 'download'
+): Promise<Blob> {
   const response = await apiGet(
-    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}/download?session_id=${encodeURIComponent(sessionId)}`
+    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}/${kind}?session_id=${encodeURIComponent(sessionId)}`
   )
   if (!response.ok) {
-    throw new Error('download')
+    throw new Error(kind)
   }
   return response.blob()
+}
+
+export async function fetchSeminarBackgroundBlob(sessionId: string, fileId: string): Promise<Blob> {
+  return fetchSeminarBackgroundBytes(sessionId, fileId, 'content')
 }
 
 export async function downloadSeminarBackgroundFile(
   sessionId: string,
   file: SeminarBackgroundFile
 ): Promise<void> {
-  const blob = await fetchSeminarBackgroundBlob(sessionId, file.id)
+  const blob = await fetchSeminarBackgroundBytes(sessionId, file.id, 'download')
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from services.features.mindmate_seminar.org_listing import (
+    attach_cross_school_flags,
     hidden_closed_session_ids,
     list_org_sessions_redis,
     list_org_sessions_sql,
@@ -57,6 +58,24 @@ def test_merge_keeps_redis_peer_when_sql_only_has_own_room() -> None:
     )
     codes = sorted(str(row["code"]) for row in merged)
     assert codes == ["8KZ-BAW", "GJR-42J"]
+
+
+@pytest.mark.asyncio
+async def test_attach_cross_school_flags_network_or_multi_org() -> None:
+    """Network rooms and multi-org rosters both show as cross-school chrome."""
+    rows = [
+        {"session_id": "a", "visibility": "network"},
+        {"session_id": "b", "visibility": "organization"},
+        {"session_id": "c", "visibility": "organization"},
+    ]
+    with patch(
+        "services.features.mindmate_seminar.org_listing.cross_school_by_session_ids",
+        AsyncMock(return_value={"b": True}),
+    ):
+        await attach_cross_school_flags(rows)
+    assert rows[0]["cross_school"] is True
+    assert rows[1]["cross_school"] is True
+    assert rows[2]["cross_school"] is False
 
 
 def test_merge_sql_wins_on_same_code() -> None:
@@ -229,6 +248,10 @@ async def test_visible_listing_merges_sql_own_and_redis_peer() -> None:
             "services.features.mindmate_seminar.org_listing.closed_session_ids_hidden_from",
             AsyncMock(return_value=set()),
         ),
+        patch(
+            "services.features.mindmate_seminar.org_listing.cross_school_by_session_ids",
+            AsyncMock(return_value={"sess-3": True}),
+        ),
     ):
         rows = await list_visible_org_sessions(
             5,
@@ -239,3 +262,6 @@ async def test_visible_listing_merges_sql_own_and_redis_peer() -> None:
     owners = {row["owner_user_id"] for row in rows}
     assert owners == {3, 5}
     assert all(row["participant_count"] == 1 for row in rows)
+    by_id = {row["session_id"]: row for row in rows}
+    assert by_id["sess-3"]["cross_school"] is True
+    assert by_id["sess-5"]["cross_school"] is False

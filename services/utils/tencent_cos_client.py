@@ -45,6 +45,14 @@ COS_BUCKET = os.getenv("COS_BUCKET", "").strip()
 COS_REGION = os.getenv("COS_REGION", "ap-beijing").strip()
 COS_KEY_PREFIX = cos_feature_prefix("backups", os.getenv("COS_KEY_PREFIX", ""))
 
+# Copied from env.example; treat as unset so local uploads use disk instead of NoSuchBucket.
+_PLACEHOLDER_COS_BUCKETS = frozenset(
+    {
+        "your-bucket-name-appid",
+        "your-bucket-name",
+    }
+)
+
 
 def cos_exc_call(exc: Exception, method: str, default: str) -> str:
     """Call optional qcloud COS exception method; getattr avoids incomplete stubs."""
@@ -63,9 +71,17 @@ def cos_sdk_available() -> bool:
     return CosConfig is not None and CosS3Client is not None
 
 
+def cos_bucket_configured(bucket: Optional[str] = None) -> bool:
+    """True when COS_BUCKET is a real name (not blank or env.example placeholder)."""
+    value = (COS_BUCKET if bucket is None else bucket).strip()
+    if not value:
+        return False
+    return value.lower() not in _PLACEHOLDER_COS_BUCKETS
+
+
 def cos_credentials_configured() -> bool:
-    """True when secret id/key and bucket are set."""
-    return bool(COS_SECRET_ID and COS_SECRET_KEY and COS_BUCKET and COS_REGION)
+    """True when secret id/key and a real bucket are set."""
+    return bool(COS_SECRET_ID and COS_SECRET_KEY and COS_REGION and cos_bucket_configured())
 
 
 def cos_browser_csp_sources() -> str:

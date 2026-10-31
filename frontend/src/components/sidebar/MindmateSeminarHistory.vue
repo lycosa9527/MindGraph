@@ -18,9 +18,13 @@ import {
   setEmbeddedCollabRoomCode,
 } from '@/composables/mindmate/mindmateSeminarEmbeddedBridge'
 import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateSeminarLiveSession'
+import { useSeminarUnreadSummary } from '@/composables/mindmate/useSeminarUnreadSummary'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
-import { confirmMindmateSeminarLeave, confirmMindmateSeminarStop } from '@/utils/mindmateSeminarConfirm'
+import {
+  confirmMindmateSeminarLeave,
+  confirmMindmateSeminarStop,
+} from '@/utils/mindmateSeminarConfirm'
 import { leaveSavedMindmateSeminar, saveFinishedSeminar } from '@/utils/mindmateSeminarLibrarySave'
 import {
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
@@ -33,6 +37,7 @@ import {
   mergeMindmateSeminarSessionLists,
   normalizeMindmateSeminarCode,
   persistLocalMindmateSeminarSessions,
+  seminarRowIsCrossSchool,
   trackLocalMindmateSeminarSession,
   wasMindmateSeminarCodeRecentlyEnded,
 } from '@/utils/mindmateSeminarSessions'
@@ -68,6 +73,7 @@ const router = useRouter()
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const { seminarUnreadBySessionId, refreshSeminarUnread } = useSeminarUnreadSummary()
 
 const loading = ref(false)
 const orgSessions = ref<CollabSessionRow[]>([])
@@ -185,12 +191,17 @@ async function fetchSessions(showSpinner = true): Promise<void> {
       }
     }
     await pruneStaleLocalSessions()
+    void refreshSeminarUnread()
   } catch {
     notify.errorKey('mindgraphLanding.networkError')
   } finally {
     listFetchInFlight = false
     if (showSpinner) loading.value = false
   }
+}
+
+function sessionUnread(session: CollabSessionRow): number {
+  return seminarUnreadBySessionId.value[session.session_id] || 0
 }
 
 function scheduleFetchSessions(): void {
@@ -249,9 +260,16 @@ function openSession(row: CollabSessionRow): void {
   if (route.path === '/mindmate') {
     leaveSavedMindmateSeminar()
     setEmbeddedCollabRoomCode(formatted)
+    window.setTimeout(() => {
+      void refreshSeminarUnread()
+    }, 2500)
     return
   }
-  void router.push({ path: '/mindmate/seminar', query: { code: formatted } })
+  void router.push({ path: '/mindmate/seminar', query: { code: formatted } }).then(() => {
+    window.setTimeout(() => {
+      void refreshSeminarUnread()
+    }, 2500)
+  })
 }
 
 function isHost(row: CollabSessionRow): boolean {
@@ -405,11 +423,11 @@ onUnmounted(() => {
         >
           <span
             class="conv-kind"
-            :class="session.visibility === 'network' ? 'is-public' : 'is-school'"
+            :class="seminarRowIsCrossSchool(session) ? 'is-public' : 'is-school'"
           >
             <I18nText
               :k="
-                session.visibility === 'network'
+                seminarRowIsCrossSchool(session)
                   ? 'mindmate.collabStartSessionPublic'
                   : 'mindmate.collabStartSessionOrg'
               "
@@ -423,6 +441,13 @@ onUnmounted(() => {
               v-else
               k="mindmate.collabPill"
             />
+          </span>
+          <span
+            v-if="sessionUnread(session) > 0"
+            class="conv-unread"
+            :aria-label="t('mindmate.seminarUnreadBadge', { n: sessionUnread(session) })"
+          >
+            {{ sessionUnread(session) > 99 ? '99+' : sessionUnread(session) }}
           </span>
           <CollabLiveBadge
             v-if="session.live"
@@ -566,6 +591,19 @@ onUnmounted(() => {
   white-space: nowrap;
   font-weight: 500;
   color: #1c1917;
+}
+
+.conv-unread {
+  flex-shrink: 0;
+  min-width: 1.125rem;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.125rem;
+  text-align: center;
 }
 
 .more-btn {

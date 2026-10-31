@@ -14,10 +14,14 @@ from sqlalchemy import select
 
 from models.domain.auth import User
 from models.domain.mindmate_seminar import MindmateSeminarMessage, MindmateSeminarSession
-from services.features.mindmate_seminar.group_members import user_is_accepted_member
+from services.features.mindmate_seminar.group_members import (
+    user_is_accepted_member,
+    user_observes_seminar,
+)
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
 from services.features.mindmate_seminar.seminar_message import send_seminar_message
 from services.features.mindmate_seminar.visibility import user_may_join_mindmate_seminar
+from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
@@ -152,9 +156,13 @@ async def post_canvas_diagram_share(
     *,
     image_url: str,
     note: str = "",
+    as_mindgraph: bool = False,
 ) -> tuple[Optional[dict[str, Any]], str]:
     """
     Post the caller's saved diagram into a live seminar.
+
+    When ``as_mindgraph`` is true the line is stored as an assistant message so
+    the room shows MindGraph as the sender (landing one-sentence flow).
 
     Returns ``(payload, error_code)``. ``error_code`` is empty on success.
     """
@@ -180,6 +188,36 @@ async def post_canvas_diagram_share(
         image_url=image_url,
         note=note,
     )
+    if as_mindgraph:
+        if await user_observes_seminar(session.id, int(user.id)):
+            return None, SHARE_FORBIDDEN
+        await mgr.refresh_participant_ttl(session.code, int(user.id))
+        await mgr.touch_activity(session.code)
+        saved = await mgr.persist_message(
+            session.id,
+            role="assistant",
+            content=content,
+            sender_user_id=None,
+            room_code=session.code,
+        )
+        await broadcast_to_all(
+            session.code,
+            {
+                "type": "mindgraph_message",
+                "id": saved.id,
+                "prev_id": saved.prev_id,
+                "created_at": saved.created_at,
+                "content": content,
+            },
+        )
+        logger.info(
+            "[CanvasShare] posted mindgraph diagram=%s session=%s user=%s",
+            cleaned,
+            session.id,
+            int(user.id),
+        )
+        return {"message_id": saved.id, "session_id": session.id, "title": title}, ""
+
     username = getattr(user, "username", None) or getattr(user, "name", None)
     outcome = await send_seminar_message(
         session_id=session.id,

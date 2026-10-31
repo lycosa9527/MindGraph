@@ -17,6 +17,10 @@ import {
   seminarDocViewerOpen,
   setSeminarDocPaneWidth,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import {
+  loadSeminarGroupRoster,
+  seminarGroupMembers,
+} from '@/composables/mindmate/seminarGroupRoster'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
@@ -83,6 +87,20 @@ watch(
   () => {
     sessionId.value = ''
     closeSeminarChrome()
+  }
+)
+
+const displayMembers = computed(() =>
+  seminarGroupMembers.value.length > 0 ? seminarGroupMembers.value : props.members
+)
+
+watch(
+  () => sessionId.value,
+  (id) => {
+    if (!id) {
+      return
+    }
+    void loadSeminarGroupRoster(id)
   }
 )
 
@@ -180,7 +198,7 @@ onBeforeUnmount(() => {
         :seed-messages="seedMessages"
         :brief-topic="briefTopic"
         :brief-goals="briefGoals"
-        :members="members"
+        :members="displayMembers"
         @ended="emit('ended', $event)"
         @room-meta="onRoomMeta"
         @goals-change="emit('goalsChange', $event)"
@@ -213,7 +231,7 @@ onBeforeUnmount(() => {
     <MindmateSeminarTaskPane
       v-if="sessionId"
       :session-id="sessionId"
-      :members="members"
+      :members="displayMembers"
       :is-leader="isLeader"
       :self-user-id="selfUserId"
       :busy="memberBusy"
@@ -283,7 +301,7 @@ onBeforeUnmount(() => {
 .mm-split-handle:hover::before,
 .mm-split-handle:focus-visible::before,
 .mindmate-seminar-embed.is-resizing .mm-split-handle::before {
-  background: #a8a29e;
+  background: #c4b5fd;
 }
 
 .mm-split-handle__pill {

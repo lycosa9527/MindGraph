@@ -312,10 +312,10 @@ async function shelveDiagram(destination: 'resource' | 'artifact'): Promise<void
   align-self: flex-start;
   min-height: 28px;
   padding: 4px 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #c4b5fd;
   border-radius: 9999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #fff;
+  color: #5b21b6;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;

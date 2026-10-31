@@ -89,7 +89,7 @@ export function useSeminarMindgraphPrompt() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ diagram_id: saved.id }),
+          body: JSON.stringify({ diagram_id: saved.id, as_mindgraph: true }),
         }
       )
       if (!response.ok) {

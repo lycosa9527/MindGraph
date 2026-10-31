@@ -643,7 +643,7 @@ export function useMindmateSeminar(
       bumpSeminarFolderReload()
       return
     }
-    if (type === 'seminar_minutes') {
+    if (type === 'seminar_minutes' || type === 'mindgraph_message') {
       const messageId = collabPrevId(parsed.id)
       if (messageId == null) {
         return
@@ -892,25 +892,32 @@ export function useMindmateSeminar(
     }
   }
 
-  function sendSeminarMinutes(content: string): void {
+  function sendSeminarMinutes(content: string): Promise<void> {
     const trimmed = content.trim()
     const sessionId = room.value?.sessionId
     if (!trimmed || !sessionId) {
       if (!sessionId) {
         notify.warningKey('mindmate.collabNotConnected')
       }
-      return
+      return Promise.resolve()
     }
-    void postSeminarLine(trimmed, 'minutes', false)
+    return postSeminarLine(trimmed, 'minutes', false)
   }
 
-  function sendSeminarMessage(content: string, sendOptions?: { toMindmate?: boolean }) {
+  function sendSeminarMessage(
+    content: string,
+    sendOptions?: { toMindmate?: boolean; ignoreStreaming?: boolean }
+  ): Promise<void> {
     const trimmed = content.trim()
-    if (!trimmed || isStreaming.value || !room.value?.sessionId) {
+    if (
+      !trimmed ||
+      (!sendOptions?.ignoreStreaming && isStreaming.value) ||
+      !room.value?.sessionId
+    ) {
       if (!room.value?.sessionId) {
         notify.warningKey('mindmate.collabNotConnected')
       }
-      return
+      return Promise.resolve()
     }
     lastOptimisticSendContent = trimmed
     const clientKey = `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -925,7 +932,7 @@ export function useMindmateSeminar(
         created_at: new Date().toISOString(),
       },
     ]
-    void postSeminarLine(trimmed, 'chat', Boolean(sendOptions?.toMindmate))
+    return postSeminarLine(trimmed, 'chat', Boolean(sendOptions?.toMindmate))
   }
 
   function retryConnection(): void {

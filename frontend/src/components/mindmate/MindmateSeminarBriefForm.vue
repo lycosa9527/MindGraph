@@ -1007,6 +1007,14 @@ onUnmounted(() => {
                         </option>
                       </select>
                     </span>
+                    <p
+                      v-if="
+                        !isSelf(Number(member.id)) && chosenRole(Number(member.id)) === 'observer'
+                      "
+                      class="mm-brief__role-note"
+                    >
+                      <I18nText k="mindmate.home.brief.role.observerHint" />
+                    </p>
                   </div>
                   <button
                     v-if="!isSelf(Number(member.id))"
@@ -1257,13 +1265,13 @@ onUnmounted(() => {
 }
 
 .mm-brief__dot.is-on {
-  border-color: #1c1917;
-  background: #1c1917;
-  box-shadow: 0 0 0 4px rgba(28, 25, 23, 0.12);
+  border-color: #3b82f6;
+  background: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.16);
 }
 
 .mm-brief__dot.is-pulse {
-  border-color: #1c1917;
+  border-color: #3b82f6;
   transform: scale(1.12);
   box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.22);
   animation: mm-brief-pulse 1.2s ease-in-out infinite;
@@ -1312,7 +1320,7 @@ onUnmounted(() => {
   padding: 0;
   border: none;
   background: transparent;
-  color: #44403c;
+  color: #7c3aed;
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -1320,7 +1328,7 @@ onUnmounted(() => {
 }
 
 .mm-brief__more:hover {
-  color: #1c1917;
+  color: #6d28d9;
 }
 
 .mm-brief__more-chevron {
@@ -1334,7 +1342,7 @@ onUnmounted(() => {
 
 .mm-brief__card {
   padding: 16px 16px 14px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e8edf5;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.045);
@@ -1344,15 +1352,15 @@ onUnmounted(() => {
 }
 
 .mm-brief__section.is-active .mm-brief__card {
-  border-color: #a8a29e;
-  box-shadow: 0 12px 30px rgba(28, 25, 23, 0.06);
+  border-color: #bfdbfe;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.08);
 }
 
 .mm-brief__topic,
 .mm-brief__input,
 .mm-brief__role {
   width: 100%;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e6eaf2;
   border-radius: 10px;
   background: #fff;
   color: #111827;
@@ -1378,9 +1386,9 @@ onUnmounted(() => {
 .mm-brief__input:focus,
 .mm-brief__role:focus {
   outline: none;
-  border-color: #a8a29e;
+  border-color: #bfdbfe;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .mm-brief__count {
@@ -1428,8 +1436,8 @@ onUnmounted(() => {
 }
 
 .mm-brief__add:hover {
-  border-color: #a8a29e;
-  color: #1c1917;
+  border-color: #c7d2fe;
+  color: #4f46e5;
 }
 
 .mm-brief__scope {
@@ -1464,14 +1472,14 @@ onUnmounted(() => {
 }
 
 .mm-brief__scope-btn.is-on {
-  background: #1c1917;
-  color: #fafaf9;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .mm-brief__skip-btn.is-on {
-  border-color: #1c1917;
-  background: #1c1917;
-  color: #fafaf9;
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .mm-brief__hint {
@@ -1498,7 +1506,7 @@ onUnmounted(() => {
   flex-direction: column;
   flex-shrink: 0;
   min-height: 0;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid #e8edf5;
 }
 
 .mm-brief__fold.is-open {
@@ -1523,11 +1531,11 @@ onUnmounted(() => {
 }
 
 .mm-brief__fold-head:hover {
-  background: #f5f5f4;
+  background: #eef2ff;
 }
 
 .mm-brief__fold.is-open .mm-brief__fold-head {
-  background: #f5f5f4;
+  background: #eff6ff;
 }
 
 .mm-brief__fold-icon {
@@ -1559,7 +1567,7 @@ onUnmounted(() => {
 
 .mm-brief__fold.is-open .mm-brief__fold-chevron {
   transform: rotate(180deg);
-  color: #57534e;
+  color: #3b82f6;
 }
 
 .mm-brief__fold-body {
@@ -1568,7 +1576,7 @@ onUnmounted(() => {
   min-height: 0;
   padding: 0 0 10px;
   overflow: hidden;
-  border-top: 1px solid #e7e5e4;
+  border-top: 1px solid #e8edf5;
   background: #fff;
 }
 
@@ -1591,7 +1599,7 @@ onUnmounted(() => {
   min-width: 0;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e6eaf2;
   border-radius: 10px;
   background: #fff;
   color: #111827;
@@ -1602,8 +1610,8 @@ onUnmounted(() => {
 
 .mm-brief__phone-input:focus {
   outline: none;
-  border-color: #a8a29e;
-  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+  border-color: #bfdbfe;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .mm-brief__phone-btn,
@@ -1611,10 +1619,10 @@ onUnmounted(() => {
   flex-shrink: 0;
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #bfdbfe;
   border-radius: 9999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #eff6ff;
+  color: #1d4ed8;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -1627,7 +1635,7 @@ onUnmounted(() => {
 
 .mm-brief__phone-btn:hover:not(:disabled),
 .mm-brief__phone-add:hover {
-  background: #e7e5e4;
+  background: #dbeafe;
   color: #1c1917;
 }
 
@@ -1638,7 +1646,7 @@ onUnmounted(() => {
   gap: 10px;
   margin: 0 10px 8px;
   padding: 10px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #dbeafe;
   border-radius: 12px;
   background: #fff;
 }
@@ -1679,10 +1687,10 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   height: 420px;
   max-height: min(420px, 52vh);
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e8edf5;
   border-radius: 14px;
   overflow: hidden;
-  background: #fafaf9;
+  background: #fafbff;
 }
 
 .mm-brief__picker-left,
@@ -1695,7 +1703,7 @@ onUnmounted(() => {
 }
 
 .mm-brief__picker-left {
-  background: #f5f5f4;
+  background: #f7f8fb;
   border-right: 1px solid #e7e5e4;
 }
 
@@ -1721,7 +1729,7 @@ onUnmounted(() => {
   width: 100%;
   height: 36px;
   padding: 0 12px 0 34px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e6eaf2;
   border-radius: 10px;
   background: #fff;
   color: #111827;
@@ -1731,8 +1739,8 @@ onUnmounted(() => {
 
 .mm-brief__search-input:focus {
   outline: none;
-  border-color: #a8a29e;
-  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+  border-color: #bfdbfe;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .mm-brief__contacts-label {
@@ -1778,11 +1786,11 @@ onUnmounted(() => {
 }
 
 .mm-brief__roster-row:hover {
-  background: #f5f5f4;
+  background: #eef2ff;
 }
 
 .mm-brief__roster-row.is-on {
-  background: #e7e5e4;
+  background: #eff6ff;
 }
 
 .mm-brief__roster-row.is-self {
@@ -1799,8 +1807,8 @@ onUnmounted(() => {
 }
 
 .mm-brief__check.is-on {
-  border-color: #1c1917;
-  background: radial-gradient(circle at center, #1c1917 0 40%, transparent 42%), #fff;
+  border-color: #3b82f6;
+  background: radial-gradient(circle at center, #3b82f6 0 40%, transparent 42%), #fff;
 }
 
 .mm-brief__avatar {
@@ -1833,8 +1841,8 @@ onUnmounted(() => {
   flex-shrink: 0;
   border-radius: 999px;
   padding: 1px 6px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #eff6ff;
+  color: #1d4ed8;
   font-size: 11px;
   font-weight: 500;
 }
@@ -1880,11 +1888,18 @@ onUnmounted(() => {
   min-width: 0;
 }
 
+.mm-brief__role-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a8a29e;
+}
+
 .mm-brief__role {
   width: 100%;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e6eaf2;
   border-radius: 8px;
   background: #fff;
   color: #111827;
@@ -1936,7 +1951,7 @@ onUnmounted(() => {
 
   .mm-brief__picker-left {
     border-right: 0;
-    border-bottom: 1px solid #e7e5e4;
+    border-bottom: 1px solid #e8edf5;
   }
 }
 
@@ -1987,12 +2002,12 @@ onUnmounted(() => {
 }
 
 .mm-brief__start {
-  border: 1px solid #1c1917;
+  border: none;
   border-radius: 9999px;
   min-height: 36px;
   padding: 8px 20px;
-  background: #1c1917;
-  color: #fafaf9;
+  background: linear-gradient(90deg, #6366f1 0%, #7c3aed 100%);
+  color: #fff;
   font: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -2001,13 +2016,11 @@ onUnmounted(() => {
 }
 
 .mm-brief__start:hover {
-  background: #292524;
-  border-color: #292524;
+  filter: brightness(1.06);
 }
 
 .mm-brief__start:active {
-  background: #44403c;
-  border-color: #44403c;
+  filter: brightness(0.96);
 }
 
 :global(.dark) .mm-brief__title {
@@ -2053,9 +2066,9 @@ onUnmounted(() => {
 
 :global(.dark) .mm-brief__phone-btn,
 :global(.dark) .mm-brief__phone-add {
-  background: #292524;
-  border-color: #44403c;
-  color: #fafaf9;
+  background: #1e3a5f;
+  border-color: #1e40af;
+  color: #93c5fd;
 }
 
 :global(.dark) .mm-brief__fold {
@@ -2082,8 +2095,8 @@ onUnmounted(() => {
 }
 
 :global(.dark) .mm-brief__fold-icon.is-school {
-  background: #292524;
-  color: #d6d3d1;
+  background: #2e1065;
+  color: #c4b5fd;
 }
 
 :global(.dark) .mm-brief__pending {
@@ -2106,6 +2119,6 @@ onUnmounted(() => {
 }
 
 :global(.dark) .mm-brief__dot.is-on {
-  background: #fafaf9;
+  background: #3b82f6;
 }
 </style>

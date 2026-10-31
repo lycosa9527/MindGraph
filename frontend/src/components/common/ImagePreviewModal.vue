@@ -1,20 +1,12 @@
 <script setup lang="ts">
 /**
- * ImagePreviewModal - Simple modal for previewing images.
- * The picture opens at fit width, pinned to the top when it is taller than
- * the frame. The wheel then moves through that picture; Ctrl/Cmd+wheel, or
- * the wheel once the picture already fits, zooms. Dragging pans.
- * Supports optional navigation when images array is provided.
+ * Simple image lightbox: dark backdrop, image, close, optional prev/next.
+ * Fit-width + pan/zoom gestures stay; SwissGlass chrome is intentionally gone.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, Close } from '@element-plus/icons-vue'
 
-import { Image } from '@lucide/vue'
-
-import I18nText from '@/components/common/I18nText.vue'
-import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
-import { useLanguage } from '@/composables/core/useLanguage'
 import {
   type ImagePreviewTransform,
   clampPreviewPan,
@@ -38,13 +30,6 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'close'): void
 }>()
-
-const { t } = useLanguage()
-
-const open = computed({
-  get: () => props.visible,
-  set: (value: boolean) => emit('update:visible', value),
-})
 
 const currentIndex = ref(0)
 const stageRef = ref<HTMLElement | null>(null)
@@ -86,7 +71,6 @@ function resetTransform(): void {
   panning.value = false
 }
 
-/** Size is fit-width in CSS. Pan pins a taller picture to the top of the frame. */
 function applyFitWidth(): void {
   if (fitted.value && userAdjusted.value) return
   const stage = stageRef.value
@@ -207,7 +191,29 @@ function onPointerUp(event: PointerEvent): void {
   panning.value = false
 }
 
-// Only sync currentIndex when modal opens - avoid resetting on parent re-renders
+function close(): void {
+  emit('update:visible', false)
+  emit('close')
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (!props.visible) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    close()
+    return
+  }
+  if (event.key === 'ArrowLeft' && canGoPrev.value) {
+    event.preventDefault()
+    goPrev()
+    return
+  }
+  if (event.key === 'ArrowRight' && canGoNext.value) {
+    event.preventDefault()
+    goNext()
+  }
+}
+
 watch(
   () => props.visible,
   (visible) => {
@@ -215,6 +221,11 @@ watch(
       const idx = Math.min(props.initialIndex ?? 0, props.images.length - 1)
       currentIndex.value = Math.max(0, idx)
     }
+    if (visible) {
+      window.addEventListener('keydown', onKeydown)
+      return
+    }
+    window.removeEventListener('keydown', onKeydown)
   },
   { immediate: true }
 )
@@ -241,19 +252,11 @@ watch([stageRef, imageRef], () => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
   cancelAnimationFrame(fitFrame)
   resizeObserver?.disconnect()
   resizeObserver = null
 })
-
-function handleClose(done?: () => void) {
-  emit('close')
-  if (typeof done === 'function') {
-    done()
-  } else {
-    emit('update:visible', false)
-  }
-}
 
 function goPrev() {
   if (canGoPrev.value) {
@@ -269,59 +272,55 @@ function goNext() {
 </script>
 
 <template>
-  <SwissGlassDialog
-    v-model="open"
-    :ribbon="t('swissGlass.hero.imagePreview.ribbon')"
-    ribbon-key="swissGlass.hero.imagePreview.ribbon"
-    :title="t('swissGlass.hero.imagePreview.title')"
-    title-key="swissGlass.hero.imagePreview.title"
-    :line1="t('swissGlass.hero.imagePreview.line1')"
-    line1-key="swissGlass.hero.imagePreview.line1"
-    :icon="Image"
-    width="80%"
-    :before-close="handleClose"
-    dialog-class="image-preview-modal"
-    @close="emit('close')"
-  >
-    <p
-      v-if="currentImage.title"
-      class="text-sm font-medium text-stone-700 mb-2 px-4"
+  <Teleport to="body">
+    <div
+      v-if="visible"
+      class="mm-image-lightbox"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="currentImage.title || title"
+      @click.self="close"
     >
-      {{ currentImage.title }}
-    </p>
-    <div class="relative flex items-center">
-      <!-- Prev button -->
+      <button
+        type="button"
+        class="mm-image-lightbox__close"
+        :aria-label="'Close'"
+        @click="close"
+      >
+        <el-icon :size="18"><Close /></el-icon>
+      </button>
+
       <button
         v-if="hasNavigation"
         type="button"
-        class="nav-btn nav-btn-prev"
+        class="mm-image-lightbox__nav mm-image-lightbox__nav--prev"
         :disabled="!canGoPrev"
         :aria-label="'Previous'"
         @click="goPrev"
       >
         <el-icon
-          :size="28"
+          :size="22"
           class="mg-icon-flip-rtl"
         >
           <ArrowLeft />
         </el-icon>
       </button>
 
-      <!-- Image: key on wrapper forces full re-render when navigating to avoid stale display -->
       <div
         :key="currentImage.imageUrl"
         ref="stageRef"
-        class="image-preview-stage"
-        :class="{ 'image-preview-stage--panning': panning }"
+        class="mm-image-lightbox__stage"
+        :class="{ 'is-panning': panning }"
         @wheel.prevent.stop="onWheel"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
         @pointercancel="onPointerUp"
+        @click.stop
       >
         <img
           ref="imageRef"
-          class="image-preview-photo"
+          class="mm-image-lightbox__photo"
           :class="{ 'is-fitted': fitted }"
           :src="currentImage.imageUrl"
           :alt="currentImage.title"
@@ -333,116 +332,137 @@ function goNext() {
         />
       </div>
 
-      <!-- Next button -->
       <button
         v-if="hasNavigation"
         type="button"
-        class="nav-btn nav-btn-next"
+        class="mm-image-lightbox__nav mm-image-lightbox__nav--next"
         :disabled="!canGoNext"
         :aria-label="'Next'"
         @click="goNext"
       >
         <el-icon
-          :size="28"
+          :size="22"
           class="mg-icon-flip-rtl"
         >
           <ArrowRight />
         </el-icon>
       </button>
-    </div>
 
-    <!-- Counter for gallery mode -->
-    <div
-      v-if="hasNavigation && props.images"
-      class="text-center text-sm text-gray-500 py-2"
-    >
-      {{ currentIndex + 1 }} / {{ props.images.length }}
+      <p
+        v-if="hasNavigation && props.images"
+        class="mm-image-lightbox__count"
+      >
+        {{ currentIndex + 1 }} / {{ props.images.length }}
+      </p>
     </div>
-    <p class="image-preview-hint">
-      <I18nText k="swissGlass.hero.imagePreview.hint" />
-    </p>
-  </SwissGlassDialog>
+  </Teleport>
 </template>
 
 <style scoped>
-.image-preview-stage {
-  flex: 1;
-  min-width: 0;
+.mm-image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 4100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.mm-image-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.mm-image-lightbox__close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.mm-image-lightbox__stage {
+  width: min(92vw, 960px);
+  max-height: min(88vh, 900px);
+  min-height: 240px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
-  max-height: 70vh;
-  margin: 0 16px 8px;
-  background: #f9fafb;
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 
-.image-preview-stage--panning {
+.mm-image-lightbox__stage.is-panning {
   cursor: grabbing;
 }
 
-.image-preview-photo {
+.mm-image-lightbox__photo {
   width: 100%;
   height: auto;
   max-width: 100%;
-  max-height: none;
-  min-width: 0;
-  flex-shrink: 0;
   object-fit: contain;
   transform-origin: center center;
   pointer-events: none;
   visibility: hidden;
 }
 
-.image-preview-photo.is-fitted {
+.mm-image-lightbox__photo.is-fitted {
   visibility: visible;
 }
 
-.image-preview-hint {
-  margin: 0 16px 14px;
-  text-align: center;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #9ca3af;
-}
-
-.nav-btn {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  display: flex;
+.mm-image-lightbox__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 50%;
-  background: white;
-  color: #374151;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  transform: translateY(-50%);
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.nav-btn:hover:not(:disabled) {
-  cursor: pointer;
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: #f8fafc;
+.mm-image-lightbox__nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.24);
 }
 
-.nav-btn:disabled {
-  opacity: 0.4;
+.mm-image-lightbox__nav:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
-.nav-btn-prev {
-  margin-left: 12px;
+.mm-image-lightbox__nav--prev {
+  left: 16px;
 }
 
-.nav-btn-next {
-  margin-right: 12px;
+.mm-image-lightbox__nav--next {
+  right: 16px;
+}
+
+.mm-image-lightbox__count {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
 }
 </style>

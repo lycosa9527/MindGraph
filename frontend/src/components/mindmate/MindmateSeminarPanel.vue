@@ -701,20 +701,20 @@ defineExpose({
 
 <style scoped>
 .join-workshop-btn.join-workshop-btn--label {
-  --el-button-bg-color: #f5f5f4;
-  --el-button-border-color: #e7e5e4;
-  --el-button-hover-bg-color: #e7e5e4;
-  --el-button-hover-border-color: #d6d3d1;
-  --el-button-hover-text-color: #1c1917;
-  --el-button-active-bg-color: #d6d3d1;
-  --el-button-text-color: #1c1917;
+  --el-button-bg-color: #ede9fe;
+  --el-button-border-color: #c4b5fd;
+  --el-button-hover-bg-color: #ddd6fe;
+  --el-button-hover-border-color: #a78bfa;
+  --el-button-hover-text-color: #4c1d95;
+  --el-button-active-bg-color: #c4b5fd;
+  --el-button-text-color: #5b21b6;
   height: auto;
   min-height: 32px;
   padding: 4px 12px;
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 500;
-  background: #f5f5f4;
+  background: #ede9fe;
 }
 
 .join-workshop-btn.join-workshop-btn--pill {
@@ -1024,10 +1024,10 @@ defineExpose({
   font-weight: 600;
   line-height: 1;
   font-size: clamp(13px, 4vmin, 18px);
-  border: 2px solid #d6d3d1;
+  border: 2px solid #d1d5db;
   border-radius: 8px;
   background: #fff;
-  color: #1c1917;
+  color: #1f2937;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -1036,9 +1036,9 @@ defineExpose({
 }
 
 .code-input-box:focus {
-  border-color: #1c1917;
-  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
-  background: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #f9fafb;
 }
 
 .code-dash {
@@ -1148,8 +1148,8 @@ defineExpose({
   margin: 0 0 12px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: #f5f5f4;
-  color: #57534e;
+  background: #e7edfb;
+  color: #5c6eb5;
   font-size: 13px;
   line-height: 1.45;
 }

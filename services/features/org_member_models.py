@@ -24,6 +24,8 @@ class OrgMemberRow(BaseModel):
     name: str
     avatar: Optional[str] = None
     last_seen_at: Optional[datetime] = None
+    organization_id: Optional[int] = None
+    organization_name: Optional[str] = None
 
 
 class OrgMembersPage(BaseModel):

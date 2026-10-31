@@ -14,6 +14,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import MindmateSoftIcon from '@/components/mindmate/MindmateSoftIcon.vue'
 import { useLanguage } from '@/composables'
+import { seminarSpectator } from '@/composables/mindmate/mindmateSeminarChrome'
 import type { CollabFeedbackRating } from '@/utils/mindmateSeminarDisplay'
 
 const props = withDefaults(
@@ -129,7 +130,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
-      v-if="liveActions !== false"
+      v-if="liveActions !== false && !seminarSpectator"
       k="mindmate.bubble.reply"
       placement="top"
     >
@@ -146,7 +147,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
-      v-if="liveActions !== false"
+      v-if="liveActions !== false && !seminarSpectator"
       :k="highlightKey"
       placement="top"
     >
@@ -164,7 +165,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
-      v-if="liveActions !== false"
+      v-if="liveActions !== false && !seminarSpectator"
       k="mindmate.tooltip.share"
       placement="top"
     >

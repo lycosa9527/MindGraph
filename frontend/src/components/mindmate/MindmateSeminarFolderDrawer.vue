@@ -238,7 +238,9 @@ watch(
       </button>
     </header>
     <p class="mm-folder-side__hint">
-      <I18nText k="mindmate.folder.hint" />
+      <I18nText
+        :k="seminarSpectator ? 'mindmate.seminar.spectatorFiles' : 'mindmate.folder.hint'"
+      />
     </p>
     <div
       v-if="!seminarSpectator"
@@ -375,9 +377,9 @@ watch(
   min-width: 0;
   min-height: 0;
   height: 100%;
-  border-left: 1px solid #e7e5e4;
+  border-left: 1px solid #e9e5ff;
   background: #fff;
-  box-shadow: -8px 0 24px rgba(28, 25, 23, 0.05);
+  box-shadow: -8px 0 24px rgba(109, 94, 252, 0.05);
   overflow: auto;
 }
 
@@ -452,9 +454,9 @@ watch(
 }
 
 .mm-folder-side__upload-btn:hover:not(:disabled) {
-  border-color: #a8a29e;
-  color: #1c1917;
-  background: #f5f5f4;
+  border-color: #c4b5fd;
+  color: #6d28d9;
+  background: #f5f3ff;
 }
 
 .mm-folder-side__upload-btn:disabled {
@@ -509,7 +511,7 @@ watch(
 }
 
 .mm-folder-side__pin {
-  color: #1c1917;
+  color: #7c3aed;
 }
 
 .mm-folder-side__meta {
@@ -549,15 +551,15 @@ watch(
 
 .mm-folder-side__cite:hover,
 .mm-folder-side__more:hover {
-  background: #f5f5f4;
-  color: #1c1917;
+  background: #f5f3ff;
+  color: #6d5efc;
 }
 </style>
 
 <style>
 .mm-folder-side__menu.el-dropdown__popper,
 .mm-folder-side__menu.el-popper {
-  border: 1px solid #e7e5e4 !important;
+  border: 1px solid #e9e5ff !important;
   border-radius: 12px !important;
   box-shadow: 0 10px 28px rgba(28, 25, 23, 0.1) !important;
   overflow: hidden;
@@ -578,16 +580,16 @@ watch(
 }
 
 .mm-folder-side__menu .el-dropdown-menu__item:not(.is-disabled):hover {
-  background: #f5f5f4;
-  color: #1c1917;
+  background: #f5f3ff;
+  color: #5b21b6;
 }
 
 .mm-folder-side__menu .el-dropdown-menu__item--divided {
   margin-top: 6px;
-  border-top-color: #e7e5e4;
+  border-top-color: #f3f0ff;
 }
 
 .mm-folder-side__menu .el-dropdown-menu__item--divided::before {
-  background: #e7e5e4;
+  background: #f3f0ff;
 }
 </style>

@@ -1,16 +1,16 @@
 /**
- * Light Swiss stone shell for MindMate seminar dialogs.
- * Matches mindmate-swiss-messagebox: stone ink, hairline footer, pill actions.
+ * Light shell for MindMate seminar dialogs.
+ * Primary actions stay the seminar purple from the group-chat UI.
  */
 
 .mm-seminar-swiss.el-dialog {
-  --el-color-primary: #1c1917;
-  --el-color-primary-light-3: #78716c;
-  --el-color-primary-light-5: #a8a29e;
-  --el-color-primary-light-7: #d6d3d1;
-  --el-color-primary-light-8: #e7e5e4;
-  --el-color-primary-light-9: #f5f5f4;
-  --el-color-primary-dark-2: #0c0a09;
+  --el-color-primary: #6d5efc;
+  --el-color-primary-light-3: #8b7cfb;
+  --el-color-primary-light-5: #a78bfa;
+  --el-color-primary-light-7: #ddd6fe;
+  --el-color-primary-light-8: #ede9fe;
+  --el-color-primary-light-9: #f5f3ff;
+  --el-color-primary-dark-2: #5b21b6;
   padding: 0;
   border: 1px solid #e7e5e4;
   border-radius: 12px;
@@ -60,17 +60,17 @@
 }
 
 .mm-seminar-swiss .el-button--primary {
-  --el-button-bg-color: #1c1917;
-  --el-button-border-color: #1c1917;
-  --el-button-text-color: #fafaf9;
-  --el-button-hover-bg-color: #292524;
-  --el-button-hover-border-color: #292524;
-  --el-button-hover-text-color: #fafaf9;
-  --el-button-active-bg-color: #44403c;
-  --el-button-active-border-color: #44403c;
-  --el-button-disabled-bg-color: #e7e5e4;
-  --el-button-disabled-border-color: #e7e5e4;
-  --el-button-disabled-text-color: #a8a29e;
+  --el-button-bg-color: #6d5efc;
+  --el-button-border-color: #6d5efc;
+  --el-button-text-color: #fff;
+  --el-button-hover-bg-color: #5b21b6;
+  --el-button-hover-border-color: #5b21b6;
+  --el-button-hover-text-color: #fff;
+  --el-button-active-bg-color: #4c1d95;
+  --el-button-active-border-color: #4c1d95;
+  --el-button-disabled-bg-color: #ede9fe;
+  --el-button-disabled-border-color: #ddd6fe;
+  --el-button-disabled-text-color: #a78bfa;
 }
 
 .mm-seminar-swiss .el-button--default {

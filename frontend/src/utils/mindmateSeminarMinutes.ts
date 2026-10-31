@@ -18,6 +18,24 @@ const FILE_TOKEN = /\[\[sf:[0-9a-fA-F-]{36}\|([^\]]*)\]\]/g
 
 export type SeminarMinutesScope = 'all' | 'since' | 'highlights' | 'part'
 
+/** Chat line posted before the minutes card when sending to the seminar. */
+export function seminarSummaryRequestLine(
+  agentName: string,
+  scope: SeminarMinutesScope,
+  translate: (key: string) => string
+): string {
+  const name = agentName.trim() || translate('mindmate.summary.author')
+  const scopeKey =
+    scope === 'since'
+      ? 'mindmate.summary.request.since'
+      : scope === 'highlights'
+        ? 'mindmate.summary.request.highlights'
+        : scope === 'part'
+          ? 'mindmate.summary.request.part'
+          : 'mindmate.summary.request.all'
+  return `@${name} ${translate(scopeKey)}`
+}
+
 export interface MinutesSource {
   key: string
   author: string
@@ -34,6 +52,38 @@ export function minutesLines(text: string): string[] {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
+}
+
+/** Coerce LLM list fields that may mix strings and objects into newline text. */
+export function minutesFieldText(raw: unknown): string {
+  if (typeof raw === 'string') {
+    return raw
+  }
+  if (!Array.isArray(raw)) {
+    return ''
+  }
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item.trim()
+      }
+      if (typeof item === 'number' || typeof item === 'boolean') {
+        return String(item)
+      }
+      if (!item || typeof item !== 'object') {
+        return ''
+      }
+      const row = item as Record<string, unknown>
+      for (const key of ['text', 'name', 'title', 'file', 'filename', 'label', 'value'] as const) {
+        const value = row[key]
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim()
+        }
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join('\n')
 }
 
 export function mentionedFileNames(content: string): string[] {
@@ -189,14 +239,11 @@ export function parseMinutesDraft(raw: string): Partial<SeminarSummaryCardModel>
       : []
     return {
       goals,
-      consensus: minutesLines(Array.isArray(parsed.consensus) ? parsed.consensus.join('\n') : ''),
-      open: minutesLines(Array.isArray(parsed.open) ? parsed.open.join('\n') : ''),
-      materials: minutesLines(Array.isArray(parsed.materials) ? parsed.materials.join('\n') : ''),
-      tasks: minutesLines(Array.isArray(parsed.tasks) ? parsed.tasks.join('\n') : ''),
-      quotes: minutesLines(Array.isArray(parsed.quotes) ? parsed.quotes.join('\n') : '').slice(
-        0,
-        3
-      ),
+      consensus: minutesLines(minutesFieldText(parsed.consensus)),
+      open: minutesLines(minutesFieldText(parsed.open)),
+      materials: minutesLines(minutesFieldText(parsed.materials)),
+      tasks: minutesLines(minutesFieldText(parsed.tasks)),
+      quotes: minutesLines(minutesFieldText(parsed.quotes)).slice(0, 3),
     }
   } catch {
     return null

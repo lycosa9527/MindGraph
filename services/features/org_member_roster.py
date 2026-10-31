@@ -12,8 +12,14 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
-from models.domain.auth import OrganizationExpertBinding, User
+from models.domain.auth import Organization, OrganizationExpertBinding, User
 from services.features.org_member_models import OrgMemberRow, OrgMembersPage
+
+
+def _org_display_name(display_name: str | None, name: str | None) -> str | None:
+    label = str(display_name or name or "").strip()
+    return label or None
+
 
 _ORG_MEMBER_Q_MAX_LEN = 100
 _ORG_MEMBER_LIMIT_MAX = 200
@@ -98,17 +104,28 @@ async def fetch_session_participants_page(
     count_result = await db.execute(select(sa_count()).select_from(User).where(*filters))
     total = count_result.scalar_one()
     users_result = await db.execute(
-        select(User).where(*filters).order_by(User.name).offset(off).limit(lim),
+        select(
+            User,
+            Organization.id,
+            Organization.display_name,
+            Organization.name,
+        )
+        .outerjoin(Organization, Organization.id == User.organization_id)
+        .where(*filters)
+        .order_by(User.name)
+        .offset(off)
+        .limit(lim),
     )
-    users = users_result.scalars().all()
     items = [
         OrgMemberRow(
             id=u.id,
             name=u.name or f"User {u.id}",
             avatar=u.avatar,
             last_seen_at=u.workshop_last_seen_at,
+            organization_id=int(org_id) if org_id is not None else None,
+            organization_name=_org_display_name(org_display, org_name),
         )
-        for u in users
+        for u, org_id, org_display, org_name in users_result.all()
     ]
     return OrgMembersPage(
         items=items,

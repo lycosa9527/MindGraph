@@ -96,8 +96,18 @@ export interface LocalMindmateSeminarSession {
   owner_user_id?: number
   participant_count?: number
   visibility?: string
+  /** Display-only: network room or multi-org roster. */
+  cross_school?: boolean
   expires_at?: string | null
   live?: boolean
+}
+
+/** Effective chrome label: cross-school when network or multi-org members. */
+export function seminarRowIsCrossSchool(session: {
+  visibility?: string
+  cross_school?: boolean
+}): boolean {
+  return session.visibility === 'network' || Boolean(session.cross_school)
 }
 
 function notifySessionsChanged(): void {

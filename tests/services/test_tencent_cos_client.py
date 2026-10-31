@@ -19,6 +19,22 @@ def test_sha256_hex():
     assert len(digest) == 64
 
 
+def test_cos_bucket_configured_rejects_env_example_placeholder():
+    assert tencent_cos_client.cos_bucket_configured("mindgraph-1356113246") is True
+    assert tencent_cos_client.cos_bucket_configured("your-bucket-name-appid") is False
+    assert tencent_cos_client.cos_bucket_configured("") is False
+
+
+def test_cos_credentials_configured_ignores_placeholder_bucket():
+    with (
+        patch.object(tencent_cos_client, "COS_SECRET_ID", "AKID"),
+        patch.object(tencent_cos_client, "COS_SECRET_KEY", "secret"),
+        patch.object(tencent_cos_client, "COS_REGION", "ap-beijing"),
+        patch.object(tencent_cos_client, "COS_BUCKET", "your-bucket-name-appid"),
+    ):
+        assert tencent_cos_client.cos_credentials_configured() is False
+
+
 def test_upload_file_delegates_to_client(tmp_path: Path):
     local = tmp_path / "sample.dump"
     local.write_bytes(b"data")

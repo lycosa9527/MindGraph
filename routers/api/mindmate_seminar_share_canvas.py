@@ -62,6 +62,8 @@ class ShareCanvasDiagramRequest(BaseModel):
 
     diagram_id: str = Field(min_length=36, max_length=36)
     note: str = Field(default="", max_length=500)
+    # Seminar MindGraph chip: land as assistant so the room shows MindGraph as sender.
+    as_mindgraph: bool = False
 
 
 class OpenSharedCanvasRequest(BaseModel):
@@ -131,6 +133,7 @@ async def share_canvas_diagram(
         current_user,
         image_url=image_url,
         note=body.note,
+        as_mindgraph=body.as_mindgraph,
     )
     if error or payload is None:
         raise HTTPException(status_code=_SHARE_STATUS.get(error, 400), detail=error or SHARE_NOT_FOUND)

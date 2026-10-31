@@ -2,15 +2,20 @@
 /**
  * Seminar roster chrome: faces with hover panel; opens members task pane on click.
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
 import MindmateSeminarMembersPopover from '@/components/mindmate/MindmateSeminarMembersPopover.vue'
 import { useLanguage } from '@/composables'
+import {
+  loadSeminarGroupRoster,
+  seminarGroupMembers,
+  seminarGroupSessionId,
+} from '@/composables/mindmate/seminarGroupRoster'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 
-defineProps<{
+const props = defineProps<{
   membersOpen?: boolean
   members?: SeminarGroupMember[]
   isLeader?: boolean
@@ -19,6 +24,10 @@ defineProps<{
   selfUserId?: number
   busy?: boolean
 }>()
+
+const rosterMembers = computed(() =>
+  seminarGroupMembers.value.length > 0 ? seminarGroupMembers.value : props.members || []
+)
 
 const emit = defineEmits<{
   (e: 'toggleMembers'): void
@@ -34,6 +43,10 @@ const popover = ref<{ keepOpen: () => void; scheduleClose: () => void } | null>(
 function openPopover(): void {
   popoverOpen.value = true
   popover.value?.keepOpen()
+  const sessionId = seminarGroupSessionId.value
+  if (sessionId) {
+    void loadSeminarGroupRoster(sessionId)
+  }
 }
 
 function scheduleClosePopover(): void {
@@ -61,7 +74,7 @@ function scheduleClosePopover(): void {
       <MindmateSeminarMembersPopover
         ref="popover"
         :open="popoverOpen"
-        :members="members || []"
+        :members="rosterMembers"
         :is-leader="Boolean(isLeader ?? isHost)"
         :self-user-id="selfUserId"
         :busy="busy"

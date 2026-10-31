@@ -8,12 +8,12 @@ import { Plus, Trash2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateMentionMenu from '@/components/mindmate/MindmateMentionMenu.vue'
-import MindmateSeminarRoleIcon from '@/components/mindmate/MindmateSeminarRoleIcon.vue'
 import { swissGlassConfirm, useLanguage } from '@/composables'
 import {
   requestSeminarMention,
   seminarSpectator,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { seminarShowsMemberOrg } from '@/composables/mindmate/seminarGroupRoster'
 import { useSeminarMemberPresence } from '@/composables/mindmate/useSeminarMemberPresence'
 import { SEMINAR_BRIEF_ROLE_OPTIONS, type SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
@@ -36,7 +36,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const { isOnline, presenceRank, statusText } = useSeminarMemberPresence()
+const { isOnline, presenceRank } = useSeminarMemberPresence()
 const root = ref<HTMLElement | null>(null)
 const mentionMenu = ref<{ x: number; y: number; name: string } | null>(null)
 let hideTimer: ReturnType<typeof setTimeout> | null = null
@@ -180,8 +180,8 @@ defineExpose({ keepOpen, scheduleClose })
         >
           {{ seminarAvatarSurname(member.name) }}
           <span
-            class="mm-members-pop__dot"
-            :class="{ 'is-on': isOnline(member.userId, member.online) }"
+            v-if="isOnline(member.userId, member.online)"
+            class="mm-members-pop__dot is-on"
             aria-hidden="true"
           />
         </span>
@@ -194,20 +194,19 @@ defineExpose({ keepOpen, scheduleClose })
               ><I18nText k="mindmate.home.brief.role.leader"
             /></span>
           </span>
-          <span class="mm-members-pop__status">
-            <I18nText
-              v-if="member.pending"
-              k="mindmate.home.brief.pendingConsent"
-            /><template v-else>{{
-              statusText(member.userId, member.online, member.lastSeenAt)
-            }}</template>
+          <span
+            v-if="member.pending"
+            class="mm-members-pop__pending"
+          >
+            <I18nText k="mindmate.home.brief.pendingConsent" />
           </span>
+          <span
+            v-if="seminarShowsMemberOrg && member.organizationName"
+            class="mm-members-pop__org"
+            >{{ member.organizationName }}</span
+          >
         </div>
         <span class="mm-members-pop__role-wrap">
-          <MindmateSeminarRoleIcon
-            :role="member.isLeader ? 'leader' : memberRoleValue(member)"
-            :size="22"
-          />
           <select
             v-if="isLeader && !member.isLeader && member.userId !== selfUserId"
             class="mm-members-pop__role"
@@ -239,6 +238,17 @@ defineExpose({ keepOpen, scheduleClose })
         >
           <Trash2 :size="14" />
         </button>
+        <p
+          v-if="
+            isLeader &&
+            !member.isLeader &&
+            member.userId !== selfUserId &&
+            memberRoleValue(member) === 'observer'
+          "
+          class="mm-members-pop__role-note"
+        >
+          <I18nText k="mindmate.home.brief.role.observerHint" />
+        </p>
       </li>
     </ul>
 
@@ -271,10 +281,10 @@ defineExpose({ keepOpen, scheduleClose })
   z-index: 40;
   width: min(360px, 82vw);
   padding: 10px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e9e5ff;
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 14px 36px rgba(28, 25, 23, 0.08);
+  box-shadow: 0 14px 36px rgba(76, 61, 180, 0.14);
 }
 
 .mm-members-pop__head {
@@ -293,8 +303,8 @@ defineExpose({ keepOpen, scheduleClose })
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #f5f3ff;
+  color: #6d5efc;
   font-size: 11px;
   font-weight: 650;
   display: inline-flex;
@@ -320,7 +330,7 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__row:hover {
-  background: #f5f5f4;
+  background: #faf8ff;
 }
 
 .mm-members-pop__avatar {
@@ -344,7 +354,7 @@ defineExpose({ keepOpen, scheduleClose })
   cursor: context-menu;
 }
 
-.mm-members-pop__dot {
+.mm-members-pop__dot.is-on {
   position: absolute;
   right: -1px;
   bottom: -1px;
@@ -352,10 +362,6 @@ defineExpose({ keepOpen, scheduleClose })
   height: 9px;
   border-radius: 50%;
   border: 2px solid #fff;
-  background: #d6d3d1;
-}
-
-.mm-members-pop__dot.is-on {
   background: #22c55e;
 }
 
@@ -383,15 +389,25 @@ defineExpose({ keepOpen, scheduleClose })
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: 999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #ede9fe;
+  color: #6d28d9;
   font-size: 10px;
   font-weight: 650;
 }
 
-.mm-members-pop__status {
+.mm-members-pop__pending {
   font-size: 11px;
   color: #a8a29e;
+}
+
+.mm-members-pop__org {
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #78716c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mm-members-pop__role-wrap {
@@ -400,6 +416,14 @@ defineExpose({ keepOpen, scheduleClose })
   justify-content: flex-end;
   gap: 4px;
   min-width: 0;
+}
+
+.mm-members-pop__role-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a8a29e;
 }
 
 .mm-members-pop__role,
@@ -412,7 +436,7 @@ defineExpose({ keepOpen, scheduleClose })
 .mm-members-pop__role {
   height: 28px;
   padding: 0 6px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e9e5ff;
   border-radius: 8px;
   background: #fff;
 }
@@ -448,10 +472,10 @@ defineExpose({ keepOpen, scheduleClose })
   margin-top: 8px;
   min-height: 36px;
   height: auto;
-  border: 1px dashed #d6d3d1;
+  border: 1px dashed #c4b5fd;
   border-radius: 9999px;
-  background: #fafaf9;
-  color: #44403c;
+  background: #faf8ff;
+  color: #6d5efc;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -459,7 +483,7 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__add:hover:not(:disabled) {
-  background: #f5f5f4;
+  background: #f5f3ff;
   color: #1c1917;
 }
 </style>

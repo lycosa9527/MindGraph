@@ -5,7 +5,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Download, FileText, Loader2, Maximize2, Minimize2, Quote, X } from '@lucide/vue'
+import { Download, FileText, Loader2, Maximize2, Minimize2, Network, Quote, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
@@ -278,7 +278,14 @@ onBeforeUnmount(() => {
           :aria-selected="tab.id === seminarDocActiveId"
           @click="focusSeminarDoc(tab.id)"
         >
+          <Network
+            v-if="tab.kind === 'diagram'"
+            :size="13"
+            class="mm-doc-viewer__tab-icon"
+            aria-hidden="true"
+          />
           <FileText
+            v-else
             :size="13"
             class="mm-doc-viewer__tab-icon"
             aria-hidden="true"
@@ -306,6 +313,12 @@ onBeforeUnmount(() => {
         <span class="mm-doc-viewer__crumb-name">{{ title }}</span>
       </div>
       <div class="mm-doc-viewer__actions">
+        <p
+          v-if="seminarSpectator && activeTab?.kind === 'file'"
+          class="mm-doc-viewer__spectator"
+        >
+          <I18nText k="mindmate.seminar.spectatorFiles" />
+        </p>
         <button
           v-if="activeTab?.kind === 'file' && !seminarSpectator"
           type="button"
@@ -523,6 +536,16 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #f0ebe6;
 }
 
+.mm-doc-viewer__spectator {
+  margin: 0;
+  max-width: 280px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #a8a29e;
+  white-space: normal;
+  text-align: right;
+}
+
 .mm-doc-viewer__crumb-name {
   font-size: 13px;
   font-weight: 600;
@@ -555,8 +578,8 @@ onBeforeUnmount(() => {
 }
 
 .mm-doc-viewer__action:hover {
-  color: #1c1917;
-  background: #e7e5e4;
+  color: #5b21b6;
+  background: #f5f3ff;
 }
 
 .mm-doc-viewer__action--icon {

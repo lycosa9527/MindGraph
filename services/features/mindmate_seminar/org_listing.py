@@ -12,7 +12,7 @@ import logging
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from sqlalchemy import exists, or_, select
+from sqlalchemy import exists, func, or_, select
 
 from models.domain.auth import OrganizationExpertBinding, User
 from models.domain.mindmate_seminar import MindmateSeminarMember, MindmateSeminarSession
@@ -25,6 +25,7 @@ from services.features.mindmate_seminar.redis_keys import (
 )
 from services.features.mindmate_seminar.seminar_leave import session_ids_viewer_left
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
+    ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
 from services.redis.redis_async_client import get_async_redis
@@ -137,6 +138,7 @@ def _session_dict(
     owner_user_id: int,
     participant_count: int,
     visibility: str,
+    cross_school: bool = False,
 ) -> Dict[str, Any]:
     """Build the REST payload for one org seminar row."""
     return {
@@ -147,7 +149,43 @@ def _session_dict(
         "owner_user_id": owner_user_id,
         "participant_count": participant_count,
         "visibility": visibility,
+        "cross_school": cross_school,
     }
+
+
+async def cross_school_by_session_ids(session_ids: List[str]) -> Dict[str, bool]:
+    """True when active members span more than one organization_id."""
+    unique = [session_id for session_id in dict.fromkeys(session_ids) if session_id]
+    if not unique:
+        return {}
+    async with system_rls_session() as db:
+        result = await db.execute(
+            select(
+                MindmateSeminarMember.session_id,
+                func.count(func.distinct(User.organization_id)),
+            )
+            .join(User, User.id == MindmateSeminarMember.user_id)
+            .where(
+                MindmateSeminarMember.session_id.in_(unique),
+                MindmateSeminarMember.left_at.is_(None),
+                User.organization_id.is_not(None),
+            )
+            .group_by(MindmateSeminarMember.session_id)
+        )
+        return {str(session_id): int(org_count or 0) > 1 for session_id, org_count in result.all()}
+
+
+async def attach_cross_school_flags(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Set display-only cross_school from visibility or multi-org roster."""
+    if not rows:
+        return rows
+    session_ids = [str(row.get("session_id") or "") for row in rows if row.get("session_id")]
+    multi_org = await cross_school_by_session_ids(session_ids)
+    for row in rows:
+        session_id = str(row.get("session_id") or "")
+        visibility = str(row.get("visibility") or "")
+        row["cross_school"] = visibility == ONLINE_COLLAB_VISIBILITY_NETWORK or multi_org.get(session_id, False)
+    return rows
 
 
 async def list_org_sessions_sql(user_id: int, org_id: int) -> List[Dict[str, Any]]:
@@ -397,4 +435,5 @@ async def list_visible_org_sessions(
     )
     if hidden:
         merged = [row for row in merged if str(row.get("session_id") or "") not in hidden]
-    return await attach_participant_counts(merged, participant_counts_fn)
+    counted = await attach_participant_counts(merged, participant_counts_fn)
+    return await attach_cross_school_flags(counted)

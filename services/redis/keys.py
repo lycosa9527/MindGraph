@@ -107,7 +107,16 @@ REFRESH_TOKEN = "refresh:{user_id}:{token_hash}"
 REFRESH_USER_SET = "refresh:user:{user_id}"
 REFRESH_LOOKUP = "refresh:lookup:{token_hash}"
 REFRESH_REUSE_MARKER = "refresh:reuse:{token_hash}"
-TTL_ACCESS_SESSION = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60")) * 60  # default 3600 s
+# Keep in sync with utils.auth.config ACCESS_TOKEN_EXPIRY_MINUTES (JWT_EXPIRY_HOURS legacy).
+_RAW_ACCESS_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "").strip()
+_RAW_JWT_HOURS = os.getenv("JWT_EXPIRY_HOURS", "").strip()
+if _RAW_ACCESS_MINUTES:
+    ACCESS_TOKEN_EXPIRY_MINUTES = int(_RAW_ACCESS_MINUTES)
+elif _RAW_JWT_HOURS:
+    ACCESS_TOKEN_EXPIRY_MINUTES = int(_RAW_JWT_HOURS) * 60
+else:
+    ACCESS_TOKEN_EXPIRY_MINUTES = 60
+TTL_ACCESS_SESSION = ACCESS_TOKEN_EXPIRY_MINUTES * 60  # default 3600 s
 TTL_REFRESH_TOKEN = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7")) * 86_400  # default 604800 s
 
 # ---------------------------------------------------------------------------

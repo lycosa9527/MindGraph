@@ -136,3 +136,63 @@ async def test_canvas_share_saves_through_the_seminar_message_writer() -> None:
     assert send.await_args.kwargs["kind"] == "chat"
     assert send.await_args.kwargs["to_mindmate"] is False
     manager.persist_message.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_canvas_share_as_mindgraph_posts_assistant_line() -> None:
+    """Landing one-sentence generate posts as MindGraph (assistant), not the teacher."""
+    session = MagicMock()
+    session.id = "sess-1"
+    session.code = "ABC-DEF"
+    manager = MagicMock()
+    manager.load_session_by_id = AsyncMock(return_value=session)
+    manager.session_accepts_chat = AsyncMock(return_value=True)
+    manager.persist_message = AsyncMock(return_value=PersistedCollabMessage(9, 8, "2026-10-01T00:00:00+00:00"))
+    user = MagicMock()
+    user.id = 4
+    cache = MagicMock()
+    cache.get_diagram = AsyncMock(return_value={"title": "Map"})
+    with (
+        patch(
+            "services.features.mindmate_seminar.share_canvas.get_diagram_cache",
+            return_value=cache,
+        ),
+        patch(
+            "services.features.mindmate_seminar.share_canvas.get_mindmate_seminar_manager",
+            return_value=manager,
+        ),
+        patch(
+            "services.features.mindmate_seminar.share_canvas.user_may_share_canvas",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.share_canvas.user_observes_seminar",
+            AsyncMock(return_value=False),
+        ),
+        patch(
+            "services.features.mindmate_seminar.share_canvas.broadcast_to_all",
+            AsyncMock(),
+        ) as broadcast,
+        patch(
+            "services.features.mindmate_seminar.share_canvas.send_seminar_message",
+            AsyncMock(),
+        ) as send,
+    ):
+        payload, error = await post_canvas_diagram_share(
+            "sess-1",
+            _DIAGRAM_ID,
+            user,
+            image_url="https://example.test/preview.png",
+            as_mindgraph=True,
+        )
+    assert error == ""
+    assert payload is not None
+    assert payload["message_id"] == 9
+    send.assert_not_awaited()
+    manager.persist_message.assert_awaited_once()
+    assert manager.persist_message.await_args is not None
+    assert manager.persist_message.await_args.kwargs["role"] == "assistant"
+    assert manager.persist_message.await_args.kwargs["sender_user_id"] is None
+    broadcast.assert_awaited_once()
+    assert broadcast.await_args is not None
+    assert broadcast.await_args.args[1]["type"] == "mindgraph_message"

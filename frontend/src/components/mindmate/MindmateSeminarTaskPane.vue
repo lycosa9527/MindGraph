@@ -23,6 +23,11 @@ import {
   seminarTaskPaneTab,
   toggleSeminarTaskPane,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import {
+  loadSeminarGroupRoster,
+  seminarGroupMembers,
+  seminarShowsMemberOrg,
+} from '@/composables/mindmate/seminarGroupRoster'
 import { useSeminarMemberPresence } from '@/composables/mindmate/useSeminarMemberPresence'
 import { SEMINAR_BRIEF_ROLE_OPTIONS, type SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
@@ -36,6 +41,10 @@ const props = defineProps<{
   busy?: boolean
 }>()
 
+const rosterMembers = computed(() =>
+  seminarGroupMembers.value.length > 0 ? seminarGroupMembers.value : props.members
+)
+
 const emit = defineEmits<{
   (e: 'addMembers'): void
   (e: 'changeRole', userId: number, role: SeminarBriefRole): void
@@ -43,7 +52,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const { isOnline, presenceRank, statusText } = useSeminarMemberPresence()
+const { isOnline, presenceRank } = useSeminarMemberPresence()
 const memberQuery = ref('')
 const mentionMenu = ref<{ x: number; y: number; name: string } | null>(null)
 
@@ -114,7 +123,7 @@ watch(
 )
 
 const sortedMembers = computed(() =>
-  [...props.members].sort((left, right) => {
+  [...rosterMembers.value].sort((left, right) => {
     if (left.isLeader !== right.isLeader) {
       return left.isLeader ? -1 : 1
     }
@@ -137,6 +146,9 @@ const visibleMembers = computed(() => {
 })
 
 function onNavClick(tab: SeminarTaskPaneTab): void {
+  if (tab === 'members' && props.sessionId) {
+    void loadSeminarGroupRoster(props.sessionId)
+  }
   toggleSeminarTaskPane(tab)
 }
 
@@ -191,7 +203,7 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
           >
             <I18nText
               k="mindmate.taskPane.memberCount"
-              :params="{ n: members.length }"
+              :params="{ n: rosterMembers.length }"
             />
           </span>
         </h2>
@@ -233,7 +245,10 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
             >
               <span
                 class="mm-task-pane__avatar"
-                :class="{ 'is-mentionable': canMentionMember(member) }"
+                :class="{
+                  'is-offline': !isOnline(member.userId, member.online),
+                  'is-mentionable': canMentionMember(member),
+                }"
                 :style="{
                   background: seminarAvatarTone(member.userId).background,
                   color: seminarAvatarTone(member.userId).color,
@@ -242,8 +257,8 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
               >
                 {{ seminarAvatarSurname(member.name) }}
                 <span
-                  class="mm-task-pane__dot"
-                  :class="{ 'is-on': isOnline(member.userId, member.online) }"
+                  v-if="isOnline(member.userId, member.online)"
+                  class="mm-task-pane__dot is-on"
                   aria-hidden="true"
                 />
               </span>
@@ -257,20 +272,16 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                   /></span>
                 </span>
                 <span
-                  class="mm-task-pane__member-status"
-                  :class="{ 'is-on': isOnline(member.userId, member.online) && !member.pending }"
+                  v-if="member.pending"
+                  class="mm-task-pane__member-pending"
                 >
-                  <span
-                    class="mm-task-pane__status-dot"
-                    aria-hidden="true"
-                  />
-                  <I18nText
-                    v-if="member.pending"
-                    k="mindmate.home.brief.pendingConsent"
-                  /><template v-else>{{
-                    statusText(member.userId, member.online, member.lastSeenAt)
-                  }}</template>
+                  <I18nText k="mindmate.home.brief.pendingConsent" />
                 </span>
+                <span
+                  v-if="seminarShowsMemberOrg && member.organizationName"
+                  class="mm-task-pane__member-org"
+                  >{{ member.organizationName }}</span
+                >
               </div>
               <span class="mm-task-pane__role-wrap">
                 <select
@@ -304,6 +315,17 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
               >
                 <Trash2 :size="14" />
               </button>
+              <p
+                v-if="
+                  isLeader &&
+                  !member.isLeader &&
+                  member.userId !== selfUserId &&
+                  memberRoleValue(member) === 'observer'
+                "
+                class="mm-task-pane__role-note"
+              >
+                <I18nText k="mindmate.home.brief.role.observerHint" />
+              </p>
             </li>
           </ul>
           <button
@@ -511,6 +533,7 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
 
 .mm-task-pane__member-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -534,11 +557,16 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   font-weight: 700;
 }
 
+.mm-task-pane__avatar.is-offline {
+  filter: grayscale(0.55);
+  opacity: 0.72;
+}
+
 .mm-task-pane__avatar.is-mentionable {
   cursor: context-menu;
 }
 
-.mm-task-pane__dot {
+.mm-task-pane__dot.is-on {
   position: absolute;
   right: -1px;
   bottom: -1px;
@@ -546,10 +574,6 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   height: 9px;
   border-radius: 50%;
   border: 2px solid #fff;
-  background: #d6d3d1;
-}
-
-.mm-task-pane__dot.is-on {
   background: #22c55e;
 }
 
@@ -583,27 +607,19 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   font-weight: 600;
 }
 
-.mm-task-pane__member-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.mm-task-pane__member-pending {
   font-size: 11px;
   color: #9c9aa8;
 }
 
-.mm-task-pane__member-status.is-on {
-  color: #22a06b;
-}
-
-.mm-task-pane__status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #c4c4cc;
-}
-
-.mm-task-pane__member-status.is-on .mm-task-pane__status-dot {
-  background: #22c55e;
+.mm-task-pane__member-org {
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #78716c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mm-task-pane__role-wrap {
@@ -613,6 +629,14 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   flex: 0 0 auto;
   margin-left: auto;
   min-width: 0;
+}
+
+.mm-task-pane__role-note {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a8a29e;
 }
 
 .mm-task-pane__role,
@@ -671,10 +695,10 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   width: 100%;
   min-height: 36px;
   margin-top: 2px;
-  border: 1px dashed #d6d3d1;
+  border: 1px dashed #c4b5fd;
   border-radius: 9999px;
   background: #fff;
-  color: #44403c;
+  color: #6d5efc;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -682,7 +706,7 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
 }
 
 .mm-task-pane__add:hover:not(:disabled) {
-  background: #f5f5f4;
+  background: #f5f3ff;
   color: #1c1917;
 }
 
@@ -724,13 +748,13 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
 }
 
 .mm-task-pane__nav:hover {
-  background: #f5f5f4;
-  color: #1c1917;
+  background: #f5f3ff;
+  color: #6d5efc;
 }
 
 .mm-task-pane__nav.is-active {
-  background: #1c1917;
-  color: #fafaf9;
+  background: #ede9fe;
+  color: #6d5efc;
 }
 
 @media (max-width: 768px) {

@@ -68,7 +68,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'send', content: string): void
+  (e: 'send', payload: { content: string; scope: SeminarMinutesScope }): void
 }>()
 
 const { t, isZh } = useLanguage()
@@ -327,10 +327,14 @@ function send(): void {
   }
   suppressSave = true
   clearMinutesDraft(props.sessionId)
-  emit(
-    'send',
-    seminarMinutesMessage({ ...model, author: t('mindmate.summary.author'), structured: true })
-  )
+  emit('send', {
+    content: seminarMinutesMessage({
+      ...model,
+      author: t('mindmate.summary.author'),
+      structured: true,
+    }),
+    scope: mode.value,
+  })
 }
 
 function closeDialog(): void {
@@ -533,7 +537,7 @@ function closeDialog(): void {
   max-height: min(72vh, 760px);
   padding: 4px 16px 8px;
   overflow: auto;
-  background: #fafaf9;
+  background: #f7f6fb;
 }
 
 .mm-sum-dialog .el-dialog__footer {
@@ -568,7 +572,7 @@ function closeDialog(): void {
   gap: 12px;
   width: 100%;
   padding: 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #eceaf1;
   border-radius: 12px;
   background: #fff;
   text-align: left;
@@ -576,8 +580,8 @@ function closeDialog(): void {
 }
 
 .mm-sum__choice.is-on {
-  border-color: #1c1917;
-  background: #f5f5f4;
+  border-color: #7c6cf0;
+  background: #f7f5ff;
 }
 
 .mm-sum__glyph {
@@ -587,8 +591,8 @@ function closeDialog(): void {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #f5f5f4;
-  color: #57534e;
+  background: #f3f1fb;
+  color: #6d5efc;
 }
 
 .mm-sum__choice-copy {
@@ -617,8 +621,8 @@ function closeDialog(): void {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: #1c1917;
-  color: #fafaf9;
+  background: #6d5efc;
+  color: #fff;
 }
 
 .mm-sum__list {
@@ -627,7 +631,7 @@ function closeDialog(): void {
   padding: 4px;
   overflow: auto;
   list-style: none;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #f0eeec;
   border-radius: 12px;
   background: #fff;
 }
@@ -643,7 +647,7 @@ function closeDialog(): void {
 
 .mm-sum__who {
   flex: 0 0 auto;
-  color: #57534e;
+  color: #6d5efc;
   font-size: 12px;
   font-weight: 650;
 }
@@ -688,9 +692,9 @@ function closeDialog(): void {
 }
 
 .mm-sum__outline {
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e4e4e7;
   background: #fff;
-  color: #44403c;
+  color: #3f3f46;
 }
 
 .mm-sum__outline:hover {
@@ -700,8 +704,8 @@ function closeDialog(): void {
 
 .mm-sum__ghost {
   border: 1px solid #e7e5e4;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #f4f4f5;
+  color: #3f3f46;
 }
 
 .mm-sum__ghost:hover {
@@ -710,14 +714,13 @@ function closeDialog(): void {
 }
 
 .mm-sum__primary {
-  border: 1px solid #1c1917;
-  background: #1c1917;
-  color: #fafaf9;
+  border: none;
+  background: #6d5efc;
+  color: #fff;
 }
 
 .mm-sum__primary:hover:not(:disabled) {
-  background: #292524;
-  border-color: #292524;
+  background: #5b21b6;
 }
 
 .mm-sum__primary:disabled {

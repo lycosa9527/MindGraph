@@ -4,6 +4,7 @@
  */
 import { type Ref, computed, ref } from 'vue'
 
+import { clearSeminarGroupRoster } from '@/composables/mindmate/seminarGroupRoster'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { pinSeminarRoster } from '@/composables/mindmate/useMindmateSeminarFaces'
 import type { SeminarFace } from '@/utils/mindmateSeminarFaces'
@@ -175,7 +176,7 @@ export interface SeminarHighlightNotice {
 export const seminarHighlights = ref<SeminarHighlight[]>([])
 /** Set / cancel tips shown in the transcript (local to this browser). */
 export const seminarHighlightNotices = ref<SeminarHighlightNotice[]>([])
-/** True when the signed-in seat is 观摩学习: watch and share only. */
+/** True when the signed-in seat is 观摩学习: read, open files, save others' diagrams. */
 export const seminarSpectator = ref(false)
 /** Right-click an avatar to drop @name into the seminar composer. */
 export const seminarMentionRequest = ref<{ name: string; nonce: number } | null>(null)
@@ -450,6 +451,7 @@ export function closeSeminarChrome(): void {
   seminarTaskPaneTab.value = null
   clearSeminarCitations()
   clearSeminarServerArtifacts()
+  clearSeminarGroupRoster()
   seminarSpectator.value = false
   seminarMentionRequest.value = null
 }

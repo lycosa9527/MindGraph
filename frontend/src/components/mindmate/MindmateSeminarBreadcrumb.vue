@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
+import { seminarGroupCrossSchool } from '@/composables/mindmate/seminarGroupRoster'
 
 const props = withDefaults(
   defineProps<{
@@ -31,7 +32,10 @@ const editing = ref(false)
 const draft = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
 
-const isPublicSeminar = computed(() => props.visibility === 'network')
+/** Network rooms, or org rooms whose roster already spans schools. */
+const isCrossSchoolSeminar = computed(
+  () => props.visibility === 'network' || seminarGroupCrossSchool.value
+)
 
 const titleLabel = computed(() => {
   const name = props.sessionTitle.trim()
@@ -98,7 +102,7 @@ function commitEdit(): void {
       :class="parentClass"
     >
       <I18nText
-        :k="isPublicSeminar ? 'mindmate.collabSeminarPublic' : 'mindmate.collabSeminarOrg'"
+        :k="isCrossSchoolSeminar ? 'mindmate.collabSeminarPublic' : 'mindmate.collabSeminarOrg'"
       />
     </span>
     <span
@@ -160,7 +164,7 @@ function commitEdit(): void {
 }
 
 .mindmate-seminar-breadcrumb__title:hover {
-  background: #f5f5f4;
+  background: rgba(109, 94, 252, 0.08);
 }
 
 .mindmate-seminar-breadcrumb__input {
@@ -169,7 +173,7 @@ function commitEdit(): void {
   max-width: 100%;
   height: 30px;
   padding: 0 8px;
-  border: 1px solid #d6d3d1;
+  border: 1px solid #c4b5fd;
   border-radius: 8px;
   background: #fff;
   color: #1c1917;

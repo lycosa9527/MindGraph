@@ -263,8 +263,7 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'Cannot delete topic node',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference':
-    'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'Cannot generate',
   'canvas.toolbar.causeAdded': 'Cause node added',
   'canvas.toolbar.childAdded': 'Child added',
@@ -1398,8 +1397,7 @@ export default {
   'canvas.ribbon.shareToSeminar': 'Share to seminar',
   'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
   'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
-  'canvas.ribbon.shareToSeminarHint':
-    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarHint': 'Start or join a seminar in MindMate, then come back to share this diagram.',
   'canvas.ribbon.shareToSeminarConfirm': 'Share',
   'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
   'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',

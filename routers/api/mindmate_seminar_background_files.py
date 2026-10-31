@@ -22,6 +22,7 @@ from services.features.mindmate_seminar.background_file_preview import (
     resolve_background_preview_pdf,
 )
 from services.features.mindmate_seminar.background_files import (
+    SeminarDownload,
     delete_background_file,
     get_background_file,
     list_background_files,
@@ -87,6 +88,25 @@ class SeminarShelfBody(BaseModel):
     file_id: str = ""
     diagram_id: str = ""
     title: str = ""
+
+
+def _serve_background_bytes(resolved: SeminarDownload, *, inline: bool) -> Response:
+    """Send one seminar file. ``inline`` is for viewing; attachment is a download."""
+    disposition = "inline" if inline else "attachment"
+    if resolved.disk_path is not None:
+        return FileResponse(
+            path=str(resolved.disk_path),
+            media_type=resolved.content_type,
+            filename=resolved.filename,
+            content_disposition_type=disposition,
+        )
+    if resolved.body is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
+    return Response(
+        content=resolved.body,
+        media_type=resolved.content_type,
+        headers={"Content-Disposition": _content_disposition(disposition, resolved.filename)},
+    )
 
 
 def _content_disposition(kind: str, filename: str) -> str:
@@ -367,21 +387,33 @@ async def download_seminar_background_file(
     if resolved is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
     inline = resolved.content_type.startswith(("image/", "audio/"))
-    disposition = "inline" if inline else "attachment"
-    if resolved.disk_path is not None:
-        return FileResponse(
-            path=str(resolved.disk_path),
-            media_type=resolved.content_type,
-            filename=resolved.filename,
-            content_disposition_type=disposition,
-        )
-    if resolved.body is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
-    return Response(
-        content=resolved.body,
-        media_type=resolved.content_type,
-        headers={"Content-Disposition": _content_disposition(disposition, resolved.filename)},
+    return _serve_background_bytes(resolved, inline=inline)
+
+
+@router.get("/background-files/{file_id}/content")
+async def read_seminar_background_file(
+    file_id: str,
+    request: Request,
+    session_id: str = Query(..., min_length=8, max_length=36),
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Return file bytes for in-room viewing. Observers may open files here, not via download."""
+    await _require_collab_tier(current_user, lang)
+    await check_endpoint_rate_limit(
+        "mindmate_seminar_background_content",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=60,
+        window_seconds=60,
     )
+    try:
+        session = await load_folder_session(current_user, session_id)
+    except ValueError as exc:
+        raise _http_error(exc) from exc
+    resolved = await resolve_background_download(session.id, file_id)
+    if resolved is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
+    return _serve_background_bytes(resolved, inline=True)
 
 
 @router.get("/background-files/{file_id}/preview")

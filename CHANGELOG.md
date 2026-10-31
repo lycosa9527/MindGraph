@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.193] - 2026-11-01
+
+> **Cross-school seminars show a clear 跨校 label, unread counts appear on MindMate and history, and seminar files still save when COS is not configured.**
+
+### Added
+
+- **Cross-school label** — A seminar that spans schools shows 跨校 on the room breadcrumb and on history rows (replacing the older 公共 wording where that meant the same thing).
+- **Unread seminar badges** — MindMate navigation and seminar history use `GET /api/mindmate/seminar/unread-summary` so rooms with new lines show a count.
+
+### Changed
+
+- **Seminar presence** — Offline members’ avatars are muted; the roster no longer shows a separate 在线 label or role icon chrome.
+- **Face-to-face chat** — The face-chat card is disabled with a 敬请期待 state until the feature ships.
+- **Seminar composer** — Sending text uses the send control again; voice stays on push-to-talk.
+
+### Fixed
+
+- **Seminar uploads without COS** — When the COS bucket is unset or still the placeholder name, shared files and chat attachments fall back to local disk instead of failing the upload.
+- **Session Redis TTL** — Auth session keys in Redis use a TTL that matches `JWT_EXPIRY_HOURS` so a long-lived token is not dropped early.
+- **Image preview** — Seminar and MindMate image previews open in a simpler full-screen lightbox.
+- **Share dialog i18n** — Seminar share copy uses the shared language-translate helper so type-check stays clean.
+
+### Tests
+
+- [`tests/services/test_tencent_cos_client.py`](tests/services/test_tencent_cos_client.py), [`tests/test_mindmate_seminar_org_listing.py`](tests/test_mindmate_seminar_org_listing.py), [`tests/test_mindmate_seminar_share_canvas.py`](tests/test_mindmate_seminar_share_canvas.py)
+- [`frontend/tests/mindmateSeminarSharePlainText.spec.ts`](frontend/tests/mindmateSeminarSharePlainText.spec.ts)
+
 ## [5.180.192] - 2026-10-30
 
 > **A seminar records a face-to-face meeting onto the shelf, and shared files stay available after a restart.**

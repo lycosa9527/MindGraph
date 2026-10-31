@@ -490,8 +490,8 @@ onBeforeUnmount(() => {
 }
 
 .mm-face-session__primary {
-  border: 1px solid #1c1917;
-  background: #1c1917;
+  border: 1px solid #6d5efc;
+  background: #6d5efc;
   color: #fafaf9;
 }
 </style>

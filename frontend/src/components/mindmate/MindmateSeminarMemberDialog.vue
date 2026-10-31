@@ -498,9 +498,9 @@ function onConfirm(): void {
 }
 
 .mm-member-dialog__card {
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e9e5ff;
   border-radius: 12px;
-  background: #fafaf9;
+  background: #faf8ff;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -514,7 +514,7 @@ function onConfirm(): void {
 }
 
 .mm-member-dialog__fold {
-  border: 1px solid #e7e5e4;
+  border: 1px solid #e9e5ff;
   border-radius: 12px;
   background: #fff;
   overflow: hidden;
@@ -598,10 +598,10 @@ function onConfirm(): void {
 .mm-member-dialog__phone-add {
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #c4b5fd;
   border-radius: 9999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #f5f3ff;
+  color: #5b21b6;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -635,7 +635,7 @@ function onConfirm(): void {
 }
 
 .mm-member-dialog__row:hover {
-  background: #f5f5f4;
+  background: #faf8ff;
 }
 
 .mm-member-dialog__avatar {
@@ -693,13 +693,13 @@ function onConfirm(): void {
 }
 
 .mm-member-dialog__check.is-on {
-  border-color: #1c1917;
-  background: #1c1917;
+  border-color: #6d5efc;
+  background: #6d5efc;
   box-shadow: inset 0 0 0 3px #fff;
 }
 
 .mm-member-dialog__selected {
-  border-top: 1px solid #e7e5e4;
+  border-top: 1px dashed #ddd6fe;
   padding-top: 10px;
 }
 
@@ -722,8 +722,8 @@ function onConfirm(): void {
   height: 28px;
   padding: 0 8px 0 10px;
   border-radius: 999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #ede9fe;
+  color: #5b21b6;
   font-size: 12px;
   font-weight: 600;
 }
@@ -731,7 +731,7 @@ function onConfirm(): void {
 .mm-member-dialog__chip-x {
   border: none;
   background: transparent;
-  color: #57534e;
+  color: #7c3aed;
   cursor: pointer;
   font-size: 14px;
   line-height: 1;

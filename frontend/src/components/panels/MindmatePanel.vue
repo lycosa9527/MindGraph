@@ -38,6 +38,11 @@ import {
   seminarMembersPaneOpen,
   toggleSeminarMembersPane,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import {
+  clearSeminarGroupRoster,
+  loadSeminarGroupRoster,
+  seminarGroupMembers,
+} from '@/composables/mindmate/seminarGroupRoster'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
@@ -97,10 +102,9 @@ import {
   seminarFolderErrorKey,
   uploadSeminarBackgroundFile,
 } from '@/utils/mindmateSeminarFolder'
+import { formatSeminarShareLine } from '@/utils/mindmateSeminarShare'
 import {
-  type SeminarGroupMember,
   addSeminarGroupMembers,
-  fetchSeminarGroup,
   removeSeminarGroupMember,
   renameSeminarSession,
   updateSeminarMemberRole,
@@ -220,7 +224,6 @@ const collabVisibility = ref<'organization' | 'network'>('organization')
 const collabSessionId = ref('')
 const collabOwnerId = ref<number | null>(null)
 const collabSeedMessages = ref<MindmateSeminarMessage[]>([])
-const seminarGroupMembers = ref<SeminarGroupMember[]>([])
 const seminarBriefTopic = ref('')
 const seminarBriefGoals = ref<string[]>([])
 
@@ -405,7 +408,7 @@ function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
   collabSessionId.value = ''
   collabOwnerId.value = null
   collabSeedMessages.value = []
-  seminarGroupMembers.value = []
+  clearSeminarGroupRoster()
   seminarBriefTopic.value = ''
   seminarBriefGoals.value = []
   closeSeminarChrome()
@@ -854,11 +857,10 @@ watch(collabSessionId, (sessionId) => {
 })
 
 async function loadSeminarGroup(sessionId: string): Promise<void> {
-  const group = await fetchSeminarGroup(sessionId)
+  const group = await loadSeminarGroupRoster(sessionId)
   if (!group || collabSessionId.value !== sessionId) {
     return
   }
-  seminarGroupMembers.value = group.members
   if (group.ownerUserId > 0) {
     collabOwnerId.value = group.ownerUserId
   }
@@ -1300,10 +1302,12 @@ const shareLines = computed(() => {
         chosen.has(message.id) && (message.role === 'user' || message.role === 'assistant')
     )
     .map((message) => {
-      const mindgraph =
-        message.role === 'assistant' &&
-        (hasGeneratedDiagramImage(message.content) ||
-          parseMindmateDiagramLibraryId(message.content) !== null)
+      const raw =
+        message.role === 'user'
+          ? displayMindmateUserQueryForUi(message.content)
+          : message.content
+      const formatted = formatSeminarShareLine(raw, t)
+      const mindgraph = formatted.kind === 'diagram'
       const authorName =
         message.role === 'user'
           ? selfName
@@ -1314,9 +1318,9 @@ const shareLines = computed(() => {
         key: message.id,
         role: message.role === 'user' ? ('user' as const) : ('assistant' as const),
         authorName,
-        content: seminarBubblePlainText(
-          message.role === 'user' ? displayMindmateUserQueryForUi(message.content) : message.content
-        ),
+        content: formatted.content,
+        badge: formatted.badge,
+        kind: formatted.kind,
         createdAt: message.timestamp ? new Date(message.timestamp).toISOString() : '',
         highlighted: false,
       }

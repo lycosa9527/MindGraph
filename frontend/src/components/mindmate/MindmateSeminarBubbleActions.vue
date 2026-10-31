@@ -1,14 +1,11 @@
 <script setup lang="ts">
 /**
- * Hover actions shared by every seminar bubble: copy, reply, highlight, multi-select.
+ * Hover actions under every seminar bubble: copy, reply, highlight, multi-select.
+ * Observers keep copy only. Visual style matches mm-group-chat.
  */
 import { computed } from 'vue'
 
-import { ElButton, ElIcon } from 'element-plus'
-
-import { CopyDocument, Share } from '@element-plus/icons-vue'
-
-import { CornerUpLeft } from '@lucide/vue'
+import { Copy, CornerUpLeft, Share2 } from '@lucide/vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import MindmateSoftIcon from '@/components/mindmate/MindmateSoftIcon.vue'
@@ -16,17 +13,17 @@ import { useLanguage } from '@/composables'
 
 const props = withDefaults(
   defineProps<{
-    /** True while the pointer is on the message row. */
-    open?: boolean
-    /** Right-align under the sender's own bubble. */
+    /** Keep the cluster on the left of a persistent stamp row. */
     inline?: boolean
     /** none = can pin; mine = I can cancel; other = already pinned by someone else. */
     highlightState?: 'none' | 'mine' | 'other'
+    /** False for 观摩学习: reply, highlight, and multi-select stay hidden. */
+    writeActions?: boolean
   }>(),
   {
-    open: false,
     inline: false,
     highlightState: 'none',
+    writeActions: true,
   }
 )
 
@@ -59,83 +56,73 @@ function onHighlight(): void {
 
 <template>
   <div
-    class="mm-bubble-actions message-actions"
-    :class="{ 'justify-end': inline, 'is-open': open }"
+    class="mm-bubble-actions"
+    :class="{ 'is-inline': inline }"
   >
     <I18nTooltip
       k="mindmate.tooltip.copy"
       placement="top"
-      :disabled="!open"
-      :enterable="false"
-      :show-after="400"
-      :hide-after="0"
     >
-      <ElButton
-        text
-        circle
+      <button
+        type="button"
         :aria-label="t('mindmate.tooltip.copy')"
         @click.stop="emit('copy')"
       >
-        <ElIcon :size="16"><CopyDocument /></ElIcon>
-      </ElButton>
+        <Copy
+          :size="15"
+          :stroke-width="2"
+        />
+      </button>
     </I18nTooltip>
     <I18nTooltip
+      v-if="writeActions"
       k="mindmate.bubble.reply"
       placement="top"
-      :disabled="!open"
-      :enterable="false"
-      :show-after="400"
-      :hide-after="0"
     >
-      <ElButton
-        text
-        circle
+      <button
+        type="button"
         :aria-label="t('mindmate.bubble.reply')"
         @click.stop="emit('reply')"
       >
         <CornerUpLeft
-          :size="16"
+          :size="15"
           :stroke-width="2"
         />
-      </ElButton>
+      </button>
     </I18nTooltip>
     <I18nTooltip
+      v-if="writeActions"
       :k="highlightKey"
       placement="top"
-      :disabled="!open"
-      :enterable="false"
-      :show-after="400"
-      :hide-after="0"
     >
-      <ElButton
-        text
-        circle
+      <button
+        type="button"
+        class="mm-bubble-actions__pin"
         :class="{ 'is-set': highlightState !== 'none' }"
         :aria-label="t(highlightKey)"
         @click.stop="onHighlight"
       >
         <MindmateSoftIcon
           name="highlights"
-          :size="16"
+          :size="15"
         />
-      </ElButton>
+      </button>
     </I18nTooltip>
     <I18nTooltip
+      v-if="writeActions"
       k="mindmate.tooltip.share"
       placement="top"
-      :disabled="!open"
-      :enterable="false"
-      :show-after="400"
-      :hide-after="0"
     >
-      <ElButton
-        text
-        circle
+      <button
+        type="button"
         :aria-label="t('mindmate.tooltip.share')"
         @click.stop="emit('multi')"
       >
-        <ElIcon :size="16"><Share /></ElIcon>
-      </ElButton>
+        <Share2
+          :size="15"
+          :stroke-width="2"
+        />
+      </button>
     </I18nTooltip>
   </div>
 </template>
@@ -143,39 +130,49 @@ function onHighlight(): void {
 <style scoped>
 .mm-bubble-actions {
   display: flex;
-  visibility: hidden;
-  pointer-events: none;
   align-items: center;
-  gap: 0;
+  gap: 2px;
   width: fit-content;
-  height: 26px;
-  padding: 0;
+  margin-top: 4px;
+  padding: 2px;
+  border: 1px solid #ece9f8;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(28, 25, 23, 0.06);
+  opacity: 0;
+  pointer-events: none;
 }
 
-.mm-bubble-actions.is-open {
-  visibility: visible;
-  pointer-events: auto;
+.mm-bubble-actions.is-inline {
+  margin-top: 0;
+  margin-left: 0;
 }
 
-.mm-bubble-actions :deep(.el-tooltip__trigger) {
+.mm-bubble-actions button {
+  width: 28px;
+  height: 28px;
   display: inline-flex;
-  margin: 0;
-  line-height: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #57534e;
+  cursor: pointer;
 }
 
-.mm-bubble-actions :deep(.el-button) {
-  margin: 0;
+.mm-bubble-actions button:hover {
+  background: #f5f3ff;
+  color: #6d5efc;
 }
 
-.mm-bubble-actions :deep(.el-button.is-circle) {
-  width: 26px;
-  min-width: 26px;
-  height: 26px;
-  padding: 0;
+.mm-bubble-actions button.is-set {
+  background: #ececf1;
+  color: #9c9aa8;
 }
 
-.mm-bubble-actions :deep(.el-button.is-set) {
-  --el-button-text-color: #1c1917;
-  color: #1c1917;
+.mm-bubble-actions button.is-set:hover {
+  background: #e4e4ea;
+  color: #6b6b76;
 }
 </style>

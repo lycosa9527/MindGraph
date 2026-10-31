@@ -140,11 +140,37 @@ export function seminarBriefSeedContent(body: string): string {
   return `${SEMINAR_BRIEF_MARKER}\n${text}`
 }
 
+function lineFromUnknown(item: unknown): string {
+  if (typeof item === 'string') {
+    return item.trim()
+  }
+  if (typeof item === 'number' || typeof item === 'boolean') {
+    return String(item)
+  }
+  if (!item || typeof item !== 'object') {
+    return ''
+  }
+  const row = item as Record<string, unknown>
+  for (const key of ['text', 'name', 'title', 'file', 'filename', 'label', 'value'] as const) {
+    const value = row[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+  return ''
+}
+
 function asLines(raw: unknown): string[] {
   if (!Array.isArray(raw)) {
+    if (typeof raw === 'string' && raw.trim()) {
+      return raw
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+    }
     return []
   }
-  return raw.map((item) => String(item || '').trim()).filter(Boolean)
+  return raw.map(lineFromUnknown).filter(Boolean)
 }
 
 function asStatus(raw: unknown): SeminarMinutesGoalStatus {
@@ -299,28 +325,53 @@ export function seminarMinutesMessage(model: SeminarSummaryCardModel): string {
   return `${SEMINAR_SUMMARY_MARKER}\n${JSON.stringify(payload)}`
 }
 
+function sectionBlock(title: string, rows: string[]): string {
+  if (!rows.length) {
+    return ''
+  }
+  return `${title}\n${rows.map((item) => `· ${item}`).join('\n')}`
+}
+
+/** Readable minutes body for share sheets, clipboard, and exports. */
 export function seminarSummaryPlainText(model: SeminarSummaryCardModel): string {
   if (!model.structured) {
     return [model.scope, model.body].filter(Boolean).join('\n\n')
   }
-  const lines: string[] = []
-  if (model.topic) {
-    lines.push(model.topic)
-  }
-  if (model.timeRange) {
-    lines.push(model.timeRange)
-  }
-  if (model.scope) {
-    lines.push(model.scope)
-  }
-  const speak = model.speakers
+  const speakers = model.speakers
     .map((row) => (row.role ? `${row.name}（${row.role}）` : row.name))
-    .join('、')
-  if (speak) {
-    lines.push(speak)
-  }
-  if (model.consensus.length) {
-    lines.push(model.consensus.map((item) => `· ${item}`).join('\n'))
-  }
-  return lines.filter(Boolean).join('\n')
+    .filter(Boolean)
+  const goals = model.goals
+    .map((row) => row.goal.trim())
+    .filter(Boolean)
+    .map((goal) => goal)
+  const blocks = [
+    model.topic.trim(),
+    model.scope.trim(),
+    model.timeRange.trim(),
+    speakers.length ? speakers.join('、') : '',
+    model.observers.length ? model.observers.join('、') : '',
+    sectionBlock('对照目标', goals),
+    sectionBlock('共识', model.consensus),
+    sectionBlock('分歧与未决', model.open),
+    sectionBlock('用到的材料', model.materials.filter((item) => !item.includes('[object Object]'))),
+    sectionBlock('待办', model.tasks),
+    sectionBlock('精华摘录', model.quotes),
+    model.body.trim(),
+  ]
+  return blocks.filter(Boolean).join('\n\n')
+}
+
+/** Brief seed card as plain text for share sheets. */
+export function seminarBriefPlainText(model: SeminarBriefCardModel): string {
+  const people = model.participants
+    .map((row) => (row.role ? `${row.name}（${row.role}）` : row.name))
+    .filter(Boolean)
+  return [
+    model.topic.trim(),
+    model.goals.length ? model.goals.map((item) => `· ${item}`).join('\n') : '',
+    people.length ? people.join('、') : '',
+    model.resources.length ? model.resources.map((item) => `· ${item}`).join('\n') : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 }

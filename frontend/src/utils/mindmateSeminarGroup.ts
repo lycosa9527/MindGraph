@@ -18,6 +18,8 @@ export interface SeminarGroupMember {
   pending: boolean
   /** Server stamp from the last time their workshop socket closed. */
   lastSeenAt: string | null
+  organizationId: number | null
+  organizationName: string | null
 }
 
 export interface SeminarGroupPayload {
@@ -27,6 +29,9 @@ export interface SeminarGroupPayload {
   title: string
   briefTopic: string
   briefGoals: string[]
+  visibility: string
+  /** Network rooms, or members spanning more than one school. */
+  crossSchool: boolean
 }
 
 interface GroupMemberRow {
@@ -39,6 +44,8 @@ interface GroupMemberRow {
   is_leader?: boolean
   pending?: boolean
   last_seen_at?: string | null
+  organization_id?: number | null
+  organization_name?: string | null
 }
 
 function asRole(raw: unknown): SeminarBriefRole {
@@ -79,9 +86,11 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
     title?: string
     brief_topic?: string | null
     brief_goals?: string[]
+    visibility?: string
   }
   const ownerUserId = Number(data.owner_user_id || 0)
   const leaderUserId = Number(data.leader_user_id || ownerUserId || 0)
+  const visibility = String(data.visibility || '').trim() || 'organization'
   const members = (data.items ?? [])
     .map((item) => {
       const userId = Number(item.id)
@@ -96,6 +105,11 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
         typeof item.is_leader === 'boolean'
           ? item.is_leader
           : role === 'leader' || (leaderUserId > 0 && userId === leaderUserId)
+      const organizationId = Number(item.organization_id || 0)
+      const organizationName =
+        typeof item.organization_name === 'string' && item.organization_name.trim()
+          ? item.organization_name.trim()
+          : null
       return {
         userId,
         name,
@@ -109,9 +123,16 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
           typeof item.last_seen_at === 'string' && item.last_seen_at.trim()
             ? item.last_seen_at
             : null,
+        organizationId: organizationId > 0 ? organizationId : null,
+        organizationName,
       } satisfies SeminarGroupMember
     })
     .filter((row): row is SeminarGroupMember => row != null)
+
+  const orgIds = new Set(
+    members.map((member) => member.organizationId).filter((id): id is number => id != null && id > 0)
+  )
+  const crossSchool = visibility === 'network' || orgIds.size > 1
 
   return {
     members,
@@ -122,6 +143,8 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
     briefGoals: Array.isArray(data.brief_goals)
       ? data.brief_goals.map((row) => String(row).trim()).filter(Boolean)
       : [],
+    visibility,
+    crossSchool,
   }
 }
 

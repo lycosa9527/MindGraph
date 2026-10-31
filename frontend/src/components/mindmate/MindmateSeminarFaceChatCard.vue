@@ -43,9 +43,9 @@ const emit = defineEmits<{
       <button
         type="button"
         class="mm-face-chat__start"
-        @click="emit('start')"
+        disabled
       >
-        <I18nText k="mindmate.faceChat.start" />
+        <I18nText k="mindmate.faceChat.comingSoon" />
       </button>
     </div>
   </ElDialog>
@@ -77,12 +77,12 @@ const emit = defineEmits<{
   font-size: 22px;
   line-height: 1.35;
   font-weight: 600;
-  color: #1c1917;
+  color: #111827;
 }
 
 .mm-face-chat__line {
   margin: 0;
-  color: #78716c;
+  color: #9aa0a8;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -98,18 +98,17 @@ const emit = defineEmits<{
   min-width: 168px;
   min-height: 36px;
   padding: 8px 20px;
-  border: 1px solid #1c1917;
+  border: none;
   border-radius: 9999px;
-  background: #1c1917;
-  color: #fafaf9;
+  background: #d4d4d8;
+  color: #71717a;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.2;
-  cursor: pointer;
+  cursor: not-allowed;
 }
 
-.mm-face-chat__start:hover {
-  background: #292524;
-  border-color: #292524;
+.mm-face-chat__start:disabled {
+  opacity: 1;
 }
 </style>

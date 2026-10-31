@@ -338,6 +338,12 @@ async function saveDiagram(previewId: string): Promise<void> {
         />
       </button>
     </header>
+    <p
+      v-if="seminarSpectator"
+      class="mm-artifact-side__hint"
+    >
+      <I18nText k="mindmate.seminar.spectatorFiles" />
+    </p>
 
     <section class="mm-artifact-side__section">
       <button
@@ -597,10 +603,10 @@ async function saveDiagram(previewId: string): Promise<void> {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  border-left: 1px solid #e7e5e4;
+  border-left: 1px solid #e9e5ff;
   background: #fff;
   overflow: auto;
-  box-shadow: -8px 0 24px rgba(28, 25, 23, 0.05);
+  box-shadow: -8px 0 24px rgba(109, 94, 252, 0.05);
 }
 
 .mm-artifact-side.is-embedded {
@@ -618,6 +624,14 @@ async function saveDiagram(previewId: string): Promise<void> {
   gap: 8px;
   padding: 16px 16px 12px;
   border-bottom: 1px solid #f3f0ff;
+}
+
+.mm-artifact-side__hint {
+  margin: 0;
+  padding: 12px 16px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a8a29e;
 }
 
 .mm-artifact-side__title {
@@ -641,13 +655,13 @@ async function saveDiagram(previewId: string): Promise<void> {
 }
 
 .mm-artifact-side__close:hover {
-  background: #f5f5f4;
-  color: #1c1917;
+  background: #f5f3ff;
+  color: #6d5efc;
 }
 
 .mm-artifact-side__section {
   padding: 10px 16px 14px;
-  border-top: 1px solid #e7e5e4;
+  border-top: 1px solid #f5f3ff;
 }
 
 .mm-artifact-side__heading {
@@ -718,12 +732,12 @@ async function saveDiagram(previewId: string): Promise<void> {
 
 .mm-artifact-side__file:hover,
 .mm-artifact-side__open:hover {
-  background: #f5f5f4;
+  background: #f5f3ff;
 }
 
 .mm-artifact-side__file-icon {
   flex-shrink: 0;
-  color: #57534e;
+  color: #6d5efc;
 }
 
 .mm-artifact-side__file-meta {
@@ -773,8 +787,8 @@ async function saveDiagram(previewId: string): Promise<void> {
 }
 
 .mm-artifact-side__cite:hover {
-  background: #f5f5f4;
-  color: #1c1917;
+  background: #f5f3ff;
+  color: #6d5efc;
 }
 
 .mm-artifact-side__more {
@@ -784,13 +798,13 @@ async function saveDiagram(previewId: string): Promise<void> {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #44403c;
+  color: #6d5efc;
   font-size: 12px;
   cursor: pointer;
 }
 
 .mm-artifact-side__more:hover {
-  background: #f5f5f4;
+  background: #f5f3ff;
   color: #1c1917;
 }
 </style>

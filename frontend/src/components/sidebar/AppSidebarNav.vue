@@ -23,6 +23,7 @@ import {
 
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import { useSeminarUnreadSummary } from '@/composables/mindmate/useSeminarUnreadSummary'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
 const ChatHistory = defineAsyncComponent(() => import('./ChatHistory.vue'))
@@ -44,6 +45,14 @@ const s = reactive(_raw)
 const route = useRoute()
 /** Fullpage `/mindmate`: show more chats in the sidebar by default (API returns up to 50). */
 const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/mindmate') ? 50 : 10))
+const { seminarUnreadTotal } = useSeminarUnreadSummary()
+const mindmateUnreadLabel = computed(() => {
+  const n = seminarUnreadTotal.value
+  if (n <= 0) {
+    return ''
+  }
+  return n > 99 ? '99+' : String(n)
+})
 </script>
 
 <template>
@@ -122,6 +131,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                 k="sidebar.mindMate"
                 primary-only
               />
+              <span
+                v-if="mindmateUnreadLabel"
+                class="nav-item-badge"
+              >
+                {{ mindmateUnreadLabel }}
+              </span>
             </span>
           </div>
         </I18nTooltip>
@@ -143,8 +158,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.mindMateNavLabel }}</span
             >
+              {{ s.mindMateNavLabel }}
+              <span
+                v-if="mindmateUnreadLabel"
+                class="nav-item-badge"
+              >
+                {{ mindmateUnreadLabel }}
+              </span>
+            </span>
           </div>
         </el-tooltip>
         <transition name="panel-slide">

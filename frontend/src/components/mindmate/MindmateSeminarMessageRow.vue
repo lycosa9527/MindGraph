@@ -40,7 +40,9 @@ import {
   seminarSpectator,
   upsertSeminarServerArtifact,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { seminarGroupMembers } from '@/composables/mindmate/seminarGroupRoster'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
+import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useTeachingDesignExportStore } from '@/stores/teachingDesignExport'
@@ -156,7 +158,6 @@ const convertBusy = computed(() => {
 const showImagePreview = ref(false)
 const previewImageUrl = ref('')
 const bubbleEl = ref<HTMLElement | null>(null)
-const rowHot = ref(false)
 
 const exportMessageId = computed(() => {
   if (props.message.id != null) {
@@ -191,7 +192,11 @@ const displayText = computed(() =>
 const messageBody = computed(() => splitSeminarMessageFiles(displayText.value))
 
 const sharedCanvasId = computed(() => {
-  if (props.message.role !== 'user' || props.message.streaming) {
+  if (props.message.streaming) {
+    return null
+  }
+  // User canvas share, or MindGraph one-sentence generate posted as assistant.
+  if (props.message.role !== 'user' && props.message.role !== 'assistant') {
     return null
   }
   return parseMindmateDiagramLibraryId(props.message.content)
@@ -278,6 +283,25 @@ function authorLabel(): string {
     return authStore.user?.username || t('mindmate.highlights.you')
   }
   return props.message.username || t('mindmate.collabPokeSomeone')
+}
+
+const authorRole = computed((): SeminarBriefRole | null => {
+  if (isAssistant.value) {
+    return null
+  }
+  const senderId = Number(props.message.sender_user_id || 0)
+  if (!senderId) {
+    return null
+  }
+  const member = seminarGroupMembers.value.find((row) => row.userId === senderId)
+  if (!member) {
+    return null
+  }
+  return member.role === 'none' ? 'observer' : member.role
+})
+
+function authorRoleLabel(role: SeminarBriefRole): string {
+  return t(`mindmate.home.brief.role.${role}`)
 }
 
 const selfUserId = computed(() => Number(authStore.user?.id) || 0)
@@ -627,8 +651,6 @@ async function openInCanvas(): Promise<void> {
     ]"
     :data-collab-message-id="message.id || undefined"
     @click="onRowClick"
-    @mouseenter="rowHot = true"
-    @mouseleave="rowHot = false"
   >
     <button
       v-if="selectMode"
@@ -706,6 +728,12 @@ async function openInCanvas(): Promise<void> {
       >
         <span class="mindmate-seminar-room__meta-name">{{ message.username }}</span>
         <span
+          v-if="authorRole"
+          class="mindmate-seminar-room__meta-role"
+          :data-role="authorRole"
+          >{{ authorRoleLabel(authorRole) }}</span
+        >
+        <span
           v-if="showTime && messageStamp"
           class="mindmate-seminar-room__meta-time"
           >{{ messageStamp }}</span
@@ -756,6 +784,15 @@ async function openInCanvas(): Promise<void> {
           v-if="summaryCard"
           :model="summaryCard"
         />
+        <MindmateSeminarDiagramCard
+          v-else-if="sharedCanvasId && sessionId"
+          :session-id="sessionId"
+          :diagram-id="sharedCanvasId"
+          :caption="userBubbleText"
+          :thumbnail-url="sharedCanvasImage"
+          :opening="openingCanvas"
+          @open="openInCanvas"
+        />
         <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml pipeline -->
         <div
           v-else-if="isAssistant"
@@ -764,31 +801,16 @@ async function openInCanvas(): Promise<void> {
           v-html="renderedMarkdownHtml"
         />
         <!-- eslint-enable vue/no-v-html -->
-        <template v-else-if="userBubbleText || sharedCanvasId">
-          <MindmateSeminarDiagramCard
-            v-if="sharedCanvasId && sessionId"
-            :session-id="sessionId"
-            :diagram-id="sharedCanvasId"
-            :caption="userBubbleText"
-            :thumbnail-url="sharedCanvasImage"
-            :opening="openingCanvas"
-            @open="openInCanvas"
-          />
-          <template v-else>{{ userBubbleText }}</template>
-        </template>
+        <template v-else-if="userBubbleText">{{ userBubbleText }}</template>
       </div>
       <div
         v-if="!message.streaming && isOwn"
         class="mindmate-seminar-room__stamp-row mindmate-seminar-room__stamp-row--own"
-        :class="{
-          'is-action-slot': live !== false,
-          'is-hot': rowHot && live !== false,
-        }"
       >
         <MindmateSeminarBubbleActions
           v-if="live !== false"
           inline
-          :open="rowHot"
+          :write-actions="!seminarSpectator"
           :highlight-state="highlightState"
           @copy="handleCopy"
           @reply="emitReply"
@@ -802,24 +824,20 @@ async function openInCanvas(): Promise<void> {
           :is-own="isOwn"
           :read-cursors="live === false ? [] : readCursors"
           :show-receipt="live !== false"
-          :show-time="showTime"
+          :show-time="true"
         />
       </div>
-      <div
+      <MindmateSeminarBubbleActions
         v-else-if="!message.streaming && !isAssistant && live !== false"
-        class="mindmate-seminar-room__action-slot"
-      >
-        <MindmateSeminarBubbleActions
-          :open="rowHot"
-          :highlight-state="highlightState"
-          @copy="handleCopy"
-          @reply="emitReply"
-          @highlight="pinHighlight"
-          @multi="emit('multi')"
-        />
-      </div>
+        :write-actions="!seminarSpectator"
+        :highlight-state="highlightState"
+        @copy="handleCopy"
+        @reply="emitReply"
+        @highlight="pinHighlight"
+        @multi="emit('multi')"
+      />
       <MindmateSeminarAssistantToolbar
-        v-if="isAssistant && !message.streaming && !summaryCard"
+        v-if="isAssistant && !message.streaming && !summaryCard && !sharedCanvasId"
         :live-actions="live !== false"
         :can-regenerate="Boolean(userPrompt)"
         :regenerate-disabled="Boolean(regenerateDisabled)"
@@ -872,6 +890,10 @@ async function openInCanvas(): Promise<void> {
   position: relative;
 }
 
+.mindmate-seminar-room__msg-row--other:not(.mindmate-seminar-room__msg-row--assistant) {
+  padding-bottom: 36px;
+}
+
 .mindmate-seminar-room__msg-row.is-continued {
   margin-top: -0.35rem;
 }
@@ -882,7 +904,7 @@ async function openInCanvas(): Promise<void> {
 
 .mindmate-seminar-room__msg-row.is-selected .mindmate-seminar-room__bubble--own,
 .mindmate-seminar-room__msg-row.is-selected .mindmate-seminar-room__bubble--peer {
-  outline: 2px solid #1c1917;
+  outline: 2px solid #c4b5fd;
 }
 
 .mindmate-seminar-room__check {
@@ -898,13 +920,30 @@ async function openInCanvas(): Promise<void> {
 }
 
 .mindmate-seminar-room__check.is-on {
-  border-color: #1c1917;
-  background: #1c1917;
+  border-color: #6d5efc;
+  background: #6d5efc;
   box-shadow: inset 0 0 0 3px #fff;
 }
 
 .mindmate-seminar-room__msg-body {
   position: relative;
+}
+
+.mindmate-seminar-room__msg-row--other:not(.mindmate-seminar-room__msg-row--assistant)
+  :deep(.mm-bubble-actions) {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 2;
+  height: 32px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.mindmate-seminar-room__msg-row:hover :deep(.mm-bubble-actions),
+.mindmate-seminar-room__msg-row:focus-within :deep(.mm-bubble-actions) {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .mindmate-seminar-room__msg-row--card {
@@ -1010,6 +1049,47 @@ async function openInCanvas(): Promise<void> {
   color: #57534e;
 }
 
+.mindmate-seminar-room__meta-role {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #57534e;
+  background: #f5f5f4;
+}
+
+.mindmate-seminar-room__meta-role[data-role='leader'] {
+  color: #5b21b6;
+  background: #ede9fe;
+}
+
+.mindmate-seminar-room__meta-role[data-role='leadPrep'] {
+  color: #3730a3;
+  background: #e0e7ff;
+}
+
+.mindmate-seminar-room__meta-role[data-role='coPrep'] {
+  color: #115e59;
+  background: #ccfbf1;
+}
+
+.mindmate-seminar-room__meta-role[data-role='expert'] {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.mindmate-seminar-room__meta-role[data-role='researcher'] {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.mindmate-seminar-room__meta-role[data-role='observer'] {
+  color: #57534e;
+  background: #f5f5f4;
+}
+
 .mindmate-seminar-room__meta-time {
   color: #a8a29e;
   font-weight: 400;
@@ -1081,36 +1161,27 @@ async function openInCanvas(): Promise<void> {
 }
 
 .mindmate-seminar-room__stamp-row--own {
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.mindmate-seminar-room__stamp-row--own.is-action-slot,
-.mindmate-seminar-room__action-slot {
   position: relative;
-  min-height: 0;
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  margin-top: 2px;
+  gap: 8px;
+  justify-self: end;
 }
 
-.mindmate-seminar-room__action-slot {
-  height: 0;
-}
-
-.mindmate-seminar-room__stamp-row--own.is-hot :deep(.mindmate-seminar-stamp) {
-  visibility: hidden;
-}
-
-.mindmate-seminar-room__stamp-row--own.is-action-slot :deep(.mm-bubble-actions),
-.mindmate-seminar-room__action-slot :deep(.mm-bubble-actions) {
+.mindmate-seminar-room__stamp-row--own :deep(.mm-bubble-actions) {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 3;
-  margin: 0;
-}
-
-.mindmate-seminar-room__stamp-row--own.is-action-slot :deep(.mm-bubble-actions) {
-  right: 0;
+  top: 50%;
+  right: calc(100% + 6px);
   left: auto;
+  z-index: 2;
+  height: 32px;
+  margin: 0;
+  transform: translateY(-50%);
 }
 
 .mindmate-seminar-room__bubble--files {

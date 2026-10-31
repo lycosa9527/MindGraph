@@ -108,12 +108,11 @@ const ariaLabel = computed(() => {
   height: 34px;
   margin: 0;
   padding: 0;
-  border: 1.5px solid #d6d3d1;
+  border: 1.5px solid #6d64f2;
   border-radius: 12px;
-  background: #fff;
-  box-shadow:
-    0 1px 2px rgba(28, 25, 23, 0.06),
-    0 8px 18px rgba(28, 25, 23, 0.08);
+  background: linear-gradient(180deg, rgba(109, 100, 242, 0.18), rgba(255, 255, 255, 0) 58%), #fff;
+  box-shadow: 0 1px 2px rgba(80, 70, 229, 0.08),
+    0 8px 18px rgba(80, 70, 229, 0.14);
   cursor: pointer;
   transition:
     transform 0.15s ease,
@@ -123,10 +122,9 @@ const ariaLabel = computed(() => {
 
 .mm-brief-rail__handle:hover {
   transform: translateY(-1px);
-  border-color: #1c1917;
-  box-shadow:
-    0 1px 2px rgba(28, 25, 23, 0.08),
-    0 10px 22px rgba(28, 25, 23, 0.12);
+  border-color: #5b4fe8;
+  box-shadow: 0 1px 2px rgba(80, 70, 229, 0.1),
+    0 10px 22px rgba(80, 70, 229, 0.2);
 }
 
 .mm-brief-rail__flag {
@@ -148,11 +146,11 @@ const ariaLabel = computed(() => {
   box-sizing: border-box;
   border-radius: 999px;
   border: 2px solid #fff;
-  background: #1c1917;
-  color: #fafaf9;
+  background: #5b4fe8;
+  color: #fff;
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
-  box-shadow: 0 2px 6px rgba(28, 25, 23, 0.2);
+  box-shadow: 0 2px 6px rgba(91, 79, 232, 0.35);
 }
 </style>

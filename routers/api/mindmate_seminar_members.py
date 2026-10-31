@@ -143,6 +143,7 @@ async def list_seminar_group_members(
         )
     payload["items"] = items
     payload["closed"] = await seminar_room_is_closed(session.id, session.visibility)
+    payload["visibility"] = session.visibility
     payload["owner_user_id"] = int(session.owner_user_id)
     payload["leader_user_id"] = leader_id
     payload["brief_topic"] = (session.brief_topic or "").strip() or None

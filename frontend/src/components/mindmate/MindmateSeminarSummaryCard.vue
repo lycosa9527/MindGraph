@@ -312,7 +312,7 @@ async function exportMinutes(): Promise<void> {
   max-height: min(72vh, 760px);
   padding: 0 16px 16px;
   overflow: auto;
-  background: #fafaf9;
+  background: #f7f6fb;
 }
 </style>
 
@@ -346,8 +346,8 @@ async function exportMinutes(): Promise<void> {
 }
 
 .mm-sum-card__kind {
-  background: #f5f5f4;
-  color: #44403c;
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
 .mm-sum-card__state.is-done,
@@ -482,18 +482,17 @@ async function exportMinutes(): Promise<void> {
   gap: 4px;
   min-height: 34px;
   padding: 6px 14px;
-  border: 1px solid #1c1917;
+  border: none;
   border-radius: 9999px;
-  background: #1c1917;
-  color: #fafaf9;
+  background: #6d5efc;
+  color: #fff;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .mm-sum-card__primary:hover {
-  background: #292524;
-  border-color: #292524;
+  background: #5b21b6;
 }
 
 .mm-sum-card__dialog-head {
@@ -519,17 +518,16 @@ async function exportMinutes(): Promise<void> {
   gap: 4px;
   min-height: 32px;
   padding: 6px 12px;
-  border: 1px solid #1c1917;
+  border: none;
   border-radius: 9999px;
-  background: #1c1917;
-  color: #fafaf9;
+  background: #6d5efc;
+  color: #fff;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .mm-sum-card__export:hover {
-  background: #292524;
-  border-color: #292524;
+  background: #5b4fe0;
 }
 </style>

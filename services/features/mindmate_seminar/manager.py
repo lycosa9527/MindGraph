@@ -53,7 +53,10 @@ from services.features.mindmate_seminar.message_history import (
     normalize_seed_messages,
     persist_seed_messages,
 )
-from services.features.mindmate_seminar.org_listing import list_visible_org_sessions
+from services.features.mindmate_seminar.org_listing import (
+    attach_cross_school_flags,
+    list_visible_org_sessions,
+)
 from services.features.mindmate_seminar.participant_ops import refresh_participant_ttl_for_code
 from services.features.mindmate_seminar.redis_keys import (
     async_purge_session_redis_keys,
@@ -490,7 +493,7 @@ class MindmateSeminarManager:
                 parsed = []
             if isinstance(parsed, list):
                 goals = [str(item).strip() for item in parsed if str(item).strip()]
-        return {
+        payload = {
             "session_id": session.id,
             "code": session.code,
             "title": session.title,
@@ -501,7 +504,10 @@ class MindmateSeminarManager:
             "organization_id": session.organization_id,
             "participant_count": count,
             "expires_at": session.expires_at.isoformat() + "Z" if session.expires_at else None,
+            "cross_school": False,
         }
+        await attach_cross_school_flags([payload])
+        return payload
 
     async def update_session_title(
         self,
@@ -726,8 +732,32 @@ class MindmateSeminarManager:
             )
         payloads: List[Dict[str, Any]] = []
         for session in list(owned) + list(joined):
-            payloads.append(await self._session_payload(session))
-        return payloads
+            # Skip per-row cross_school query; batch below.
+            count = await self.participant_count(session.code)
+            goals: list[str] = []
+            if session.brief_goals:
+                try:
+                    parsed = json.loads(session.brief_goals)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    parsed = []
+                if isinstance(parsed, list):
+                    goals = [str(item).strip() for item in parsed if str(item).strip()]
+            payloads.append(
+                {
+                    "session_id": session.id,
+                    "code": session.code,
+                    "title": session.title,
+                    "brief_topic": (session.brief_topic or "").strip() or None,
+                    "brief_goals": goals,
+                    "visibility": session.visibility,
+                    "owner_user_id": session.owner_user_id,
+                    "organization_id": session.organization_id,
+                    "participant_count": count,
+                    "expires_at": (session.expires_at.isoformat() + "Z" if session.expires_at else None),
+                    "cross_school": False,
+                }
+            )
+        return await attach_cross_school_flags(payloads)
 
     async def session_is_closing(self, code: str) -> bool:
         """True when the room is in a stop/teardown window and must reject new joins."""

@@ -365,8 +365,8 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
   height: 32px;
   border: none;
   border-radius: 999px;
-  background: #f5f5f4;
-  color: #57534e;
+  background: #f5f3ff;
+  color: #7c3aed;
   cursor: pointer;
 }
 
@@ -429,7 +429,7 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
   padding: 0;
   border: none;
   background: transparent;
-  color: #57534e;
+  color: #7c3aed;
   font-size: 12px;
   cursor: pointer;
 }

@@ -20,6 +20,9 @@ export interface SeminarShareLine {
   content: string
   createdAt: string
   highlighted: boolean
+  /** Card / attachment label above the bubble body. */
+  badge?: string
+  kind?: 'text' | 'summary' | 'brief' | 'diagram' | 'image' | 'file' | 'voice'
 }
 
 const props = defineProps<{
@@ -198,7 +201,24 @@ function close(): void {
                 <span>{{ line.authorName }}</span>
                 <time v-if="formatWhen(line.createdAt)">{{ formatWhen(line.createdAt) }}</time>
               </p>
-              <p class="mm-share-card__bubble">{{ line.content }}</p>
+              <div
+                class="mm-share-card__bubble"
+                :class="{
+                  'is-summary': line.kind === 'summary',
+                  'is-brief': line.kind === 'brief',
+                  'is-diagram': line.kind === 'diagram',
+                  'is-media':
+                    line.kind === 'image' || line.kind === 'file' || line.kind === 'voice',
+                }"
+              >
+                <p
+                  v-if="line.badge"
+                  class="mm-share-card__badge"
+                >
+                  {{ line.badge }}
+                </p>
+                <p class="mm-share-card__copy">{{ line.content }}</p>
+              </div>
               <p
                 v-if="line.highlighted"
                 class="mm-share-card__star"
@@ -270,7 +290,7 @@ function close(): void {
 
 .mm-share-sheet .el-dialog__body {
   padding: 0;
-  background: #f5f5f4;
+  background: #f3f4f6;
 }
 
 .mm-share-sheet .el-dialog__footer {
@@ -289,7 +309,7 @@ function close(): void {
 
 .mm-share-sheet__head h2 {
   margin: 0;
-  color: #1c1917;
+  color: #18191c;
   font-size: 16px;
   font-weight: 600;
 }
@@ -302,8 +322,8 @@ function close(): void {
   height: 28px;
   border: none;
   border-radius: 999px;
-  background: #f5f5f4;
-  color: #78716c;
+  background: #f4f4f6;
+  color: #6b6b76;
   cursor: pointer;
 }
 
@@ -316,7 +336,7 @@ function close(): void {
   max-height: min(64vh, 680px);
   overflow-y: scroll;
   padding: 16px;
-  background: #f5f5f4;
+  background: #f3f4f6;
   scrollbar-width: thin;
   scrollbar-color: #d6d3d1 transparent;
 }
@@ -327,7 +347,7 @@ function close(): void {
 
 .mm-share-sheet__scroll::-webkit-scrollbar-thumb {
   border-radius: 8px;
-  background: #d6d3d1;
+  background: #c8c8d0;
 }
 
 .mm-share-card {
@@ -442,7 +462,48 @@ function close(): void {
   font-size: 13px;
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.mm-share-card__bubble.is-summary {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+
+.mm-share-card__bubble.is-brief {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.mm-share-card__bubble.is-diagram {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.mm-share-card__bubble.is-media {
+  background: #fafaf9;
+  border: 1px dashed #d6d3d1;
+}
+
+.mm-share-card__badge {
+  margin: 0 0 6px;
+  color: #6d28d9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.mm-share-card__bubble.is-brief .mm-share-card__badge {
+  color: #1d4ed8;
+}
+
+.mm-share-card__bubble.is-diagram .mm-share-card__badge {
+  color: #047857;
+}
+
+.mm-share-card__copy {
+  margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .mm-share-card__star {
@@ -529,9 +590,9 @@ function close(): void {
 }
 
 .mm-share-sheet__cancel {
-  background: #f5f5f4;
+  background: #f3f4f6;
   border-color: #e7e5e4;
-  color: #44403c;
+  color: #18191c;
 }
 
 .mm-share-sheet__cancel:hover {
@@ -540,14 +601,14 @@ function close(): void {
 }
 
 .mm-share-sheet__download {
-  background: #1c1917;
-  border-color: #1c1917;
-  color: #fafaf9;
+  background: #3b6cff;
+  border-color: #3b6cff;
+  color: #fff;
 }
 
 .mm-share-sheet__download:hover:not(:disabled) {
-  background: #292524;
-  border-color: #292524;
+  background: #2f57e0;
+  border-color: #2f57e0;
 }
 
 .mm-share-sheet__download:disabled {

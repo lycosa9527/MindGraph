@@ -6,7 +6,7 @@ import { ElButton, ElIcon, ElInput } from 'element-plus'
 
 import { Close, VideoPause } from '@element-plus/icons-vue'
 
-import { ArrowRight, Mic, Paperclip, Send } from '@lucide/vue'
+import { ArrowRight, Paperclip, Send } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
@@ -54,12 +54,13 @@ const props = withDefaults(
     mentionCandidates?: MindmateMentionCandidate[]
     /** Group seminar: chips sit under the field, send stays on the right. */
     seminarComposer?: boolean
+    /** Observer seat: keep the shell, gray it out, block typing and send. */
+    composerLocked?: boolean
     /** @MindMate tag shown inside the seminar field. */
     seminarMindmateTag?: boolean
     /** @mindgraph tag shown inside the seminar field. */
     seminarMindgraphTag?: boolean
     seminarAgentName?: string
-    seminarVoiceRecording?: boolean
   }>(),
   {
     mode: 'panel',
@@ -76,10 +77,10 @@ const props = withDefaults(
     enableMentions: false,
     mentionCandidates: () => [],
     seminarComposer: false,
+    composerLocked: false,
     seminarMindmateTag: false,
     seminarMindgraphTag: false,
     seminarAgentName: 'MindMate',
-    seminarVoiceRecording: false,
   }
 )
 
@@ -92,8 +93,6 @@ const emit = defineEmits<{
   (e: 'suggestionSelect', suggestion: string): void
   (e: 'seminarStart', brief: SeminarBrief): void
   (e: 'clearSeminarTag', tag: 'mindmate' | 'mindgraph'): void
-  (e: 'seminarVoicePress'): void
-  (e: 'seminarVoiceRelease', send: boolean): void
 }>()
 
 const { t } = useLanguage()
@@ -261,17 +260,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onComposerResize)
 })
 
-// Computed for send button disabled state
-const seminarVoiceSlot = computed(
-  () =>
-    props.seminarComposer &&
-    !props.seminarVoiceRecording &&
-    !props.inputText.trim() &&
-    seminarComposerCitations.value.length === 0 &&
-    seminarComposerAttachments.value.length === 0
-)
-
 const isSendDisabled = computed(() => {
+  if (props.composerLocked) {
+    return true
+  }
   const hasCitations = props.seminarComposer && seminarComposerCitations.value.length > 0
   const hasConversationFiles = props.seminarComposer && seminarComposerAttachments.value.length > 0
   const hasContent =
@@ -281,6 +273,10 @@ const isSendDisabled = computed(() => {
     (props.showFileUpload && props.pendingFiles.length > 0)
   return !hasContent || props.isLoading || !authStore.isAuthenticated
 })
+
+const isComposerDisabled = computed(
+  () => props.composerLocked || props.isLoading || !authStore.isAuthenticated
+)
 
 // Get file icon based on type
 function getFileIcon(type: string): string {
@@ -358,6 +354,11 @@ function handleKeydown(event: Event | KeyboardEvent) {
   // Type guard for KeyboardEvent
   if (!('key' in event)) return
 
+  if (props.composerLocked) {
+    event.preventDefault()
+    return
+  }
+
   // Check authentication before allowing input
   if (!authStore.isAuthenticated) {
     event.preventDefault()
@@ -388,6 +389,9 @@ function handleKeydown(event: Event | KeyboardEvent) {
 }
 
 function handleInputUpdate(value: string) {
+  if (props.composerLocked) {
+    return
+  }
   emit('update:inputText', value)
   if (!props.enableMentions) {
     return
@@ -399,6 +403,9 @@ function handleInputUpdate(value: string) {
 
 // Handle input focus - show login modal if not authenticated
 function handleInputFocus() {
+  if (props.composerLocked) {
+    return
+  }
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
   }
@@ -406,73 +413,14 @@ function handleInputFocus() {
 
 // Handle send button click
 function handleSend() {
+  if (props.composerLocked) {
+    return
+  }
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
     return
   }
   emit('send')
-}
-
-const voiceHolding = ref(false)
-const voiceWillCancel = ref(false)
-let voicePointerId = -1
-
-function onVoicePointerDown(event: PointerEvent): void {
-  if (props.isLoading) {
-    return
-  }
-  if (!authStore.isAuthenticated) {
-    authStore.handleTokenExpired(undefined, undefined)
-    return
-  }
-  const target = event.currentTarget
-  if (!(target instanceof HTMLElement)) {
-    return
-  }
-  voiceHolding.value = true
-  voiceWillCancel.value = false
-  voicePointerId = event.pointerId
-  target.setPointerCapture(event.pointerId)
-  emit('seminarVoicePress')
-}
-
-function onVoicePointerMove(event: PointerEvent): void {
-  if (!voiceHolding.value || event.pointerId !== voicePointerId) {
-    return
-  }
-  const target = event.currentTarget
-  if (!(target instanceof HTMLElement)) {
-    return
-  }
-  const rect = target.getBoundingClientRect()
-  voiceWillCancel.value =
-    event.clientY < rect.top - 36 ||
-    event.clientX < rect.left - 28 ||
-    event.clientX > rect.right + 28
-}
-
-function finishVoicePointer(send: boolean): void {
-  if (!voiceHolding.value) {
-    return
-  }
-  voiceHolding.value = false
-  voiceWillCancel.value = false
-  voicePointerId = -1
-  emit('seminarVoiceRelease', send)
-}
-
-function onVoicePointerUp(event: PointerEvent): void {
-  if (event.pointerId !== voicePointerId) {
-    return
-  }
-  finishVoicePointer(!voiceWillCancel.value)
-}
-
-function onVoicePointerCancel(event: PointerEvent): void {
-  if (event.pointerId !== voicePointerId) {
-    return
-  }
-  finishVoicePointer(false)
 }
 
 // Handle suggestion bubble click
@@ -574,6 +522,7 @@ defineExpose({ focus: focusComposer })
         :class="{
           'mindmate-input-compose--seminar': seminarComposer,
           'mindmate-input-compose--expanded': composeExpanded,
+          'mindmate-input-compose--locked': composerLocked,
         }"
       >
         <div
@@ -639,20 +588,6 @@ defineExpose({ focus: focusComposer })
               <span class="mm-seminar-field-tag__x">×</span>
             </button>
           </div>
-          <div
-            v-if="seminarComposer && (seminarVoiceRecording || voiceHolding)"
-            class="mm-voice-live"
-            :class="{ 'is-cancel': voiceWillCancel }"
-          >
-            <span class="mm-voice-live__dot" />
-            <span
-              ><I18nText
-                v-if="voiceWillCancel"
-                k="mindmate.composer.voiceHoldCancel" /><I18nText
-                v-else
-                k="mindmate.composer.voiceHoldSend"
-            /></span>
-          </div>
           <ElInput
             id="mindmate-chat-input"
             ref="chatInputRef"
@@ -661,7 +596,7 @@ defineExpose({ focus: focusComposer })
             name="mindmate-chat-input"
             :rows="textareaRows"
             :placeholder="placeholder || t('mindmate.input.placeholder')"
-            :disabled="isLoading || !authStore.isAuthenticated"
+            :disabled="isComposerDisabled"
             :maxlength="maxlength"
             :show-word-limit="maxlength != null"
             class="fullpage-textarea"
@@ -673,6 +608,7 @@ defineExpose({ focus: focusComposer })
         </div>
 
         <div
+          v-if="!composerLocked"
           class="input-bottom"
           :class="{ 'input-bottom--seminar': seminarComposer }"
         >
@@ -715,25 +651,6 @@ defineExpose({ focus: focusComposer })
             >
               <ElIcon><VideoPause /></ElIcon>
             </ElButton>
-            <button
-              v-else-if="seminarVoiceSlot || voiceHolding || seminarVoiceRecording"
-              type="button"
-              class="mm-voice-hold"
-              :class="{
-                'is-holding': (voiceHolding || seminarVoiceRecording) && !voiceWillCancel,
-                'is-cancel': voiceWillCancel,
-              }"
-              :disabled="isLoading"
-              :aria-label="t('mindmate.composer.voiceMessage')"
-              :title="t('mindmate.composer.voiceMessage')"
-              @pointerdown.prevent="onVoicePointerDown"
-              @pointermove="onVoicePointerMove"
-              @pointerup="onVoicePointerUp"
-              @pointercancel="onVoicePointerCancel"
-              @contextmenu.prevent
-            >
-              <Mic :size="18" />
-            </button>
             <ElButton
               v-else
               type="primary"
@@ -889,6 +806,26 @@ defineExpose({ focus: focusComposer })
   position: relative;
 }
 
+.mindmate-input-compose--locked {
+  background: #f5f5f4;
+  border-color: #e7e5e4;
+  box-shadow: none;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.mindmate-input-compose--locked:focus-within {
+  border-color: #e7e5e4;
+  box-shadow: none;
+}
+
+.mindmate-input-compose--locked :deep(.el-textarea__inner) {
+  background: transparent;
+  color: #a8a29e;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .mindmate-input-compose .input-field-fullpage {
   flex: 1 1 auto;
   min-height: 0;
@@ -939,59 +876,6 @@ defineExpose({ focus: focusComposer })
 
 .mm-seminar-field-tag:hover .mm-seminar-field-tag__x {
   opacity: 1;
-}
-
-.mm-voice-live {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 26px;
-  margin-top: 6px;
-  color: #44403c;
-  font-size: 13px;
-}
-
-.mm-voice-live.is-cancel {
-  color: #b91c1c;
-}
-
-.mm-voice-live__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #ef4444;
-}
-
-.mm-voice-hold {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 10px;
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: pointer;
-  touch-action: none;
-  user-select: none;
-}
-
-.mm-voice-hold:hover,
-.mm-voice-hold.is-holding {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.mm-voice-hold.is-cancel {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.mm-voice-hold:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .mindmate-input-compose--expanded .fullpage-textarea {

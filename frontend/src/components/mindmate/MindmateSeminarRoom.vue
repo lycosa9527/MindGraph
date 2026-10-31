@@ -52,7 +52,6 @@ import {
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useSeminarMindgraphPrompt } from '@/composables/mindmate/useSeminarMindgraphPrompt'
-import { useSeminarVoiceMessage } from '@/composables/mindmate/useSeminarVoiceMessage'
 import { createMindmateSeminarOrgBackend } from '@/composables/social/createMindmateSeminarOrgBackend'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
@@ -87,13 +86,26 @@ import {
 } from '@/utils/mindmateMention'
 import { type SeminarBriefEditPayload, parseSeminarBriefCard } from '@/utils/mindmateSeminarCards'
 import {
+  hasGeneratedDiagramImage,
+  parseMindmateDiagramLibraryId,
+} from '@/utils/mindmateDiagramMeta'
+import {
   listSeminarReplyArtifacts,
   seminarBubblePlainText,
   seminarFolderErrorKey,
   seminarMessageFileToken,
   uploadSeminarBackgroundFile,
 } from '@/utils/mindmateSeminarFolder'
+import {
+  loadSeminarGroupRoster,
+  seminarGroupMembers as sharedGroupMembers,
+} from '@/composables/mindmate/seminarGroupRoster'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
+import {
+  type SeminarMinutesScope,
+  seminarSummaryRequestLine,
+} from '@/utils/mindmateSeminarMinutes'
+import { formatSeminarShareLine } from '@/utils/mindmateSeminarShare'
 
 const props = withDefaults(
   defineProps<{
@@ -143,7 +155,9 @@ const isSpectator = computed(() => {
   if (!selfId) {
     return false
   }
-  const self = props.members.find((member) => member.userId === selfId)
+  const roster =
+    sharedGroupMembers.value.length > 0 ? sharedGroupMembers.value : props.members
+  const self = roster.find((member) => member.userId === selfId)
   return self?.role === 'observer'
 })
 
@@ -181,6 +195,17 @@ const {
   seedMessages: () => props.seedMessages ?? [],
 })
 
+watch(
+  () => room.value?.sessionId || '',
+  (sessionId) => {
+    if (!sessionId) {
+      return
+    }
+    void loadSeminarGroupRoster(sessionId)
+  },
+  { immediate: true }
+)
+
 provide('mindmateSeminarMessages', messages)
 
 watch(
@@ -216,13 +241,6 @@ watch(
   { immediate: true }
 )
 
-const {
-  recording: voiceRecording,
-  start: startVoiceMessage,
-  stop: stopVoiceMessage,
-  cancel: cancelVoiceMessage,
-  noteRelease: noteVoiceRelease,
-} = useSeminarVoiceMessage()
 const faceChatOpen = ref(false)
 const faceChatLive = ref(false)
 const summaryOpen = ref(false)
@@ -292,6 +310,9 @@ const { generateAndShare: generateSeminarDiagram, isGenerating: mindgraphGenerat
   useSeminarMindgraphPrompt()
 
 const inputPlaceholder = computed(() => {
+  if (isSpectator.value) {
+    return t('mindmate.seminar.spectatorLead')
+  }
   if (mindgraphTagged.value) {
     return t('mindmate.composer.mindgraphHint', '输入生成思维图示的指令，如：用双气泡图对比...')
   }
@@ -640,7 +661,9 @@ function pinSelected(): void {
   cancelSelect()
 }
 
-function postSummary(content: string): void {
+async function postSummary(
+  payload: string | { content: string; scope?: SeminarMinutesScope }
+): Promise<void> {
   if (isSpectator.value || joining.value) {
     return
   }
@@ -648,53 +671,30 @@ function postSummary(content: string): void {
     notify.warningKey('mindmate.collabNotConnected')
     return
   }
+  const content = typeof payload === 'string' ? payload : payload.content
+  const scope = typeof payload === 'string' ? undefined : payload.scope
+  if (!content.trim()) {
+    return
+  }
   followTranscript.value = true
-  sendSeminarMinutes(content)
   summaryOpen.value = false
+  if (scope) {
+    const request = seminarSummaryRequestLine(mindmateAgentName.value, scope, t)
+    await sendSeminarMessage(request, { toMindmate: false, ignoreStreaming: true })
+  }
+  await sendSeminarMinutes(content)
 }
 
 function onSeminarVoice(): void {
   if (isSpectator.value) {
     return
   }
-  cancelVoiceMessage()
   faceChatOpen.value = true
 }
 
 function startFaceChat(): void {
   faceChatOpen.value = false
   faceChatLive.value = true
-}
-
-async function onVoicePress(): Promise<void> {
-  if (isSpectator.value) {
-    return
-  }
-  const result = await startVoiceMessage()
-  if (result instanceof File) {
-    await sendVoiceFile(result)
-    return
-  }
-  if (result === null) {
-    notify.warningKey('mindmate.composer.voiceTooShort')
-  }
-}
-
-async function onVoiceRelease(send: boolean): Promise<void> {
-  if (!voiceRecording.value) {
-    noteVoiceRelease(send)
-    return
-  }
-  if (!send) {
-    cancelVoiceMessage()
-    return
-  }
-  const file = await stopVoiceMessage()
-  if (!file) {
-    notify.warningKey('mindmate.composer.voiceTooShort')
-    return
-  }
-  await sendVoiceFile(file)
 }
 
 async function saveBriefCard(
@@ -748,23 +748,6 @@ async function saveBriefCard(
     done(false)
   } finally {
     savingBrief.value = false
-  }
-}
-
-async function sendVoiceFile(file: File): Promise<void> {
-  const sessionId = room.value?.sessionId
-  if (!sessionId || !canSend.value || joining.value || attachingFiles.value) {
-    return
-  }
-  attachingFiles.value = true
-  try {
-    const saved = await uploadSeminarBackgroundFile(sessionId, file, { listed: false })
-    followTranscript.value = true
-    sendSeminarMessage(seminarMessageFileToken(saved.id, saved.filename), { toMindmate: false })
-  } catch (error) {
-    notify.errorKey(seminarFolderErrorKey(error))
-  } finally {
-    attachingFiles.value = false
   }
 }
 
@@ -886,9 +869,14 @@ async function handleSend() {
       return
     }
     inputText.value = ''
+    mindgraphTagged.value = false
+    // Keep the one-sentence request on the transcript (with @MindGraph); the diagram arrives as MindGraph.
+    const mindgraphName = t('mindmate.composer.mindgraph')
+    sendSeminarMessage(ensureMindmateMention(prompt, mindgraphName), { toMindmate: false })
     const shared = await generateSeminarDiagram(sessionId, prompt)
     if (!shared) {
       inputText.value = prompt
+      mindgraphTagged.value = true
     }
     return
   }
@@ -997,7 +985,10 @@ const lastAssistantIdx = computed(() => lastFinishedAssistantIndex(messages.valu
 
 function shareAuthorName(msg: MindmateSeminarMessage): string {
   if (msg.role === 'assistant') {
-    return mindmateAgentName.value.trim() || 'MindMate'
+    if (parseMindmateDiagramLibraryId(msg.content) || hasGeneratedDiagramImage(msg.content)) {
+      return t('mindmate.composer.mindgraph')
+    }
+    return mindmateAgentName.value.trim() || t('mindmate.summary.author')
   }
   if (isOwnMessage(msg)) {
     return authStore.user?.username || t('mindmate.highlights.you')
@@ -1018,22 +1009,30 @@ const shareLines = computed(() => {
           .filter((row) => selectedKeys.value.includes(collabMessageRowKey(row.msg, row.index)))
       : messages.value.map((msg, index) => ({ msg, index }))
   return scoped
-    .filter(
-      (row) => !row.msg.streaming && seminarBubblePlainText(row.msg.content).trim().length > 0
-    )
-    .map((row) => ({
-      key: collabMessageRowKey(row.msg, row.index),
-      role: row.msg.role,
-      authorName: shareAuthorName(row.msg),
-      content: seminarBubblePlainText(row.msg.content),
-      createdAt: row.msg.created_at || '',
-      highlighted: typeof row.msg.id === 'number' && highlighted.has(row.msg.id),
-    }))
+    .filter((row) => !row.msg.streaming)
+    .map((row) => {
+      const formatted = formatSeminarShareLine(row.msg.content, t)
+      return {
+        key: collabMessageRowKey(row.msg, row.index),
+        role: row.msg.role,
+        authorName: shareAuthorName(row.msg),
+        content: formatted.content,
+        badge: formatted.badge,
+        kind: formatted.kind,
+        createdAt: row.msg.created_at || '',
+        highlighted: typeof row.msg.id === 'number' && highlighted.has(row.msg.id),
+      }
+    })
+    .filter((line) => line.content.trim().length > 0)
 })
 
 const shareMemberCount = computed(() => {
-  if (props.members.length > 0) {
-    return props.members.length
+  const rosterCount =
+    sharedGroupMembers.value.length > 0
+      ? sharedGroupMembers.value.length
+      : props.members.length
+  if (rosterCount > 0) {
+    return rosterCount
   }
   return new Set(shareLines.value.map((line) => line.authorName)).size
 })
@@ -1466,35 +1465,35 @@ watch(seminarHighlightNotices, () => {
           </div>
           <p
             v-if="isSpectator"
-            class="text-center text-xs text-stone-400 py-3"
+            class="text-center text-xs text-stone-400 pb-2 m-0"
           >
-            <I18nText k="mindmate.seminar.spectatorHint" />
+            <I18nText k="mindmate.seminar.spectatorLimit" />
           </p>
           <MindmateInput
-            v-if="!isSpectator"
             ref="composerRef"
-            :input-text="inputText"
+            :input-text="isSpectator ? '' : inputText"
             mode="fullpage"
             seminar-composer
+            :composer-locked="isSpectator"
             :is-loading="
               joining || attachingFiles || mindgraphGenerating || connectionStatus === 'connecting'
             "
             :is-streaming="isStreaming"
             :show-file-upload="false"
             :placeholder="inputPlaceholder"
-            enable-mentions
+            :enable-mentions="!isSpectator"
             :mention-candidates="mentionCandidates"
-            :seminar-mindmate-tag="mindmateTagged"
-            :seminar-mindgraph-tag="mindgraphTagged"
+            :seminar-mindmate-tag="!isSpectator && mindmateTagged"
+            :seminar-mindgraph-tag="!isSpectator && mindgraphTagged"
             :seminar-agent-name="mindmateAgentName"
-            :seminar-voice-recording="voiceRecording"
             @update:input-text="inputText = $event"
             @send="handleSend"
             @clear-seminar-tag="clearSeminarTag"
-            @seminar-voice-press="onVoicePress"
-            @seminar-voice-release="onVoiceRelease"
           >
-            <template #seminarTools>
+            <template
+              v-if="!isSpectator"
+              #seminarTools
+            >
               <MindmateSeminarComposerTools
                 :agent-name="mindmateAgentName"
                 @agent="callSeminarAgent"
@@ -1516,7 +1515,7 @@ watch(seminarHighlightNotices, () => {
       :preselect-keys="summaryPreselect"
       :topic="briefTopic"
       :goals="briefGoals"
-      :members="members"
+      :members="sharedGroupMembers.length > 0 ? sharedGroupMembers : members"
       :highlights="seminarHighlights"
       :session-id="room?.sessionId || ''"
       @close="summaryOpen = false"
@@ -1566,10 +1565,10 @@ watch(seminarHighlightNotices, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #d6d3d1;
+  border: 2px dashed #c4b5fd;
   border-radius: 16px;
-  background: rgba(245, 245, 244, 0.92);
-  color: #44403c;
+  background: rgba(245, 243, 255, 0.92);
+  color: #5b21b6;
   font-size: 14px;
   font-weight: 600;
   pointer-events: none;
@@ -1630,14 +1629,14 @@ watch(seminarHighlightNotices, () => {
 }
 
 .mindmate-seminar-room__end-btn {
-  --el-button-bg-color: #f5f5f4;
-  --el-button-border-color: #e7e5e4;
-  --el-button-hover-bg-color: #e7e5e4;
-  --el-button-hover-border-color: #d6d3d1;
-  --el-button-hover-text-color: #1c1917;
-  --el-button-active-bg-color: #d6d3d1;
-  --el-button-active-border-color: #a8a29e;
-  --el-button-text-color: #44403c;
+  --el-button-bg-color: #f5f3ff;
+  --el-button-border-color: #ddd6fe;
+  --el-button-hover-bg-color: #ede9fe;
+  --el-button-hover-border-color: #c4b5fd;
+  --el-button-hover-text-color: #5b21b6;
+  --el-button-active-bg-color: #ddd6fe;
+  --el-button-active-border-color: #a78bfa;
+  --el-button-text-color: #6d28d9;
   font-weight: 500;
   border-radius: 9999px;
   height: auto;
@@ -1652,7 +1651,7 @@ watch(seminarHighlightNotices, () => {
 }
 
 .mindmate-seminar-room__input--file {
-  outline: 2px dashed #d6d3d1;
+  outline: 2px dashed #c4b5fd;
   outline-offset: -8px;
 }
 
@@ -1685,9 +1684,9 @@ watch(seminarHighlightNotices, () => {
   width: 100%;
   max-width: none;
   border-radius: 18px;
-  border-color: #e7e5e4;
+  border-color: #e9e5ff;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
+  box-shadow: 0 8px 24px rgba(109, 94, 252, 0.08);
 }
 
 .mindmate-seminar-room__citations {
@@ -1706,10 +1705,10 @@ watch(seminarHighlightNotices, () => {
   max-width: 100%;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid #ddd6fe;
   border-radius: 999px;
-  background: #f5f5f4;
-  color: #44403c;
+  background: #f5f3ff;
+  color: #5b21b6;
   font-size: 12px;
   cursor: pointer;
 }
@@ -1761,9 +1760,9 @@ watch(seminarHighlightNotices, () => {
 
 .mindmate-seminar-room__select-bar button:hover,
 .mindmate-seminar-room__reply:hover {
-  border-color: #d6d3d1;
-  background: #f5f5f4;
-  color: #1c1917;
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
 }
 
 .mindmate-seminar-room__reply {
@@ -1777,7 +1776,7 @@ watch(seminarHighlightNotices, () => {
 
 .mindmate-seminar-room__reply-label {
   flex: 0 0 auto;
-  color: #57534e;
+  color: #6d5efc;
   font-weight: 650;
 }
 
