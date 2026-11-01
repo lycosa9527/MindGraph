@@ -237,6 +237,38 @@ def _env_truthy(name: str, default: str = "true") -> bool:
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _apply_redis7_runtime_tuning(redis_client: Any) -> None:
+    """Apply Redis 7+ options that CONFIG SET can change.
+
+    ``io-threads`` and ``io-threads-do-reads`` are immutable. CONFIG SET always
+    fails with "can't set immutable config", so they are left to redis.conf.
+    """
+    runtime_settings: Dict[str, str] = {
+        "lazyfree-lazy-eviction": "yes",
+        "lazyfree-lazy-expire": "yes",
+        "lazyfree-lazy-server-del": "yes",
+        "lazyfree-lazy-user-del": "yes",
+        "lazyfree-lazy-user-flush": "yes",
+        "activedefrag": "yes",
+        "latency-monitor-threshold": "100",
+        "slowlog-log-slower-than": "10000",
+        "slowlog-max-len": "256",
+    }
+    for cfg_key, cfg_val in runtime_settings.items():
+        try:
+            redis_client.config_set(cfg_key, cfg_val)
+        except REDIS_ERRORS as exc:
+            logger.debug(
+                "[Redis] CONFIG SET %s=%s skipped (%s)",
+                cfg_key,
+                cfg_val,
+                exc,
+            )
+    logger.info(
+        "[Redis] Applied runtime tuning: lazyfree=*, activedefrag, latency-monitor-threshold=100ms",
+    )
+
+
 def _apply_redis_aof_config(redis_client: Any) -> None:
     """
     Enable AOF persistence via CONFIG SET when permitted.
@@ -335,39 +367,10 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
             redis_version,
         )
 
-    # Generic Redis 7+ tuning: these options are safe across the supported
-    # range and reduce tail latency under load. Each setting is best-effort —
-    # managed Redis providers often disable CONFIG SET for some keys.
+    # Redis 7+ tail-latency tuning. Mutable keys use CONFIG SET. io-threads is
+    # immutable (redis.conf only) and must not be sent to CONFIG SET.
     if version_tuple >= (7, 0, 0):
-        cpu_count = os.cpu_count() or 1
-        io_threads = max(1, min(8, cpu_count - 1))
-        runtime_settings: Dict[str, str] = {
-            "lazyfree-lazy-eviction": "yes",
-            "lazyfree-lazy-expire": "yes",
-            "lazyfree-lazy-server-del": "yes",
-            "lazyfree-lazy-user-del": "yes",
-            "lazyfree-lazy-user-flush": "yes",
-            "io-threads": str(io_threads),
-            "io-threads-do-reads": "yes",
-            "activedefrag": "yes",
-            "latency-monitor-threshold": "100",
-            "slowlog-log-slower-than": "10000",
-            "slowlog-max-len": "256",
-        }
-        for cfg_key, cfg_val in runtime_settings.items():
-            try:
-                redis_client.config_set(cfg_key, cfg_val)
-            except REDIS_ERRORS as exc:
-                logger.debug(
-                    "[Redis] CONFIG SET %s=%s skipped (%s)",
-                    cfg_key,
-                    cfg_val,
-                    exc,
-                )
-        logger.info(
-            "[Redis] Applied runtime tuning: io-threads=%d, lazyfree=*, activedefrag, latency-monitor-threshold=100ms",
-            io_threads,
-        )
+        _apply_redis7_runtime_tuning(redis_client)
 
     _apply_redis_aof_config(redis_client)
 

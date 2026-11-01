@@ -64,13 +64,12 @@ def wrap_browser_launch_error(exc: BaseException) -> BaseException:
     return exc
 
 
-def _get_chromium_version(executable_path: str) -> Optional[str]:
-    """
-    Get Chromium version from executable without launching a browser when possible.
+def _chromium_cli_version(executable_path: str) -> Optional[str]:
+    """Read Chromium's version from ``--version`` without starting Playwright.
 
-    ``--version`` and the Playwright cache path are milliseconds. Launching Chromium
-    via Playwright just to read ``browser.version`` costs tens of seconds per binary
-    and was the first-PNG stall (and TargetClosedError teardown noise).
+    A Playwright ``chromium.launch()`` at startup opens a browser pipe. If Chromium
+    exits immediately (root container, no ``--no-sandbox``), the Node driver writes
+    to that closed pipe and aborts with an unhandled ``EPIPE``, which stalls lifespan.
     """
     try:
         result = subprocess.run(
@@ -86,9 +85,23 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             if version_match:
                 return version_match.group(1)
     except subprocess.TimeoutExpired:
-        pass
+        return None
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Chromium --version failed: %s", exc)
+    return None
+
+
+def _get_chromium_version(executable_path: str) -> Optional[str]:
+    """
+    Get Chromium version from executable without launching a browser when possible.
+
+    ``--version`` and the Playwright cache path are milliseconds. Launching Chromium
+    via Playwright just to read ``browser.version`` costs tens of seconds per binary
+    and was the first-PNG stall (and TargetClosedError teardown noise).
+    """
+    cli_version = _chromium_cli_version(executable_path)
+    if cli_version:
+        return cli_version
 
     if "chromium-" in executable_path and "ms-playwright" in executable_path:
         revision_match = re.search(r"chromium-(\d+)", executable_path)
@@ -386,8 +399,12 @@ async def _get_best_chromium_executable_async() -> Optional[str]:
 async def log_browser_diagnostics():
     """
     Log browser diagnostic information once at startup.
-    This should be called from the application lifespan function.
-    Only logs warnings/errors from main process to reduce noise in multi-worker setups.
+
+    Confirms the Playwright package and Chromium binary (``--version`` only).
+    Does not launch a browser: every Uvicorn worker runs lifespan, and a failed
+    launch kills the Playwright Node driver with ``EPIPE`` and blocks startup.
+    A protocol mismatch still surfaces on the first PNG request as
+    ``BrowserUnavailableError``.
     """
     # Only log warnings/errors from main process (worker 0) to reduce duplicate logs
     worker_id = os.getenv("UVICORN_WORKER_ID")
@@ -413,34 +430,25 @@ async def log_browser_diagnostics():
                 logger.debug("[Browser] Chromium executable path: %s", chromium_path)
                 if chromium_path and os.path.exists(chromium_path):
                     logger.debug("[Browser] Chromium executable exists: YES")
+                    cli_version = await asyncio.to_thread(_chromium_cli_version, chromium_path)
+                    if cli_version:
+                        if is_main_process:
+                            logger.info("[Browser] Chromium executable: OK (%s)", cli_version)
+                    elif is_main_process:
+                        logger.error(
+                            "[Browser] Chromium --version failed for %s. "
+                            "PNG/DingTalk generation will return 503 until fixed. "
+                            "Run: python -m playwright install chromium",
+                            chromium_path,
+                        )
+                    else:
+                        logger.debug("[Browser] Chromium --version failed: %s", chromium_path)
+                elif is_main_process:
+                    logger.warning(
+                        "[Browser] Chromium executable exists: NO — run: python -m playwright install chromium"
+                    )
                 else:
-                    # Only log warning from main process to avoid spam in multi-worker setups
-                    if is_main_process:
-                        logger.warning(
-                            "[Browser] Chromium executable exists: NO — run: python -m playwright install chromium"
-                        )
-                    else:
-                        logger.debug("[Browser] Chromium executable exists: NO")
-                # Launch probe: catch pip/browser revision mismatch before first request.
-                try:
-                    browser = await playwright_instance.chromium.launch(headless=True)
-                    await browser.close()
-                    if is_main_process:
-                        logger.info("[Browser] Chromium launch probe: OK")
-                except (PlaywrightError, OSError, RuntimeError) as launch_exc:
-                    if not is_main_process:
-                        logger.debug("[Browser] Chromium launch probe FAILED: %s", launch_exc)
-                    elif is_browser_unavailable_message(str(launch_exc)):
-                        logger.error(
-                            "[Browser] Chromium launch probe FAILED: %s",
-                            wrap_browser_launch_error(launch_exc),
-                        )
-                        logger.error(
-                            "[Browser] PNG/DingTalk generation will return 503 until fixed. "
-                            "Run: python -m playwright install chromium"
-                        )
-                    else:
-                        logger.error("[Browser] Chromium launch probe FAILED: %s", launch_exc)
+                    logger.debug("[Browser] Chromium executable exists: NO")
             finally:
                 await playwright_instance.stop()
         except BACKGROUND_INFRA_ERRORS as e:

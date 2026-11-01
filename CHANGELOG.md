@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.195] - 2026-11-01
+
+> **Startup confirms Chromium with `--version` only, and Redis leaves immutable `io-threads` in redis.conf.**
+
+### Fixed
+
+- **Browser startup** — Lifespan no longer launches Chromium through Playwright. A failed launch (root container, no `--no-sandbox`) closed the browser pipe, and the Node driver aborted with `EPIPE`, which stalled startup. The process now confirms the binary with `--version`. A protocol mismatch still shows up on the first PNG request as `BrowserUnavailableError`.
+- **Redis startup tuning** — `io-threads` and `io-threads-do-reads` are immutable. Startup no longer sends them to `CONFIG SET` (that always failed with "can't set immutable config"). They stay in `redis.conf`. Mutable Redis 7+ settings (lazyfree, active defrag, latency monitor, slowlog) still apply.
+
+### Tests
+
+- [`tests/test_chromium_version.py`](tests/test_chromium_version.py), [`tests/test_redis_startup_config.py`](tests/test_redis_startup_config.py)
+
 ## [5.180.194] - 2026-11-01
 
 > **Python and frontend dependencies move to the current release on each existing line. Realtime voice can use websockets 17.**
