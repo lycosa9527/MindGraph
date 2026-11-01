@@ -32,8 +32,11 @@ import {
   MINDMATE_COLLAB_ENDED_CODES_KEY,
   MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT,
   MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
+  clearMindmateSeminarCodeUnjoinable,
   formatMindmateSeminarCode,
+  isMindmateSeminarCodeUnjoinable,
   loadLocalMindmateSeminarSessions,
+  markMindmateSeminarCodeUnjoinable,
   mergeMindmateSeminarSessionLists,
   normalizeMindmateSeminarCode,
   persistLocalMindmateSeminarSessions,
@@ -109,11 +112,53 @@ function formatCode(code: string): string {
 }
 
 function loadLocalSessions(): void {
-  localSessions.value = loadLocalMindmateSeminarSessions() as CollabSessionRow[]
+  localSessions.value = withoutUnjoinableRows(
+    loadLocalMindmateSeminarSessions() as CollabSessionRow[]
+  )
 }
 
 function persistLocalSessions(): void {
   persistLocalMindmateSeminarSessions(localSessions.value)
+}
+
+async function seminarCodeIsLive(code: string): Promise<boolean | null> {
+  const formatted = formatCode(code)
+  try {
+    const response = await authFetch(
+      `/api/mindmate/seminar/status?code=${encodeURIComponent(formatted)}`
+    )
+    if (!response.ok) {
+      return false
+    }
+    const status = (await response.json()) as { live?: boolean }
+    return Boolean(status.live)
+  } catch {
+    return null
+  }
+}
+
+/** A code that failed join stays hidden until status says that same invite is live again. */
+async function reviveJoinableCodes(rows: CollabSessionRow[]): Promise<void> {
+  const pending = rows.filter((row) => isMindmateSeminarCodeUnjoinable(row.code))
+  await Promise.all(
+    pending.map(async (row) => {
+      const live = await seminarCodeIsLive(row.code)
+      if (live === true) {
+        clearMindmateSeminarCodeUnjoinable(row.code)
+        return
+      }
+      if (live === false) {
+        markMindmateSeminarCodeUnjoinable(row.code)
+      }
+    })
+  )
+}
+
+function withoutUnjoinableRows(rows: CollabSessionRow[]): CollabSessionRow[] {
+  return rows.filter(
+    (row) =>
+      !wasMindmateSeminarCodeRecentlyEnded(row.code) && !isMindmateSeminarCodeUnjoinable(row.code)
+  )
 }
 
 async function pruneStaleLocalSessions(): Promise<void> {
@@ -121,7 +166,10 @@ async function pruneStaleLocalSessions(): Promise<void> {
   const survivors: CollabSessionRow[] = []
   for (const row of localSessions.value) {
     const key = normalizeCode(row.code)
-    if (wasMindmateSeminarCodeRecentlyEnded(row.code)) {
+    if (
+      wasMindmateSeminarCodeRecentlyEnded(row.code) ||
+      isMindmateSeminarCodeUnjoinable(row.code)
+    ) {
       continue
     }
     if (orgKeys.has(key)) {
@@ -160,35 +208,36 @@ async function fetchSessions(showSpinner = true): Promise<void> {
   if (showSpinner) loading.value = true
   try {
     const response = await authFetch('/api/mindmate/seminar/organization/sessions')
+    const hostedRows: CollabSessionRow[] = []
     if (response.ok) {
       const data = await response.json()
-      orgSessions.value = ((data.sessions || []) as CollabSessionRow[])
-        .filter((row) => !wasMindmateSeminarCodeRecentlyEnded(row.code))
-        .map((row) => ({
-          ...row,
-          live: true,
-        }))
+      orgSessions.value = ((data.sessions || []) as CollabSessionRow[]).map((row) => ({
+        ...row,
+        live: true,
+      }))
     } else if (response.status !== 429) {
       notify.errorKey('mindgraphLanding.loadOrgSessionsFailed')
     }
     const hostedRes = await authFetch('/api/mindmate/seminar/my/hosted')
     if (hostedRes.ok) {
       const hostedData = await hostedRes.json()
-      const hostedRows = (
+      const listed = (
         Array.isArray(hostedData.sessions)
           ? hostedData.sessions
           : hostedData.session
             ? [hostedData.session]
             : []
       ) as CollabSessionRow[]
-      for (const hosted of hostedRows) {
-        if (hosted?.code && !wasMindmateSeminarCodeRecentlyEnded(hosted.code)) {
-          trackLocalMindmateSeminarSession(hosted)
-        }
-      }
-      if (hostedRows.length > 0) {
-        loadLocalSessions()
-      }
+      hostedRows.push(...listed.filter((row) => row?.code))
+    }
+    await reviveJoinableCodes([...orgSessions.value, ...hostedRows])
+    orgSessions.value = withoutUnjoinableRows(orgSessions.value)
+    const joinableHosted = withoutUnjoinableRows(hostedRows)
+    for (const hosted of joinableHosted) {
+      trackLocalMindmateSeminarSession(hosted)
+    }
+    if (joinableHosted.length > 0) {
+      loadLocalSessions()
     }
     await pruneStaleLocalSessions()
     void refreshSeminarUnread()
@@ -230,12 +279,8 @@ function onSessionRemoved(event: Event): void {
 }
 
 function evictRecentlyEndedRows(): void {
-  orgSessions.value = orgSessions.value.filter(
-    (row) => !wasMindmateSeminarCodeRecentlyEnded(row.code)
-  )
-  localSessions.value = localSessions.value.filter(
-    (row) => !wasMindmateSeminarCodeRecentlyEnded(row.code)
-  )
+  orgSessions.value = withoutUnjoinableRows(orgSessions.value)
+  localSessions.value = withoutUnjoinableRows(localSessions.value)
 }
 
 function onStorage(event: StorageEvent): void {
@@ -252,6 +297,11 @@ function onStorage(event: StorageEvent): void {
 
 function openSession(row: CollabSessionRow): void {
   const formatted = formatCode(row.code)
+  if (isMindmateSeminarCodeUnjoinable(formatted)) {
+    evictSessionByCode(formatted)
+    notify.errorKey('mindmate.collabJoinFailed')
+    return
+  }
   if (wasMindmateSeminarCodeRecentlyEnded(formatted)) {
     evictSessionByCode(formatted)
     notify.infoKey('mindmate.collabRoomEndedHost')

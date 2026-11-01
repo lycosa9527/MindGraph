@@ -67,9 +67,14 @@ import {
   previousCollabUserPrompt,
 } from '@/utils/mindmateSeminarDisplay'
 import { sameCollabMessageMinute } from '@/utils/mindmateSeminarRead'
+import { saveFinishedSeminar } from '@/utils/mindmateSeminarLibrarySave'
 import {
+  clearMindmateSeminarCodeUnjoinable,
   formatMindmateSeminarCode,
+  loadLocalMindmateSeminarSessions,
   markMindmateSeminarCodeEnded,
+  markMindmateSeminarCodeUnjoinable,
+  normalizeMindmateSeminarCode,
   trackLocalMindmateSeminarSession,
   wasMindmateSeminarCodeRecentlyEnded,
 } from '@/utils/mindmateSeminarSessions'
@@ -388,15 +393,39 @@ async function joinRoomAndConnect(): Promise<void> {
         }
         return
       }
-      if (response.status === 404 || hostJustEnded) {
+      if (hostJustEnded) {
         markMindmateSeminarCodeEnded(code)
         dropLiveCollabRoom(code)
         teardownMindmateSeminarClient(code, { removeFromHistory: true })
         if (viewActive) {
           emit('ended', 'host')
-          if (!hostJustEnded) {
-            notify.error(await parseJoinErrorDetail(response))
-          }
+        }
+        return
+      }
+      if (response.status === 404 || response.status === 403) {
+        const roomKey = normalizeMindmateSeminarCode(code)
+        const localRow = loadLocalMindmateSeminarSessions().find(
+          (row) => normalizeMindmateSeminarCode(row.code) === roomKey
+        )
+        const sessionId = localRow?.session_id || ''
+        const isOwner = localRow?.owner_user_id === Number(authStore.user?.id)
+        markMindmateSeminarCodeUnjoinable(code)
+        markMindmateSeminarCodeEnded(code)
+        dropLiveCollabRoom(code)
+        teardownMindmateSeminarClient(code, { removeFromHistory: true })
+        if (response.status === 404 && sessionId && isOwner) {
+          void saveFinishedSeminar(sessionId, { openAfterSave: false }).then((outcome) => {
+            if (outcome === 'saved') {
+              notify.successKey('mindmate.collabSaveLibraryDone')
+              return
+            }
+            notify.errorKey('mindmate.collabJoinFailed')
+          })
+        } else if (viewActive) {
+          notify.errorKey('mindmate.collabJoinFailed')
+        }
+        if (viewActive) {
+          emit('ended', 'left')
         }
         return
       }
@@ -411,6 +440,7 @@ async function joinRoomAndConnect(): Promise<void> {
     if (generation !== joinGeneration) {
       return
     }
+    clearMindmateSeminarCodeUnjoinable(code)
     trackLocalMindmateSeminarSession({
       session_id: String(data.session_id || ''),
       code: String(data.code || code),

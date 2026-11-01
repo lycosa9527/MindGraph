@@ -71,12 +71,19 @@ def _cluster_base_oid_count(data_path: Path) -> int:
         return 0
 
 
+def _is_database_oid_dir(path: Path) -> bool:
+    """True for ``base/<oid>``, which stores ``PG_VERSION`` but is not a cluster."""
+    return path.parent.name == "base"
+
+
 def _scan_root_for_clusters(root: Path, limit: int) -> list[Path]:
     """Return initialized cluster paths under ``root`` (shallow sweep)."""
     found: list[Path] = []
     seen: set[str] = set()
 
     def append(path: Path) -> None:
+        if _is_database_oid_dir(path):
+            return
         try:
             resolved = path.resolve()
         except OSError:
@@ -91,6 +98,8 @@ def _scan_root_for_clusters(root: Path, limit: int) -> list[Path]:
 
     append(root)
     if len(found) >= limit or not root.is_dir():
+        return found[:limit]
+    if not os.access(root, os.X_OK):
         return found[:limit]
 
     try:

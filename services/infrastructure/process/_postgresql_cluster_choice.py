@@ -58,9 +58,26 @@ def env_file_path() -> Path:
     return _project_root() / ".env"
 
 
+def _assignment_in_file(env_path: Path, key: str) -> str:
+    """Return the value of ``key`` in ``env_path``, or an empty string."""
+    if not env_path.is_file():
+        return ""
+    try:
+        raw = env_path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    prefix = f"{key}="
+    for raw_line in raw.splitlines():
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#") or not stripped.startswith(prefix):
+            continue
+        return stripped[len(prefix) :].strip().strip("'").strip('"')
+    return ""
+
+
 def configured_data_dir(port: int) -> Path | None:
-    """Return ``POSTGRESQL_DATA_DIR`` when it is an initialized cluster on ``port``."""
-    raw = os.getenv(_ENV_KEY, "").strip()
+    """Return ``POSTGRESQL_DATA_DIR`` from the environment or ``.env`` when it is on ``port``."""
+    raw = os.getenv(_ENV_KEY, "").strip() or _assignment_in_file(env_file_path(), _ENV_KEY)
     if not raw:
         return None
     path = Path(raw).expanduser()
@@ -69,6 +86,14 @@ def configured_data_dir(port: int) -> Path | None:
     if read_cluster_port(path) != port:
         return None
     return path
+
+
+def env_locks_data_dir(data_path: Path, port: int) -> bool:
+    """True when ``.env`` already names this data directory and it is not a distro ``main``."""
+    configured = configured_data_dir(port)
+    if configured is None or not _paths_match(configured, data_path):
+        return False
+    return not _is_distro_main(configured)
 
 
 def _named_mindgraph(on_port: list[RankedCluster]) -> RankedCluster | None:
@@ -82,10 +107,11 @@ def choose_cluster(config: PostgresRuntimeConfig) -> ClusterChoice:
     """
     Pick the local cluster launch should use.
 
-    A cluster that contains the database wins, including over ``POSTGRESQL_DATA_DIR``
-    when that value points at an empty distro ``main`` cluster. A directory
-    whose path contains ``mindgraph`` is next. An empty ``<version>/main``
-    directory is not kept just because it is the configured path.
+    After the survey, ``POSTGRESQL_DATA_DIR`` in ``.env`` locks that cluster when
+    it is one of the directories that already contains the database. A distro
+    ``main`` path does not lock. A directory whose path contains ``mindgraph``
+    is next. An empty ``<version>/main`` directory is not kept just because it
+    is the configured path.
     """
     if sys.platform == "win32" or not config.is_local:
         return ClusterChoice(path=None, on_port=())
@@ -95,8 +121,21 @@ def choose_cluster(config: PostgresRuntimeConfig) -> ClusterChoice:
     verified = [item for item in on_port if item.has_database]
     configured = configured_data_dir(config.port)
     other = next((item for item in ranked if item.has_database and item.port != config.port), None)
+    locked = _env_listed_cluster(configured, verified)
+    if locked is not None:
+        return ClusterChoice(path=locked, on_port=tuple(on_port), other_port=other)
     selected = _select_on_port(configured, verified, on_port)
     return ClusterChoice(path=selected, on_port=tuple(on_port), other_port=other)
+
+
+def _env_listed_cluster(configured: Path | None, verified: list[RankedCluster]) -> Path | None:
+    """Lock ``.env`` when that surveyed cluster already contains the database."""
+    if configured is None or _is_distro_main(configured):
+        return None
+    for item in verified:
+        if _paths_match(item.path, configured):
+            return item.path
+    return None
 
 
 def _select_on_port(
@@ -156,22 +195,10 @@ def _replace_env_key(lines: list[str], key: str, value: str) -> list[str]:
 
 
 def _env_has_same_dir(env_path: Path, data_path: Path) -> bool:
-    if not env_path.is_file():
+    current = _assignment_in_file(env_path, _ENV_KEY)
+    if not current:
         return False
-    try:
-        raw = env_path.read_text(encoding="utf-8")
-    except OSError:
-        return False
-    prefix = f"{_ENV_KEY}="
-    for raw_line in raw.splitlines():
-        stripped = raw_line.strip()
-        if not stripped or stripped.startswith("#") or not stripped.startswith(prefix):
-            continue
-        current = stripped[len(prefix) :].strip().strip("'").strip('"')
-        if not current:
-            return False
-        return _paths_match(Path(current).expanduser(), data_path)
-    return False
+    return _paths_match(Path(current).expanduser(), data_path)
 
 
 def publish_cluster_env(data_path: Path) -> str:

@@ -81,34 +81,80 @@ def merge_org_session_rows(
 def without_ended_redis_fillers(
     sql_rows: List[Dict[str, Any]],
     merged: List[Dict[str, Any]],
-    live_filler_ids: set[str],
+    live_filler_codes: Dict[str, str],
 ) -> List[Dict[str, Any]]:
-    """Drop a Redis-only sidebar row whose seminar is missing or already ended.
+    """Drop a Redis-only sidebar row that is not the seminar's current invite code.
 
     SQL rows stay. A Redis filler stays only when Postgres still has that
-    session live, which is how a colleague room hidden by RLS remains listed.
+    session live under the same code, which is how a colleague room hidden by
+    RLS remains listed. A leftover registry code for a live session is not listed.
     """
-    sql_ids = {str(row.get("session_id") or "") for row in sql_rows if row.get("session_id")}
+    sql_codes = {normalize_collab_code(str(row.get("code") or "")) for row in sql_rows if row.get("code")}
     kept: List[Dict[str, Any]] = []
     for row in merged:
+        code = normalize_collab_code(str(row.get("code") or ""))
+        if code and code in sql_codes:
+            kept.append(row)
+            continue
         session_id = str(row.get("session_id") or "")
-        if session_id in sql_ids or session_id in live_filler_ids:
+        live_code = normalize_collab_code(live_filler_codes.get(session_id) or "")
+        if code and live_code and code == live_code:
             kept.append(row)
     return kept
 
 
-async def _live_filler_ids(session_ids: List[str]) -> set[str]:
-    """Return the subset of ids that are still a live seminar."""
+def stale_redis_filler_codes(
+    sql_rows: List[Dict[str, Any]],
+    merged: List[Dict[str, Any]],
+    live_filler_codes: Dict[str, str],
+) -> List[str]:
+    """Invite codes present only as a Redis filler that must leave the org registry."""
+    kept = {
+        normalize_collab_code(str(row.get("code") or ""))
+        for row in without_ended_redis_fillers(sql_rows, merged, live_filler_codes)
+    }
+    stale: List[str] = []
+    seen: set[str] = set()
+    for row in merged:
+        code = normalize_collab_code(str(row.get("code") or ""))
+        if not code or code in kept or code in seen:
+            continue
+        seen.add(code)
+        stale.append(code)
+    return stale
+
+
+async def _live_filler_codes(session_ids: List[str]) -> Dict[str, str]:
+    """Map a still-live seminar id to the invite code stored on that row."""
     if not session_ids:
-        return set()
+        return {}
     async with system_rls_session() as db:
         result = await db.execute(
-            select(MindmateSeminarSession.id).where(
+            select(MindmateSeminarSession.id, MindmateSeminarSession.code).where(
                 MindmateSeminarSession.id.in_(session_ids),
                 MindmateSeminarSession.ended_at.is_(None),
             ),
         )
-        return {str(row) for row in result.scalars().all()}
+        return {str(session_id): normalize_collab_code(str(code or "")) for session_id, code in result.all() if code}
+
+
+async def drop_stale_org_registry_codes(org_ids: List[int], codes: List[str]) -> None:
+    """Remove invite codes that are no longer a live seminar from the org registries."""
+    unique = [normalize_collab_code(code) for code in codes if normalize_collab_code(code)]
+    if not unique:
+        return
+    redis = get_async_redis()
+    if not redis:
+        return
+    try:
+        pipe = redis.pipeline(transaction=False)
+        for code in unique:
+            pipe.srem(registry_global_org_key(), code)
+            for org_id in org_ids:
+                pipe.srem(registry_org_key(org_id), code)
+        await pipe.execute()
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] stale org registry cleanup failed: %s", exc)
 
 
 async def resolve_viewer_org_id(
@@ -421,11 +467,10 @@ async def list_visible_org_sessions(
         session_id = str(row.get("session_id") or "")
         if session_id and session_id not in sql_ids:
             filler_ids.append(session_id)
-    merged = without_ended_redis_fillers(
-        sql_rows_all,
-        merged,
-        await _live_filler_ids(filler_ids),
-    )
+    live_codes = await _live_filler_codes(filler_ids)
+    stale_codes = stale_redis_filler_codes(sql_rows_all, merged, live_codes)
+    merged = without_ended_redis_fillers(sql_rows_all, merged, live_codes)
+    await drop_stale_org_registry_codes(org_ids, stale_codes)
     left_ids = await session_ids_viewer_left(user_id)
     if left_ids:
         merged = [row for row in merged if str(row.get("session_id") or "") not in left_ids]

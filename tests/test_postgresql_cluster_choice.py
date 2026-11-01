@@ -35,6 +35,27 @@ def _init_cluster(path: Path) -> Path:
     return path
 
 
+def test_env_locks_listed_mindgraph_cluster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Once clusters are listed, .env keeps the mindgraph directory that has the database."""
+    env_path = tmp_path / ".env"
+    mindgraph = _init_cluster(tmp_path / "postgresql")
+    other = _init_cluster(tmp_path / "other")
+    env_path.write_text(f"POSTGRESQL_DATA_DIR={mindgraph}\n", encoding="utf-8")
+    monkeypatch.setenv("MINDGRAPH_ENV_FILE", str(env_path))
+    monkeypatch.delenv("POSTGRESQL_DATA_DIR", raising=False)
+    monkeypatch.setattr(
+        choice,
+        "discover_ranked_cluster_details",
+        lambda config: [
+            _ranked(other, has_database=True, score=2000),
+            _ranked(mindgraph, has_database=True, score=1000),
+        ],
+    )
+
+    selected = choice.choose_cluster(_config())
+    assert selected.path == mindgraph
+
+
 def test_choose_verified_mindgraph_over_distro_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The cluster that contains the database is chosen while the distro cluster is not."""
     distro = tmp_path / "18" / "main"

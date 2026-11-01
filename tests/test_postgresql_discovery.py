@@ -53,6 +53,41 @@ def test_invalid_database_name_sanitized_before_offline_probe(
     assert captured["database"] == "mindgraph"
 
 
+def test_scan_skips_database_oid_directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """PG_VERSION inside base/<oid> is a database directory, not another cluster."""
+    cluster = _init_cluster(tmp_path / "postgresql", 5432)
+    oid_dir = cluster / "base" / "16385"
+    oid_dir.mkdir()
+    (oid_dir / "PG_VERSION").write_text("18\n", encoding="utf-8")
+    monkeypatch.setattr(pg_disc, "_filesystem_scan_roots", lambda: [cluster])
+
+    found = pg_disc.scan_local_cluster_dirs()
+    assert cluster.resolve() in found
+    assert oid_dir.resolve() not in found
+
+
+def test_scan_does_not_list_an_unreadable_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A distro data directory this user cannot list is not probed as a scan error."""
+    cluster = _init_cluster(tmp_path / "main", 5432)
+    oid_dir = cluster / "base" / "16385"
+    oid_dir.mkdir()
+    (oid_dir / "PG_VERSION").write_text("18\n", encoding="utf-8")
+    monkeypatch.setattr(pg_disc, "_filesystem_scan_roots", lambda: [cluster])
+
+    def _access(path: object, mode: int) -> bool:
+        if Path(str(path)) == cluster and mode & pg_disc.os.X_OK:
+            return False
+        return True
+
+    monkeypatch.setattr(pg_disc.os, "access", _access)
+    found = pg_disc.scan_local_cluster_dirs()
+    assert cluster.resolve() in found
+    assert oid_dir.resolve() not in found
+
+
 def test_scan_root_finds_nested_cluster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Filesystem sweep finds PG_VERSION in nested directories."""
     cluster = _init_cluster(tmp_path / "postgresql" / "mindgraph", 5432)

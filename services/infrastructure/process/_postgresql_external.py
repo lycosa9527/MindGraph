@@ -22,6 +22,7 @@ from services.infrastructure.process._port_utils import check_port_in_use
 from services.infrastructure.process._postgresql_cluster_choice import (
     announce_cluster_choice,
     choose_cluster,
+    env_locks_data_dir,
     publish_cluster_env,
 )
 from services.infrastructure.process._postgresql_discovery import (
@@ -273,6 +274,18 @@ def print_app_managed_blocking_external_help(
         pass
 
 
+def _print_port_release_failure(port: int, listener: Path, data_path: Path) -> None:
+    """Explain which cluster still holds ``port`` and how to stop a distro unit."""
+    try:
+        print(f"[ERROR] Could not free port {port} from {listener}")
+        print(f"        MindGraph data directory: {data_path}")
+        unit = _distro_unit(listener)
+        if unit is not None:
+            print(f"        Stop that cluster: sudo systemctl disable --now {unit}")
+    except (ValueError, OSError):
+        pass
+
+
 def _paths_match(left: Path, right: Path) -> bool:
     try:
         return left.resolve() == right.resolve()
@@ -327,23 +340,29 @@ def _wait_until_port_free(host: str, port: int, attempts: int = 15) -> bool:
     return False
 
 
-def _release_foreign_cluster(host: str, port: int, data_path: Path) -> bool:
-    """Stop a postmaster that is not the MindGraph data directory."""
+def _request_foreign_stop(data_path: Path) -> bool:
+    """Ask the foreign postmaster to stop. True when a stop command was accepted."""
     unit = _distro_unit(data_path)
     if unit is not None:
         version = data_path.parent.name
         name = data_path.name
-        _run_root(["systemctl", "disable", "--now", unit])
-        _run_root(["pg_ctlcluster", version, name, "stop"])
-    else:
-        pg_ctl = _find_pg_ctl_binary(data_path)
-        if pg_ctl is not None:
-            stop_cmd = launch_command_as_postgres([pg_ctl, "-D", str(data_path), "stop", "-m", "fast"])
-            _run_command(stop_cmd)
-    if _wait_until_port_free(host, port):
-        return True
-    _run_root(["systemctl", "stop", "postgresql"])
-    return _wait_until_port_free(host, port)
+        if _run_root(["systemctl", "disable", "--now", unit]):
+            return True
+        return _run_root(["pg_ctlcluster", version, name, "stop"])
+
+    pg_ctl = _find_pg_ctl_binary(data_path)
+    if pg_ctl is not None:
+        stop_cmd = launch_command_as_postgres([pg_ctl, "-D", str(data_path), "stop", "-m", "fast"])
+        if _run_command(stop_cmd):
+            return True
+    return _run_root(["systemctl", "stop", "postgresql"])
+
+
+def _release_foreign_cluster(host: str, port: int, data_path: Path) -> bool:
+    """Stop a postmaster that is not the MindGraph data directory."""
+    if _request_foreign_stop(data_path):
+        return _wait_until_port_free(host, port)
+    return _wait_until_port_free(host, port, attempts=1)
 
 
 def _disable_competing_distro_cluster(port: int, mindgraph: Path) -> None:
@@ -376,6 +395,20 @@ def _warn_if_database_url_rejected(config: PostgresRuntimeConfig) -> None:
         pass
 
 
+def _locked_port_is_ready(config: PostgresRuntimeConfig, data_path: Path) -> bool:
+    """True when the locked cluster's port is already accepting connections."""
+    connected = try_database_url_connect(config, timeout=2)
+    if not connected and not postgresql_accepts_connections(config.connection_probe_host, config.port):
+        return False
+    try:
+        print(f"[POSTGRESQL] Locked cluster {data_path}")
+    except (ValueError, OSError):
+        pass
+    if not connected:
+        _warn_if_database_url_rejected(config)
+    return True
+
+
 def _finish_mindgraph_cluster(config: PostgresRuntimeConfig, data_path: Path) -> bool:
     _disable_competing_distro_cluster(config.port, data_path)
     _warn_if_database_url_rejected(config)
@@ -404,6 +437,7 @@ def use_persistent_mindgraph_cluster(config: PostgresRuntimeConfig) -> Optional[
         announce_cluster_choice(config, choice, "missing")
         return None
 
+    already_locked = env_locks_data_dir(data_path, config.port)
     env_status = publish_cluster_env(data_path)
     announce_cluster_choice(config, choice, env_status)
 
@@ -416,6 +450,8 @@ def use_persistent_mindgraph_cluster(config: PostgresRuntimeConfig) -> Optional[
         pid_file_is_ours = own_pid is not None and pid == own_pid and listener is None
         if listener_is_ours or pid_file_is_ours:
             return _finish_mindgraph_cluster(config, data_path)
+        if already_locked and _locked_port_is_ready(config, data_path):
+            return True
         if listener is None:
             try:
                 print(f"[ERROR] Port {config.port} is in use by pid {pid}, data directory unknown.")
@@ -430,11 +466,7 @@ def use_persistent_mindgraph_cluster(config: PostgresRuntimeConfig) -> Optional[
         except (ValueError, OSError):
             pass
         if not _release_foreign_cluster(host, config.port, listener):
-            try:
-                print(f"[ERROR] Could not free port {config.port} from {listener}")
-                print(f"        MindGraph data directory: {data_path}")
-            except (ValueError, OSError):
-                pass
+            _print_port_release_failure(config.port, listener, data_path)
             return False
 
     if try_start_persistent_cluster(data_path, config.port):

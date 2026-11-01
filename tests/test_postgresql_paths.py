@@ -38,3 +38,22 @@ def test_find_system_cluster_prefers_matching_port(monkeypatch: pytest.MonkeyPat
     )
     found = pg_paths.find_system_postgresql_cluster(5433)
     assert found == (main16, "16")
+
+
+def test_find_system_cluster_accepts_unreadable_data_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """pg_lsclusters still counts a data directory when PG_VERSION cannot be read."""
+    main = tmp_path / "18" / "main"
+    main.mkdir(parents=True)
+
+    class _LsclustersResult:
+        returncode = 0
+        stdout = f"18  main    5432 online postgres {main} /var/log/postgresql/postgresql-18-main.log\n"
+
+    monkeypatch.setattr(
+        "services.infrastructure.process._postgresql_paths.subprocess.run",
+        lambda *args, **kwargs: _LsclustersResult(),
+    )
+    assert pg_paths.find_system_postgresql_cluster(5432) == (main, "18")

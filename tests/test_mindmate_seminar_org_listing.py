@@ -14,6 +14,7 @@ from services.features.mindmate_seminar.org_listing import (
     list_visible_org_sessions,
     merge_org_session_rows,
     resolve_viewer_org_id,
+    stale_redis_filler_codes,
     without_ended_redis_fillers,
 )
 
@@ -96,8 +97,23 @@ def test_ended_redis_filler_drops_when_postgres_says_not_live() -> None:
         {"session_id": "sess-dead", "code": "OLD-ONE"},
         {"session_id": "sess-live", "code": "NEW-ONE"},
     ]
-    kept = without_ended_redis_fillers(sql_rows, merged, {"sess-live"})
+    kept = without_ended_redis_fillers(sql_rows, merged, {"sess-live": "NEW-ONE"})
     assert [row["session_id"] for row in kept] == ["sess-5", "sess-live"]
+
+
+def test_redis_filler_drops_when_the_live_invite_code_changed() -> None:
+    """A registry code that is not the live row's code must not come back in the sidebar."""
+    sql_rows = [{"session_id": "sess-5", "code": "GJR-42J"}]
+    merged = [
+        {"session_id": "sess-5", "code": "GJR-42J"},
+        {"session_id": "sess-5", "code": "OLD-ONE"},
+        {"session_id": "sess-live", "code": "NEW-ONE"},
+        {"session_id": "sess-live", "code": "STALE"},
+    ]
+    live_codes = {"sess-live": "NEW-ONE"}
+    kept = without_ended_redis_fillers(sql_rows, merged, live_codes)
+    assert [row["code"] for row in kept] == ["GJR-42J", "NEW-ONE"]
+    assert stale_redis_filler_codes(sql_rows, merged, live_codes) == ["OLD-ONE", "STALE"]
 
 
 @pytest.mark.asyncio
@@ -237,8 +253,12 @@ async def test_visible_listing_merges_sql_own_and_redis_peer() -> None:
             AsyncMock(return_value=redis_peer),
         ),
         patch(
-            "services.features.mindmate_seminar.org_listing._live_filler_ids",
-            AsyncMock(return_value={"sess-3"}),
+            "services.features.mindmate_seminar.org_listing._live_filler_codes",
+            AsyncMock(return_value={"sess-3": "8KZ-BAW"}),
+        ),
+        patch(
+            "services.features.mindmate_seminar.org_listing.drop_stale_org_registry_codes",
+            AsyncMock(),
         ),
         patch(
             "services.features.mindmate_seminar.org_listing.session_ids_viewer_left",

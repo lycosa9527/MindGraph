@@ -62,6 +62,51 @@ def read_cluster_port(data_path: Path, default: int = 5432) -> int:
     return default
 
 
+def _directory_exists(path: Path) -> bool:
+    """True when ``path`` is a directory, including one this user cannot list."""
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
+def _pg_lsclusters_rows() -> list[tuple[str, str, int, Path]]:
+    """
+    Rows from ``pg_lsclusters --no-header``.
+
+    Each row is version, cluster name, port, and data directory.
+    A listed directory counts even when ``PG_VERSION`` is unreadable.
+    """
+    try:
+        result = subprocess.run(
+            ["pg_lsclusters", "--no-header"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError, OSError) as exc:
+        logger.debug("pg_lsclusters cluster detection failed: %s", exc)
+        return []
+    if result.returncode != 0:
+        return []
+
+    rows: list[tuple[str, str, int, Path]] = []
+    for line in result.stdout.strip().splitlines():
+        fields = line.split()
+        if len(fields) < 6:
+            continue
+        try:
+            cluster_port = int(fields[2])
+        except ValueError:
+            continue
+        data_dir = Path(fields[5])
+        if not _directory_exists(data_dir):
+            continue
+        rows.append((fields[0], fields[1], cluster_port, data_dir))
+    return rows
+
+
 def find_system_postgresql_cluster(port: Optional[int] = None) -> Optional[Tuple[Path, str]]:
     """
     Locate a distro-managed PostgreSQL cluster (e.g. ``/var/lib/postgresql/18/main``).
@@ -72,27 +117,11 @@ def find_system_postgresql_cluster(port: Optional[int] = None) -> Optional[Tuple
     Returns:
         Tuple of (main_data_directory, version_label) or None.
     """
-    matches: list[tuple[Path, str, int]] = []
-
-    try:
-        result = subprocess.run(
-            ["pg_lsclusters", "--no-header"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-        if result.returncode == 0:
-            for line in result.stdout.strip().splitlines():
-                fields = line.split()
-                if len(fields) >= 6 and fields[1] == "main":
-                    version = fields[0]
-                    cluster_port = int(fields[2])
-                    data_dir = Path(fields[5])
-                    if is_initialized_cluster(data_dir):
-                        matches.append((data_dir, version, cluster_port))
-    except (FileNotFoundError, subprocess.SubprocessError, ValueError, OSError) as exc:
-        logger.debug("pg_lsclusters cluster detection failed: %s", exc)
+    matches: list[tuple[Path, str, int]] = [
+        (data_dir, version, cluster_port)
+        for version, name, cluster_port, data_dir in _pg_lsclusters_rows()
+        if name == "main"
+    ]
 
     if port is not None:
         for data_dir, version, cluster_port in matches:

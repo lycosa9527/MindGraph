@@ -6,11 +6,14 @@
 
 export const LOCAL_MINDMATE_COLLAB_SESSIONS_KEY = 'mindmate_seminar_recent_sessions'
 export const MINDMATE_COLLAB_ENDED_CODES_KEY = 'mindmate_seminar_recently_ended'
+export const MINDMATE_COLLAB_UNJOINABLE_CODES_KEY = 'mindmate_seminar_unjoinable_codes'
 export const MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT = 'mindmate-seminar-sessions-changed'
 export const MINDMATE_COLLAB_SESSION_REMOVED_EVENT = 'mindmate-seminar-session-removed'
 
 const ENDED_CODE_TTL_MS = 15_000
+const UNJOINABLE_CODE_TTL_MS = 24 * 60 * 60 * 1000
 const recentlyEndedCodes = new Map<string, number>()
+const unjoinableCodes = new Map<string, number>()
 
 function persistEndedCodes(): void {
   if (typeof localStorage === 'undefined') {
@@ -66,10 +69,10 @@ export function markMindmateSeminarCodeEnded(code: string): void {
 /** Drop the just-ended mark so the owner can open the same room again. */
 export function clearMindmateSeminarCodeEnded(code: string): void {
   hydrateEndedCodesFromStorage()
-  if (!recentlyEndedCodes.delete(normalizeMindmateSeminarCode(code))) {
-    return
+  if (recentlyEndedCodes.delete(normalizeMindmateSeminarCode(code))) {
+    persistEndedCodes()
   }
-  persistEndedCodes()
+  clearMindmateSeminarCodeUnjoinable(code)
 }
 
 /** True when this invite code was just ended (this tab or another tab on the same origin). */
@@ -83,6 +86,85 @@ export function wasMindmateSeminarCodeRecentlyEnded(code: string): boolean {
   if (Date.now() - markedAt > ENDED_CODE_TTL_MS) {
     recentlyEndedCodes.delete(key)
     persistEndedCodes()
+    return false
+  }
+  return true
+}
+
+function persistUnjoinableCodes(): void {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+  const now = Date.now()
+  const payload: Record<string, number> = {}
+  for (const [key, markedAt] of unjoinableCodes) {
+    if (now - markedAt <= UNJOINABLE_CODE_TTL_MS) {
+      payload[key] = markedAt
+    } else {
+      unjoinableCodes.delete(key)
+    }
+  }
+  try {
+    localStorage.setItem(MINDMATE_COLLAB_UNJOINABLE_CODES_KEY, JSON.stringify(payload))
+  } catch {
+    // quota / privacy mode
+  }
+}
+
+function hydrateUnjoinableCodesFromStorage(): void {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+  try {
+    const raw = localStorage.getItem(MINDMATE_COLLAB_UNJOINABLE_CODES_KEY)
+    if (!raw) {
+      return
+    }
+    const parsed = JSON.parse(raw) as Record<string, number>
+    const now = Date.now()
+    for (const [key, markedAt] of Object.entries(parsed)) {
+      if (typeof markedAt !== 'number' || now - markedAt > UNJOINABLE_CODE_TTL_MS) {
+        continue
+      }
+      const existing = unjoinableCodes.get(key)
+      if (existing == null || markedAt > existing) {
+        unjoinableCodes.set(key, markedAt)
+      }
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+}
+
+/**
+ * Hide this invite code from the sidebar until a later status check says it is live.
+ * A failed join used to fall out of the 15s ended window and the list put the row back.
+ */
+export function markMindmateSeminarCodeUnjoinable(code: string): void {
+  unjoinableCodes.set(normalizeMindmateSeminarCode(code), Date.now())
+  persistUnjoinableCodes()
+}
+
+/** Allow the sidebar to show this invite code again. */
+export function clearMindmateSeminarCodeUnjoinable(code: string): void {
+  hydrateUnjoinableCodesFromStorage()
+  if (!unjoinableCodes.delete(normalizeMindmateSeminarCode(code))) {
+    return
+  }
+  persistUnjoinableCodes()
+}
+
+/** True when opening this code recently failed and it must not be listed again yet. */
+export function isMindmateSeminarCodeUnjoinable(code: string): boolean {
+  hydrateUnjoinableCodesFromStorage()
+  const key = normalizeMindmateSeminarCode(code)
+  const markedAt = unjoinableCodes.get(key)
+  if (markedAt == null) {
+    return false
+  }
+  if (Date.now() - markedAt > UNJOINABLE_CODE_TTL_MS) {
+    unjoinableCodes.delete(key)
+    persistUnjoinableCodes()
     return false
   }
   return true
@@ -200,7 +282,7 @@ function isSameTrackedSession(
 }
 
 export function trackLocalMindmateSeminarSession(row: LocalMindmateSeminarSession): void {
-  if (wasMindmateSeminarCodeRecentlyEnded(row.code)) {
+  if (wasMindmateSeminarCodeRecentlyEnded(row.code) || isMindmateSeminarCodeUnjoinable(row.code)) {
     return
   }
   const key = normalizeMindmateSeminarCode(row.code)

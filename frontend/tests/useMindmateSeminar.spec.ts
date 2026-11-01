@@ -16,9 +16,13 @@ import {
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
   MINDMATE_COLLAB_ENDED_CODES_KEY,
   MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
+  MINDMATE_COLLAB_UNJOINABLE_CODES_KEY,
+  clearMindmateSeminarCodeEnded,
   formatMindmateSeminarCode,
+  isMindmateSeminarCodeUnjoinable,
   loadLocalMindmateSeminarSessions,
   markMindmateSeminarCodeEnded,
+  markMindmateSeminarCodeUnjoinable,
   normalizeMindmateSeminarCode,
   persistLocalMindmateSeminarSessions,
   shouldReconnectMindmateSeminar,
@@ -209,6 +213,7 @@ describe('recently ended collab codes', () => {
   beforeEach(() => {
     localStorage.removeItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
     localStorage.removeItem(MINDMATE_COLLAB_ENDED_CODES_KEY)
+    localStorage.removeItem(MINDMATE_COLLAB_UNJOINABLE_CODES_KEY)
     sessionStorage.removeItem(MINDMATE_COLLAB_ACTIVE_ROOM_KEY)
     sessionStorage.removeItem(MINDMATE_COLLAB_JOINED_ROOMS_KEY)
     embeddedCollabRoomCode.value = null
@@ -217,6 +222,20 @@ describe('recently ended collab codes', () => {
   it('records an ended invite code', () => {
     markMindmateSeminarCodeEnded('abc-def')
     expect(wasMindmateSeminarCodeRecentlyEnded('ABCDEF')).toBe(true)
+  })
+
+  it('keeps a failed join hidden after the short ended window', () => {
+    markMindmateSeminarCodeUnjoinable('OLD-ONE')
+    expect(isMindmateSeminarCodeUnjoinable('old-one')).toBe(true)
+    expect(wasMindmateSeminarCodeRecentlyEnded('OLD-ONE')).toBe(false)
+    trackLocalMindmateSeminarSession({
+      session_id: 'sess-stale',
+      code: 'OLD-ONE',
+      title: 'xxx',
+    })
+    expect(loadLocalMindmateSeminarSessions()).toHaveLength(0)
+    clearMindmateSeminarCodeEnded('OLD-ONE')
+    expect(isMindmateSeminarCodeUnjoinable('OLD-ONE')).toBe(false)
   })
 
   it('does not re-track a room that this tab just ended', () => {

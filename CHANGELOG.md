@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.201] - 2026-11-01
+
+> **A seminar invite that cannot be joined stays out of the sidebar, and startup keeps the PostgreSQL directory already named in `.env`.**
+
+### Fixed
+
+- **Seminar history** — A join that returns 404 or 403 hides that invite code for 24 hours. The sidebar brings it back only when a status check says the same invite is live. The owner of a missing room saves the finished seminar to the library. A Redis registry code that is not the live row's current invite is removed from the organization sets.
+- **PostgreSQL cluster** — `POSTGRESQL_DATA_DIR` in `.env` locks that surveyed cluster when it already contains the database. A distro `main` path does not lock. When that locked cluster's port is already accepting connections, startup leaves it running. A refused sudo returns at once instead of waiting for the port to free. Discovery skips `base/<oid>` directories and does not walk a directory this user cannot enter. `pg_lsclusters` still counts a data directory when `PG_VERSION` cannot be read.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`frontend/tests/useMindmateSeminar.spec.ts`](frontend/tests/useMindmateSeminar.spec.ts), [`tests/test_mindmate_seminar_org_listing.py`](tests/test_mindmate_seminar_org_listing.py)
+- [`tests/test_postgresql_cluster_choice.py`](tests/test_postgresql_cluster_choice.py), [`tests/test_postgresql_discovery.py`](tests/test_postgresql_discovery.py), [`tests/test_postgresql_external.py`](tests/test_postgresql_external.py), [`tests/test_postgresql_paths.py`](tests/test_postgresql_paths.py)
+
 ## [5.180.200] - 2026-11-01
 
 > **System settings record admin writes, heavy admin tabs load on demand, mind maps accept 4 to 8 branches, and Dify calls release the database first.**
