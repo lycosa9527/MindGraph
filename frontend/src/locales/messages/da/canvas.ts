@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Tilføj trin',
   'canvas.toolbar.addSubstepHistory': 'Tilføj undertrin',
   'canvas.toolbar.aiGenerate': 'AI genereret illustration',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generer baseret på centralt tema',
   'canvas.toolbar.aiGenerating': 'Genererer...',
   'canvas.toolbar.professionalContent.label': 'Professionelt indhold',

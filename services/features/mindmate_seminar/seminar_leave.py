@@ -7,6 +7,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -15,6 +16,8 @@ from models.domain.mindmate_seminar import MindmateSeminarMember, MindmateSemina
 from services.features.mindmate_seminar.group_members import actor_is_seminar_leader
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
 from utils.db.session_open import system_rls_session
+
+logger = logging.getLogger(__name__)
 
 
 async def session_ids_viewer_left(user_id: int) -> set[str]:
@@ -71,4 +74,5 @@ async def leave_live_seminar(user_id: int, session_id: str) -> str:
         code = session.code
         await db.commit()
     await get_mindmate_seminar_manager().remove_participant(code, user_id)
+    logger.info("[MindmateSeminar] left session=%s code=%s user=%s", session_id, code, user_id)
     return "ok"

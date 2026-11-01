@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Legg til trinn',
   'canvas.toolbar.addSubstepHistory': 'Legg til undertrinn',
   'canvas.toolbar.aiGenerate': 'AI generert illustrasjon',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generer basert på sentralt tema',
   'canvas.toolbar.aiGenerating': 'Genererer …',
   'canvas.toolbar.professionalContent.label': 'Profesjonelt innhold',

@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Додати крок',
   'canvas.toolbar.addSubstepHistory': 'Додати підкрок',
   'canvas.toolbar.aiGenerate': 'Генерація ШІ',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Генерувати з центральної теми',
   'canvas.toolbar.aiGenerating': 'Генерація…',
   'canvas.toolbar.professionalContent.label': 'Content level',

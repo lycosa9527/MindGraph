@@ -37,9 +37,10 @@ logger = logging.getLogger(__name__)
 
 
 class _IdleMonitorState:
-    """Holds the background idle-monitor asyncio task."""
+    """Holds the background idle-monitor task and the event that stops it."""
 
     task: Optional[asyncio.Task] = None
+    stop_event: Optional[asyncio.Event] = None
 
 
 _idle_monitor_state = _IdleMonitorState()
@@ -58,8 +59,9 @@ async def drop_orphan_mindmate_seminar_idle_score(code: str) -> None:
                 return
             await redis.delete(meta_key)
         await redis.zrem(idle_scores_key(), norm)
-    except REDIS_ERRORS:
-        return
+        logger.info("[MindmateSeminarIdle] dropped orphan score code=%s", norm)
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarIdle] orphan score drop failed code=%s: %s", norm, exc)
 
 
 async def _evaluate_code(code: str) -> None:
@@ -122,10 +124,33 @@ async def _monitor_loop(stop_event: asyncio.Event) -> None:
 
 
 def start_mindmate_seminar_idle_monitor() -> asyncio.Task:
-    """Start the background idle-room monitor task."""
+    """Start the background idle-room monitor task. A second call reuses the live task."""
+    current = _idle_monitor_state.task
+    if current is not None and not current.done():
+        return current
     stop_event = asyncio.Event()
-    _idle_monitor_state.task = asyncio.create_task(
+    _idle_monitor_state.stop_event = stop_event
+    task = asyncio.create_task(
         _monitor_loop(stop_event),
         name="mindmate-seminar-idle-monitor",
     )
-    return _idle_monitor_state.task
+    _idle_monitor_state.task = task
+    logger.info("[MindmateSeminarIdle] monitor started")
+    return task
+
+
+async def stop_mindmate_seminar_idle_monitor() -> None:
+    """Signal the idle monitor to exit and wait until its task finishes."""
+    stop_event = _idle_monitor_state.stop_event
+    task = _idle_monitor_state.task
+    _idle_monitor_state.stop_event = None
+    _idle_monitor_state.task = None
+    if stop_event is not None:
+        stop_event.set()
+    if task is None:
+        return
+    try:
+        await task
+    except asyncio.CancelledError:
+        return
+    logger.info("[MindmateSeminarIdle] monitor stopped")

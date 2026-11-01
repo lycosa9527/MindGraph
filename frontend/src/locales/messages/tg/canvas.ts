@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Қадамҳо илова кунед',
   'canvas.toolbar.addSubstepHistory': 'Иловаи зерқадами',
   'canvas.toolbar.aiGenerate': 'Тасвири тавлиди AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Дар асоси мавзӯи марказӣ тавлид кунед',
   'canvas.toolbar.aiGenerating': 'Эҷод карда мешавад…',
   'canvas.toolbar.professionalContent.label': 'Мундариҷаи касбӣ',

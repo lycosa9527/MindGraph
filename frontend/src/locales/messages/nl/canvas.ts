@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Stap toevoegen',
   'canvas.toolbar.addSubstepHistory': 'Substap toevoegen',
   'canvas.toolbar.aiGenerate': 'AI genereren',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Genereer vanuit het centrale onderwerp',
   'canvas.toolbar.aiGenerating': 'Genereren…',
   'canvas.toolbar.professionalContent.label': 'Content level',

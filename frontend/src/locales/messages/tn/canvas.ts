@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Tsenya dikgato',
   'canvas.toolbar.addSubstepHistory': 'Tsenya kgatopotlana',
   'canvas.toolbar.aiGenerate': 'Setshwantsho se se tlhamilweng ke AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Tlhama go ikaegilwe ka thitokgang',
   'canvas.toolbar.aiGenerating': 'Go tlhagisa...',
   'canvas.toolbar.professionalContent.label': 'Diteng tsa seporofešenale',

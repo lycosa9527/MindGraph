@@ -7,6 +7,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -25,6 +26,8 @@ from services.features.mindmate_seminar.seminar_message import (
 from utils.auth import get_current_user
 from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
 from utils.db.session_open import actor_rls_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -89,6 +92,12 @@ async def create_seminar_message(
     )
     if outcome.error or outcome.saved is None:
         code = outcome.error or "invalid_payload"
+        logger.info(
+            "[MindmateSeminar] message rejected session=%s user=%s code=%s",
+            session_id,
+            current_user.id,
+            code,
+        )
         raise HTTPException(status_code=_STATUS.get(code, status.HTTP_400_BAD_REQUEST), detail=code)
     saved = outcome.saved
     payload = {

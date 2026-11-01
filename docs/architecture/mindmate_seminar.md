@@ -32,7 +32,7 @@ Tier gate (when the flag is on): `TIER_FEATURE_ONLINE_COLLAB` (same as diagram c
 Redis keys under `mindmate_seminar:*`; fan-out room prefix `mms:{CODE}`.
 
 - **Host rooms:** Starting another seminar does not stop rooms this host already left open. Reopening a saved seminar stops that host's other live rooms. A school can keep 10 live seminars.
-- **Idle monitor:** [`idle_monitor.py`](../../services/features/mindmate_seminar/idle_monitor.py) drops orphan Redis scores. Silence, an empty roster, and the 1h/10h preset do not end the room. The leader ends it.
+- **Idle monitor:** [`idle_monitor.py`](../../services/features/mindmate_seminar/idle_monitor.py) drops orphan Redis scores. Silence, an empty roster, room age, and the 1h/10h preset do not end the room. The leader ends it. Lifespan cancels the monitor task on shutdown.
 - **Owner stop:** `POST /stop` → **4011**.
 - **Messages:** `POST /{session_id}/messages` saves a line. `GET /{session_id}/messages` reads pages. The socket pushes the saved row, AI tokens, and who is online.
 - **Resume tokens:** `{u,c,s}` in `joined` frame; subprotocol `mg-resume.{token}`.
@@ -70,7 +70,7 @@ Client → server: `ping`, `socket_ping`, `read`. A chat line is `POST /api/mind
 
 Server → client: `joined`, `snapshot`, `user_message`, `ai_message_chunk`, `ai_message_end`, `seminar_minutes`, `session_closing`, presence/error frames.
 
-**Shutdown delivery:** the server sends `session_closing` as JSON, then force-closes all sockets with **4010** (30-day expiry) or **4011** (host stop). The `room_idle_shutdown` / `session_ended_shutdown` frame types are internal fan-out signals and are not delivered as JSON to clients.
+**Shutdown delivery:** the server sends `session_closing` as JSON, then force-closes all sockets with **4011** when the leader stops the room. **4010** is the close code for a system stop (`reason` other than `owner` or `single_host`). The idle monitor does not emit it. The `room_idle_shutdown` / `session_ended_shutdown` frame types are internal fan-out signals and are not delivered as JSON to clients.
 
 **Participant registration:** REST `POST /join` validates permissions only; Redis participant counts increment when the WebSocket connects (`add_participant` inside `ws_managed_session`).
 

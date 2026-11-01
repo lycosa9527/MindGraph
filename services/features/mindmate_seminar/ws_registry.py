@@ -115,12 +115,6 @@ def teardown_superseded_connection(
             ACTIVE_CONNECTIONS.pop(key, None)
 
 
-def local_participant_count(code: str) -> int:
-    """Count in-process sockets for a room (dev/single-node diagnostics)."""
-    key = room_key_for_code(code)
-    return len(ACTIVE_CONNECTIONS.get(key, {}))
-
-
 def frame_must_be_delivered(data_str: str) -> bool:
     """True when dropping this outbound frame would hide a chat line."""
     try:

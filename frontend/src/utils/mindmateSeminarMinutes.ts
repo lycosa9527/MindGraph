@@ -3,6 +3,7 @@
  */
 import type { SeminarHighlight } from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
+import { apiRequestJson } from '@/utils/apiClient'
 import { formatInBeijing } from '@/utils/beijingClock'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import {
@@ -263,7 +264,9 @@ export function alignMinutesGoals(
   })
 }
 
-export function buildMinutesPrompt(input: {
+export const SEMINAR_MINUTES_TRANSCRIPT_LIMIT = 48000
+
+export interface SeminarMinutesDraftRequest {
   zh: boolean
   topic: string
   goals: string[]
@@ -272,39 +275,51 @@ export function buildMinutesPrompt(input: {
   files: string[]
   quotes: string[]
   transcript: string
-}): string {
-  const facts = [
-    input.topic ? `主题：${input.topic}` : '',
-    input.goals.length ? `教研目标：\n${input.goals.map((goal) => `- ${goal}`).join('\n')}` : '',
-    input.speakers ? `发言人：${input.speakers}` : '',
-    input.observers ? `到场观摩：${input.observers}` : '',
-    input.files.length
-      ? `对话中出现的文件：\n${input.files.map((name) => `- ${name}`).join('\n')}`
-      : '',
-    input.quotes.length ? `已标精华：\n${input.quotes.map((line) => `- ${line}`).join('\n')}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-  const instruction = input.zh
-    ? [
-        '请根据研讨记录写一份教研纪要，只输出 JSON，不要 Markdown。',
-        '键：goals, consensus, open, materials, tasks, quotes。',
-        'goals 是数组，每项为 {"goal":"目标原文","status":"met|partial|open"}。status 只能是已回应 met、部分回应 partial、尚未讨论 open。',
-        '其余键是字符串数组。consensus 写已经说定的判断。open 写尚未决定的分歧，不要替组里选边。',
-        'materials 只写记录里真正用到的材料，以及它用来说明什么。tasks 写谁来做什么；没有说时间就不要写时间。',
-        'quotes 最多 3 条，优先使用已标精华，格式「姓名：原话」。',
-        '没有依据的决定不要写。空的数组用 []。',
-      ].join('\n')
-    : [
-        'Write seminar minutes as JSON only, with no Markdown.',
-        'Keys: goals, consensus, open, materials, tasks, quotes.',
-        'goals is an array of {"goal":"...","status":"met|partial|open"} using the goal text given above.',
-        'The other keys are string arrays. consensus holds agreed points. open holds unresolved disagreements without picking a side.',
-        'materials names only files actually used, and what they were used to show. tasks name who does what, and include a time only if one was stated.',
-        'quotes has at most 3 lines, preferring the marked highlights, formatted as "Name: quote".',
-        'Do not invent decisions. Use [] for an empty array.',
-      ].join('\n')
-  return `${instruction}\n\n${facts}\n\n记录：\n${input.transcript}`
+}
+
+function clipLines(items: string[], maxItems: number, maxChars: number): string[] {
+  const kept: string[] = []
+  for (const item of items) {
+    const text = item.trim()
+    if (!text) {
+      continue
+    }
+    kept.push(text.slice(0, maxChars))
+    if (kept.length >= maxItems) {
+      break
+    }
+  }
+  return kept
+}
+
+/** Ask qwen3.8-flash for minutes JSON. The room edits the card before sending it. */
+export async function requestSeminarMinutesDraft(
+  sessionId: string,
+  body: SeminarMinutesDraftRequest,
+  signal?: AbortSignal
+): Promise<string> {
+  const id = sessionId.trim()
+  if (!id) {
+    throw new Error('summary_failed')
+  }
+  const data = await apiRequestJson<{ text?: unknown }>(
+    `/api/mindmate/seminar/${encodeURIComponent(id)}/minutes`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        zh: body.zh,
+        topic: body.topic.trim().slice(0, 200),
+        goals: clipLines(body.goals, 12, 200),
+        speakers: body.speakers.trim().slice(0, 2000),
+        observers: body.observers.trim().slice(0, 2000),
+        files: clipLines(body.files, 30, 180),
+        quotes: clipLines(body.quotes, 3, 400),
+        transcript: body.transcript.trim().slice(-SEMINAR_MINUTES_TRANSCRIPT_LIMIT),
+      }),
+      signal,
+    }
+  )
+  return typeof data.text === 'string' ? data.text.trim() : ''
 }
 
 const DRAFT_PREFIX = 'mindmate.seminar.minutesDraft.'

@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Kenya mehato',
   'canvas.toolbar.addSubstepHistory': 'Kenya mohato o monyenyane',
   'canvas.toolbar.aiGenerate': 'AI e hlahisitse papiso',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Hlahisa ho latela sehlooho se bohareng',
   'canvas.toolbar.aiGenerating': 'Ea hlahisa...',
   'canvas.toolbar.professionalContent.label': 'Litaba tsa litsebi',

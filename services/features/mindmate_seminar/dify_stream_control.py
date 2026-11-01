@@ -9,6 +9,7 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Dict
 
 from services.features.mindmate_seminar.config import MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC
@@ -20,6 +21,8 @@ from services.features.mindmate_seminar.redis_keys import (
 )
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
+
+logger = logging.getLogger(__name__)
 
 _active_tasks: Dict[str, asyncio.Task] = {}
 
@@ -38,6 +41,7 @@ async def acquire_dify_stream_lock(code: str) -> bool:
     """Return True when this caller holds the per-room Dify stream lock."""
     redis = get_async_redis()
     if not redis:
+        logger.warning("[MindmateSeminarDify] stream lock skipped; Redis unavailable code=%s", code)
         return False
     try:
         ok = await redis.set(
@@ -46,8 +50,11 @@ async def acquire_dify_stream_lock(code: str) -> bool:
             nx=True,
             ex=MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC,
         )
+        if not ok:
+            logger.info("[MindmateSeminarDify] stream lock busy code=%s", code)
         return bool(ok)
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarDify] stream lock failed code=%s: %s", code, exc)
         return False
 
 
@@ -61,8 +68,8 @@ async def refresh_dify_stream_lock(code: str) -> None:
             dify_stream_lock_key(code),
             MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC,
         )
-    except REDIS_ERRORS:
-        pass
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarDify] stream lock refresh failed code=%s: %s", code, exc)
 
 
 async def release_dify_stream_lock(code: str) -> None:
@@ -72,8 +79,8 @@ async def release_dify_stream_lock(code: str) -> None:
         return
     try:
         await redis.delete(dify_stream_lock_key(code))
-    except REDIS_ERRORS:
-        pass
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarDify] stream lock release failed code=%s: %s", code, exc)
 
 
 def _marker_present(raw: object) -> bool:
@@ -90,12 +97,14 @@ async def signal_dify_stream_abort(code: str) -> None:
                 "1",
                 ex=MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC,
             )
-        except REDIS_ERRORS:
-            pass
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminarDify] abort signal failed code=%s: %s", code, exc)
     norm = normalize_collab_code(code)
     task = _active_tasks.get(norm)
     if task is None or task.done() or task is asyncio.current_task():
+        logger.info("[MindmateSeminarDify] abort signaled code=%s local_task=%s", norm, task is not None)
         return
+    logger.info("[MindmateSeminarDify] cancelling local stream code=%s", norm)
     task.cancel()
     try:
         await task
@@ -110,8 +119,8 @@ async def clear_dify_stream_abort(code: str) -> None:
         return
     try:
         await redis.delete(dify_stream_abort_key(code))
-    except REDIS_ERRORS:
-        pass
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarDify] abort clear failed code=%s: %s", code, exc)
 
 
 async def is_dify_stream_aborted(code: str) -> bool:
@@ -125,7 +134,8 @@ async def is_dify_stream_aborted(code: str) -> bool:
             return True
         closing_raw = await redis.get(closing_key(code))
         return _marker_present(closing_raw)
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarDify] abort check failed code=%s: %s", code, exc)
         return False
 
 

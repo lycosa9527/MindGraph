@@ -389,7 +389,9 @@ async def lifespan(fastapi_app: FastAPI):
             logger.warning("Failed to start error retention scheduler: %s", e)
 
     # Start workshop subsystem: cleanup scheduler + Lua script preload + idle monitor.
-    workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(is_main_worker)
+    workshop_cleanup_task, session_manager_task, seminar_idle_task = await start_online_collab_subsystem_async(
+        is_main_worker
+    )
 
     worker_perf_task: asyncio.Task[None] | None = None
     worker_perf_stop: asyncio.Event | None = None
@@ -530,6 +532,7 @@ async def lifespan(fastapi_app: FastAPI):
         cleanup_task=cleanup_task,
         workshop_cleanup_task=workshop_cleanup_task,
         session_manager_task=session_manager_task,
+        seminar_idle_task=seminar_idle_task,
         worker_perf_task=worker_perf_task,
         worker_perf_stop=worker_perf_stop,
         perf_sample_task=perf_sample_task,

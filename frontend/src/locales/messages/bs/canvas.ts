@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Dodajte korake',
   'canvas.toolbar.addSubstepHistory': 'Dodaj podkorak',
   'canvas.toolbar.aiGenerate': 'Ilustracija generirana umjetnom inteligencijom',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generirajte na osnovu centralne teme',
   'canvas.toolbar.aiGenerating': 'Generiranje…',
   'canvas.toolbar.professionalContent.label': 'Profesionalni sadržaj',

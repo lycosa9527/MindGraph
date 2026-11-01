@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Tinye usoro',
   'canvas.toolbar.addSubstepHistory': 'Tinye obere nzọụkwụ',
   'canvas.toolbar.aiGenerate': 'AI mepụtara ihe atụ',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Mepụta dabere na isiokwu etiti',
   'canvas.toolbar.aiGenerating': 'Na-emepụta…',
   'canvas.toolbar.professionalContent.label': 'Ọdịnaya ọkachamara',

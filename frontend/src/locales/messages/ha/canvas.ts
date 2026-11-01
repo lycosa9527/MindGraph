@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Ƙara matakai',
   'canvas.toolbar.addSubstepHistory': 'Ƙara ƙaramin mataki',
   'canvas.toolbar.aiGenerate': 'AI ya haifar da misali',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Ƙirƙira bisa jigon tsakiya',
   'canvas.toolbar.aiGenerating': 'Ƙirƙirar…',
   'canvas.toolbar.professionalContent.label': 'Abubuwan sana\'a',

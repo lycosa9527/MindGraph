@@ -12,10 +12,6 @@ import { Check, Clock, List, SquareCheck, Star } from '@lucide/vue'
 import { useLanguage, useNotifications } from '@/composables'
 import type { SeminarHighlight } from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
-import { useAuthStore } from '@/stores/auth'
-import { consumeSseDataLines } from '@/utils/mindMateSseStream'
-import { collabMessageRowKey } from '@/utils/mindmateSeminarDisplay'
-import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import {
   type SeminarSummaryCardModel,
@@ -25,12 +21,12 @@ import {
   seminarMinutesMessage,
   seminarSummaryHasContent,
 } from '@/utils/mindmateSeminarCards'
+import { collabMessageRowKey } from '@/utils/mindmateSeminarDisplay'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 import {
   type MinutesSource,
   type SeminarMinutesScope,
   alignMinutesGoals,
-  buildMinutesPrompt,
   clearMinutesDraft,
   fallbackMinutes,
   latestSummaryStamp,
@@ -39,6 +35,7 @@ import {
   minutesPeople,
   minutesTimeRange,
   parseMinutesDraft,
+  requestSeminarMinutesDraft,
   saveMinutesDraft,
   selectMinutesSources,
 } from '@/utils/mindmateSeminarMinutes'
@@ -73,7 +70,6 @@ const emit = defineEmits<{
 
 const { t, isZh } = useLanguage()
 const notify = useNotifications()
-const authStore = useAuthStore()
 
 const step = ref<'pick' | 'preview'>('pick')
 const mode = ref<SeminarMinutesScope>('all')
@@ -196,16 +192,10 @@ async function generate(): Promise<void> {
           : t('mindmate.summary.empty')
     return
   }
-  const sessionUser = authStore.user
-  if (!sessionUser?.id) {
+  if (!props.sessionId.trim()) {
     errorText.value = t('mindmate.summary.failed')
     return
   }
-  const userId = mindmateDifyUserIdFromSession(
-    authStore.mode,
-    String(sessionUser.id),
-    sessionUser.phone
-  )
   errorText.value = ''
   working.value = true
   abort?.abort()
@@ -221,10 +211,7 @@ async function generate(): Promise<void> {
     })
     .map((item) => `${item.authorName}：${item.text}`)
     .slice(0, 3)
-  const transcript = selected.value
-    .map((row) => `${row.author}：${row.content}`)
-    .join('\n\n')
-    .slice(-12000)
+  const transcript = selected.value.map((row) => `${row.author}：${row.content}`).join('\n\n')
   const base = emptySeminarSummary(scopeLabel.value)
   base.topic = props.topic.trim()
   base.timeRange = minutesTimeRange(
@@ -235,42 +222,20 @@ async function generate(): Promise<void> {
   base.observers = people.observers
   base.author = t('mindmate.summary.author')
   base.goals = props.goals.filter(Boolean).map((goal) => ({ goal, status: 'open' as const }))
-  const message = buildMinutesPrompt({
-    zh: isZh.value,
-    topic: base.topic,
-    goals: props.goals,
-    speakers: people.speakers
-      .map((row) => (row.role ? `${row.name}（${row.role}）` : row.name))
-      .join('、'),
-    observers: people.observers.join('、'),
-    files,
-    quotes,
-    transcript,
-  })
-  let body = ''
   try {
-    const response = await fetch('/api/ai_assistant/stream', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, user_id: userId }),
-      signal: abort.signal,
-    })
-    if (!response.ok || !response.body) {
-      throw new Error('summary_failed')
-    }
-    await consumeSseDataLines(
-      response.body.getReader(),
-      (payload) => {
-        const event = payload.event
-        const answer = typeof payload.answer === 'string' ? payload.answer : ''
-        if (event === 'message' && answer) {
-          body += answer
-        } else if (event === 'message_replace' && answer) {
-          body = answer
-        } else if (event === 'error') {
-          throw new Error('summary_failed')
-        }
+    const body = await requestSeminarMinutesDraft(
+      props.sessionId,
+      {
+        zh: isZh.value,
+        topic: base.topic,
+        goals: props.goals,
+        speakers: people.speakers
+          .map((row) => (row.role ? `${row.name}（${row.role}）` : row.name))
+          .join('、'),
+        observers: people.observers.join('、'),
+        files,
+        quotes,
+        transcript,
       },
       abort.signal
     )

@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Adım Ekle',
   'canvas.toolbar.addSubstepHistory': 'Alt Adım Ekle',
   'canvas.toolbar.aiGenerate': 'YZ ile Oluştur',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Merkez konudan oluştur',
   'canvas.toolbar.aiGenerating': 'Oluşturuluyor…',
   'canvas.toolbar.professionalContent.label': 'Content level',

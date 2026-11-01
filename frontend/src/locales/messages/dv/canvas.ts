@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'ފިޔަވަޅުތައް އިތުރުކުރުން',
   'canvas.toolbar.addSubstepHistory': 'ސަބްސްޓެޕް އިތުރުކުރުން',
   'canvas.toolbar.aiGenerate': 'އެއައި ޖެނެރޭޓް ކޮށްފައިވާ އިލްސްޓްރޭޝަން',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'މަރުކަޒީ މައުޟޫޢެއްގެ މައްޗަށް ބިނާކޮށް ޖެނެރޭޓްކުރުން',
   'canvas.toolbar.aiGenerating': 'ޖެނެރޭޓް ކުރަމުން...',
   'canvas.toolbar.professionalContent.label': 'ޕްރޮފެޝަނަލް ކޮންޓެންޓް',

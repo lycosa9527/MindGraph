@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Ngeta tinyatselo',
   'canvas.toolbar.addSubstepHistory': 'Ngeta sinyatselo lesincane',
   'canvas.toolbar.aiGenerate': 'Umfanekiso lowentiwe yi-AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Khicita ngekusebentisa ingcikitsi lesemkhatsini',
   'canvas.toolbar.aiGenerating': 'Kukhicita...',
   'canvas.toolbar.professionalContent.label': 'Lokucuketfwe kwebungcweti',

@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Pridėkite žingsnių',
   'canvas.toolbar.addSubstepHistory': 'Pridėti poveiksmį',
   'canvas.toolbar.aiGenerate': 'AI sukurta iliustracija',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generuokite pagal pagrindinę temą',
   'canvas.toolbar.aiGenerating': 'Generuojama…',
   'canvas.toolbar.professionalContent.label': 'Profesionalus turinys',

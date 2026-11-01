@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'បន្ថែមជំហាន',
   'canvas.toolbar.addSubstepHistory': 'បន្ថែមជំហានរង',
   'canvas.toolbar.aiGenerate': 'AI បានបង្កើតរូបភាព',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'បង្កើតដោយផ្អែកលើប្រធានបទកណ្តាល',
   'canvas.toolbar.aiGenerating': 'កំពុង​បង្កើត...',
   'canvas.toolbar.professionalContent.label': 'មាតិកាវិជ្ជាជីវៈ',

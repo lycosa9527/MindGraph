@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Shto hap',
   'canvas.toolbar.addSubstepHistory': 'Shto nën-hap',
   'canvas.toolbar.aiGenerate': 'Gjenero me AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Gjenero nga tema qendrore',
   'canvas.toolbar.aiGenerating': 'Duke u gjeneruar…',
   'canvas.toolbar.professionalContent.label': 'Content level',

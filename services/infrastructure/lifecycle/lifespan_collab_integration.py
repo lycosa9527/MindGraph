@@ -33,25 +33,27 @@ if config.FEATURE_MINDMATE_SEMINAR:
     )
 
 
-def _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker: bool) -> None:
+def _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker: bool) -> Optional[asyncio.Task]:
     if MMC_IDLE_MONITOR_START is None:
-        return
+        return None
     try:
-        MMC_IDLE_MONITOR_START()
+        task = MMC_IDLE_MONITOR_START()
         if is_main_worker:
             logger.debug("MindMate collab idle monitor started")
+        return task
     except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to start MindMate collab idle monitor: %s", exc)
+        return None
 
 
 async def start_online_collab_subsystem_async(
     is_main_worker: bool,
-) -> Tuple[Optional[asyncio.Task], Optional[asyncio.Task]]:
+) -> Tuple[Optional[asyncio.Task], Optional[asyncio.Task], Optional[asyncio.Task]]:
     """
     Start online-collab background tasks and return handles for shutdown.
 
-    Returns (workshop_cleanup_task, session_manager_task).
+    Returns (workshop_cleanup_task, session_manager_task, seminar_idle_task).
     """
     workshop_cleanup_task: Optional[asyncio.Task] = None
     try:
@@ -87,7 +89,7 @@ async def start_online_collab_subsystem_async(
         if is_main_worker:
             logger.warning("Failed to start workshop session manager: %s", exc)
 
-    _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker)
+    seminar_idle_task = _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker)
 
     try:
         start_pg_notify_listener()
@@ -95,4 +97,4 @@ async def start_online_collab_subsystem_async(
         if is_main_worker:
             logger.warning("Failed to start PG NOTIFY listener: %s", exc)
 
-    return workshop_cleanup_task, session_manager_task
+    return workshop_cleanup_task, session_manager_task, seminar_idle_task

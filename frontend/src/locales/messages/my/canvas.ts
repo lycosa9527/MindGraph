@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'အဆင့်များထည့်ပါ။',
   'canvas.toolbar.addSubstepHistory': 'အဆင့်ခွဲထည့်ပါ။',
   'canvas.toolbar.aiGenerate': 'AI က ဖန်တီးထားတဲ့ သရုပ်ဖော်ပုံပါ။',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'ဗဟိုဆောင်ပုဒ်ကို အခြေခံ၍ ဖန်တီးပါ။',
   'canvas.toolbar.aiGenerating': 'ထုတ်လုပ်နေသည်...',
   'canvas.toolbar.professionalContent.label': 'ပရော်ဖက်ရှင်နယ်အကြောင်းအရာ',

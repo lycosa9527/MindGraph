@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'පියවර එකතු කරන්න',
   'canvas.toolbar.addSubstepHistory': 'උප පියවර එකතු කරන්න',
   'canvas.toolbar.aiGenerate': 'AI ජනනය',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'කේන්ද්‍රීය මාතෘකාවෙන් උත්පාදනය කරන්න',
   'canvas.toolbar.aiGenerating': 'උත්පාදනය කරමින්...',
   'canvas.toolbar.professionalContent.label': 'Content level',

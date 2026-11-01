@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'ເພີ່ມຂັ້ນຕອນ',
   'canvas.toolbar.addSubstepHistory': 'ເພີ່ມຂັ້ນຕອນຍ່ອຍ',
   'canvas.toolbar.aiGenerate': 'AI ສ້າງຮູບແຕ້ມ',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'ສ້າງໂດຍອີງໃສ່ຫົວຂໍ້ສູນກາງ',
   'canvas.toolbar.aiGenerating': 'ກຳລັງສ້າງ...',
   'canvas.toolbar.professionalContent.label': 'ເນື້ອໃນທີ່ເປັນມືອາຊີບ',

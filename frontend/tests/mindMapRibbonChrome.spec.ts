@@ -103,6 +103,25 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(page).toContain('<MindMapStatusBar')
   })
 
+  it('shortens the status bar when the row does not fit', () => {
+    const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
+    const css = readSrc('src/canvas-ribbon/mindMapStatusBar.css')
+    const ai = readSrc('src/components/canvas/CanvasToolbarMindMapAiGenerate.vue')
+    expect(status).toContain('statusBarUsedWidth')
+    expect(status).toContain('nextLabelCollapse')
+    expect(status).toContain(':short="tight"')
+    expect(status).toContain(':compact="tight"')
+    expect(status).toContain(':icon-only="tight"')
+    expect(status).toContain('v-if="!tight"')
+    expect(status).not.toContain('mm-status--tight')
+    expect(status).not.toContain('data-status-density')
+    expect(css).not.toContain('.mm-status--tight')
+    expect(css).toContain('.mm-status__left {\n  flex: 0 0 auto;')
+    expect(ai).toContain('canvas.toolbar.aiGenerateShort')
+    expect(ai).toContain('short?: boolean')
+    expect(ai).not.toContain('compact')
+  })
+
   it('puts zoom on the status bar', () => {
     const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
     const css = readSrc('src/canvas-ribbon/mindMapRibbon.css')

@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Adjon hozzá lépéseket',
   'canvas.toolbar.addSubstepHistory': 'Allépés hozzáadása',
   'canvas.toolbar.aiGenerate': 'AI által generált illusztráció',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generálás központi téma alapján',
   'canvas.toolbar.aiGenerating': 'Létrehozás…',
   'canvas.toolbar.professionalContent.label': 'Professzionális tartalom',

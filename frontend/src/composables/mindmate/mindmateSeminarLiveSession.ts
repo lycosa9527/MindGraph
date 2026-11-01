@@ -36,6 +36,7 @@ type CollabSession = ReturnType<typeof useMindmateSeminar>
 interface LiveRoom {
   code: string
   session: CollabSession
+  scope: EffectScope
   seedMessages: () => MindmateSeminarMessage[]
   endedListeners: Set<(reason: SessionEndedReason) => void>
 }
@@ -64,12 +65,21 @@ function embeddedMatches(code: string): boolean {
   return roomKey(current) === roomKey(code)
 }
 
+function releaseRoom(entry: LiveRoom): void {
+  entry.session.disconnect()
+  const roomScope = entry.scope
+  queueMicrotask(() => {
+    roomScope.stop()
+  })
+}
+
 function finishRoom(key: string, reason: SessionEndedReason): void {
   const entry = rooms.get(key)
   if (!entry) {
     return
   }
   rooms.delete(key)
+  releaseRoom(entry)
   forgetJoinedCollabRoom(entry.code)
   if (shouldRemoveCollabFromHistory(reason)) {
     removeLocalMindmateSeminarSessionByCode(entry.code)
@@ -92,7 +102,7 @@ function closeAllLiveCollabRooms(): void {
   rooms.clear()
   visibleKey = null
   for (const entry of open) {
-    entry.session.disconnect()
+    releaseRoom(entry)
     forgetJoinedCollabRoom(entry.code)
   }
   for (const stored of loadJoinedCollabRooms()) {
@@ -134,10 +144,16 @@ function ensureRoom(code: string): LiveRoom {
   const entry: LiveRoom = {
     code,
     session: null as unknown as CollabSession,
+    scope: null as unknown as EffectScope,
     seedMessages: () => [],
     endedListeners: new Set(),
   }
-  const created = ensureScope().run(() =>
+  const roomScope = ensureScope().run(() => effectScope())
+  if (!roomScope) {
+    throw new Error('MindMate collab session did not start')
+  }
+  entry.scope = roomScope
+  const created = roomScope.run(() =>
     useMindmateSeminar(() => rooms.get(key)?.code ?? code, {
       embedded: true,
       seedMessages: () => entry.seedMessages(),
@@ -146,6 +162,7 @@ function ensureRoom(code: string): LiveRoom {
     })
   )
   if (!created) {
+    roomScope.stop()
     throw new Error('MindMate collab session did not start')
   }
   entry.session = created
@@ -194,7 +211,7 @@ export function dropLiveCollabRoom(code: string): void {
     return
   }
   rooms.delete(key)
-  entry.session.disconnect()
+  releaseRoom(entry)
   if (visibleKey === key) {
     visibleKey = null
     clearSeminarFaces()

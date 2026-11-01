@@ -9,6 +9,7 @@ Proprietary License
 from __future__ import annotations
 
 import json
+import logging
 import secrets
 from typing import Any, Dict, Optional
 
@@ -16,6 +17,8 @@ from services.features.mindmate_seminar.config import MINDMATE_COLLAB_JOIN_RESUM
 from services.features.mindmate_seminar.redis_keys import join_resume_key, normalize_collab_code
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
+
+logger = logging.getLogger(__name__)
 
 
 _MAX_RESUME_QUERY_LEN = 96
@@ -41,6 +44,7 @@ async def mint_join_resume_token_async(
     redis = get_async_redis()
     token = _new_token()
     if not redis:
+        logger.warning("[MindmateSeminar] resume token skipped; Redis unavailable user=%s", user_id)
         return ""
     payload = json.dumps(
         {"u": int(user_id), "c": normalize_collab_code(code), "s": session_id},
@@ -48,8 +52,8 @@ async def mint_join_resume_token_async(
     )
     try:
         await redis.set(join_resume_key(token), payload, ex=MINDMATE_COLLAB_JOIN_RESUME_TTL_SEC)
-    except REDIS_ERRORS:
-        pass
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] resume token store failed user=%s: %s", user_id, exc)
     return token
 
 
@@ -63,7 +67,8 @@ async def peek_join_resume_claims_async(token: str) -> Optional[Dict[str, Any]]:
         return None
     try:
         raw = await redis.get(join_resume_key(normalized))
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] resume token peek failed: %s", exc)
         return None
     if not raw:
         return None
@@ -104,13 +109,14 @@ async def try_consume_join_resume_token_async(token: str) -> Optional[Dict[str, 
     key = join_resume_key(normalized)
     try:
         raw = await redis.getdel(key)
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] resume token consume fell back to delete: %s", exc)
         claims = await peek_join_resume_claims_async(normalized)
         if claims:
             try:
                 await redis.delete(key)
-            except REDIS_ERRORS:
-                pass
+            except REDIS_ERRORS as delete_exc:
+                logger.warning("[MindmateSeminar] resume token delete failed: %s", delete_exc)
         return claims
     if not raw:
         return None

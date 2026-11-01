@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'ഘട്ടങ്ങൾ ചേർക്കുക',
   'canvas.toolbar.addSubstepHistory': 'ഉപഘട്ടം ചേർക്കുക',
   'canvas.toolbar.aiGenerate': 'AI സൃഷ്ടിച്ച ചിത്രീകരണം',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'കേന്ദ്ര തീമിനെ അടിസ്ഥാനമാക്കി സൃഷ്ടിക്കുക',
   'canvas.toolbar.aiGenerating': 'സൃഷ്ടിക്കുന്നു...',
   'canvas.toolbar.professionalContent.label': 'പ്രൊഫഷണൽ ഉള്ളടക്കം',

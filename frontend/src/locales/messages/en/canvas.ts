@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Add Step',
   'canvas.toolbar.addSubstepHistory': 'Add Substep',
   'canvas.toolbar.aiGenerate': 'AI Generate',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generate from central topic',
   'canvas.toolbar.aiGenerating': 'Generating…',
   'canvas.toolbar.professionalContent.label': 'Audience level',

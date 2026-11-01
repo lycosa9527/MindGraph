@@ -19,6 +19,14 @@ import { gestureGuideHint, gestureGuideRowsForMode } from '@/config/mindMapGestu
 import { useUIStore } from '@/stores/ui'
 import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 
+const props = withDefaults(
+  defineProps<{
+    /** Status bar has no room for the button name. The card keeps its labels. */
+    iconOnly?: boolean
+  }>(),
+  { iconOnly: false }
+)
+
 const STORAGE_KEY = 'mindgraph.mindmap.gestureGuide.expanded'
 
 const { t } = useLanguage()
@@ -67,7 +75,10 @@ function toggleExpanded(): void {
       :title="t('canvas.gestureGuide.title')"
       @click="toggleExpanded"
     >
-      <I18nText k="canvas.gestureGuide.shortLabel" />
+      <I18nText
+        v-if="!props.iconOnly"
+        k="canvas.gestureGuide.shortLabel"
+      />
       <Hand
         class="h-3.5 w-3.5"
         :stroke-width="2"

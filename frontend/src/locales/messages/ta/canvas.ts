@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'படிகளைச் சேர்க்கவும்',
   'canvas.toolbar.addSubstepHistory': 'துணைப் படியைச் சேர்க்கவும்',
   'canvas.toolbar.aiGenerate': 'AI உருவாக்கிய விளக்கப்படம்',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'மைய கருப்பொருளின் அடிப்படையில் உருவாக்கவும்',
   'canvas.toolbar.aiGenerating': 'உருவாக்குகிறது…',
   'canvas.toolbar.professionalContent.label': 'தொழில்முறை உள்ளடக்கம்',

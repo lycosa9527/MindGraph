@@ -1,7 +1,7 @@
 /**
  * MindMate collab room WebSocket client.
  */
-import { computed, ref, shallowRef } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef } from 'vue'
 
 import { useWebSocket } from '@vueuse/core'
 
@@ -183,7 +183,7 @@ export function useMindmateSeminar(
   let lastCloseCode = 1006
   const gapFill = { current: null as Promise<void> | null }
   let gapGeneration = 0
-  const disposed = false
+  let disposed = false
   let socketSend: (data: string) => boolean = () => false
   let openSocket: () => void = () => {}
   let ignoreNextClose = false
@@ -198,7 +198,13 @@ export function useMindmateSeminar(
       connectionStatus.value = 'reconnecting'
       openSocket()
     },
-    isActive: () => connected.value && !suppressReconnect.value,
+    isActive: () => connected.value && !suppressReconnect.value && !disposed,
+  })
+
+  onScopeDispose(() => {
+    disposed = true
+    gapGeneration += 1
+    heartbeat.stop()
   })
 
   const { readCursors, noteReadCursorFrame, noteReadCursorList, resetReadCursors } =
@@ -349,6 +355,9 @@ export function useMindmateSeminar(
       heartbeat.start()
     },
     onDisconnected(_ws, event) {
+      if (disposed) {
+        return
+      }
       if (ignoreNextClose) {
         ignoreNextClose = false
         connected.value = false
@@ -798,6 +807,7 @@ export function useMindmateSeminar(
     if (!code) {
       return
     }
+    disposed = false
     suppressReconnect.value = false
     pendingReconnectFailedNotify = false
     shutdownPending.value = false
@@ -809,12 +819,16 @@ export function useMindmateSeminar(
   }
 
   function disconnect() {
+    disposed = true
+    gapGeneration += 1
     heartbeat.stop()
     clearStreamingAssistant()
     suppressReconnect.value = true
     close()
     connected.value = false
-    connectionStatus.value = 'idle'
+    if (connectionStatus.value !== 'failed') {
+      connectionStatus.value = 'idle'
+    }
     clearLocalFaces()
   }
 
@@ -939,6 +953,7 @@ export function useMindmateSeminar(
     if (!roomCode()) {
       return
     }
+    disposed = false
     suppressReconnect.value = false
     pendingReconnectFailedNotify = false
     shutdownPending.value = false

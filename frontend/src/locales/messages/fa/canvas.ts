@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'مراحل را اضافه کنید',
   'canvas.toolbar.addSubstepHistory': 'افزودن مرحله فرعی',
   'canvas.toolbar.aiGenerate': 'تصویر ایجاد شده توسط هوش مصنوعی',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'بر اساس موضوع مرکزی ایجاد کنید',
   'canvas.toolbar.aiGenerating': 'در حال تولید…',
   'canvas.toolbar.professionalContent.label': 'Content level',

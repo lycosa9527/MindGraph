@@ -8,6 +8,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -27,6 +28,8 @@ from services.features.mindmate_seminar.config import (
 from services.features.mindmate_seminar.message_history import serialize_message_row
 from services.features.mindmate_seminar.read_cursors import list_read_cursors
 from utils.db.session_open import system_rls_session, user_rls_session
+
+logger = logging.getLogger(__name__)
 
 
 def finished_seminar_save_block_reason(
@@ -143,6 +146,7 @@ async def save_finished_seminar_for_owner(
             session.library_saved_at = datetime.now(tz=UTC)
             await db.commit()
             await db.refresh(session)
+            logger.info("[MindmateSeminar] saved to library session=%s owner=%s", session_id, owner_user_id)
         return saved_seminar_summary(session, owner_user_id), None
 
 
@@ -324,6 +328,7 @@ async def update_saved_seminar(
             session.library_pinned = pinned
         await db.commit()
         await db.refresh(session)
+        logger.info("[MindmateSeminar] library updated session=%s owner=%s", session_id, owner_user_id)
         return saved_seminar_summary(session, owner_user_id), None
 
 
@@ -340,4 +345,5 @@ async def delete_saved_seminar(session_id: str, owner_user_id: int) -> Optional[
             return reason or "not_found"
         await db.delete(session)
         await db.commit()
+    logger.info("[MindmateSeminar] library deleted session=%s owner=%s", session_id, owner_user_id)
     return None

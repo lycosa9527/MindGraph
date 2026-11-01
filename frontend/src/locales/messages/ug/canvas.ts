@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'قەدەم باسقۇچلارنى قوشۇڭ',
   'canvas.toolbar.addSubstepHistory': 'Subepep نى قوشۇڭ',
   'canvas.toolbar.aiGenerate': 'سۈنئىي ئەقىل تەسۋىر ھاسىل قىلدى',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'مەركىزى تېمىغا ئاساسەن ھاسىل قىلىڭ',
   'canvas.toolbar.aiGenerating': 'Generating…',
   'canvas.toolbar.professionalContent.label': 'كەسپىي مەزمۇن',

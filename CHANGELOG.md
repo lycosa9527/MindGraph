@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.199] - 2026-11-01
+
+> **Seminar minutes draft on a dedicated call, the mind-map status bar shrinks when the row is tight, and a seminar room tears down with the tab.**
+
+### Added
+
+- **Seminar minutes draft** — `POST /api/mindmate/seminar/{session_id}/minutes` asks qwen3.8-flash for the minutes JSON. A long transcript no longer goes through the shared MindMate chat stream, which stops at 5,000 characters. The room still edits the card before it is sent.
+- **MindMate diagram channel** — A saved diagram may use source channel `mindmate`, alongside `mindgraph` and `voice_notes`.
+
+### Changed
+
+- **Mind-map status bar** — When the bar does not fit, outline, shortcut, and gesture controls keep their icons, the AI button uses the short label (AI生成), and the zoom slider hides. Widening the bar restores the labels.
+- **Seminar session log** — Start, stop, reopen, leave, republish, Dify lock and stream, resume tokens, membership, library, poke, and socket join/leave write a log line. Redis failures on those paths are warnings.
+- **Seminar idle monitor** — The orphan-score loop is cancelled on process shutdown. A second start reuses the running task.
+
+### Fixed
+
+- **Seminar room teardown** — Leaving a room, ending it, or signing out stops that room's effect scope. In-flight history pulls and the read-receipt listener do not stay attached after the socket closes.
+
+### Removed
+
+- **Unused seminar age stub** — `seminar_ttl.py` and the in-process participant counter had no callers. A live seminar still ends when its leader stops it.
+
+### Tests
+
+- [`tests/test_mindmate_seminar_system_stop.py`](tests/test_mindmate_seminar_system_stop.py), [`tests/test_mindmate_seminar_minutes_draft.py`](tests/test_mindmate_seminar_minutes_draft.py), [`tests/test_mindmate_seminar_minutes_http.py`](tests/test_mindmate_seminar_minutes_http.py), [`tests/test_diagram_source_channel.py`](tests/test_diagram_source_channel.py)
+- [`frontend/tests/statusBarFit.spec.ts`](frontend/tests/statusBarFit.spec.ts), [`frontend/tests/seminarMinutesDraft.spec.ts`](frontend/tests/seminarMinutesDraft.spec.ts), [`frontend/tests/seminarMinutesScopes.spec.ts`](frontend/tests/seminarMinutesScopes.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
+
 ## [5.180.198] - 2026-11-01
 
 > **Startup uses the PostgreSQL directory that contains the mindgraph database, including after a package upgrade creates an empty cluster.**

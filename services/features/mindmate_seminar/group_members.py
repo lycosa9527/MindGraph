@@ -13,6 +13,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Mapping, Sequence
 
@@ -34,6 +35,8 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
 )
 from services.utils.typing_helpers import result_rowcount
 from utils.db.session_open import system_rls_session
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_group_member_ids(owner_id: int, raw_ids: Sequence[int], limit: int) -> list[int]:
@@ -247,6 +250,12 @@ async def seed_closed_group(
                 continue
             current.seminar_role = role
         await db.commit()
+    logger.info(
+        "[MindmateSeminar] seeded members session=%s owner=%s invited=%s",
+        session_id,
+        owner_id,
+        len(inserted),
+    )
     return inserted
 
 
@@ -330,12 +339,24 @@ async def set_group_member_role(session_id: str, user_id: int, role: str) -> boo
                 )
             )
             await db.commit()
+            logger.info(
+                "[MindmateSeminar] member role set session=%s user=%s role=%s",
+                session_id,
+                target,
+                normalized,
+            )
             return True
         if normalize_seminar_role(row.seminar_role) == SEMINAR_ROLE_LEADER:
             # Demote the current leader only via an explicit leadership transfer.
             return False
         row.seminar_role = normalized
         await db.commit()
+    logger.info(
+        "[MindmateSeminar] member role set session=%s user=%s role=%s",
+        session_id,
+        target,
+        normalized,
+    )
     return True
 
 
@@ -370,6 +391,7 @@ async def transfer_seminar_leadership(session_id: str, new_leader_id: int) -> bo
             if normalize_seminar_role(row.seminar_role) == SEMINAR_ROLE_LEADER:
                 row.seminar_role = SEMINAR_ROLE_OBSERVER
         await db.commit()
+    logger.info("[MindmateSeminar] leadership transferred session=%s leader=%s", session_id, target)
     return True
 
 
@@ -396,7 +418,10 @@ async def remove_group_member(session_id: str, user_id: int) -> bool:
             )
         )
         await db.commit()
-        return result_rowcount(result) > 0
+        removed = result_rowcount(result) > 0
+    if removed:
+        logger.info("[MindmateSeminar] member removed session=%s user=%s", session_id, user_id)
+    return removed
 
 
 def pending_seminar_invites_statement(user_id: int) -> Select:
@@ -477,6 +502,7 @@ async def respond_seminar_invite(
                 )
             )
             await db.commit()
+            logger.info("[MindmateSeminar] invite declined session=%s user=%s", session_id, user_id)
             return {"accepted": False}
         session = (
             await db.execute(select(MindmateSeminarSession).where(MindmateSeminarSession.id == session_id))
@@ -494,4 +520,10 @@ async def respond_seminar_invite(
             }
         row.accepted = True
         await db.commit()
+        logger.info(
+            "[MindmateSeminar] invite accepted session=%s user=%s ended=%s",
+            session_id,
+            user_id,
+            bool(payload.get("ended")),
+        )
         return payload

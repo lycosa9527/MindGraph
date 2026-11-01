@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': '追加 Step',
   'canvas.toolbar.addSubstepHistory': '追加 Substep',
   'canvas.toolbar.aiGenerate': 'AI 生成',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': '根据中心トピック生成',
   'canvas.toolbar.aiGenerating': '生成中…',
   'canvas.toolbar.professionalContent.label': 'Content level',

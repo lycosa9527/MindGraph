@@ -16,9 +16,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { upsertSeminarServerArtifact } from '@/composables/mindmate/mindmateSeminarChrome'
 import { draftFaceChatSummary } from '@/composables/mindmate/seminarFaceChatSummary'
 import { confirmHideVoiceNotesWhileRecording } from '@/composables/voiceNotes/confirmVoiceNotesModalClose'
-import { useAuthStore } from '@/stores/auth'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
-import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 import {
   type SeminarSummaryCardModel,
   seminarMinutesMessage,
@@ -52,7 +50,6 @@ const emit = defineEmits<{
 
 const { t, isZh } = useLanguage()
 const notify = useNotifications()
-const authStore = useAuthStore()
 const voiceNotes = useVoiceNotesStore()
 
 const step = ref<'record' | 'preview'>('record')
@@ -237,8 +234,7 @@ async function generateSummary(): Promise<void> {
     notify.warningKey('mindmate.faceChat.empty')
     return
   }
-  const sessionUser = authStore.user
-  if (!sessionUser?.id) {
+  if (!props.sessionId.trim()) {
     notify.warningKey('mindmate.summary.failed')
     return
   }
@@ -251,6 +247,7 @@ async function generateSummary(): Promise<void> {
     }
     await voiceNotes.flushTranscriptIfEdited()
     const model = await draftFaceChatSummary({
+      sessionId: props.sessionId,
       transcript: voiceNotes.transcriptText,
       topic: props.topic,
       goals: props.goals,
@@ -258,11 +255,6 @@ async function generateSummary(): Promise<void> {
       scope: t('mindmate.faceChat.scope'),
       author: t('mindmate.summary.author'),
       zh: isZh.value,
-      userId: mindmateDifyUserIdFromSession(
-        authStore.mode,
-        String(sessionUser.id),
-        sessionUser.phone
-      ),
       startedAt: startedAt.value,
       signal: abort.signal,
     })

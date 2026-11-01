@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Tallaabooyinka ku dar',
   'canvas.toolbar.addSubstepHistory': 'Ku dar tallaabo hoose',
   'canvas.toolbar.aiGenerate': 'AI waxay keentay sawir',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Samee ku salaysan mawduuca dhexe',
   'canvas.toolbar.aiGenerating': 'Soo saaraya…',
   'canvas.toolbar.professionalContent.label': 'Waxyaabo xirfadeed',

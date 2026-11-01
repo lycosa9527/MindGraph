@@ -391,6 +391,12 @@ async def mindmate_seminar_websocket(websocket: WebSocket, code: str) -> None:
                 getattr(user, "name", None),
                 getattr(user, "avatar", None),
             )
+            logger.info(
+                "[MindmateSeminarWS] joined user=%s code=%s session=%s",
+                user.id,
+                norm_code,
+                session.id,
+            )
             await broadcast_to_others(
                 norm_code,
                 int(user.id),

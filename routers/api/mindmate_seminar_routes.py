@@ -8,7 +8,6 @@ Proprietary License
 
 from __future__ import annotations
 
-import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
@@ -27,6 +26,7 @@ from routers.api.mindmate_seminar_reply_artifacts import router as seminar_reply
 from routers.api.mindmate_seminar_share_canvas import router as seminar_share_router
 from routers.api.mindmate_seminar_members import router as seminar_members_router
 from routers.api.mindmate_seminar_messages import router as seminar_messages_router
+from routers.api.mindmate_seminar_minutes import router as seminar_minutes_router
 from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.dependencies import resolve_social_org_id
 from routers.features.workshop_chat.schemas import OrgMembersPage
@@ -69,8 +69,6 @@ from utils.auth.school_tier import (
 from utils.auth.thinking_coin_config import EVENT_WORKSHOP_JOIN
 from utils.db.session_open import actor_rls_session, system_rls_session
 
-logger = logging.getLogger(__name__)
-
 
 async def _require_mindmate_seminar_access(
     current_user: User = Depends(get_current_user),
@@ -88,6 +86,7 @@ router = APIRouter(
 router.include_router(saved_seminar_mutation_router)
 router.include_router(seminar_members_router)
 router.include_router(seminar_messages_router)
+router.include_router(seminar_minutes_router)
 router.include_router(seminar_files_router)
 router.include_router(seminar_reply_artifacts_router)
 router.include_router(seminar_face_chat_router)

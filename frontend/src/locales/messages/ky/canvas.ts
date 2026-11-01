@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Кадамдарды кошуу',
   'canvas.toolbar.addSubstepHistory': 'Кошумча кадам кошуу',
   'canvas.toolbar.aiGenerate': 'AI жараткан иллюстрация',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Борбордук теманын негизинде түзүү',
   'canvas.toolbar.aiGenerating': 'Түзүлүүдө…',
   'canvas.toolbar.professionalContent.label': 'Кесиптик мазмун',

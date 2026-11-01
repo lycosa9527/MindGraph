@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'পদক্ষেপ যোগ করুন',
   'canvas.toolbar.addSubstepHistory': 'সাবস্টেপ যোগ করুন',
   'canvas.toolbar.aiGenerate': 'এআই জেনারেটেড ইলাস্ট্রেশন',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'কেন্দ্রীয় থিমের উপর ভিত্তি করে তৈরি করুন',
   'canvas.toolbar.aiGenerating': 'তৈরি হচ্ছে...',
   'canvas.toolbar.professionalContent.label': 'পেশাগত বিষয়বস্তু',

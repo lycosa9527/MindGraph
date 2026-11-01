@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Stepsdimler goşuň',
   'canvas.toolbar.addSubstepHistory': 'Substep goşuň',
   'canvas.toolbar.aiGenerate': 'AI şekillendirdi',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Merkezi mowzuga esaslanyp dörediň',
   'canvas.toolbar.aiGenerating': 'Öndürmek…',
   'canvas.toolbar.professionalContent.label': 'Hünär mazmuny',

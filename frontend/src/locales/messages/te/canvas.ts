@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'దశలను జోడించండి',
   'canvas.toolbar.addSubstepHistory': 'ఉప దశను జోడించండి',
   'canvas.toolbar.aiGenerate': 'AI రూపొందించిన ఉదాహరణ',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'సెంట్రల్ థీమ్ ఆధారంగా రూపొందించండి',
   'canvas.toolbar.aiGenerating': 'ఉత్పత్తి చేస్తోంది...',
   'canvas.toolbar.professionalContent.label': 'వృత్తిపరమైన కంటెంట్',

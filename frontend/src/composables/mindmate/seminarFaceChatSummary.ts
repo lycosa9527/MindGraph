@@ -1,7 +1,6 @@
 /**
  * Draft a seminar minutes card from a face-to-face transcript.
  */
-import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import {
   type SeminarSummaryCardModel,
   emptySeminarSummary,
@@ -9,13 +8,14 @@ import {
 } from '@/utils/mindmateSeminarCards'
 import {
   alignMinutesGoals,
-  buildMinutesPrompt,
   fallbackMinutes,
   minutesTimeRange,
   parseMinutesDraft,
+  requestSeminarMinutesDraft,
 } from '@/utils/mindmateSeminarMinutes'
 
 export async function draftFaceChatSummary(input: {
+  sessionId: string
   transcript: string
   topic: string
   goals: string[]
@@ -23,12 +23,11 @@ export async function draftFaceChatSummary(input: {
   scope: string
   author: string
   zh: boolean
-  userId: string
   startedAt: string
   signal?: AbortSignal
 }): Promise<SeminarSummaryCardModel | null> {
   const text = input.transcript.trim()
-  if (!text || !input.userId) {
+  if (!text || !input.sessionId.trim()) {
     return null
   }
   const base = emptySeminarSummary(input.scope)
@@ -37,39 +36,17 @@ export async function draftFaceChatSummary(input: {
   base.speakers = input.speakers.map((name) => ({ name, role: '' }))
   base.author = input.author
   base.goals = input.goals.filter(Boolean).map((goal) => ({ goal, status: 'open' as const }))
-  const message = buildMinutesPrompt({
-    zh: input.zh,
-    topic: base.topic,
-    goals: input.goals,
-    speakers: input.speakers.join('、'),
-    observers: '',
-    files: [],
-    quotes: [],
-    transcript: text.slice(-12000),
-  })
-  const response = await fetch('/api/ai_assistant/stream', {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, user_id: input.userId }),
-    signal: input.signal,
-  })
-  if (!response.ok || !response.body) {
-    throw new Error('summary_failed')
-  }
-  let body = ''
-  await consumeSseDataLines(
-    response.body.getReader(),
-    (payload) => {
-      const event = payload.event
-      const answer = typeof payload.answer === 'string' ? payload.answer : ''
-      if (event === 'message' && answer) {
-        body += answer
-      } else if (event === 'message_replace' && answer) {
-        body = answer
-      } else if (event === 'error') {
-        throw new Error('summary_failed')
-      }
+  const body = await requestSeminarMinutesDraft(
+    input.sessionId,
+    {
+      zh: input.zh,
+      topic: base.topic,
+      goals: input.goals,
+      speakers: input.speakers.join('、'),
+      observers: '',
+      files: [],
+      quotes: [],
+      transcript: text,
     },
     input.signal
   )

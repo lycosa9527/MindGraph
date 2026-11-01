@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Pridajte kroky',
   'canvas.toolbar.addSubstepHistory': 'Pridať podkrok',
   'canvas.toolbar.aiGenerate': 'Ilustrácie generované AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generovať na základe ústrednej témy',
   'canvas.toolbar.aiGenerating': 'Generuje sa…',
   'canvas.toolbar.professionalContent.label': 'Profesionálny obsah',

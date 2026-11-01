@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Addım əlavə et',
   'canvas.toolbar.addSubstepHistory': 'Alt addım əlavə et',
   'canvas.toolbar.aiGenerate': 'AI ilə yarad',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Mərkəzi mövzudan yarat',
   'canvas.toolbar.aiGenerating': 'Yaradılır…',
   'canvas.toolbar.professionalContent.label': 'Content level',

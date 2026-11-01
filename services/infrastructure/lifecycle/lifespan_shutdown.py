@@ -59,6 +59,7 @@ class LifespanBackgroundTasks:
     cleanup_task: Optional[asyncio.Task] = None
     workshop_cleanup_task: Optional[asyncio.Task] = None
     session_manager_task: Optional[asyncio.Task] = None
+    seminar_idle_task: Optional[asyncio.Task] = None
     worker_perf_task: Optional[asyncio.Task] = None
     worker_perf_stop: Optional[asyncio.Event] = None
     perf_sample_task: Optional[asyncio.Task] = None
@@ -134,6 +135,15 @@ async def run_lifespan_shutdown(
             pass
         if is_main_worker:
             logger.debug("Workshop session manager idle monitor stopped")
+
+    if holdings.seminar_idle_task:
+        holdings.seminar_idle_task.cancel()
+        try:
+            await holdings.seminar_idle_task
+        except asyncio.CancelledError:
+            pass
+        if is_main_worker:
+            logger.debug("MindMate seminar idle monitor stopped")
 
     if holdings.worker_perf_stop is not None:
         holdings.worker_perf_stop.set()

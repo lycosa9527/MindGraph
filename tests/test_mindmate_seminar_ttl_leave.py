@@ -1,30 +1,13 @@
-"""Redis age window and a joiner leaving without ending the seminar."""
+"""A joiner leaves a live seminar without ending it."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from models.domain.mindmate_seminar import MindmateSeminarMember, MindmateSeminarSession
-from services.features.mindmate_seminar.config import MINDMATE_COLLAB_MAX_LIVE_SECONDS
 from services.features.mindmate_seminar.seminar_leave import leave_live_seminar
-from services.features.mindmate_seminar.seminar_ttl import (
-    expire_overdue_live_seminars,
-    seminar_past_max_live_age,
-)
-
-
-def test_seminar_past_max_live_age_uses_utc_for_naive_start() -> None:
-    """Exactly 30 days is overdue; a day-old room and a naive started_at stay open."""
-    now = datetime(2026, 10, 27, 8, 0, tzinfo=UTC)
-    assert MINDMATE_COLLAB_MAX_LIVE_SECONDS == 30 * 24 * 60 * 60
-    started = now - timedelta(seconds=MINDMATE_COLLAB_MAX_LIVE_SECONDS)
-    assert seminar_past_max_live_age(started, now) is True
-    assert seminar_past_max_live_age(started + timedelta(seconds=1), now) is False
-    assert seminar_past_max_live_age(now - timedelta(hours=24), now) is False
-    assert seminar_past_max_live_age(started.replace(tzinfo=None), now) is True
 
 
 def _system_db(db: AsyncMock) -> AsyncMock:
@@ -32,13 +15,6 @@ def _system_db(db: AsyncMock) -> AsyncMock:
     ctx.__aenter__.return_value = db
     ctx.__aexit__.return_value = None
     return ctx
-
-
-@pytest.mark.asyncio
-async def test_expire_overdue_live_seminars_does_not_stop_rooms() -> None:
-    """Room age does not end a seminar. The leader stops it."""
-    stopped = await expire_overdue_live_seminars()
-    assert stopped == 0
 
 
 @pytest.mark.asyncio

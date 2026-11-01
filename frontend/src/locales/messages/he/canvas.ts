@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'הוסף שלבים',
   'canvas.toolbar.addSubstepHistory': 'הוסף שלב משנה',
   'canvas.toolbar.aiGenerate': 'איור שנוצר בינה מלאכותית',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'הפק על בסיס נושא מרכזי',
   'canvas.toolbar.aiGenerating': 'יוצר...',
   'canvas.toolbar.professionalContent.label': 'תוכן מקצועי',

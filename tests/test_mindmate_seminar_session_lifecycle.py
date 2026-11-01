@@ -39,6 +39,6 @@ def test_idle_monitor_concurrency_default_matches_workshop() -> None:
 
 
 def test_ws_shutdown_close_codes_documented() -> None:
-    """4010 is the 30-day close. 4011 is the host stop. The page handles both."""
+    """4011 is the leader stop. 4010 is a system stop. The page handles both."""
     assert ROOM_IDLE_CLOSE_CODE == 4010
     assert SESSION_ENDED_CLOSE_CODE == 4011

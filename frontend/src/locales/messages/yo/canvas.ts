@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Fi awọn igbesẹ kun',
   'canvas.toolbar.addSubstepHistory': 'Ṣafikun igbesẹ',
   'canvas.toolbar.aiGenerate': 'AI ti ipilẹṣẹ apejuwe',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Ṣe ina da lori aringbungbun akori',
   'canvas.toolbar.aiGenerating': 'Ṣiṣẹda…',
   'canvas.toolbar.professionalContent.label': 'akoonu ọjọgbọn',

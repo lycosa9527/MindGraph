@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'اقدامات شامل کریں۔',
   'canvas.toolbar.addSubstepHistory': 'ذیلی مرحلہ شامل کریں۔',
   'canvas.toolbar.aiGenerate': 'AI نے مثال تیار کی۔',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'مرکزی تھیم کی بنیاد پر تخلیق کریں۔',
   'canvas.toolbar.aiGenerating': 'پیدا ہو رہا ہے…',
   'canvas.toolbar.professionalContent.label': 'پیشہ ورانہ مواد',

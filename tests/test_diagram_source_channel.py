@@ -15,6 +15,7 @@ def test_resolve_diagram_source_channel_defaults_and_allowlist() -> None:
     assert resolve_diagram_source_channel(None) == "mindgraph"
     assert resolve_diagram_source_channel("  ") == "mindgraph"
     assert resolve_diagram_source_channel("voice_notes") == "voice_notes"
+    assert resolve_diagram_source_channel("mindmate") == "mindmate"
     with pytest.raises(ValueError):
         resolve_diagram_source_channel("kitty_voice")
 
@@ -24,6 +25,7 @@ def test_parse_list_source_channel_rejects_unknown() -> None:
     assert parse_list_source_channel(None) is None
     assert parse_list_source_channel("") is None
     assert parse_list_source_channel("voice_notes") == "voice_notes"
+    assert parse_list_source_channel("mindmate") == "mindmate"
     with pytest.raises(ValueError):
         parse_list_source_channel("kitty_voice")
 

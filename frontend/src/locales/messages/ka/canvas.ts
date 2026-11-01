@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'დაამატეთ ნაბიჯები',
   'canvas.toolbar.addSubstepHistory': 'დაამატეთ ქვესაფეხური',
   'canvas.toolbar.aiGenerate': 'AI გენერირებული ილუსტრაცია',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'გენერირება ცენტრალურ თემაზე',
   'canvas.toolbar.aiGenerating': 'გენერირება…',
   'canvas.toolbar.professionalContent.label': 'პროფესიონალური შინაარსი',

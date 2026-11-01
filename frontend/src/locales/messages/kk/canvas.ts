@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Қадамдарды қосыңыз',
   'canvas.toolbar.addSubstepHistory': 'Қосымша қадам қосыңыз',
   'canvas.toolbar.aiGenerate': 'AI жасалған иллюстрация',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Орталық тақырып негізінде құру',
   'canvas.toolbar.aiGenerating': 'Жасалуда…',
   'canvas.toolbar.professionalContent.label': 'Кәсіби мазмұн',

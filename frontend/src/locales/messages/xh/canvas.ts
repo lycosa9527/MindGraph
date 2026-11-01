@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Yongeza amanyathelo',
   'canvas.toolbar.addSubstepHistory': 'Yongeza inyathelo elingaphantsi',
   'canvas.toolbar.aiGenerate': 'I-AI ivelise umfanekiso',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Velisa ngokusekelwe kumxholo ophakathi',
   'canvas.toolbar.aiGenerating': 'Iyavelisa...',
   'canvas.toolbar.professionalContent.label': 'Umxholo wobuchwephesha',

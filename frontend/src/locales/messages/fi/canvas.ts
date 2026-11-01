@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Lisää vaiheita',
   'canvas.toolbar.addSubstepHistory': 'Lisää alavaihe',
   'canvas.toolbar.aiGenerate': 'Tekoälyn luoma kuva',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Luo keskeisen teeman perusteella',
   'canvas.toolbar.aiGenerating': 'Luodaan…',
   'canvas.toolbar.professionalContent.label': 'Ammattimainen sisältö',

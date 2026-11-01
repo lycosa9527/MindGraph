@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Engeza izinyathelo',
   'canvas.toolbar.addSubstepHistory': 'Engeza isinyathelo esingaphansi',
   'canvas.toolbar.aiGenerate': 'Umdwebo owenziwe yi-AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Khiqiza ngokusekelwe kungqikithi emaphakathi',
   'canvas.toolbar.aiGenerating': 'Iyakhiqiza...',
   'canvas.toolbar.professionalContent.label': 'Okuqukethwe kochwepheshe',

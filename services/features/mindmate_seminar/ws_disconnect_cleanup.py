@@ -50,6 +50,7 @@ async def _protected_disconnect_cleanup(
     unregister_connection(code, user_id, handle=handle)
     mgr = get_mindmate_seminar_manager()
     await mgr.remove_participant(code, user_id)
+    logger.info("[MindmateSeminarWS] left user=%s code=%s", user_id, code)
     await broadcast_to_others(
         code,
         user_id,

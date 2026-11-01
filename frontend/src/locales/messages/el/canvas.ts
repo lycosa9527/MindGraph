@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Προσθήκη βημάτων',
   'canvas.toolbar.addSubstepHistory': 'Προσθήκη υποβήματος',
   'canvas.toolbar.aiGenerate': 'Εικονογράφηση που δημιουργήθηκε με AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Δημιουργήθηκε με βάση το κεντρικό θέμα',
   'canvas.toolbar.aiGenerating': 'Δημιουργία…',
   'canvas.toolbar.professionalContent.label': 'Επαγγελματικό περιεχόμενο',

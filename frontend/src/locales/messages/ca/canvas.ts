@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Afegeix passos',
   'canvas.toolbar.addSubstepHistory': 'Afegeix un subpas',
   'canvas.toolbar.aiGenerate': 'Il·lustració generada per IA',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generar basat en el tema central',
   'canvas.toolbar.aiGenerating': 'S\'està generant…',
   'canvas.toolbar.professionalContent.label': 'Continguts professionals',

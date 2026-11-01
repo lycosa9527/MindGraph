@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'ಹಂತಗಳನ್ನು ಸೇರಿಸಿ',
   'canvas.toolbar.addSubstepHistory': 'ಉಪಹಂತವನ್ನು ಸೇರಿಸಿ',
   'canvas.toolbar.aiGenerate': 'AI ರಚಿತವಾದ ವಿವರಣೆ',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'ಕೇಂದ್ರ ಥೀಮ್ ಆಧರಿಸಿ ರಚಿಸಿ',
   'canvas.toolbar.aiGenerating': 'ಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.toolbar.professionalContent.label': 'ವೃತ್ತಿಪರ ವಿಷಯ',

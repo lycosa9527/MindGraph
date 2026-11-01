@@ -51,21 +51,18 @@
 }
 
 .mm-status__left {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   gap: 10px;
 }
 
 .mm-status__center {
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   justify-content: center;
-  min-width: 0;
   gap: 8px;
 }
 
 .mm-status__right {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   justify-content: flex-end;
   margin-left: auto;
   gap: 4px;

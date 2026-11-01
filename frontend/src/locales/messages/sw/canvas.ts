@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Ongeza hatua',
   'canvas.toolbar.addSubstepHistory': 'Ongeza hatua ndogo',
   'canvas.toolbar.aiGenerate': 'AI ilitoa kielelezo',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Tengeneza kwa kuzingatia mada kuu',
   'canvas.toolbar.aiGenerating': 'Inazalisha...',
   'canvas.toolbar.professionalContent.label': 'Maudhui ya kitaaluma',

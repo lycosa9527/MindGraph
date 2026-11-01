@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Addim qo’shish',
   'canvas.toolbar.addSubstepHistory': 'Alt addim qo’shish',
   'canvas.toolbar.aiGenerate': 'AI bilan yarad',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Merkezi mavzudan yarat',
   'canvas.toolbar.aiGenerating': 'Yaradilir…',
   'canvas.toolbar.professionalContent.label': 'Content level',

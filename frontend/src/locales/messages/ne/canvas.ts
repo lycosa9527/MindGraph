@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'चरणहरू थप्नुहोस्',
   'canvas.toolbar.addSubstepHistory': 'सबस्टेप थप्नुहोस्',
   'canvas.toolbar.aiGenerate': 'AI ले चित्रण उत्पन्न गर्यो',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'केन्द्रीय विषयवस्तुमा आधारित उत्पन्न गर्नुहोस्',
   'canvas.toolbar.aiGenerating': 'उत्पन्न गर्दै...',
   'canvas.toolbar.professionalContent.label': 'व्यावसायिक सामग्री',

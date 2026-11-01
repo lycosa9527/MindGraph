@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Lisage samme',
   'canvas.toolbar.addSubstepHistory': 'Lisa alametapp',
   'canvas.toolbar.aiGenerate': 'AI loodud illustratsioon',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Looge keskse teema alusel',
   'canvas.toolbar.aiGenerating': 'Loomine…',
   'canvas.toolbar.professionalContent.label': 'Professionaalne sisu',

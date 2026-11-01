@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'أضف خطوات',
   'canvas.toolbar.addSubstepHistory': 'أضف خطوة فرعية',
   'canvas.toolbar.aiGenerate': 'رسم توضيحي تم إنشاؤه بواسطة الذكاء الاصطناعي',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'إنشاء على أساس الموضوع المركزي',
   'canvas.toolbar.aiGenerating': 'جارٍ الإنشاء…',
   'canvas.toolbar.professionalContent.label': 'Content level',

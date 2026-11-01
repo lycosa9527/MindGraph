@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'เพิ่มขั้นตอน',
   'canvas.toolbar.addSubstepHistory': 'เพิ่มขั้นตอนย่อย',
   'canvas.toolbar.aiGenerate': 'AI สร้าง',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'สร้างจากหัวข้อกลาง',
   'canvas.toolbar.aiGenerating': 'กำลังสร้าง…',
   'canvas.toolbar.professionalContent.label': 'Content level',

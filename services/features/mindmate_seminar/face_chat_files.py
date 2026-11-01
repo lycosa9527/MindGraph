@@ -11,6 +11,7 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -33,6 +34,8 @@ from services.features.workshop_chat.attachment_storage import build_logical_key
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 from utils.db.session_open import system_rls_session
+
+logger = logging.getLogger(__name__)
 
 FACE_CHAT_KIND = "face_chat"
 FACE_CHAT_LOCK_TTL_SEC = 120
@@ -121,7 +124,8 @@ async def _touch_face_chat_lock(code: str, user_id: int, token: str, file_id: st
             file_id,
             str(FACE_CHAT_LOCK_TTL_SEC),
         )
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarFaceChat] lock refresh failed code=%s user=%s: %s", code, user_id, exc)
         return False
     return bool(touched)
 
@@ -140,7 +144,8 @@ async def hold_face_chat_lock(code: str, user_id: int, token: str, *, refresh: b
                 nx=True,
                 ex=FACE_CHAT_LOCK_TTL_SEC,
             )
-        except REDIS_ERRORS:
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminarFaceChat] lock acquire failed code=%s user=%s: %s", code, user_id, exc)
             return False
         if acquired:
             return True
@@ -163,7 +168,8 @@ async def face_chat_locked_file_id(code: str, user_id: int, token: str) -> str:
     redis = get_async_redis()
     try:
         holder = parse_face_chat_lock(await redis.get(face_chat_lock_key(code)))
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarFaceChat] lock read failed code=%s user=%s: %s", code, user_id, exc)
         return ""
     if holder is None:
         return ""
@@ -185,7 +191,8 @@ async def release_face_chat_lock(code: str, user_id: int, token: str) -> None:
             face_chat_lock_key(code),
             _lock_prefix(user_id, cleaned),
         )
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminarFaceChat] lock release failed code=%s user=%s: %s", code, user_id, exc)
         return
 
 

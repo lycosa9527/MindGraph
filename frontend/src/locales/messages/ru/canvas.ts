@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Добавить шаги',
   'canvas.toolbar.addSubstepHistory': 'Добавить подэтап',
   'canvas.toolbar.aiGenerate': 'Иллюстрация, созданная искусственным интеллектом',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Создать на основе центральной темы',
   'canvas.toolbar.aiGenerating': 'Создание…',
   'canvas.toolbar.professionalContent.label': 'Content level',

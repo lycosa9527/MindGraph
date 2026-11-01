@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Dodaj krok',
   'canvas.toolbar.addSubstepHistory': 'Dodaj podkrok',
   'canvas.toolbar.aiGenerate': 'Generuj AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generuj z tematu centralnego',
   'canvas.toolbar.aiGenerating': 'Generowanie…',
   'canvas.toolbar.professionalContent.label': 'Content level',

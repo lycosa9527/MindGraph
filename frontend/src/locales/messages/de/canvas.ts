@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Schritt hinzufügen',
   'canvas.toolbar.addSubstepHistory': 'Unterschritt hinzufügen',
   'canvas.toolbar.aiGenerate': 'KI generieren',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Aus Zentrumsthema generieren',
   'canvas.toolbar.aiGenerating': 'Wird generiert …',
   'canvas.toolbar.professionalContent.label': 'Content level',

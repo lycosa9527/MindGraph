@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'እርምጃዎችን ያክሉ',
   'canvas.toolbar.addSubstepHistory': 'ንዑስ ደረጃ ያክሉ',
   'canvas.toolbar.aiGenerate': 'AI የመነጨ ምሳሌ',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'በማዕከላዊ ጭብጥ ላይ በመመስረት ይፍጠሩ',
   'canvas.toolbar.aiGenerating': 'በማመንጨት ላይ…',
   'canvas.toolbar.professionalContent.label': 'ሙያዊ ይዘት',

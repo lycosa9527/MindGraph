@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Pievienojiet soļus',
   'canvas.toolbar.addSubstepHistory': 'Pievienot apakšsoļu',
   'canvas.toolbar.aiGenerate': 'AI ģenerēta ilustrācija',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Ģenerēt, pamatojoties uz centrālo tēmu',
   'canvas.toolbar.aiGenerating': 'Notiek ģenerēšana…',
   'canvas.toolbar.professionalContent.label': 'Profesionāls saturs',

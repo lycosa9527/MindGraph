@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Tambahkan Langkah',
   'canvas.toolbar.addSubstepHistory': 'Tambahkan Sublangkah',
   'canvas.toolbar.aiGenerate': 'Hasilkan AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Hasilkan dari topik utama',
   'canvas.toolbar.aiGenerating': 'Menghasilkan…',
   'canvas.toolbar.professionalContent.label': 'Content level',

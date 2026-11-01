@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Додадете чекори',
   'canvas.toolbar.addSubstepHistory': 'Додадете потчекор',
   'canvas.toolbar.aiGenerate': 'Илустрација генерирана со вештачка интелигенција',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Генерирајте врз основа на централна тема',
   'canvas.toolbar.aiGenerating': 'Се генерира…',
   'canvas.toolbar.professionalContent.label': 'Професионална содржина',

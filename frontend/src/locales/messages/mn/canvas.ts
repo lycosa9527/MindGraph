@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Алхам нэмэх',
   'canvas.toolbar.addSubstepHistory': 'Дэд алхам нэмнэ үү',
   'canvas.toolbar.aiGenerate': 'AI үүсгэсэн дүрслэл',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Төв сэдэвт тулгуурлан үүсгэх',
   'canvas.toolbar.aiGenerating': 'Үүсгэж байна...',
   'canvas.toolbar.professionalContent.label': 'Мэргэжлийн контент',

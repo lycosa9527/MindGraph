@@ -213,6 +213,7 @@ export default {
   'canvas.toolbar.addStepHistory': '添加步骤',
   'canvas.toolbar.addSubstepHistory': '添加子步骤',
   'canvas.toolbar.aiGenerate': 'AI生成图示',
+  'canvas.toolbar.aiGenerateShort': 'AI生成',
   'canvas.toolbar.aiGenerateTooltip': '根据中心主题生成',
   'canvas.toolbar.aiGenerating': '生成中…',
   'canvas.toolbar.professionalContent.label': '专业内容',

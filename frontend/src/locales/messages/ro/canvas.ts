@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Adăugați pași',
   'canvas.toolbar.addSubstepHistory': 'Adăugați subpasul',
   'canvas.toolbar.aiGenerate': 'Ilustrație generată de AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generați pe baza temei centrale',
   'canvas.toolbar.aiGenerating': 'Se generează…',
   'canvas.toolbar.professionalContent.label': 'Conținut profesional',

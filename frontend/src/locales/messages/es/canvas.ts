@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Añadir paso',
   'canvas.toolbar.addSubstepHistory': 'Añadir subpaso',
   'canvas.toolbar.aiGenerate': 'Generar con IA',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Generar desde el tema central',
   'canvas.toolbar.aiGenerating': 'Generando…',
   'canvas.toolbar.professionalContent.label': 'Content level',

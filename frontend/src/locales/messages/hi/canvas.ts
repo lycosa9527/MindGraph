@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'जोड़ें Step',
   'canvas.toolbar.addSubstepHistory': 'जोड़ें Substep',
   'canvas.toolbar.aiGenerate': 'AI जनरेट',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'जनरेट from central topic',
   'canvas.toolbar.aiGenerating': 'जनरेट हो रहा है…',
   'canvas.toolbar.professionalContent.label': 'Content level',

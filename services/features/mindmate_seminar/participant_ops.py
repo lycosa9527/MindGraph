@@ -33,8 +33,8 @@ async def _hexpire_field(redis: Any, key: str, ttl: int, field: str) -> None:
             pass
         try:
             await cast(Awaitable[Any], redis.expire(key, ttl))
-        except (RedisError, OSError):
-            pass
+        except (RedisError, OSError) as exc:
+            logger.warning("[MindmateSeminarParticipantOps] participant TTL fallback failed: %s", exc)
 
 
 async def refresh_participant_ttl_for_code(code: str, user_id: int) -> None:

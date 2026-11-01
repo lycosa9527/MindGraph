@@ -8,12 +8,15 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict
 
 from models.domain.mindmate_seminar import MindmateSeminarSession
 from services.features.mindmate_seminar.group_members import member_is_pending, seminar_host_org_label
 from services.features.mindmate_notify_ws_manager import mindmate_notify_ws_manager
 from services.features.workshop_chat_ws_manager import chat_ws_manager
+
+logger = logging.getLogger(__name__)
 
 
 async def send_mindmate_seminar_poke(
@@ -44,8 +47,29 @@ async def send_mindmate_seminar_poke(
     }
     delivered = await mindmate_notify_ws_manager.send_to_user(target_user_id, payload)
     if delivered:
+        logger.info(
+            "[MindmateSeminar] poke delivered session=%s from=%s to=%s",
+            session_id,
+            from_user_id,
+            target_user_id,
+        )
         return True
-    return await chat_ws_manager.send_to_user(target_user_id, payload)
+    fallback = await chat_ws_manager.send_to_user(target_user_id, payload)
+    if fallback:
+        logger.info(
+            "[MindmateSeminar] poke delivered via chat session=%s from=%s to=%s",
+            session_id,
+            from_user_id,
+            target_user_id,
+        )
+        return True
+    logger.info(
+        "[MindmateSeminar] poke not delivered session=%s from=%s to=%s",
+        session_id,
+        from_user_id,
+        target_user_id,
+    )
+    return False
 
 
 async def send_seminar_member_poke(

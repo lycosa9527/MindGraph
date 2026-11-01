@@ -17,6 +17,14 @@ import { resolveDiagramShortcutGuideRows } from '@/config/mindMapShortcutGuide'
 import { useDiagramStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 
+const props = withDefaults(
+  defineProps<{
+    /** Status bar has no room for the button name. The card keeps its labels. */
+    iconOnly?: boolean
+  }>(),
+  { iconOnly: false }
+)
+
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
 
 const { t } = useLanguage()
@@ -69,7 +77,10 @@ function toggleExpanded(): void {
       :title="t('canvas.shortcutGuide.title')"
       @click="toggleExpanded"
     >
-      <I18nText k="canvas.shortcutGuide.shortLabel" />
+      <I18nText
+        v-if="!props.iconOnly"
+        k="canvas.shortcutGuide.shortLabel"
+      />
       <Keyboard
         class="h-3.5 w-3.5"
         :stroke-width="2"

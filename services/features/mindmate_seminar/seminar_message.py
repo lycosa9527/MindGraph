@@ -7,6 +7,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import NamedTuple, Optional
 
@@ -37,6 +38,8 @@ from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 from utils.db.session_open import system_rls_session
+
+logger = logging.getLogger(__name__)
 
 SEMINAR_MESSAGE_KIND_CHAT = "chat"
 SEMINAR_MESSAGE_KIND_MINUTES = "minutes"
@@ -78,7 +81,8 @@ async def ensure_live_seminar_room(session: MindmateSeminarSession) -> bool:
     try:
         if await redis.hexists(session_meta_key(norm), "session_id"):
             return True
-    except REDIS_ERRORS:
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] live room check failed code=%s: %s", norm, exc)
         return False
     async with system_rls_session() as db:
         owner = (await db.execute(select(User).where(User.id == session.owner_user_id))).scalar_one_or_none()
@@ -101,7 +105,10 @@ async def ensure_live_seminar_room(session: MindmateSeminarSession) -> bool:
         started_at=session.started_at,
     )
     if published:
+        logger.info("[MindmateSeminar] republished live room session=%s code=%s", session.id, norm)
         schedule_seminar_cos_sync(session.id)
+    else:
+        logger.warning("[MindmateSeminar] republish failed session=%s code=%s", session.id, norm)
     return published
 
 

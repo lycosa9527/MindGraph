@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Magdagdag ng Hakbang',
   'canvas.toolbar.addSubstepHistory': 'Magdagdag ng Substep',
   'canvas.toolbar.aiGenerate': 'Bumuo ng AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Bumuo mula sa gitnang paksa',
   'canvas.toolbar.aiGenerating': 'Binubuo…',
   'canvas.toolbar.professionalContent.label': 'Content level',

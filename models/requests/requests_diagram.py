@@ -490,7 +490,7 @@ class DiagramCreateRequest(BaseModel):
     source_channel: Optional[str] = Field(
         None,
         max_length=32,
-        description="Provenance channel (mindgraph or voice_notes)",
+        description="Provenance channel (mindgraph, mindmate, or voice_notes)",
     )
 
     @field_validator("language")

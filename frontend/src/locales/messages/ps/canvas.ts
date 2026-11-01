@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'ګامونه اضافه کړئ',
   'canvas.toolbar.addSubstepHistory': 'فرعي مرحله اضافه کړئ',
   'canvas.toolbar.aiGenerate': 'AI انځور جوړ کړی',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'د مرکزي موضوع پر بنسټ تولید کړئ',
   'canvas.toolbar.aiGenerating': 'پیداکیږي…',
   'canvas.toolbar.professionalContent.label': 'مسلکي مواد',

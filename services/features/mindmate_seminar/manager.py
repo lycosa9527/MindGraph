@@ -215,6 +215,7 @@ class MindmateSeminarManager:
                         session_id = str(uuid4())
 
                 if not code:
+                    logger.warning("[MindmateSeminar] room code allocation failed owner=%s", user_id)
                     return None, "Could not allocate room code"
 
                 normalized_seed, seed_error = normalize_seed_messages(seed_messages or [], user_id)
@@ -253,8 +254,21 @@ class MindmateSeminarManager:
                         .values(ended_at=datetime.now(tz=UTC)),
                     )
                     await db.commit()
+                logger.warning(
+                    "[MindmateSeminar] start rolled back session=%s code=%s owner=%s",
+                    session_id,
+                    code,
+                    user_id,
+                )
                 return None, "Collaboration service unavailable"
             await record_collab_member(session_id, user_id)
+            logger.info(
+                "[MindmateSeminar] started session=%s code=%s owner=%s visibility=%s",
+                session_id,
+                code,
+                user_id,
+                visibility,
+            )
             return {
                 "session_id": session_id,
                 "code": code,
@@ -343,9 +357,11 @@ class MindmateSeminarManager:
         redis = get_async_redis()
         if not redis:
             return False
+        norm = normalize_collab_code(code)
         try:
-            await redis.delete(closing_key(normalize_collab_code(code)))
-        except REDIS_ERRORS:
+            await redis.delete(closing_key(norm))
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminar] clear closing mark failed code=%s: %s", norm, exc)
             return False
         return await self._write_redis_session(
             code=code,
@@ -643,6 +659,13 @@ class MindmateSeminarManager:
             await broadcast_to_all(code, {"type": "room_idle_shutdown"})
         if redis:
             await async_purge_session_redis_keys(redis, code, org_id, visibility)
+        logger.info(
+            "[MindmateSeminar] stopped session=%s code=%s reason=%s actor=%s",
+            session_id,
+            code,
+            reason,
+            actor_user_id,
+        )
         return True
 
     async def list_org_sessions(
@@ -856,8 +879,13 @@ class MindmateSeminarManager:
         try:
             await redis.hdel(participants_key(norm), str(user_id))
             await self.touch_activity(code)
-        except REDIS_ERRORS:
-            pass
+        except REDIS_ERRORS as exc:
+            logger.warning(
+                "[MindmateSeminar] remove participant failed code=%s user=%s: %s",
+                norm,
+                user_id,
+                exc,
+            )
 
     async def is_participant(self, code: str, user_id: int) -> bool:
         """Return True when user_id is in the room participant set."""
@@ -878,7 +906,8 @@ class MindmateSeminarManager:
         norm = normalize_collab_code(code)
         try:
             raw_ids = await redis.hkeys(participants_key(norm))
-        except REDIS_ERRORS:
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminar] participant list failed code=%s: %s", norm, exc)
             return []
         out: List[int] = []
         for raw in raw_ids or []:
@@ -898,13 +927,14 @@ class MindmateSeminarManager:
         meta_key = session_meta_key(norm)
         try:
             room_alive = await redis.hexists(meta_key, "session_id")
-        except REDIS_ERRORS:
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminar] activity check failed code=%s: %s", norm, exc)
             return
         if not room_alive:
             try:
                 await redis.zrem(idle_scores_key(), norm)
-            except REDIS_ERRORS:
-                pass
+            except REDIS_ERRORS as exc:
+                logger.warning("[MindmateSeminar] orphan idle score drop failed code=%s: %s", norm, exc)
             return
         now = int(time.time())
         # Slide the live keys out to the 30-day cap. The duration preset does not set this.
@@ -916,8 +946,8 @@ class MindmateSeminarManager:
             pipe.expire(meta_key, safety_ttl_sec)
             pipe.expire(code_to_session_key(norm), safety_ttl_sec)
             await pipe.execute()
-        except REDIS_ERRORS:
-            pass
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminar] activity touch failed code=%s: %s", norm, exc)
 
     async def fetch_message_page(
         self,
@@ -1029,7 +1059,8 @@ class MindmateSeminarManager:
             return {}
         try:
             raw = await redis.hgetall(session_meta_key(normalize_collab_code(code)))
-        except REDIS_ERRORS:
+        except REDIS_ERRORS as exc:
+            logger.warning("[MindmateSeminar] session meta read failed code=%s: %s", code, exc)
             return {}
         if not raw:
             return {}

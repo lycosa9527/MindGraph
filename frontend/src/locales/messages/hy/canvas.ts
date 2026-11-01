@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Ավելացրեք քայլեր',
   'canvas.toolbar.addSubstepHistory': 'Ավելացնել ենթակետ',
   'canvas.toolbar.aiGenerate': 'AI-ի ստեղծած նկարազարդումը',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Ստեղծեք կենտրոնական թեմայի հիման վրա',
   'canvas.toolbar.aiGenerating': 'Ստեղծվում է…',
   'canvas.toolbar.professionalContent.label': 'Մասնագիտական ​​բովանդակություն',

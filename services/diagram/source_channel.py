@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-ALLOWED_DIAGRAM_SOURCE_CHANNELS = frozenset({"mindgraph", "voice_notes"})
+ALLOWED_DIAGRAM_SOURCE_CHANNELS = frozenset({"mindgraph", "mindmate", "voice_notes"})
 DEFAULT_DIAGRAM_SOURCE_CHANNEL = "mindgraph"
 
 

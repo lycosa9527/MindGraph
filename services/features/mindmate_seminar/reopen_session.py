@@ -8,6 +8,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, Optional, Tuple
 
@@ -38,6 +39,8 @@ from services.online_collab.redis.online_collab_redis_locks import (
 )
 from services.redis.redis_async_client import get_async_redis
 from utils.db.session_open import system_rls_session, user_rls_session
+
+logger = logging.getLogger(__name__)
 
 
 def reopen_block_reason(
@@ -201,9 +204,22 @@ async def _reopen_locked(
             )
         elif already_live and (previous_expires is None or is_online_collab_expired(previous_expires)):
             await _set_ended_at(session.id, None, previous_expires)
+        logger.warning(
+            "[MindmateSeminar] reopen rolled back session=%s code=%s owner=%s",
+            session.id,
+            session.code,
+            user_id,
+        )
         return None, "Collaboration service unavailable"
 
     if session.dify_conversation_id:
         await manager.set_dify_conversation_id(session.id, session.dify_conversation_id)
     await record_collab_member(session.id, user_id)
+    logger.info(
+        "[MindmateSeminar] reopened session=%s code=%s owner=%s already_live=%s",
+        session.id,
+        session.code,
+        user_id,
+        already_live,
+    )
     return _room_payload(session, expires_at), None

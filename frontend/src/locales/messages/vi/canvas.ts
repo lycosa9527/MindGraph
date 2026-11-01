@@ -209,6 +209,7 @@ export default {
   'canvas.toolbar.addStepHistory': 'Thêm bước',
   'canvas.toolbar.addSubstepHistory': 'Thêm bước phụ',
   'canvas.toolbar.aiGenerate': 'Tạo AI',
+  'canvas.toolbar.aiGenerateShort': 'AI Generate',
   'canvas.toolbar.aiGenerateTooltip': 'Tạo từ chủ đề trung tâm',
   'canvas.toolbar.aiGenerating': 'Đang tạo…',
   'canvas.toolbar.professionalContent.label': 'Content level',

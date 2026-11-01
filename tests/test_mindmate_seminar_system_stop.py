@@ -8,6 +8,8 @@ import pytest
 
 from services.features.mindmate_seminar.idle_monitor import (
     drop_orphan_mindmate_seminar_idle_score,
+    start_mindmate_seminar_idle_monitor,
+    stop_mindmate_seminar_idle_monitor,
 )
 from services.features.mindmate_seminar.manager import MindmateSeminarManager
 
@@ -94,3 +96,20 @@ async def test_drop_orphan_idle_score_removes_a_missing_room() -> None:
 
     redis.zrem.assert_awaited()
     redis.delete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_idle_monitor_stops_cleanly() -> None:
+    """Shutdown can stop the orphan-score loop without cancelling it mid-wait."""
+    with patch(
+        "services.features.mindmate_seminar.idle_monitor.get_async_redis",
+        return_value=None,
+    ):
+        task = start_mindmate_seminar_idle_monitor()
+        try:
+            again = start_mindmate_seminar_idle_monitor()
+            assert again is task
+        finally:
+            await stop_mindmate_seminar_idle_monitor()
+    assert task.done()
+    assert not task.cancelled()
