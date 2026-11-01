@@ -281,3 +281,6 @@ ignore = ["E402"]
 [tool.pytest.ini_options]
 pythonpath = [".", "clients/file-reader"]
 testpaths = ["tests"]
+# Async fixtures use a function-scoped loop. pytest-asyncio 1.x warns when this
+# is unset, and a later release will make "function" the default.
+asyncio_default_fixture_loop_scope = "function"
