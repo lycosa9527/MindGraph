@@ -47,7 +47,6 @@ def test_invalid_database_name_sanitized_before_offline_probe(
         return False
 
     monkeypatch.setattr(pg_disc, "cluster_postmaster_pid", lambda path: None)
-    monkeypatch.setattr(pg_disc, "postgresql_accepts_connections", lambda host, port: False)
     monkeypatch.setattr(pg_disc, "_offline_cluster_has_database", _capture)
 
     assert pg_disc.cluster_has_database(cluster, "mindgraph;drop", 5432) is False
@@ -100,17 +99,16 @@ def test_discover_ranked_clusters_prefers_matching_port(
     assert ranked[0] == right_port
 
 
-def test_cluster_has_database_false_when_other_server_on_port(
+def test_cluster_has_database_probes_stopped_cluster_while_port_is_busy(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Do not treat a stopped cluster as verified when another server owns the port."""
+    """A stopped data directory is still checked when a different postmaster holds the port."""
     cluster = _init_cluster(tmp_path / "mindgraph", 5432)
     monkeypatch.setattr(pg_disc, "cluster_postmaster_pid", lambda path: None)
-    monkeypatch.setattr(pg_disc, "postgresql_accepts_connections", lambda host, port: True)
     monkeypatch.setattr(pg_disc, "_offline_cluster_has_database", lambda *args, **kwargs: True)
 
-    assert pg_disc.cluster_has_database(cluster, "mindgraph", 5432) is False
+    assert pg_disc.cluster_has_database(cluster, "mindgraph", 5432) is True
 
 
 def test_cluster_has_database_uses_running_cluster_pid(
@@ -120,6 +118,7 @@ def test_cluster_has_database_uses_running_cluster_pid(
     """When this cluster is running, verify the database via a live catalog query."""
     cluster = _init_cluster(tmp_path / "mindgraph", 5432)
     monkeypatch.setattr(pg_disc, "cluster_postmaster_pid", lambda path: 12345)
+    monkeypatch.setattr(pg_disc, "postmaster_data_directory", lambda pid: None)
     monkeypatch.setattr(pg_disc, "_database_exists_on_running_server", lambda host, port, db: db == "mindgraph")
 
     assert pg_disc.cluster_has_database(cluster, "mindgraph", 5432) is True
@@ -136,6 +135,69 @@ def test_scan_local_cluster_dirs_uses_configured_data_dir(
 
     found = pg_disc.scan_local_cluster_dirs()
     assert cluster.resolve() in found
+
+
+def test_offline_probe_reads_postgresql_18_single_user_output(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """PostgreSQL 18 single-user mode reports a hit without the old ``(1 row)`` footer."""
+    cluster = _init_cluster(tmp_path / "mindgraph", 5432)
+    monkeypatch.setattr(pg_disc, "cluster_postmaster_pid", lambda path: None)
+    monkeypatch.setattr(pg_disc, "postgres_binary_for_cluster", lambda path: "/usr/lib/postgresql/18/bin/postgres")
+
+    class _Result:
+        returncode = 0
+        stderr = ""
+
+        def __init__(self, stdout: str) -> None:
+            self.stdout = stdout
+
+    outputs = iter(
+        [
+            _Result('backend> \t 1: ?column? = "1"\t(typeid = 23)\n'),
+            _Result("backend> \t 1: ?column?\t(typeid = 23)\n\t----\n"),
+        ]
+    )
+    monkeypatch.setattr(pg_disc.subprocess, "run", lambda *args, **kwargs: next(outputs))
+
+    assert pg_disc.cluster_has_database(cluster, "mindgraph", 5432) is True
+    assert pg_disc.cluster_has_database(cluster, "mindgraph", 5432) is False
+
+
+def test_foreign_postmaster_pid_does_not_count_as_this_cluster(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A live pid whose data directory is elsewhere cannot verify an empty cluster."""
+    cluster = _init_cluster(tmp_path / "19" / "main", 5432)
+    monkeypatch.setattr(pg_disc, "cluster_postmaster_pid", lambda path: 99)
+    monkeypatch.setattr(pg_disc, "postmaster_data_directory", lambda pid: Path("/var/lib/postgresql/mindgraph"))
+    monkeypatch.setattr(pg_disc, "_database_exists_on_running_server", lambda host, port, db: True)
+    monkeypatch.setattr(pg_disc, "_offline_cluster_has_database", lambda path, database: False)
+
+    assert pg_disc.cluster_has_database(cluster, "mindgraph", 5432) is False
+
+
+def test_mindgraph_directory_is_probed_before_upgrade_mains(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Repeated package upgrades do not consume the probe budget before the data directory."""
+    mains = [_init_cluster(tmp_path / str(version) / "main", 5432) for version in range(14, 22)]
+    mindgraph = _init_cluster(tmp_path / "mindgraph", 5432)
+    probed: list[Path] = []
+
+    def _probe(path: Path, _database: str, _port: int) -> bool:
+        probed.append(path)
+        return path == mindgraph
+
+    monkeypatch.setattr(pg_disc, "scan_local_cluster_dirs", lambda limit=32: [*mains, mindgraph])
+    monkeypatch.setattr(pg_disc, "cluster_has_database", _probe)
+
+    ranked = pg_disc.discover_ranked_clusters(_connect_only_config())
+    assert probed[0] == mindgraph
+    assert ranked[0] == mindgraph
 
 
 def test_clusters_on_port_filters_ranked_list(tmp_path: Path) -> None:

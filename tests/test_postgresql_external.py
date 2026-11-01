@@ -6,6 +6,7 @@ import pytest
 
 from services.infrastructure.process import _postgresql_external as pg_ext
 from services.infrastructure.process import _postgresql_paths as pg_paths
+from services.infrastructure.process._postgresql_cluster_choice import ClusterChoice
 from services.infrastructure.process._postgresql_discovery import RankedCluster
 from services.infrastructure.process._postgresql_runtime import PostgresRuntimeConfig
 
@@ -52,7 +53,7 @@ def test_try_start_ranked_clusters_skips_wrong_port(
 
     monkeypatch.setattr(pg_ext, "postgresql_accepts_connections", lambda host, port: False)
     monkeypatch.setattr(pg_ext, "check_port_in_use", lambda host, port: (False, None))
-    monkeypatch.setattr(pg_ext, "_find_pg_ctl_binary", lambda: "/usr/bin/pg_ctl")
+    monkeypatch.setattr(pg_ext, "_find_pg_ctl_binary", lambda data_path=None: "/usr/bin/pg_ctl")
     monkeypatch.setattr(pg_ext, "cleanup_stale_pid_file", lambda path: None)
 
     class _Result:
@@ -78,6 +79,7 @@ def test_ensure_local_external_prefers_verified_cluster_before_system(
     ranked = [_ranked(mindgraph)]
     calls: list[str] = []
 
+    monkeypatch.setattr(pg_ext, "use_persistent_mindgraph_cluster", lambda config: None)
     monkeypatch.setattr(pg_ext, "postgresql_accepts_connections", lambda host, port: False)
     monkeypatch.setattr(pg_ext, "discover_ranked_cluster_details", lambda cfg: ranked)
     monkeypatch.setattr(
@@ -104,6 +106,7 @@ def test_ensure_local_external_falls_back_to_system_then_remaining_ranked(
     unverified = _ranked(tmp_path / "unknown", has_database=False)
     calls: list[str] = []
 
+    monkeypatch.setattr(pg_ext, "use_persistent_mindgraph_cluster", lambda config: None)
     monkeypatch.setattr(pg_ext, "postgresql_accepts_connections", lambda host, port: False)
     monkeypatch.setattr(pg_ext, "discover_ranked_cluster_details", lambda cfg: [unverified])
 
@@ -121,3 +124,107 @@ def test_ensure_local_external_falls_back_to_system_then_remaining_ranked(
 
     assert pg_ext.ensure_local_external_postgresql(config) is True
     assert calls == ["system", "all"]
+
+
+def _mindgraph_dir(tmp_path: Path) -> Path:
+    data_dir = tmp_path / "mindgraph"
+    data_dir.mkdir()
+    (data_dir / "PG_VERSION").write_text("18\n", encoding="utf-8")
+    (data_dir / "postgresql.conf").write_text("port = 5432\n", encoding="utf-8")
+    return data_dir
+
+
+def _patch_finish(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(pg_ext, "_disable_competing_distro_cluster", lambda port, mindgraph: None)
+    monkeypatch.setattr(pg_ext, "try_database_url_connect", lambda config, timeout=2: True)
+    monkeypatch.setattr(pg_ext, "publish_cluster_env", lambda path: "unchanged")
+    monkeypatch.setattr(pg_ext, "announce_cluster_choice", lambda config, choice, env_status: None)
+
+
+def _choice(path: Path | None) -> ClusterChoice:
+    return ClusterChoice(path=path, on_port=())
+
+
+def test_use_persistent_returns_none_without_data_directory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Machines without a MindGraph data directory keep the normal startup path."""
+    monkeypatch.setattr(pg_ext, "choose_cluster", lambda config: _choice(None))
+    assert pg_ext.use_persistent_mindgraph_cluster(_connect_only_config()) is None
+
+
+def test_use_persistent_keeps_listener_that_is_already_mindgraph(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A postmaster already using the MindGraph data directory is left running."""
+    data_dir = _mindgraph_dir(tmp_path)
+    released: list[Path] = []
+    monkeypatch.setattr(pg_ext, "choose_cluster", lambda config: _choice(data_dir))
+    monkeypatch.setattr(pg_ext, "check_port_in_use", lambda host, port: (True, 1283))
+    monkeypatch.setattr(pg_ext, "cluster_postmaster_pid", lambda path: None)
+    monkeypatch.setattr(pg_ext, "postmaster_data_directory", lambda pid: data_dir)
+    monkeypatch.setattr(
+        pg_ext,
+        "_release_foreign_cluster",
+        lambda host, port, path: released.append(path) or True,
+    )
+    _patch_finish(monkeypatch)
+
+    assert pg_ext.use_persistent_mindgraph_cluster(_connect_only_config()) is True
+    assert not released
+
+
+def test_use_persistent_stops_distro_cluster_then_starts_mindgraph(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Port 5432 held by 18/main is released before the MindGraph cluster starts."""
+    data_dir = _mindgraph_dir(tmp_path)
+    foreign = Path("/var/lib/postgresql/18/main")
+    commands: list[list[str]] = []
+    started: list[Path] = []
+    monkeypatch.setattr(pg_ext, "choose_cluster", lambda config: _choice(data_dir))
+    monkeypatch.setattr(pg_ext, "publish_cluster_env", lambda path: "updated")
+    monkeypatch.setattr(pg_ext, "announce_cluster_choice", lambda config, choice, env_status: None)
+    monkeypatch.setattr(pg_ext, "check_port_in_use", lambda host, port: (True, 1283))
+    monkeypatch.setattr(pg_ext, "cluster_postmaster_pid", lambda path: None)
+    monkeypatch.setattr(pg_ext, "postmaster_data_directory", lambda pid: foreign)
+    monkeypatch.setattr(pg_ext, "find_system_postgresql_cluster", lambda port=None: None)
+    monkeypatch.setattr(pg_ext, "_run_root", lambda cmd, timeout=60: commands.append(list(cmd)) or True)
+    monkeypatch.setattr(pg_ext, "_wait_until_port_free", lambda host, port, attempts=15: True)
+    monkeypatch.setattr(
+        pg_ext,
+        "try_start_persistent_cluster",
+        lambda path, port: started.append(path) or True,
+    )
+    monkeypatch.setattr(pg_ext, "try_database_url_connect", lambda config, timeout=2: True)
+
+    assert pg_ext.use_persistent_mindgraph_cluster(_connect_only_config()) is True
+    assert commands == [
+        ["systemctl", "disable", "--now", "postgresql@18-main"],
+        ["pg_ctlcluster", "18", "main", "stop"],
+    ]
+    assert started == [data_dir]
+
+
+def test_use_persistent_reports_failure_when_port_stays_busy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Startup fails when the distro cluster cannot be moved off the MindGraph port."""
+    data_dir = _mindgraph_dir(tmp_path)
+    monkeypatch.setattr(pg_ext, "choose_cluster", lambda config: _choice(data_dir))
+    monkeypatch.setattr(pg_ext, "publish_cluster_env", lambda path: "updated")
+    monkeypatch.setattr(pg_ext, "announce_cluster_choice", lambda config, choice, env_status: None)
+    monkeypatch.setattr(pg_ext, "check_port_in_use", lambda host, port: (True, 1283))
+    monkeypatch.setattr(pg_ext, "cluster_postmaster_pid", lambda path: None)
+    monkeypatch.setattr(
+        pg_ext,
+        "postmaster_data_directory",
+        lambda pid: Path("/var/lib/postgresql/18/main"),
+    )
+    monkeypatch.setattr(pg_ext, "_release_foreign_cluster", lambda host, port, path: False)
+    monkeypatch.setattr(pg_ext, "try_start_persistent_cluster", lambda path, port: True)
+
+    assert pg_ext.use_persistent_mindgraph_cluster(_connect_only_config()) is False

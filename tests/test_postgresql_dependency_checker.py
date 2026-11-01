@@ -26,7 +26,9 @@ def _connect_only_config() -> PostgresRuntimeConfig:
 def test_connect_only_accepts_system_cluster_without_initdb(monkeypatch: pytest.MonkeyPatch) -> None:
     """Connect-only local mode accepts an existing system cluster without initdb."""
     monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("POSTGRESQL_DATA_DIR", raising=False)
     monkeypatch.setattr(deps, "load_postgres_runtime_config", _connect_only_config)
+    monkeypatch.setattr(deps, "ubuntu_persistent_cluster_dir", lambda: Path("/var/lib/postgresql/mindgraph-missing"))
     monkeypatch.setattr(
         deps,
         "find_system_postgresql_cluster",
@@ -35,11 +37,37 @@ def test_connect_only_accepts_system_cluster_without_initdb(monkeypatch: pytest.
     ok, message = deps.check_postgresql_installed()
     assert ok is True
     assert "connect only" in message
+    assert "18/main" in message
+
+
+def test_connect_only_prefers_mindgraph_data_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The install check names the MindGraph data directory ahead of the distro cluster."""
+    data_dir = tmp_path / "mindgraph"
+    data_dir.mkdir()
+    (data_dir / "PG_VERSION").write_text("18\n", encoding="utf-8")
+    (data_dir / "postgresql.conf").write_text("port = 5432\n", encoding="utf-8")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("POSTGRESQL_DATA_DIR", raising=False)
+    monkeypatch.setattr(deps, "load_postgres_runtime_config", _connect_only_config)
+    monkeypatch.setattr(deps, "ubuntu_persistent_cluster_dir", lambda: data_dir)
+    monkeypatch.setattr(
+        deps,
+        "find_system_postgresql_cluster",
+        lambda port=None: (Path("/var/lib/postgresql/18/main"), "18"),
+    )
+    ok, message = deps.check_postgresql_installed()
+    assert ok is True
+    assert str(data_dir) in message
+    assert "18/main" not in message
 
 
 def test_connect_only_remote_requires_client_only(monkeypatch: pytest.MonkeyPatch) -> None:
     """Connect-only remote mode requires only the PostgreSQL client tools."""
     monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("POSTGRESQL_DATA_DIR", raising=False)
     monkeypatch.setattr(
         deps,
         "load_postgres_runtime_config",

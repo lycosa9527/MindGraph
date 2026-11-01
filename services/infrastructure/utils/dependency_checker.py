@@ -19,13 +19,16 @@ import re
 import subprocess
 import sys
 import urllib.request
+from pathlib import Path
 from types import ModuleType
 from typing import Optional
 
 from services.infrastructure.process._postgresql_discovery import discover_ranked_clusters
 from services.infrastructure.process._postgresql_paths import (
     find_system_postgresql_cluster,
+    is_initialized_cluster,
     read_cluster_port,
+    ubuntu_persistent_cluster_dir,
 )
 from services.infrastructure.process._postgresql_runtime import load_postgres_runtime_config
 from services.redis.redis_connection_options import redis_connection_options
@@ -352,21 +355,29 @@ def check_postgresql_installed() -> tuple[bool, str]:
         return True, f"PostgreSQL is installed and running{version_msg}"
 
     if not config.spawn_subprocess:
+        configured_raw = os.getenv("POSTGRESQL_DATA_DIR", "").strip()
+        if configured_raw and config.is_local:
+            configured = Path(configured_raw).expanduser()
+            if is_initialized_cluster(configured) and read_cluster_port(configured) == config.port:
+                return True, (
+                    f"PostgreSQL ready for {config.mode_label} (POSTGRESQL_DATA_DIR {configured}, port {config.port})"
+                )
+        persistent = ubuntu_persistent_cluster_dir()
+        if config.is_local and is_initialized_cluster(persistent) and read_cluster_port(persistent) == config.port:
+            return True, (
+                f"PostgreSQL ready for {config.mode_label} (MindGraph cluster {persistent}, port {config.port})"
+            )
         system_cluster = find_system_postgresql_cluster(config.port)
         if system_cluster is not None:
             main_path, version = system_cluster
-            return True, (
-                f"PostgreSQL ready for {config.mode_label} (system cluster {main_path}, version {version}, not running)"
-            )
+            return True, (f"PostgreSQL ready for {config.mode_label} (system cluster {main_path}, version {version})")
         ranked = discover_ranked_clusters(config, verify_database=False)
         best_on_port = next(
             (path for path in ranked if read_cluster_port(path) == config.port),
             None,
         )
         if best_on_port is not None:
-            return True, (
-                f"PostgreSQL ready for {config.mode_label} (cluster {best_on_port}, port {config.port}, not running)"
-            )
+            return True, (f"PostgreSQL ready for {config.mode_label} (cluster {best_on_port}, port {config.port})")
         if postgres_binary_found:
             version_msg = f" (version {postgres_version})" if postgres_version else ""
             return True, f"PostgreSQL available for {config.mode_label}{version_msg} (not running)"

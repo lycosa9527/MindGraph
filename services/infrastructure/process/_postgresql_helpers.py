@@ -150,6 +150,26 @@ def launch_command_as_postgres(cmd: list[str]) -> list[str]:
     return cmd
 
 
+def postmaster_data_directory(pid: int) -> Optional[Path]:
+    """Return the data directory of a live ``postgres`` process."""
+    if pid <= 0 or sys.platform == "win32":
+        return None
+    cmdline = Path(f"/proc/{pid}/cmdline")
+    parts: list[str] = []
+    try:
+        raw = cmdline.read_bytes().split(b"\0")
+        parts = [part.decode("utf-8", "replace") for part in raw if part]
+    except OSError:
+        parts = []
+    for index, part in enumerate(parts):
+        if part == "-D" and index + 1 < len(parts):
+            return Path(parts[index + 1])
+    try:
+        return Path(os.readlink(f"/proc/{pid}/cwd"))
+    except OSError:
+        return None
+
+
 def cluster_postmaster_pid(data_path: Path) -> Optional[int]:
     """Return the live postmaster PID for ``data_path``, or None if not running."""
     pid_file = data_path / "postmaster.pid"

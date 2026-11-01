@@ -25,13 +25,13 @@ from services.infrastructure.process._postgresql_helpers import (
     cleanup_stale_pid_file,
     cluster_postmaster_pid,
     launch_command_as_postgres,
-    postgresql_accepts_connections,
+    postmaster_data_directory,
 )
 from services.infrastructure.process._postgresql_paths import (
-    find_postgres_binaries,
     find_system_postgresql_cluster,
     is_initialized_cluster,
     linux_native_cluster_dir,
+    postgres_binary_for_cluster,
     read_cluster_port,
     ubuntu_persistent_cluster_dir,
 )
@@ -181,14 +181,37 @@ def _database_exists_on_running_server(host: str, port: int, database: str) -> b
         return False
 
 
+def _probe_order(data_path: Path) -> tuple[int, int]:
+    """Probe MindGraph directories before empty distro ``main`` clusters."""
+    text = str(data_path).lower()
+    if "mindgraph" in text and data_path.name.lower() != "main":
+        rank = 0
+    elif data_path.name.lower() == "main" and data_path.parent.name.isdigit():
+        rank = 2
+    else:
+        rank = 1
+    return (rank, -_cluster_base_oid_count(data_path))
+
+
+def _running_postmaster_matches(data_path: Path, pid: int) -> bool:
+    listener = postmaster_data_directory(pid)
+    if listener is None:
+        return True
+    try:
+        return listener.resolve() == data_path.resolve()
+    except OSError:
+        return os.path.normpath(str(listener)) == os.path.normpath(str(data_path))
+
+
 def _offline_cluster_has_database(data_path: Path, database: str) -> bool:
     """Probe a stopped cluster in single-user mode (read-only catalog lookup)."""
-    postgres_binary, _initdb = find_postgres_binaries()
+    postgres_binary = postgres_binary_for_cluster(data_path)
     if postgres_binary is None:
         return False
 
     cleanup_stale_pid_file(data_path)
-    if cluster_postmaster_pid(data_path) is not None:
+    running_pid = cluster_postmaster_pid(data_path)
+    if running_pid is not None and _running_postmaster_matches(data_path, running_pid):
         port = read_cluster_port(data_path)
         safe_name = _safe_sql_identifier(database)
         return _database_exists_on_running_server("127.0.0.1", port, safe_name)
@@ -220,8 +243,17 @@ def _offline_cluster_has_database(data_path: Path, database: str) -> bool:
         )
         return False
 
-    output = result.stdout
-    return "(1 row)" in output or "\n1\n" in output
+    return _single_user_catalog_hit(result.stdout)
+
+
+def _single_user_catalog_hit(output: str) -> bool:
+    """True when single-user mode printed one catalog row.
+
+    PostgreSQL 18 prints ``?column? = "1"``. Older servers print ``(1 row)``.
+    """
+    if "(1 row)" in output:
+        return True
+    return '?column? = "1"' in output
 
 
 def cluster_has_database(data_path: Path, database: str, port: int) -> bool:
@@ -233,11 +265,8 @@ def cluster_has_database(data_path: Path, database: str, port: int) -> bool:
     safe_name = _safe_sql_identifier(database)
     host = "127.0.0.1"
     running_pid = cluster_postmaster_pid(data_path)
-    if running_pid is not None:
+    if running_pid is not None and _running_postmaster_matches(data_path, running_pid):
         return _database_exists_on_running_server(host, port, safe_name)
-
-    if postgresql_accepts_connections(host, port):
-        return False
 
     return _offline_cluster_has_database(data_path, safe_name)
 
@@ -282,6 +311,7 @@ def discover_ranked_cluster_details(
     offline_checks = 0
 
     port_matches = [path for path in candidates if read_cluster_port(path) == target_port]
+    port_matches.sort(key=_probe_order)
     other_ports = [path for path in candidates if read_cluster_port(path) != target_port]
 
     for data_path in port_matches:

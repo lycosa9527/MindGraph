@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.198] - 2026-11-01
+
+> **Startup uses the PostgreSQL directory that contains the mindgraph database, including after a package upgrade creates an empty cluster.**
+
+### Fixed
+
+- **PostgreSQL cluster** — Connect-only startup surveys local data directories and does not keep a new empty `<version>/main` cluster. It probes a stopped directory with the `postgres` binary that matches that directory's `PG_VERSION`, writes `POSTGRESQL_DATA_DIR` in `.env`, and starts that cluster. If the empty distro cluster is holding the port, startup stops and disables `postgresql@<version>-main`.
+
+### Tests
+
+- [`tests/test_postgresql_cluster_choice.py`](tests/test_postgresql_cluster_choice.py), [`tests/test_postgresql_cluster_live.py`](tests/test_postgresql_cluster_live.py), [`tests/test_postgresql_discovery.py`](tests/test_postgresql_discovery.py), [`tests/test_postgresql_external.py`](tests/test_postgresql_external.py)
+
 ## [5.180.197] - 2026-11-01
 
 > **A host without `COS_SYNC_KEY_PREFIX` still installs Qdrant, Celery, Playwright, and GeoLite from the shared COS mirror.**

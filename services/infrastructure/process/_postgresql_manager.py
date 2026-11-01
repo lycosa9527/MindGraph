@@ -40,6 +40,8 @@ from services.infrastructure.process._postgresql_helpers import (
 )
 from services.infrastructure.process._postgresql_external import (
     ensure_local_external_postgresql,
+    postmaster_data_directory,
+    use_persistent_mindgraph_cluster,
 )
 from services.infrastructure.process._postgresql_init import (
     initialize_postgresql_data_directory,
@@ -95,6 +97,13 @@ def _check_existing_postgresql(config: PostgresRuntimeConfig) -> Optional[bool]:
                             "[POSTGRESQL] Server is up but DATABASE_URL credentials failed. "
                             "Fix .env (roles/passwords) or run scripts/db/run_migrations.py option 4."
                         )
+                        listener = postmaster_data_directory(pid) if pid is not None else None
+                        if listener is not None:
+                            print(f"[POSTGRESQL] This server's data directory is {listener}.")
+                            print(
+                                "[POSTGRESQL] Set POSTGRESQL_DATA_DIR in .env to the cluster "
+                                "that contains the mindgraph database."
+                            )
                     else:
                         logger.debug("DATABASE_URL probe after reuse: %s", exc)
             return True
@@ -418,6 +427,13 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     user = config.provision_user
     password = config.provision_password
     database = config.database
+
+    if not config.spawn_subprocess and config.is_local:
+        preferred = use_persistent_mindgraph_cluster(config)
+        if preferred is False:
+            sys.exit(1)
+        if preferred is True:
+            return None
 
     existing = _check_existing_postgresql(config)
     if existing is True:

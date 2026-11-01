@@ -263,22 +263,22 @@ PYTHONPATH=. python scripts/db/run_migrations.py
 
 Run **option 3** (status) or **option 4** (full setup). Ensure `.env` has `DATABASE_URL` pointing at `mindgraph_app` after cutover.
 
-### `Connection refused` on 5432 / `postgresql.service` masked / empty `pg_lsclusters`
+### Distro `main` cluster on 5432 / empty `pg_lsclusters`
 
-The MindGraph database on the test server is `/var/lib/postgresql/mindgraph`. `pg_lsclusters` can be empty after an accidental PostgreSQL upgrade, or it can show a new `main` cluster that is not this database. Leave `/var/lib/postgresql/mindgraph` in place.
+The MindGraph database on the Ubuntu server is `/var/lib/postgresql/mindgraph`. `pg_lsclusters` can be empty after an accidental PostgreSQL upgrade, or it can show a new `main` cluster that is not this database. Leave `/var/lib/postgresql/mindgraph` in place.
 
-Check and start that cluster (full steps in [`POSTGRES_ORPHAN_CLUSTER_RECOVERY.md`](POSTGRES_ORPHAN_CLUSTER_RECOVERY.md)):
+Connect-only startup surveys local data directories, including a stopped cluster while another postmaster holds the port. A new empty distro cluster (`/var/lib/postgresql/<version>/main` after a package upgrade) does not win: the directory that contains the `mindgraph` database is selected, probed with the `postgres` binary that matches that directory's `PG_VERSION`, and written to `POSTGRESQL_DATA_DIR`. If the empty cluster is listening on the same port, startup stops and disables its unit (`postgresql@<version>-main`) first.
+
+`POSTGRESQL_DATA_DIR` is rewritten when another directory on that port contains the `mindgraph` database. An empty `<version>/main` path is not kept when a MindGraph data directory is also present. Launch prints the line it wrote.
+
+Confirm the live server:
 
 ```bash
-VER=$(sudo -u postgres cat /var/lib/postgresql/mindgraph/PG_VERSION)
-PG_CTL=/usr/lib/postgresql/${VER}/bin/pg_ctl
-sudo -u postgres "$PG_CTL" -D /var/lib/postgresql/mindgraph \
-  -l /var/log/postgresql/postgresql-mindgraph.log start
-sudo -u postgres psql -h /var/lib/postgresql/mindgraph/sockets -d mindgraph \
-  -c "SELECT current_database(), inet_server_port(), current_setting('data_directory');"
+sudo -u postgres psql -h 127.0.0.1 -p 5432 -d mindgraph \
+  -c "SELECT current_setting('data_directory');"
 ```
 
-The query should show data directory `/var/lib/postgresql/mindgraph`. `sudo pg_ctl` is not on `PATH`. `psql` with no `-h` uses `/var/run/postgresql`, which is the distro socket.
+The result should be `/var/lib/postgresql/mindgraph`. `psql` with no `-h` uses `/var/run/postgresql`, which is the distro socket.
 
 ## Production tuning (PostgreSQL 18)
 

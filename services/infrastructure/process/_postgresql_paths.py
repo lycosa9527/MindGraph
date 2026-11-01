@@ -118,6 +118,55 @@ def find_system_postgresql_cluster(port: Optional[int] = None) -> Optional[Tuple
     return None
 
 
+def _postgres_binary_candidates() -> list[str]:
+    """Newest installed server first, then known fallbacks."""
+    discovered: list[tuple[int, str]] = []
+    base = Path("/usr/lib/postgresql")
+    if base.is_dir():
+        try:
+            for child in base.iterdir():
+                if not child.name.isdigit():
+                    continue
+                binary = child / "bin" / "postgres"
+                if binary.is_file() and os.access(binary, os.X_OK):
+                    discovered.append((int(child.name), str(binary)))
+        except OSError:
+            discovered = []
+    discovered.sort(reverse=True)
+    paths = [binary for _version, binary in discovered]
+    paths.extend(
+        [
+            "/usr/local/pgsql/bin/postgres",
+            "/usr/bin/postgres",
+        ]
+    )
+    unique: list[str] = []
+    seen: set[str] = set()
+    for path in paths:
+        if path in seen:
+            continue
+        seen.add(path)
+        unique.append(path)
+    return unique
+
+
+def postgres_binary_for_cluster(data_path: Path) -> Optional[str]:
+    """Return the ``postgres`` binary that matches ``PG_VERSION`` in ``data_path``."""
+    version = ""
+    try:
+        version = (data_path / "PG_VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        version = ""
+    if version.isdigit():
+        binary = Path(f"/usr/lib/postgresql/{version}/bin/postgres")
+        if binary.is_file() and os.access(binary, os.X_OK):
+            return str(binary)
+    for path in _postgres_binary_candidates():
+        if os.path.exists(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
+
 def find_postgres_binaries() -> Tuple[Optional[str], Optional[str]]:
     """
     Find PostgreSQL postgres and initdb binaries.
@@ -125,18 +174,9 @@ def find_postgres_binaries() -> Tuple[Optional[str], Optional[str]]:
     Returns:
         Tuple of (postgres_binary, initdb_binary) or (None, None) if not found
     """
-    postgres_paths = [
-        "/usr/lib/postgresql/18/bin/postgres",
-        "/usr/lib/postgresql/16/bin/postgres",
-        "/usr/lib/postgresql/15/bin/postgres",
-        "/usr/lib/postgresql/14/bin/postgres",
-        "/usr/local/pgsql/bin/postgres",
-        "/usr/bin/postgres",
-    ]
-
     postgres_binary = None
     initdb_binary = None
-    for path in postgres_paths:
+    for path in _postgres_binary_candidates():
         if os.path.exists(path) and os.access(path, os.X_OK):
             postgres_binary = path
             postgres_dir = os.path.dirname(path)
