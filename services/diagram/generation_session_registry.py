@@ -1,4 +1,4 @@
-"""Link active MindMate / MindBot Dify sessions to MindGraph users for library save.
+"""Link active MindMate, seminar, and MindBot Dify sessions to MindGraph users for library save.
 
 When MindGraph starts a Dify chat it already knows the caller. ``/api/generate_dingtalk``
 is invoked later by Dify's HTTP tool without browser cookies, so the tool should pass

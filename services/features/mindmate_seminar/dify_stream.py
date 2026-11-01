@@ -18,6 +18,7 @@ from clients.dify_http_errors import (
     mindmate_turn_on_backup,
     mindmate_upstream_error_code,
 )
+from services.diagram.generation_session_registry import register_generation_session
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
 from services.features.mindmate_seminar.config import (
@@ -112,6 +113,29 @@ def _upstream_wait_seconds() -> float:
     return flush_ms / 1000
 
 
+async def _remember_seminar_library_owner(
+    *,
+    org_id: Optional[int],
+    session_id: str,
+    sender_user_id: int,
+    conversation_id: Optional[str],
+) -> None:
+    """Record who asked, so generate_dingtalk can save into that user's library.
+
+    The Dify ``user`` is the shared room id. Without this registry row the tool
+    cannot tell which participant owns the diagram and the reply stays a preview.
+    """
+    if sender_user_id <= 0:
+        return
+    await register_generation_session(
+        channel="seminar",
+        dify_user_id=mindmate_seminar_dify_user_id(org_id, session_id),
+        user_id=sender_user_id,
+        organization_id=org_id,
+        conversation_id=conversation_id,
+    )
+
+
 async def _broadcast_answer_delta(code: str, sender_user_id: int, delta: Optional[str]) -> None:
     """Paint one combined slice of the in-progress answer and keep the stream lock."""
     if not delta:
@@ -140,6 +164,13 @@ async def stream_assistant_reply(
     """Background task: call Dify and fan-out chunks to the room."""
     mgr = get_mindmate_seminar_manager()
     dify_user = mindmate_seminar_dify_user_id(org_id, session_id)
+    library_conversation = (conversation_id or "").strip() or None
+    await _remember_seminar_library_owner(
+        org_id=org_id,
+        session_id=session_id,
+        sender_user_id=sender_user_id,
+        conversation_id=library_conversation,
+    )
     full_answer: list[str] = []
     teaching_flagged = False
     aborted = False
@@ -218,6 +249,16 @@ async def stream_assistant_reply(
                 return
             answer = chunk.get("answer") if isinstance(chunk, dict) else None
             conv_id = chunk.get("conversation_id") if isinstance(chunk, dict) else None
+            if conv_id:
+                incoming = str(conv_id).strip()
+                if incoming and incoming != (library_conversation or ""):
+                    library_conversation = incoming
+                    await _remember_seminar_library_owner(
+                        org_id=org_id,
+                        session_id=session_id,
+                        sender_user_id=sender_user_id,
+                        conversation_id=incoming,
+                    )
             if conv_id and not conversation_id:
                 conversation_id = str(conv_id)
                 saved_server = stream_target.server if stream_target.server is not None else 1

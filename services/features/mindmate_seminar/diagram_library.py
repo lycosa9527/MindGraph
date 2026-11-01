@@ -1,8 +1,9 @@
 """
-Copy a MindMate seminar diagram preview into the viewer's library.
+Copy a MindMate seminar diagram into the viewer's library.
 
-Collab generations use a shared Dify user, so the preview is not saved under
-any participant. Each person who opens the canvas gets their own library copy.
+The room shares one Dify user. The person who asked is stored on the generation
+session, so the diagram is saved to that account. Each other person who opens
+the canvas still receives their own copy.
 """
 
 from __future__ import annotations
@@ -293,6 +294,55 @@ async def _insert_canvas_copy(
     return saved_id, ""
 
 
+async def _posted_diagram_owner_id(session_id: str, diagram_id: str) -> Optional[int]:
+    """User who owns a diagram already posted into this seminar.
+
+    A canvas share stores the poster on the chat line. A MindGraph reply does
+    not: the assistant row has no sender, and the library row belongs to the
+    person who asked.
+    """
+    sender = await canvas_share_sender_id(session_id, diagram_id)
+    if isinstance(sender, int) and sender > 0:
+        return sender
+    try:
+        async with system_rls_session() as db:
+            owner = (
+                await db.execute(
+                    select(Diagram.user_id).where(
+                        Diagram.id == diagram_id,
+                        Diagram.is_deleted.is_(False),
+                    )
+                )
+            ).scalar_one_or_none()
+    except DATABASE_ERRORS as exc:
+        logger.warning(
+            "[MindmateSeminarDiagram] owner lookup failed session=%s diagram=%s: %s",
+            session_id,
+            diagram_id,
+            exc,
+        )
+        return None
+    if isinstance(owner, int) and owner > 0:
+        return owner
+    return None
+
+
+async def _diagram_record_for_viewer(
+    session_id: str,
+    diagram_id: str,
+    viewer_id: int,
+) -> Optional[dict]:
+    """Load a seminar diagram for this viewer, falling back to the owner's copy."""
+    cache = get_diagram_cache()
+    record = await cache.get_diagram(viewer_id, diagram_id)
+    if record:
+        return record
+    owner_id = await _posted_diagram_owner_id(session_id, diagram_id)
+    if owner_id is None or owner_id == viewer_id:
+        return None
+    return await cache.get_diagram(owner_id, diagram_id)
+
+
 def canvas_diagram_preview_payload(
     record: dict,
     diagram_id: str,
@@ -336,13 +386,7 @@ async def load_shared_canvas_diagram_preview(
     if not await user_may_open_shared_canvas(session, current_user):
         return None, COPY_FORBIDDEN
 
-    cache = get_diagram_cache()
-    record = await cache.get_diagram(int(current_user.id), cleaned)
-    if not record:
-        sender_id = await canvas_share_sender_id(session.id, cleaned)
-        if sender_id is None:
-            return None, COPY_NOT_FOUND
-        record = await cache.get_diagram(sender_id, cleaned)
+    record = await _diagram_record_for_viewer(session.id, cleaned, int(current_user.id))
     if not record:
         return None, COPY_NOT_FOUND
     return canvas_diagram_preview_payload(record, cleaned)
@@ -372,13 +416,7 @@ async def save_shared_canvas_diagram_for_user(
         return None, COPY_FORBIDDEN
 
     user_id = int(current_user.id)
-    cache = get_diagram_cache()
-    source = await cache.get_diagram(user_id, cleaned)
-    if not source:
-        sender_id = await canvas_share_sender_id(session.id, cleaned)
-        if sender_id is None:
-            return None, COPY_NOT_FOUND
-        source = await cache.get_diagram(sender_id, cleaned)
+    source = await _diagram_record_for_viewer(session.id, cleaned, user_id)
     if not source:
         return None, COPY_NOT_FOUND
 

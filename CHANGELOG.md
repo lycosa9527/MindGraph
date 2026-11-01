@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.203] - 2026-11-01
+
+> **A diagram generated in a seminar is saved to the person who asked.**
+
+### Fixed
+
+- **Seminar diagrams** — The room still shares one Dify identity. The person who sent the message is recorded before the diagram tool runs, so the diagram is saved to that account instead of staying a preview. Other people in the room can still open their own copy.
+
+### Tests
+
+- [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py), [`tests/test_mindmate_seminar_diagram_library.py`](tests/test_mindmate_seminar_diagram_library.py)
+
 ## [5.180.202] - 2026-11-01
 
 > **The admin operations record now includes important actions by teachers, students, and personal users.**

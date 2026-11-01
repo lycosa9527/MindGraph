@@ -12,6 +12,7 @@ from services.features.mindmate_seminar.diagram_library import (
     COPY_LIMIT,
     COPY_NOT_FOUND,
     actor_may_copy_collab_diagram,
+    load_shared_canvas_diagram_preview,
     normalize_collab_preview_id,
     save_collab_diagram_for_user,
 )
@@ -201,3 +202,99 @@ async def test_save_reports_a_full_library() -> None:
     assert diagram_id is None
     assert error == COPY_LIMIT
     save_diagram.assert_awaited()
+
+
+class _OwnerResult:
+    """Stand-in for a SQLAlchemy result that yields one user id."""
+
+    def __init__(self, owner: int) -> None:
+        self._owner = owner
+
+    def scalar_one_or_none(self) -> int:
+        """Return the diagram owner."""
+        return self._owner
+
+
+class _OwnerDb:
+    """Stand-in for the system session used to read diagrams.user_id."""
+
+    def __init__(self, owner: int) -> None:
+        self._owner = owner
+
+    async def execute(self, _stmt: object) -> _OwnerResult:
+        """Return the canned owner row."""
+        return _OwnerResult(self._owner)
+
+
+class _OwnerSession:
+    """Async context manager around ``_OwnerDb``."""
+
+    def __init__(self, owner: int) -> None:
+        self._owner = owner
+
+    async def __aenter__(self) -> _OwnerDb:
+        return _OwnerDb(self._owner)
+
+    async def __aexit__(self, *_args: object) -> bool:
+        return False
+
+
+_ASKER_DIAGRAM = "550e8400-e29b-41d4-a716-446655440000"
+
+
+@pytest.mark.asyncio
+async def test_viewer_opens_diagram_saved_for_the_asker() -> None:
+    """A MindGraph reply has no chat sender; other people still open the asker's copy."""
+    session = MagicMock()
+    session.id = "session-1"
+    cache = MagicMock()
+
+    async def _get(user_id: int, _diagram_id: str):
+        if user_id == 42:
+            return {
+                "spec": {"topic": "小儿童"},
+                "diagram_type": "double_bubble_map",
+                "title": "对比",
+                "language": "zh",
+            }
+        return None
+
+    cache.get_diagram = AsyncMock(side_effect=_get)
+    manager = MagicMock()
+    manager.load_session_by_id_any = AsyncMock(return_value=session)
+    with (
+        patch(
+            "services.features.mindmate_seminar.diagram_library.get_mindmate_seminar_manager",
+            return_value=manager,
+        ),
+        patch(
+            "services.features.mindmate_seminar.diagram_library.session_contains_canvas_diagram",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.diagram_library.user_may_open_shared_canvas",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.diagram_library.canvas_share_sender_id",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.features.mindmate_seminar.diagram_library.system_rls_session",
+            return_value=_OwnerSession(42),
+        ),
+        patch(
+            "services.features.mindmate_seminar.diagram_library.get_diagram_cache",
+            return_value=cache,
+        ),
+        patch(
+            "services.features.mindmate_seminar.diagram_library.coerce_prompt_to_diagram_spec",
+            side_effect=lambda spec, _diagram_type: spec,
+        ),
+    ):
+        payload, error = await load_shared_canvas_diagram_preview("session-1", _ASKER_DIAGRAM, _user(8))
+    assert error == ""
+    assert payload is not None
+    assert payload["diagram_id"] == _ASKER_DIAGRAM
+    assert cache.get_diagram.await_args_list[0].args == (8, _ASKER_DIAGRAM)
+    assert cache.get_diagram.await_args_list[1].args == (42, _ASKER_DIAGRAM)

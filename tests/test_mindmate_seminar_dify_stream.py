@@ -16,6 +16,16 @@ from services.features.mindmate_seminar.dify_identity import (
 from services.features.mindmate_seminar.dify_stream import stream_assistant_reply
 
 
+@pytest.fixture(autouse=True)
+def seminar_generation_session():
+    """Keep stream tests off Redis while asserting the library-owner registration."""
+    with patch(
+        "services.features.mindmate_seminar.dify_stream.register_generation_session",
+        new_callable=AsyncMock,
+    ) as register:
+        yield register
+
+
 def test_seminar_dify_ids_carry_install_and_server() -> None:
     """The Dify user names this install, and the stored conversation names its server."""
     assert mindmate_seminar_dify_user_id(1, "sess-1") == "ci_mindmate_seminar_1_sess-1"
@@ -506,3 +516,79 @@ async def test_quiet_upstream_paints_the_held_tail() -> None:
     assert chunks == ["课", "例", "文"]
     end_frames = [msg for msg in broadcasts if msg.get("type") == "ai_message_end"]
     assert end_frames[0]["content"] == "课例文"
+
+
+@pytest.mark.asyncio
+async def test_seminar_stream_links_library_save_to_the_asker(request: pytest.FixtureRequest) -> None:
+    """generate_dingtalk can resolve the person who asked before the tool runs."""
+    register = request.getfixturevalue("seminar_generation_session")
+    mock_client = MagicMock()
+    registered_before_stream = {"count": 0}
+
+    async def _one_chunk_stream(*_args, **_kwargs):
+        registered_before_stream["count"] = register.await_count
+        yield {"answer": "map", "conversation_id": "conv-new"}
+
+    mock_client.stream_chat.return_value = _one_chunk_stream()
+
+    with (
+        patch(
+            "services.features.mindmate_seminar.dify_stream.resolve_mindmate_dify_stream_short_lived",
+            AsyncMock(return_value=MindmateDifyStream(mock_client, False, None, 1)),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.apply_persona_inputs_for_organization_id",
+            AsyncMock(side_effect=_apply_persona),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.is_dify_stream_aborted",
+            AsyncMock(return_value=False),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.broadcast_to_all",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.release_dify_stream_lock",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.clear_dify_stream_abort",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.clear_dify_stream_task",
+            MagicMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.get_mindmate_seminar_manager",
+        ) as mgr_factory,
+    ):
+        mgr = MagicMock()
+        saved = MagicMock()
+        saved.id = 11
+        saved.prev_id = 2
+        saved.created_at = None
+        mgr.persist_message = AsyncMock(return_value=saved)
+        mgr.set_dify_conversation_id = AsyncMock()
+        mgr_factory.return_value = mgr
+        await stream_assistant_reply(
+            code="ABC-DEF",
+            session_id="sess-1",
+            org_id=1,
+            user_message="对比观点",
+            sender_user_id=42,
+            conversation_id=None,
+        )
+
+    assert registered_before_stream["count"] == 1
+    first = register.await_args_list[0].kwargs
+    assert first["channel"] == "seminar"
+    assert first["user_id"] == 42
+    assert first["organization_id"] == 1
+    assert first["conversation_id"] is None
+    assert first["dify_user_id"] == "ci_mindmate_seminar_1_sess-1"
+    second = register.await_args_list[1].kwargs
+    assert second["user_id"] == 42
+    assert second["conversation_id"] == "conv-new"
+    assert second["dify_user_id"] == first["dify_user_id"]
