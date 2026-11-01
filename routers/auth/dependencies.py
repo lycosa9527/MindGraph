@@ -105,6 +105,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_TEACHER_USAGE,
     CAP_SETTINGS_TEACHING_DESIGN,
     CAP_SETTINGS_USER_DROPDOWN,
+    CAP_SETTINGS_ADMIN_ACTIVITIES,
     CAP_SETTINGS_THINKING_COINS,
     CAP_SETTINGS_TOKENS,
     CAP_TAB_BILLING_VIEW,
@@ -626,6 +627,7 @@ require_settings_thinking_coins = require_panel_capability(CAP_SETTINGS_THINKING
 require_settings_public_dashboard = require_panel_capability(CAP_SETTINGS_PUBLIC_DASHBOARD)
 require_settings_teaching_design = require_panel_capability(CAP_SETTINGS_TEACHING_DESIGN)
 require_settings_user_dropdown = require_panel_capability(CAP_SETTINGS_USER_DROPDOWN)
+require_settings_admin_activities = require_panel_capability(CAP_SETTINGS_ADMIN_ACTIVITIES)
 require_settings_public_dashboard_short_lived = require_panel_capability_short_lived(CAP_SETTINGS_PUBLIC_DASHBOARD)
 require_settings_kitty_llmops = require_panel_capability(CAP_SETTINGS_KITTY_LLMOPS)
 require_settings_teacher_usage = require_panel_capability(CAP_SETTINGS_TEACHER_USAGE)

@@ -2,9 +2,10 @@
 /**
  * System settings — roles, database, performance, and integrations.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import AdminActivitiesTab from '@/components/admin/AdminActivitiesTab.vue'
 import AdminCosTab from '@/components/admin/AdminCosTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminErrorsTab from '@/components/admin/AdminErrorsTab.vue'
@@ -12,7 +13,6 @@ import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminLlmControlTab from '@/components/admin/AdminLlmControlTab.vue'
 import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
-import AdminPublicDashboardTab from '@/components/admin/AdminPublicDashboardTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminTeachingDesignTemplateTab from '@/components/admin/AdminTeachingDesignTemplateTab.vue'
 import AdminThinkingCoinsTab from '@/components/admin/AdminThinkingCoinsTab.vue'
@@ -25,6 +25,11 @@ import {
 } from '@/composables/admin/adminSettingsNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+
+/** China-map dashboard ships ECharts. Load it only on that subtab. */
+const AdminPublicDashboardTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminPublicDashboardTab.vue')
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -87,6 +92,7 @@ watch(
     <AdminFeaturesTab v-if="activeSubtab === 'features'" />
     <AdminTeachingDesignTemplateTab v-else-if="activeSubtab === 'teaching_design'" />
     <AdminUserDropdownTab v-else-if="activeSubtab === 'user_dropdown'" />
+    <AdminActivitiesTab v-else-if="activeSubtab === 'admin_activities'" />
     <AdminRolesTab v-else-if="activeSubtab === 'roles'" />
     <AdminLibraryTab v-else-if="activeSubtab === 'library'" />
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />

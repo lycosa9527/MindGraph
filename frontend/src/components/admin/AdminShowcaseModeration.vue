@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { ElTable } from 'element-plus'
@@ -7,7 +7,6 @@ import { ElTable } from 'element-plus'
 import { RefreshCw, Search } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
-import ShowcaseDetailModal from '@/components/showcase/ShowcaseDetailModal.vue'
 import ShowcaseFilterDropdown from '@/components/showcase/ShowcaseFilterDropdown.vue'
 import { type ShowcaseCaseType } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
@@ -78,6 +77,11 @@ const filterGrade = ref('')
 const filterCaseType = ref('')
 const filterPublishSource = ref('')
 const activeSort = ref<string>('newest')
+
+/** Detail view embeds the diagram editor. Load it only while the dialog is open. */
+const ShowcaseDetailModal = defineAsyncComponent(
+  () => import('@/components/showcase/ShowcaseDetailModal.vue')
+)
 
 const showDetailModal = ref(false)
 const selectedPostId = ref<string | null>(null)
@@ -583,6 +587,7 @@ onMounted(() => {
     </div>
 
     <ShowcaseDetailModal
+      v-if="showDetailModal"
       v-model:visible="showDetailModal"
       :post-id="selectedPostId"
       :post-preview="selectedPostPreview"

@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AdminActivitiesTab: typeof import('./components/admin/AdminActivitiesTab.vue')['default']
     AdminCosBackupsPanel: typeof import('./components/admin/AdminCosBackupsPanel.vue')['default']
     AdminCosCrowdsecPanel: typeof import('./components/admin/AdminCosCrowdsecPanel.vue')['default']
     AdminCosOverviewPanel: typeof import('./components/admin/AdminCosOverviewPanel.vue')['default']

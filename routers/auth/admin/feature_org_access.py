@@ -9,17 +9,19 @@ Proprietary License
 import logging
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.feature_org_access import FeatureOrgAccessEntry
 from routers.auth.dependencies import require_settings_features
-from utils.auth.admin_scope import AdminScope
+from services.admin.activity_catalog import feature_access_detail
+from services.admin.activity_record import note_admin_activity
 from services.feature_access.repository import (
     load_feature_org_access_session,
     replace_feature_org_access,
 )
+from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,7 @@ async def get_feature_org_access_admin(
 @router.put("/admin/feature-org-access")
 async def put_feature_org_access_admin(
     body: Dict[str, FeatureOrgAccessEntry],
+    http_request: Request,
     scope: AdminScope = Depends(require_settings_features),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -56,4 +59,5 @@ async def put_feature_org_access_admin(
         scope.actor.phone,
         len(body),
     )
+    note_admin_activity(http_request, feature_access_detail(body))
     return {"message": "Feature org access updated", "keys": list(body.keys())}

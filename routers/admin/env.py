@@ -23,8 +23,10 @@ Proprietary License
 import logging
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from services.admin.activity_catalog import public_setting_changes
+from services.admin.activity_record import note_admin_activity
 from services.infrastructure.sync.env_reload_fanout import (
     get_env_reload_instance_id,
     publish_env_reload_fanout,
@@ -100,7 +102,11 @@ async def get_env_settings(scope: AdminScope = Depends(require_tab_settings_edit
 
 
 @router.put("/settings", dependencies=[Depends(require_tab_settings_edit)])
-async def update_env_settings(request: Dict[str, str], scope: AdminScope = Depends(require_tab_settings_edit)):
+async def update_env_settings(
+    request: Dict[str, str],
+    http_request: Request,
+    scope: AdminScope = Depends(require_tab_settings_edit),
+):
     """
     Update environment settings in .env file (ADMIN ONLY)
 
@@ -188,19 +194,15 @@ async def update_env_settings(request: Dict[str, str], scope: AdminScope = Depen
         # Write new settings
         env_manager.write_env(filtered_request)
 
-        # Log the change (mask sensitive values in log)
-        masked_keys = []
-        for key, value in filtered_request.items():
-            if any(sensitive in key for sensitive in ["API_KEY", "SECRET", "PASSWORD", "PASSKEY"]):
-                masked_keys.append(f"{key}=***")
-            else:
-                masked_keys.append(f"{key}={value}")
-
+        # Submitted form only. Masked placeholders were filled from .env and must not be logged.
+        submitted = {key: value for key, value in request.items() if not _is_masked_value(value)}
+        visible_changes = public_setting_changes(submitted)
         logger.warning(
             "Admin %s updated .env settings: %s",
             scope.actor.phone,
-            ", ".join(masked_keys),
+            ", ".join(f"{row['key']}={row['value']}" for row in visible_changes),
         )
+        note_admin_activity(http_request, {"changes": visible_changes})
 
         return {
             "message": "Settings updated successfully",

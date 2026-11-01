@@ -14,10 +14,11 @@ Proprietary License
 import logging
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from models.domain.messages import Messages
-
+from services.admin.activity_catalog import public_setting_changes
+from services.admin.activity_record import note_admin_activity
 from utils.auth.admin_scope import AdminScope
 
 from ..dependencies import get_language_dependency, require_tab_settings_edit, require_tab_settings_view
@@ -57,6 +58,7 @@ async def get_settings_admin():
 @router.put("/admin/settings", dependencies=[Depends(require_tab_settings_edit)])
 async def update_settings_admin(
     request: dict,
+    http_request: Request,
     scope: AdminScope = Depends(require_tab_settings_edit),
     lang: str = Depends(get_language_dependency),
 ):
@@ -93,6 +95,7 @@ async def update_settings_admin(
 
     updated_keys_list = list(request.keys())
     logger.warning("Admin %s updated .env settings: %s", scope.actor.phone, updated_keys_list)
+    note_admin_activity(http_request, {"changes": public_setting_changes(request)})
 
     return {
         "message": Messages.success("settings_updated", lang),

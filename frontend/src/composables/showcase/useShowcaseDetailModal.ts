@@ -259,7 +259,8 @@ export function useShowcaseDetailModal(
       teachingTab.value = 'intro'
       diagramTab.value = 'intro'
       void loadPost()
-    }
+    },
+    { immediate: true }
   )
 
   const offCoverReady = eventBus.on(

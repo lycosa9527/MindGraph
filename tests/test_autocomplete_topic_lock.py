@@ -132,8 +132,24 @@ def test_mind_map_validate_accepts_nested_even_branch_count() -> None:
     assert msg.startswith("Valid")
 
 
+def test_mind_map_validate_accepts_seven_nested_branches() -> None:
+    """A usable 7-branch map is kept. The prompt still prefers 4, 6, or 8."""
+    agent = MindMapAgent(model="qwen")
+    children = [
+        {
+            "id": str(index),
+            "text": f"Branch {index}",
+            "children": [{"id": f"{index}a", "text": f"Item {index}"}],
+        }
+        for index in range(1, 8)
+    ]
+    ok, msg = agent.validate_output({"topic": "钢琴", "children": children}, enforce_hierarchy=True)
+    assert ok is True
+    assert msg.startswith("Valid")
+
+
 def test_mind_map_validate_rejects_wrong_branch_count() -> None:
-    """Hierarchy mode requires 4, 6, or 8 main branches."""
+    """Hierarchy mode requires 4 to 8 main branches."""
     agent = MindMapAgent(model="qwen")
     three = {
         "topic": "钢琴",
@@ -145,4 +161,4 @@ def test_mind_map_validate_rejects_wrong_branch_count() -> None:
     }
     ok, msg = agent.validate_output(three, enforce_hierarchy=True)
     assert ok is False
-    assert "4, 6, or 8" in msg
+    assert "4 to 8" in msg

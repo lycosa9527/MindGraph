@@ -492,8 +492,8 @@ class MindMapAgent(BaseAgent):
             elif enforce_hierarchy:
                 main_branches = [child for child in output["children"] if isinstance(child, dict)]
                 branch_count = len(main_branches)
-                if branch_count not in (4, 6, 8):
-                    return False, f"Main branches must be 4, 6, or 8 (got {branch_count})"
+                if branch_count < 4 or branch_count > 8:
+                    return False, f"Main branches must be 4 to 8 (got {branch_count})"
                 for idx, branch in enumerate(main_branches):
                     nested = branch.get("children")
                     if not isinstance(nested, list) or not nested:

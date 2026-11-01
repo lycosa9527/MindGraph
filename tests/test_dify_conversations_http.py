@@ -44,12 +44,22 @@ async def test_get_conversation_messages_maps_not_found_to_404(
     """MindBot conversation misses return 404 instead of an unhandled 500."""
     app.dependency_overrides[get_current_user] = _make_user
 
+    order: list[str] = []
+    db = MagicMock()
+    db.in_transaction.return_value = True
+
+    async def _commit() -> None:
+        order.append("release")
+
+    db.commit = _commit
+
     async def _fake_db():
-        yield MagicMock()
+        yield db
 
     app.dependency_overrides[get_async_db] = _fake_db
 
     async def _raise_not_found(*_args, **_kwargs):
+        order.append("dify")
         raise DifyConversationNotFoundError("Conversation Not Exists")
 
     mock_client = MagicMock()
@@ -67,6 +77,7 @@ async def test_get_conversation_messages_maps_not_found_to_404(
 
     assert response.status_code == 404
     assert "Conversation Not Exists" in response.json()["detail"]
+    assert order == ["release", "dify"]
 
 
 def test_app_parameters_returns_503_when_dify_is_restarting(

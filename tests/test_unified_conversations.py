@@ -66,6 +66,13 @@ def _web_summary() -> ExportConversationSummary:
     )
 
 
+def _idle_db() -> MagicMock:
+    """Request session with no open transaction."""
+    db = MagicMock()
+    db.in_transaction.return_value = False
+    return db
+
+
 def _mindbot_summary() -> ExportConversationSummary:
     return ExportConversationSummary(
         conversation_id="bot-1",
@@ -396,13 +403,86 @@ async def test_resolve_dify_user_for_personal_account_uses_global_endpoint(
     )
 
     dify_user = await resolve_dify_user_for_conversation(
-        MagicMock(),
+        _idle_db(),
         as_user(user),
         "conv-1",
         dify_user_hint="mg_user_9",
     )
 
     assert dify_user == "mg_user_9"
+
+
+@pytest.mark.asyncio
+async def test_dify_probe_commits_before_the_upstream_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ownership probes close the read transaction before Dify can sit past 30s."""
+    user = SimpleNamespace(id=9, organization_id=None, name="Overseas", phone=None, email="a@b.c")
+    personal_target = SimpleNamespace(
+        organization_id=0,
+        user_id=9,
+        dify_user="mg_user_9",
+        label="Overseas",
+        channel="web",
+    )
+    order: list[str] = []
+    db = MagicMock()
+    db.in_transaction.return_value = True
+
+    async def _commit() -> None:
+        order.append("release")
+        db.in_transaction.return_value = False
+
+    db.commit = _commit
+
+    async def _fake_targets(_db, _user):
+        return [personal_target]
+
+    async def _fake_endpoints(_db, _target, _org_by_id):
+        return [_FAKE_ENDPOINT]
+
+    class _Client:
+        async def get_messages(self, **_kwargs):
+            """Record the ownership probe, then report the conversation as found."""
+            order.append("dify")
+            return {"data": []}
+
+        async def get_conversations(self, **_kwargs):
+            """Record the history fetch, then return an empty page."""
+            order.append("dify")
+            return {"data": [], "has_more": False}
+
+    monkeypatch.setattr(
+        "services.dify.unified_conversations.build_user_dify_targets",
+        _fake_targets,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._endpoints_for_target",
+        _fake_endpoints,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._client_for_endpoint",
+        lambda _endpoint: _Client(),
+    )
+
+    await resolve_dify_user_for_conversation(
+        db,
+        as_user(user),
+        "conv-1",
+        dify_user_hint="mg_user_9",
+    )
+    db.in_transaction.return_value = True
+    rows, _has_more = await list_unified_conversations(
+        db,
+        as_user(user),
+        limit=20,
+        last_id="conv-1",
+    )
+    db.in_transaction.return_value = True
+    await list_unified_conversations(db, as_user(user), limit=20)
+
+    assert order == ["release", "dify", "release", "dify", "release", "dify"]
+    assert rows == []
 
 
 @pytest.mark.asyncio

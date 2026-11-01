@@ -29,7 +29,7 @@ from services.dify.export.target_resolution import build_user_dify_targets
 from services.dify.export.transcript import ExportConversationSummary
 from services.dify.export.types import UserTarget
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client
-from utils.db.session_open import system_rls_session
+from utils.db.session_open import release_open_transaction, system_rls_session
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
@@ -178,6 +178,7 @@ async def _fetch_target_summaries_page(
     if not endpoints:
         return []
 
+    await release_open_transaction(db)
     merged: dict[str, ExportConversationSummary] = {}
     failures = 0
     last_error: Optional[BaseException] = None
@@ -247,6 +248,7 @@ async def list_unified_conversations(
         endpoints = await _endpoints_for_target(db, target, org_by_id)
         if len(endpoints) == 1:
             client = _client_for_endpoint(endpoints[0])
+            await release_open_transaction(db)
             result = await client.get_conversations(
                 user_id=target.dify_user,
                 last_id=last_id,
@@ -342,7 +344,9 @@ async def _resolve_endpoint_for_conversation(
     org_by_id: dict[int, Organization] = {}
     if org is not None:
         org_by_id[org_id] = org
-    for endpoint in await _endpoints_for_target(db, target, org_by_id):
+    endpoints = await _endpoints_for_target(db, target, org_by_id)
+    await release_open_transaction(db)
+    for endpoint in endpoints:
         try:
             client = _client_for_endpoint(endpoint)
             await client.get_messages(

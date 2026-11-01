@@ -2,13 +2,12 @@
 /**
  * 系统设置 → 用户下拉列表 — add, rename, delete, link a course, preview the tour.
  */
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
-import TrainingCourseWalkthrough from '@/components/training/TrainingCourseWalkthrough.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
@@ -22,6 +21,11 @@ import {
 import { adminKeys } from '@/composables/queries/adminKeys'
 import type { TrainingCourse } from '@/types/training'
 import { fetchTrainingCourse } from '@/utils/trainingApi'
+
+/** Live course preview. Mounting it pulls the sidebar, diagram editor, and KaTeX. */
+const TrainingCourseWalkthrough = defineAsyncComponent(
+  () => import('@/components/training/TrainingCourseWalkthrough.vue')
+)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -265,6 +269,7 @@ async function preview(row: unknown): Promise<void> {
     </ElTable>
 
     <TrainingCourseWalkthrough
+      v-if="previewVisible"
       v-model="previewVisible"
       :course="previewCourse"
       :loading="previewLoading"

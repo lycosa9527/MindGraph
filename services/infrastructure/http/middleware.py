@@ -29,6 +29,7 @@ from starlette.requests import ClientDisconnect
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from config.settings import config
+from services.admin.activity_record import record_admin_activity
 from services.auth.bearer_token import has_authorization_mgat_bearer
 from services.auth.security_logger import security_log
 from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
@@ -628,7 +629,10 @@ async def auth_context_middleware(request: Request, call_next):
     else:
         token = set_rls_context(RlsContext.deny_default())
     try:
-        return await call_next(request)
+        response = await call_next(request)
+        if user is not None:
+            await record_admin_activity(request, response, user)
+        return response
     finally:
         reset_log_user(log_user_token)
         reset_rls_context(token)

@@ -14,6 +14,7 @@ from fastapi import APIRouter
 from routers.features.showcase import admin as showcase
 
 from . import (
+    activity_log,
     api_keys,
     errors,
     expert_school_binding,
@@ -46,6 +47,7 @@ from . import (
 admin_router = APIRouter()
 
 # Include all admin sub-routers
+admin_router.include_router(activity_log.router)
 admin_router.include_router(organizations.router)
 admin_router.include_router(organization_mobile_branding.router)
 admin_router.include_router(organization_oauth.router)

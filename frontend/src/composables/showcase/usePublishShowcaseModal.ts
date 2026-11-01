@@ -373,8 +373,10 @@ export function usePublishShowcaseModal(
 
   watch(
     () => props.visible,
-    (visible) => {
+    (visible, wasVisible) => {
       if (!visible) {
+        // First run while closed: the dialog was never opened, so there is nothing to abort.
+        if (wasVisible === undefined) return
         if (isSubmitting.value) {
           abortPublishSubmit()
         }
@@ -418,7 +420,8 @@ export function usePublishShowcaseModal(
       } else {
         void warmHistoryDiagramCache()
       }
-    }
+    },
+    { immediate: true }
   )
 
   async function warmHistoryDiagramCache(): Promise<void> {

@@ -9,20 +9,11 @@ import { storeToRefs } from 'pinia'
 
 import { Plus } from '@element-plus/icons-vue'
 
-import AdminDataCenterTab from '@/components/admin/AdminDataCenterTab.vue'
-import AdminFeatureDevTab from '@/components/admin/AdminFeatureDevTab.vue'
 import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
-import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
-import AdminLearningSpaceTab from '@/components/admin/AdminLearningSpaceTab.vue'
-import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminMindMateExportHeaderToolbar from '@/components/admin/AdminMindMateExportHeaderToolbar.vue'
 import AdminRolesHeaderToolbar from '@/components/admin/AdminRolesHeaderToolbar.vue'
-import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
-import AdminShowcaseTab from '@/components/admin/AdminShowcaseTab.vue'
-import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
 import AdminTeachingDesignHeaderToolbar from '@/components/admin/AdminTeachingDesignHeaderToolbar.vue'
 import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
-import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
@@ -33,8 +24,30 @@ import { useAdminRouteSync } from '@/composables/admin/useAdminRouteSync'
 import { useAdminPanelStore } from '@/stores/adminPanel'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 
-/** Lazy: VOD SDK packages may be absent locally; keep other admin tabs loadable. */
+/** Each tab is its own chunk, so the shell does not ship ECharts, the editor, or KaTeX. */
+const AdminDataCenterTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminDataCenterTab.vue')
+)
+const AdminUsersPanel = defineAsyncComponent(() => import('@/components/admin/AdminUsersPanel.vue'))
+const AdminSchoolsTab = defineAsyncComponent(() => import('@/components/admin/AdminSchoolsTab.vue'))
+const AdminInviteUsersTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminInviteUsersTab.vue')
+)
+const AdminMarketsTab = defineAsyncComponent(() => import('@/components/admin/AdminMarketsTab.vue'))
+const AdminShowcaseTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminShowcaseTab.vue')
+)
+/** VOD SDK packages may be absent locally; keep the other tabs loadable. */
 const AdminVodTab = defineAsyncComponent(() => import('@/components/admin/AdminVodTab.vue'))
+const AdminLearningSpaceTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminLearningSpaceTab.vue')
+)
+const AdminFeatureDevTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminFeatureDevTab.vue')
+)
+const AdminSystemSettingsTab = defineAsyncComponent(
+  () => import('@/components/admin/AdminSystemSettingsTab.vue')
+)
 
 const route = useRoute()
 const { can, canEditTab, isTabReadOnly, loadCapabilities, isReadOnly, canViewSettingsSubtab } =

@@ -16,6 +16,7 @@ export type SettingsSubtab =
   | 'public_dashboard'
   | 'teaching_design'
   | 'user_dropdown'
+  | 'admin_activities'
 
 export interface SettingsNavLeafItem {
   kind: 'leaf'
@@ -29,6 +30,7 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'features', labelKey: 'admin.featuresTab' },
   { kind: 'leaf', name: 'teaching_design', labelKey: 'admin.teachingDesignTemplate.tab' },
   { kind: 'leaf', name: 'user_dropdown', labelKey: 'admin.userDropdown.tab' },
+  { kind: 'leaf', name: 'admin_activities', labelKey: 'admin.adminActivities.tab' },
   { kind: 'leaf', name: 'roles', labelKey: 'admin.roleControl' },
   { kind: 'leaf', name: 'database', labelKey: 'admin.database.tab' },
   { kind: 'leaf', name: 'llm_control', labelKey: 'admin.llmControl.tab' },

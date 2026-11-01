@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.200] - 2026-11-01
+
+> **System settings record admin writes, heavy admin tabs load on demand, mind maps accept 4 to 8 branches, and Dify calls release the database first.**
+
+### Added
+
+- **Admin activities** — System settings lists successful writes by superadmins, teaching researchers, experts, and school managers. Regular product use is not recorded. `GET /api/auth/admin/activity-log` filters by time window, role, action, and search. Secrets, masked placeholders, and URLs that embed credentials stay out of the row. A settings write that only flips `FEATURE_*` flags is stored as a feature-flag change. Alembic `0163` adds `admin_activity_log` with row-level security. The tab requires `tab.settings.admin_activities`.
+
+### Changed
+
+- **Admin shell** — Each admin tab is its own chunk. The public dashboard (ECharts), the showcase diagram editor, the publish canvas, and the course walkthrough (sidebar, editor, and KaTeX) load only when that view opens.
+- **Mind-map branch count** — Hierarchy validation accepts 4 to 8 main branches. The prompt still prefers 4, 6, or 8.
+
+### Fixed
+
+- **Dify idle transactions** — Conversation list, ownership probe, messages, rename, and feedback commit the open read transaction before the upstream call, so a slow Dify response does not sit on an idle database transaction.
+- **Showcase dialogs** — The publish dialog's close watch does not abort a submit on the first run while the dialog is still closed.
+
+### Tests
+
+- [`tests/services/test_admin_activity_log.py`](tests/services/test_admin_activity_log.py), [`tests/auth/test_admin_scope.py`](tests/auth/test_admin_scope.py), [`tests/test_autocomplete_topic_lock.py`](tests/test_autocomplete_topic_lock.py)
+- [`tests/test_dify_conversations_http.py`](tests/test_dify_conversations_http.py), [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py)
+
 ## [5.180.199] - 2026-11-01
 
 > **Seminar minutes draft on a dedicated call, the mind-map status bar shrinks when the row is tight, and a seminar room tears down with the tab.**

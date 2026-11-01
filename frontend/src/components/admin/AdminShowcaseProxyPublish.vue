@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
-import PublishShowcaseModal from '@/components/showcase/PublishShowcaseModal.vue'
 import { useLanguage } from '@/composables'
+
+/** Publish form previews diagrams on the editor canvas. Load it only while open. */
+const PublishShowcaseModal = defineAsyncComponent(
+  () => import('@/components/showcase/PublishShowcaseModal.vue')
+)
 
 const { t } = useLanguage()
 const showModal = ref(false)
@@ -23,6 +27,7 @@ const hint = computed(() => String(t('admin.showcase.proxyIntro')))
       <I18nText k="admin.showcase.openProxyForm" />
     </button>
     <PublishShowcaseModal
+      v-if="showModal"
       v-model:visible="showModal"
       proxy-mode
       @success="showModal = false"

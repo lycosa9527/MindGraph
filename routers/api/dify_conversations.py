@@ -37,6 +37,7 @@ from services.dify.unified_conversations import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
+from utils.db.session_open import release_open_transaction
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
@@ -192,6 +193,7 @@ async def delete_conversation(
             server_hint=server,
             mindbot_config_id_hint=mindbot_config_id,
         )
+        await release_open_transaction(db)
 
         await client.delete_conversation(conversation_id=conversation_id, user_id=dify_user_id)
         try:
@@ -246,6 +248,7 @@ async def rename_conversation(
             server_hint=server,
             mindbot_config_id_hint=mindbot_config_id,
         )
+        await release_open_transaction(db)
 
         result = await client.rename_conversation(
             conversation_id=conversation_id,
@@ -300,6 +303,7 @@ async def get_conversation_messages(
             server_hint=server,
             mindbot_config_id_hint=mindbot_config_id,
         )
+        await release_open_transaction(db)
 
         result = await client.get_messages(
             conversation_id=conversation_id,
@@ -381,6 +385,7 @@ async def submit_message_feedback(
             client = await _resolve_dify_client(current_user)
             dify_user_id = get_dify_user_id(current_user)
 
+        await release_open_transaction(db)
         result = await client.message_feedback(
             message_id=message_id,
             user_id=dify_user_id,

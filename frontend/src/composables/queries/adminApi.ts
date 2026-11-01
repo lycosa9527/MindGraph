@@ -1675,3 +1675,66 @@ export async function deleteMindMateExportDumpSnapshot(
     { method: 'DELETE' }
   )
 }
+
+export interface AdminActivityChange {
+  key: string
+  value: string
+}
+
+export interface AdminActivityRule {
+  key: string
+  restrict: boolean
+  organization_ids: number[]
+  user_ids: number[]
+}
+
+export interface AdminActivityItem {
+  id: number
+  created_at: string
+  actor_user_id: number | null
+  actor_role: string
+  actor_label: string
+  organization_id: number | null
+  action: string
+  http_method: string
+  path: string
+  status_code: number
+  detail: {
+    changes?: AdminActivityChange[]
+    rules?: AdminActivityRule[]
+    truncated?: boolean
+    keys?: string[]
+  } | null
+  client_ip: string | null
+}
+
+export interface AdminActivityListResponse {
+  items: AdminActivityItem[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
+export interface AdminActivityQuery {
+  page?: number
+  page_size?: number
+  hours?: number
+  action?: string
+  role?: string
+  q?: string
+}
+
+export async function fetchAdminActivityLog(
+  query: AdminActivityQuery = {}
+): Promise<AdminActivityListResponse> {
+  const qs = buildQuery({
+    page: query.page ?? 1,
+    page_size: query.page_size ?? 50,
+    hours: query.hours ?? 168,
+    action: query.action,
+    role: query.role,
+    q: query.q,
+  })
+  return adminFetchJson(`/api/auth/admin/activity-log${qs}`)
+}

@@ -141,6 +141,7 @@ from models.domain.mindmate_seminar import (
 )
 from models.domain.kitty_one_sentence import KittyOneSentenceSession, KittyOneSentenceTurn
 from models.domain.error_event import ErrorEvent, ErrorGroup
+from models.domain.admin_activity_log import AdminActivityLog
 
 __all__ = [
     "Base",
@@ -241,6 +242,7 @@ __all__ = [
     "KittyOneSentenceTurn",
     "ErrorEvent",
     "ErrorGroup",
+    "AdminActivityLog",
     "TrainingCourse",
     "TrainingCourseStep",
     "TrainingCourseAsset",
