@@ -16,6 +16,7 @@ from services.admin.activity_catalog import (
     public_setting_changes,
     resolve_admin_action,
 )
+from services.admin.activity_member_catalog import classify_member_activity, known_member_activity_actions
 from services.admin.activity_record import note_admin_activity, record_admin_activity
 
 
@@ -84,8 +85,52 @@ def test_secrets_are_masked() -> None:
 def test_settings_tab_lists_every_catalog_action() -> None:
     """The activity filter offers every action the server can record."""
     text = Path("frontend/src/components/admin/AdminActivitiesTab.vue").read_text(encoding="utf-8")
-    missing = sorted(action for action in known_admin_activity_actions() if f"'{action}'" not in text)
+    actions = known_admin_activity_actions() | known_member_activity_actions()
+    missing = sorted(action for action in actions if f"'{action}'" not in text)
     assert missing == []
+
+
+def test_important_member_actions_are_classified() -> None:
+    """Security, deletes, sharing, publishing, knowledge, and payments are recorded."""
+    assert classify_member_activity("PUT", "/api/auth/change-password") == "account.password_change"
+    assert classify_member_activity("POST", "/api/auth/phone/change") == "account.phone_change"
+    assert classify_member_activity("DELETE", "/api/auth/login-devices/abc") == "account.session_revoke"
+    assert classify_member_activity("DELETE", "/api/diagrams/map-1") == "diagram.delete"
+    assert classify_member_activity("PUT", "/api/diagrams/map-1/shares") == "diagram.share"
+    assert classify_member_activity("POST", "/api/showcase/posts") == "showcase.submit"
+    assert classify_member_activity("POST", "/api/showcase/posts/post-1/delete") == "showcase.delete"
+    assert classify_member_activity("DELETE", "/api/knowledge-space/documents/4") == "knowledge.delete"
+    assert classify_member_activity("POST", "/api/knowledge-space/documents/batch-upload") == "knowledge.upload"
+    assert (
+        classify_member_activity("POST", "/api/learning-space/teacher/students/9/reset-password")
+        == "learning_space.teacher_password_reset"
+    )
+    assert classify_member_activity("POST", "/api/markets/orders") == "billing.order"
+    assert classify_member_activity("DELETE", "/api/training/courses/course-1") == "course.delete"
+    assert classify_member_activity("POST", "/api/chat/channels/3/invite") == "chat.channel_invite"
+
+
+def test_everyday_member_use_is_not_classified() -> None:
+    """Edits, chat, grading, likes, and preferences are not operations-log rows."""
+    assert classify_member_activity("POST", "/api/diagrams") is None
+    assert classify_member_activity("PUT", "/api/diagrams/map-1") is None
+    assert classify_member_activity("POST", "/api/diagrams/map-1/pin") is None
+    assert classify_member_activity("DELETE", "/api/diagrams/map-1/snapshots/2") is None
+    assert classify_member_activity("POST", "/api/chat/channels/3/messages") is None
+    assert classify_member_activity("POST", "/api/chat/channels/initialize") is None
+    assert classify_member_activity("POST", "/api/showcase/posts/post-1/like") is None
+    assert classify_member_activity("POST", "/api/library/documents/4/bookmarks") is None
+    assert classify_member_activity("POST", "/api/learning-space/student/assignments/1/submit") is None
+    assert classify_member_activity("POST", "/api/learning-space/teacher/submissions/1/review") is None
+    assert classify_member_activity("POST", "/api/auth/logout") is None
+    assert classify_member_activity("PATCH", "/api/auth/language-preferences") is None
+    assert classify_member_activity("POST", "/api/auth/thinking-coins/check-in") is None
+    assert classify_member_activity("PUT", "/api/training/courses/course-1") is None
+    assert classify_member_activity("POST", "/api/training/courses/course-1/complete") is None
+    assert classify_member_activity("POST", "/api/knowledge-space/documents/start-processing") is None
+    assert classify_member_activity("POST", "/api/mindmate/seminar/join") is None
+    assert classify_member_activity("POST", "/api/mindmate/seminar/members/respond") is None
+    assert classify_member_activity("GET", "/api/diagrams/map-1") is None
 
 
 def test_library_catalog_and_device_assign_are_classified() -> None:
@@ -170,14 +215,48 @@ async def test_school_manager_password_reset_is_stored() -> None:
 
 
 @pytest.mark.asyncio
-async def test_teacher_write_is_not_stored() -> None:
-    """A teacher using the product does not create an admin activity row."""
+async def test_teacher_admin_path_is_not_stored() -> None:
+    """A teacher who is not a panel user does not get credit for an admin route."""
     request = _request("POST", "/api/auth/admin/organizations")
     response = SimpleNamespace(status_code=200)
     user = SimpleNamespace(id=8, role="teacher", name="Bo", organization_id=3)
     with patch("services.admin.activity_record.system_rls_session") as session_cm:
         await record_admin_activity(request, response, user)
     session_cm.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_teacher_diagram_edit_is_not_stored() -> None:
+    """Saving a diagram is everyday use and is not an operations-log row."""
+    request = _request("PUT", "/api/diagrams/map-1")
+    response = SimpleNamespace(status_code=200)
+    user = SimpleNamespace(id=8, role="teacher", name="Bo", organization_id=3)
+    with patch("services.admin.activity_record.system_rls_session") as session_cm:
+        await record_admin_activity(request, response, user)
+    session_cm.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_teacher_diagram_delete_is_stored() -> None:
+    """Deleting a diagram is recorded with the teacher's role and name."""
+    request = _request("DELETE", "/api/diagrams/map-1")
+    response = SimpleNamespace(status_code=200)
+    user = SimpleNamespace(id=8, role="teacher", name="Bo", phone="13800000000", organization_id=3)
+    session, session_cm = _capturing_session()
+
+    with (
+        patch("services.admin.activity_record.system_rls_session", return_value=session_cm),
+        patch("services.admin.activity_record.is_env_configured_superadmin", return_value=False),
+    ):
+        await record_admin_activity(request, response, user)
+
+    row = session.add.call_args.args[0]
+    assert row.action == "diagram.delete"
+    assert row.actor_role == "teacher"
+    assert row.actor_label == "Bo"
+    assert row.organization_id == 3
+    assert row.path == "/api/diagrams/map-1"
+    session.commit.assert_awaited()
 
 
 @pytest.mark.asyncio

@@ -53,7 +53,7 @@ async def get_admin_activity_log(
     role: Optional[str] = Query(None, max_length=32),
     q: Optional[str] = Query(None, max_length=80),
 ) -> AdminActivityListResponse:
-    """Recent writes by superadmins, researchers, experts, and school managers."""
+    """Recent panel writes and important actions by teachers, students, and personal users."""
     async with system_rls_session() as db:
         payload = await list_admin_activities(
             db,

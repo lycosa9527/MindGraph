@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * System settings — log of writes by superadmins, researchers, experts, and school managers.
+ * System settings — panel writes, plus important actions by teachers, students, and personal users.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -82,9 +82,58 @@ const ACTIVITY_ACTIONS = [
   'quick_register.close',
   'error_group.mute',
   'admin.mutate',
+  'account.password_change',
+  'account.phone_change',
+  'account.api_token_create',
+  'account.api_token_revoke',
+  'account.session_revoke',
+  'account.dingtalk_bind',
+  'account.dingtalk_unbind',
+  'account.oauth_unlink',
+  'diagram.delete',
+  'diagram.share',
+  'workshop.start',
+  'workshop.stop',
+  'seminar.start',
+  'seminar.stop',
+  'seminar.member_add',
+  'seminar.member_remove',
+  'seminar.member_role',
+  'chat.channel_create',
+  'chat.channel_delete',
+  'chat.channel_invite',
+  'chat.channel_permissions',
+  'showcase.submit',
+  'showcase.withdraw',
+  'showcase.delist',
+  'showcase.delete',
+  'knowledge.upload',
+  'knowledge.delete',
+  'knowledge.package_create',
+  'knowledge.package_delete',
+  'knowledge.settings',
+  'knowledge.ingest',
+  'course.create',
+  'course.delete',
+  'learning_space.teacher_password_reset',
+  'learning_space.assignment_create',
+  'learning_space.assignment_delete',
+  'billing.order',
+  'billing.pay',
+  'billing.subscribe',
+  'billing.cancel',
 ] as const
 
-const PANEL_ROLES = ['superadmin', 'platform_bd', 'expert', 'school_admin'] as const
+const ACTOR_ROLES = [
+  'superadmin',
+  'platform_bd',
+  'expert',
+  'school_admin',
+  'teacher',
+  'student',
+  'personal_trial',
+  'personal_paid',
+] as const
 
 type HoursWindow = 24 | 168 | 720
 
@@ -188,7 +237,7 @@ function detailText(row: AdminActivityItem): string {
         :placeholder="t('admin.adminActivities.allRoles')"
       >
         <el-option
-          v-for="roleKey in PANEL_ROLES"
+          v-for="roleKey in ACTOR_ROLES"
           :key="roleKey"
           :label="roleLabel(roleKey)"
           :value="roleKey"

@@ -1,9 +1,10 @@
 """
 Persist and list admin activity rows.
 
-Writes use a system RLS session so a school manager's own panel context
-can insert a row the superadmin later reads. Failures are logged and never
-raised to the request that was being audited.
+Panel writes and important member actions are stored. Writes use a system
+RLS session so a school manager's own panel context can insert a row the
+superadmin later reads. Failures are logged and never raised to the request
+that was being audited.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -21,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.admin_activity_log import AdminActivityLog
 from services.admin.activity_catalog import resolve_admin_action
+from services.admin.activity_member_catalog import classify_member_activity
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth.admin_panel_permissions import is_management_panel_user
 from utils.auth.env_superadmin import is_env_configured_superadmin
@@ -119,8 +121,18 @@ def _client_ip(request: Any) -> Optional[str]:
     return ip[:64]
 
 
+def resolve_recorded_action(method: str, path: str, detail: Optional[dict[str, Any]], user: Any) -> Optional[str]:
+    """Panel writes, plus important actions from teachers, students, and personal users."""
+    member_action = classify_member_activity(method, path)
+    if member_action is not None:
+        return member_action
+    if not is_management_panel_user(user):
+        return None
+    return resolve_admin_action(method, path, detail)
+
+
 async def record_admin_activity(request: Any, response: Any, user: Any) -> None:
-    """Store one row when a panel user completes an admin write. Never raises."""
+    """Store one row for a panel write or an important member action. Never raises."""
     try:
         await _record_admin_activity(request, response, user)
     except _RECORD_ERRORS:
@@ -128,7 +140,7 @@ async def record_admin_activity(request: Any, response: Any, user: Any) -> None:
 
 
 async def _record_admin_activity(request: Any, response: Any, user: Any) -> None:
-    if user is None or not is_management_panel_user(user):
+    if user is None:
         return
     status_code = getattr(response, "status_code", None)
     if not isinstance(status_code, int) or status_code < 200 or status_code >= 300:
@@ -136,7 +148,7 @@ async def _record_admin_activity(request: Any, response: Any, user: Any) -> None
     method = str(getattr(request, "method", "") or "")
     path = str(getattr(getattr(request, "url", None), "path", "") or "")
     detail = _cap_detail(_request_detail(request))
-    action = resolve_admin_action(method, path, detail)
+    action = resolve_recorded_action(method, path, detail, user)
     if action is None:
         return
     user_id = _optional_int(getattr(user, "id", None))

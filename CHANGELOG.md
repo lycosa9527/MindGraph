@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.202] - 2026-11-01
+
+> **The admin operations record now includes important actions by teachers, students, and personal users.**
+
+### Changed
+
+- **Admin activities** — Successful account-security, delete, share, publish, knowledge-base, course, homework, and payment actions by teachers, students, and personal users are stored with the panel writes. Diagram edits, chat, grading, likes, and preferences stay out. The role filter includes those accounts.
+
+### Tests
+
+- [`tests/services/test_admin_activity_log.py`](tests/services/test_admin_activity_log.py)
+
 ## [5.180.201] - 2026-11-01
 
 > **A seminar invite that cannot be joined stays out of the sidebar, and startup keeps the PostgreSQL directory already named in `.env`.**

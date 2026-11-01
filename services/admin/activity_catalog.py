@@ -2,8 +2,8 @@
 Classify management-panel writes into stable admin-activity action keys.
 
 Scope is privileged operators only (superadmin, platform_bd, expert,
-school_admin). Regular product use — diagrams, chat, teacher class tools —
-is not an admin activity even when the same person also holds a panel role.
+school_admin). Important actions by teachers, students, and personal users
+live in activity_member_catalog. Everyday edits and chat stay unlogged.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved

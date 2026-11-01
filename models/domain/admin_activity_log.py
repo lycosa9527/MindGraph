@@ -2,8 +2,9 @@
 Admin activity log
 ==================
 
-One row per successful management-panel write by a non-regular user
-(superadmin, teaching researcher, expert, school manager).
+One row per successful management-panel write, and per important action
+by a teacher, student, or personal user. Everyday edits, chat, and
+browsing are not stored.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -23,7 +24,7 @@ from models.domain.auth import Base
 
 
 class AdminActivityLog(Base):
-    """Immutable record of a privileged admin write."""
+    """Immutable record of a panel write or an important member action."""
 
     __tablename__ = "admin_activity_log"
     __table_args__ = (
