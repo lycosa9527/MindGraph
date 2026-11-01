@@ -247,6 +247,49 @@ async def install_playwright_apt_deps_from_cos(*, force: bool = False) -> Dict[s
     return result
 
 
+async def verify_playwright_apt_deps_cos_pull() -> Dict[str, Any]:
+    """Download the apt-deps tarball from COS and verify SHA-256 without installing."""
+    result: Dict[str, Any] = {"ok": False, "error": None, "verified": False}
+    if not tencent_cos_client.cos_credentials_configured():
+        result["error"] = "cos_not_configured"
+        return result
+    cos_meta = await asyncio.to_thread(read_playwright_apt_deps_cos_meta)
+    if not cos_meta:
+        result["error"] = "cos_meta_missing"
+        return result
+    distro_key = str(cos_meta.get("distro_key") or "")
+    tarball_filename = str(cos_meta.get("tarball_filename") or "")
+    expected_sha = cos_meta.get("sha256")
+    if not distro_key or not tarball_filename:
+        result["error"] = "tarball_filename_missing"
+        return result
+    object_key = playwright_apt_deps_tarball_cos_key(distro_key, tarball_filename)
+    tmp_dir = Path(tempfile.mkdtemp(prefix="mg_pw_apt_verify_"))
+    tar_path = tmp_dir / tarball_filename
+
+    def _download() -> bool:
+        return tencent_cos_client.download_file(
+            object_key,
+            tar_path,
+            log_prefix="[PlaywrightAptCOS]",
+        )
+
+    if not await asyncio.to_thread(_download):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        result["error"] = "cos_download_failed"
+        return result
+    actual_sha = tencent_cos_client.sha256_hex(tar_path.read_bytes())
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+    if isinstance(expected_sha, str) and actual_sha != expected_sha:
+        result["error"] = "sha256_mismatch"
+        return result
+    result["ok"] = True
+    result["verified"] = True
+    result["sha256"] = actual_sha
+    result["distro_key"] = distro_key
+    return result
+
+
 async def ensure_playwright_deps_via_cos_or_apt() -> Dict[str, Any]:
     """
     Prefer COS ``.deb`` bundle; fall back to online ``playwright install-deps``.

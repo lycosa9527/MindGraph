@@ -9,6 +9,24 @@ import pytest
 from scripts.db import update_stack_from_cos as cli
 
 
+def test_merge_playwright_apt_plan_when_browser_current():
+    merged = cli._merge_playwright_apt_plan(
+        {"update_needed": False, "reason": "up_to_date", "cos_version": "1.64.1"},
+        {"update_needed": True, "reason": "missing_packages"},
+    )
+    assert merged["update_needed"] is True
+    assert merged["reason"] == "apt_deps_missing"
+
+
+def test_merge_playwright_apt_plan_keeps_missing_browser_meta():
+    original = {"update_needed": False, "reason": "cos_meta_missing"}
+    merged = cli._merge_playwright_apt_plan(
+        original,
+        {"update_needed": True, "reason": "missing_packages"},
+    )
+    assert merged == original
+
+
 def test_prompt_yes_no_default_yes(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "")
     assert cli._prompt_yes_no("Proceed", default_yes=True) is True
@@ -40,6 +58,12 @@ async def test_action_update_cancelled_when_up_to_date(monkeypatch):
             "cos_version": "1.61.0",
             "installed_version": "1.61.0",
         },
+        {
+            "update_needed": False,
+            "reason": "up_to_date",
+            "cos_version": "2026-10-30",
+            "installed_version": "present",
+        },
     )
     monkeypatch.setattr(cli, "_fetch_stack_plans", AsyncMock(return_value=plans))
     monkeypatch.setattr(cli, "_prompt_yes_no", lambda question, default_yes: False)
@@ -68,6 +92,12 @@ async def test_action_update_runs_pending(monkeypatch):
             "cos_version": "1.61.0",
             "installed_version": None,
         },
+        {
+            "update_needed": True,
+            "reason": "cos_newer",
+            "cos_version": "2026-10-30",
+            "installed_version": "present",
+        },
     )
     monkeypatch.setattr(cli, "_fetch_stack_plans", AsyncMock(return_value=plans))
     monkeypatch.setattr(cli, "_prompt_yes_no", lambda question, default_yes: True)
@@ -81,3 +111,4 @@ async def test_action_update_runs_pending(monkeypatch):
     assert plan["qdrant"]["run"] is True
     assert plan["celery"]["run"] is False
     assert plan["playwright"]["run"] is True
+    assert plan["geolite"]["run"] is True

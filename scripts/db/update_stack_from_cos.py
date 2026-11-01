@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Install or upgrade Qdrant, Celery, and Playwright Chromium from Tencent COS.
+Install or upgrade Qdrant, Celery, Playwright (Chromium plus apt deps), and GeoLite from COS.
 
 When COS ``meta.json`` for each artifact reports a newer version than locally
 installed, choose **Update** to pull from COS (Qdrant requires root).
@@ -15,9 +15,10 @@ COS layout (under ``COS_SYNC_KEY_PREFIX``, else ``COS_KEY_PREFIX``)::
     sync/playwright/v{version}/{platform}/playwright-chromium-*.tar.gz
     sync/playwright/apt-deps/meta.json
     sync/playwright/apt-deps/{distro}/playwright-apt-deps-*.tar.gz
-    sync/crowdsec/blocklist.txt
-    sync/abuseipdb/blocklist.txt
     sync/geolite/GeoLite2-Country.mmdb
+    sync/geolite/meta.json
+
+CrowdSec and AbuseIPDB use ``scripts/db/publish_blocklists_to_cos.py``.
 
 Usage (repo root, WSL + conda python313)::
 
@@ -25,7 +26,8 @@ Usage (repo root, WSL + conda python313)::
   python scripts/db/update_stack_from_cos.py
 
 Do **not** use bare ``sudo python3`` — that is system Python without ``cos-python-sdk-v5``.
-Menu 1/3/4/5 need no sudo. For Qdrant install (menu 2), use conda Python as root::
+Menu 1/3/4/5 need no sudo. Menu 2 installs Qdrant with systemd (root) and may
+install Playwright apt packages (root). Use conda Python as root::
 
   sudo -E "$(which python)" scripts/db/update_stack_from_cos.py
 
@@ -59,8 +61,20 @@ from services.infrastructure.sync.celery_cos_sync import (
     verify_celery_cos_pull,
 )
 from services.infrastructure.sync.celery_update_state import read_celery_update_state
+from services.infrastructure.sync.cos_sync_env import normalized_cos_sync_prefix
+from services.infrastructure.sync.geolite_cos_sync import (
+    geolite_cos_update_needed,
+    get_geolite_cos_status,
+    install_geolite_from_cos,
+    publish_geolite_to_cos_manual,
+    read_geolite_cos_meta,
+    verify_geolite_cos_pull,
+)
 from services.infrastructure.sync.playwright_apt_cos_sync import (
+    ensure_playwright_deps_via_cos_or_apt,
+    playwright_apt_deps_cos_update_needed,
     publish_playwright_apt_deps_to_cos_manual,
+    verify_playwright_apt_deps_cos_pull,
 )
 from services.infrastructure.sync.playwright_cos_sync import (
     get_playwright_cos_status,
@@ -127,7 +141,7 @@ def _print_cos_env_summary() -> None:
         print("[WARN] COS not configured — set TENCENT_SMS_SECRET_* and COS_BUCKET in .env", file=sys.stderr)
         return
     if conn.get("ok"):
-        print(f"COS:            bucket={conn.get('bucket')} prefix={conn.get('key_prefix')}")
+        print(f"COS:            bucket={conn.get('bucket')} sync_prefix={normalized_cos_sync_prefix()}")
         return
     error = conn.get("error")
     if error == "cos_sdk_missing":
@@ -154,7 +168,7 @@ def _prompt_yes_no(question: str, default_yes: bool) -> bool:
 
 def _prompt_menu_choice() -> str:
     print()
-    print("Stack COS (Qdrant + Celery + Playwright)")
+    print("Stack COS (Qdrant + Celery + Playwright + GeoLite)")
     print("  1) Check all (COS vs installed)")
     print("  2) Update from COS")
     print("  3) Status (full JSON)")
@@ -190,8 +204,13 @@ def _describe_plan(label: str, plan: dict) -> None:
         hint = plan.get("hint")
         if hint:
             print(f"  Hint:      {hint}")
+    elif reason == "apt_deps_missing":
+        print("  Result:    Chromium OS libraries missing (install COS apt bundle)")
     elif plan.get("update_needed"):
-        print("  Result:    update available (COS is newer)")
+        if plan.get("apt_deps_update_needed"):
+            print("  Result:    update available (COS is newer, apt deps too)")
+        else:
+            print("  Result:    update available (COS is newer)")
     else:
         print("  Result:    up to date")
 
@@ -204,29 +223,48 @@ async def _fetch_plan(fetcher: UpdatePlanFetcher) -> dict:
     return await asyncio.to_thread(fetcher)
 
 
-async def _fetch_stack_plans() -> Tuple[dict, dict, dict]:
-    qdrant_plan, celery_plan, playwright_plan = await asyncio.gather(
+def _merge_playwright_apt_plan(playwright_plan: dict, apt_plan: dict) -> dict:
+    """Treat missing Chromium OS libraries as a Playwright update."""
+    if not apt_plan.get("update_needed"):
+        return playwright_plan
+    hold = {
+        "package_newer_than_cos",
+        "cos_newer_than_package",
+        "cos_meta_missing",
+        "cos_not_configured",
+        "cos_sdk_missing",
+    }
+    if playwright_plan.get("reason") in hold:
+        return playwright_plan
+    merged = dict(playwright_plan)
+    merged["apt_deps_update_needed"] = True
+    if not merged.get("update_needed"):
+        merged["update_needed"] = True
+        merged["reason"] = "apt_deps_missing"
+    return merged
+
+
+async def _fetch_stack_plans() -> Tuple[dict, dict, dict, dict]:
+    qdrant_plan, celery_plan, playwright_plan, geolite_plan, apt_plan = await asyncio.gather(
         _fetch_plan(qdrant_cos_update_needed),
         _fetch_plan(celery_cos_update_needed),
         _fetch_plan(playwright_cos_update_needed),
+        geolite_cos_update_needed(),
+        asyncio.to_thread(playwright_apt_deps_cos_update_needed),
     )
-    return qdrant_plan, celery_plan, playwright_plan
-
-
-async def _fetch_both_plans() -> Tuple[dict, dict]:
-    """Backward-compatible helper used by older tests."""
-    qdrant_plan, celery_plan, _playwright_plan = await _fetch_stack_plans()
-    return qdrant_plan, celery_plan
+    playwright_plan = _merge_playwright_apt_plan(playwright_plan, apt_plan)
+    return qdrant_plan, celery_plan, playwright_plan, geolite_plan
 
 
 async def _action_check() -> int:
     if not _cos_sdk_ready():
         return 2
-    qdrant_plan, celery_plan, playwright_plan = await _fetch_stack_plans()
+    qdrant_plan, celery_plan, playwright_plan, geolite_plan = await _fetch_stack_plans()
+    plans = (qdrant_plan, celery_plan, playwright_plan, geolite_plan)
     if qdrant_plan.get("reason") == "cos_not_configured":
         print("[ERROR] COS credentials not configured in .env", file=sys.stderr)
         return 2
-    if any(plan.get("reason") == "cos_sdk_missing" for plan in (qdrant_plan, celery_plan, playwright_plan)):
+    if any(plan.get("reason") == "cos_sdk_missing" for plan in plans):
         return 2
     print("[CHECK]")
     _describe_plan("Qdrant", qdrant_plan)
@@ -234,7 +272,38 @@ async def _action_check() -> int:
     _describe_plan("Celery", celery_plan)
     print()
     _describe_plan("Playwright", playwright_plan)
-    return stack_check_exit_code(qdrant_plan, celery_plan, playwright_plan)
+    print()
+    _describe_plan("GeoLite", geolite_plan)
+    return stack_check_exit_code(qdrant_plan, celery_plan, playwright_plan, geolite_plan)
+
+
+def _report_playwright_deps(deps: dict) -> None:
+    """Print the outcome of the COS apt-bundle / apt fallback."""
+    if deps.get("ok") and deps.get("skipped"):
+        print("[SUCCESS] Playwright system deps already installed")
+        return
+    source = deps.get("source")
+    if deps.get("ok") and source == "cos":
+        print("[SUCCESS] Playwright system deps installed from COS")
+        return
+    if deps.get("ok"):
+        print("[SUCCESS] Playwright system deps installed via apt")
+        return
+    hint = deps.get("hint")
+    print("[WARN] Playwright system deps still missing", file=sys.stderr)
+    if hint:
+        print(f"  {hint}", file=sys.stderr)
+    missing = deps.get("missing") or (deps.get("system_deps") or {}).get("missing") or []
+    if missing:
+        print(f"  Missing: {', '.join(str(item) for item in missing[:12])}", file=sys.stderr)
+
+
+async def _apply_playwright_deps() -> None:
+    """Install Chromium OS libraries from the COS .deb bundle, then apt."""
+    print("[UPDATE] Playwright system deps")
+    deps = await ensure_playwright_deps_via_cos_or_apt()
+    _print_json(deps)
+    _report_playwright_deps(deps)
 
 
 async def _run_stack_updates(update_plan: StackUpdatePlan) -> int:
@@ -269,18 +338,15 @@ async def _run_stack_updates(update_plan: StackUpdatePlan) -> int:
         _print_json(playwright_result)
         ok, code = summarize_update_result("Playwright", playwright_result)
         if ok:
-            print("[SUCCESS] Playwright Chromium update complete")
-            deps = playwright_result.get("system_deps") or {}
-            if deps.get("ok"):
-                print("[SUCCESS] Playwright system deps OK (apt)")
-            elif deps.get("hint"):
-                print(
-                    f"[WARN] Chromium OS libs missing — apt install (not COS):\n  {deps['hint']}",
-                    file=sys.stderr,
-                )
-                missing = deps.get("missing") or []
-                if missing:
-                    print(f"  Missing: {', '.join(str(item) for item in missing[:12])}", file=sys.stderr)
+            if playwright_result.get("skipped"):
+                print("[SUCCESS] Playwright Chromium already matches COS")
+            else:
+                print("[SUCCESS] Playwright Chromium update complete")
+            deps = playwright_result.get("system_deps")
+            if isinstance(deps, dict):
+                _report_playwright_deps(deps)
+            else:
+                await _apply_playwright_deps()
         else:
             error = playwright_result.get("error")
             hint = playwright_result.get("hint")
@@ -291,6 +357,19 @@ async def _run_stack_updates(update_plan: StackUpdatePlan) -> int:
                 print("[ERROR] Playwright Chromium update failed", file=sys.stderr)
                 if hint:
                     print(f"  {hint}", file=sys.stderr)
+            if not isinstance(playwright_result.get("system_deps"), dict):
+                await _apply_playwright_deps()
+        exit_code = max(exit_code, code)
+
+    if update_plan["geolite"]["run"]:
+        print("[UPDATE] GeoLite")
+        geolite_result = await install_geolite_from_cos(force=update_plan["geolite"]["force"])
+        _print_json(geolite_result)
+        ok, code = summarize_update_result("GeoLite", geolite_result)
+        if ok:
+            print("[SUCCESS] GeoLite2-Country update complete")
+        else:
+            print("[ERROR] GeoLite update failed", file=sys.stderr)
         exit_code = max(exit_code, code)
 
     return exit_code
@@ -299,7 +378,7 @@ async def _run_stack_updates(update_plan: StackUpdatePlan) -> int:
 async def _action_update() -> int:
     if not _cos_sdk_ready():
         return 1
-    qdrant_plan, celery_plan, playwright_plan = await _fetch_stack_plans()
+    qdrant_plan, celery_plan, playwright_plan, geolite_plan = await _fetch_stack_plans()
     if qdrant_plan.get("reason") == "cos_not_configured":
         print("[ERROR] COS credentials not configured in .env", file=sys.stderr)
         return 1
@@ -311,15 +390,23 @@ async def _action_update() -> int:
     print()
     _describe_plan("Playwright", playwright_plan)
     print()
+    _describe_plan("GeoLite", geolite_plan)
+    print()
 
-    if not artifact_on_cos(qdrant_plan) and not artifact_on_cos(celery_plan) and not artifact_on_cos(playwright_plan):
-        print("[ERROR] No Qdrant/Celery/Playwright meta.json found on COS", file=sys.stderr)
+    on_cos = (
+        artifact_on_cos(qdrant_plan),
+        artifact_on_cos(celery_plan),
+        artifact_on_cos(playwright_plan),
+        artifact_on_cos(geolite_plan),
+    )
+    if not any(on_cos):
+        print("[ERROR] No Qdrant/Celery/Playwright/GeoLite meta.json found on COS", file=sys.stderr)
         return 1
 
-    pending = stack_has_pending_updates(qdrant_plan, celery_plan, playwright_plan)
+    pending = stack_has_pending_updates(qdrant_plan, celery_plan, playwright_plan, geolite_plan)
     reinstall = False
     if pending:
-        prompt = stack_update_prompt(qdrant_plan, celery_plan, playwright_plan)
+        prompt = stack_update_prompt(qdrant_plan, celery_plan, playwright_plan, geolite_plan)
         if prompt and not _prompt_yes_no(prompt, default_yes=True):
             print("Cancelled.")
             return 0
@@ -336,21 +423,24 @@ async def _action_update() -> int:
         qdrant_plan,
         celery_plan,
         playwright_plan,
+        geolite_plan,
         reinstall=reinstall,
     )
-    if not update_plan["qdrant"]["run"] and not update_plan["celery"]["run"] and not update_plan["playwright"]["run"]:
+    anything = any(update_plan[name]["run"] for name in ("qdrant", "celery", "playwright", "geolite"))
+    if not anything:
         print("[INFO] Nothing to update.")
         return 0
     return await _run_stack_updates(update_plan)
 
 
 async def _action_status() -> int:
-    qdrant_status, celery_status, playwright_status = await asyncio.gather(
+    qdrant_status, celery_status, playwright_status, geolite_status = await asyncio.gather(
         get_qdrant_cos_status(),
         get_celery_cos_status(),
         get_playwright_cos_status(),
+        get_geolite_cos_status(),
     )
-    qdrant_plan, celery_plan, playwright_plan = await _fetch_stack_plans()
+    qdrant_plan, celery_plan, playwright_plan, geolite_plan = await _fetch_stack_plans()
     payload = {
         "cos_connection": tencent_cos_client.test_cos_connection(),
         "qdrant": {
@@ -368,10 +458,15 @@ async def _action_status() -> int:
             "update_state": read_playwright_update_state(),
             "update_plan": playwright_plan,
         },
+        "geolite": {
+            **geolite_status,
+            "update_plan": geolite_plan,
+        },
         "stack_check_exit_code": stack_check_exit_code(
             qdrant_plan,
             celery_plan,
             playwright_plan,
+            geolite_plan,
         ),
     }
     _print_json(payload)
@@ -380,10 +475,11 @@ async def _action_status() -> int:
 
 def _prompt_publish_targets() -> List[str]:
     print("Publish target:")
-    print("  1) All (Qdrant + Celery + Playwright)")
+    print("  1) All (Qdrant + Celery + Playwright + GeoLite)")
     print("  2) Qdrant only")
     print("  3) Celery only")
-    print("  4) Playwright only")
+    print("  4) Playwright only (Chromium + apt deps)")
+    print("  5) GeoLite only")
     choice = input("Choose [1]: ").strip().lower() or "1"
     if choice in ("2", "q", "qdrant"):
         return ["qdrant"]
@@ -391,7 +487,9 @@ def _prompt_publish_targets() -> List[str]:
         return ["celery"]
     if choice in ("4", "p", "playwright"):
         return ["playwright"]
-    return ["qdrant", "celery", "playwright"]
+    if choice in ("5", "g", "geolite"):
+        return ["geolite"]
+    return ["qdrant", "celery", "playwright", "geolite"]
 
 
 def _validate_publish_file(path_text: str, label: str) -> Path | None:
@@ -507,6 +605,21 @@ async def _publish_playwright() -> int:
     return 0 if result.get("ok") else 1
 
 
+async def _publish_geolite() -> int:
+    force = False
+    cos_meta = await asyncio.to_thread(read_geolite_cos_meta)
+    if cos_meta and cos_meta.get("sha256"):
+        uploaded = cos_meta.get("uploaded_at") or "unknown"
+        print(f"GeoLite COS already has a database uploaded at {uploaded}.")
+        if not _prompt_yes_no("Re-upload GeoLite2-Country.mmdb anyway", default_yes=False):
+            print("Skipped GeoLite publish.")
+            return 0
+        force = True
+    result = await publish_geolite_to_cos_manual(force=force)
+    _print_json(result)
+    return 0 if result.get("ok") else 1
+
+
 async def _action_publish() -> int:
     if not _cos_sdk_ready():
         return 1
@@ -524,16 +637,20 @@ async def _action_publish() -> int:
         exit_code = max(exit_code, await _publish_celery())
     if "playwright" in targets:
         exit_code = max(exit_code, await _publish_playwright())
+    if "geolite" in targets:
+        exit_code = max(exit_code, await _publish_geolite())
     return exit_code
 
 
 async def _action_verify_pull() -> int:
     if not _cos_sdk_ready():
         return 1
-    qdrant_result, celery_result, playwright_result = await asyncio.gather(
+    qdrant_result, celery_result, playwright_result, apt_result, geolite_result = await asyncio.gather(
         verify_qdrant_cos_pull(),
         verify_celery_cos_pull(),
         verify_playwright_cos_pull(),
+        verify_playwright_apt_deps_cos_pull(),
+        verify_geolite_cos_pull(),
     )
     print("[Qdrant]")
     _print_json(qdrant_result)
@@ -541,12 +658,18 @@ async def _action_verify_pull() -> int:
     _print_json(celery_result)
     print("[Playwright]")
     _print_json(playwright_result)
+    print("[Playwright apt deps]")
+    _print_json(apt_result)
+    print("[GeoLite]")
+    _print_json(geolite_result)
 
     exit_code = 0
     for label, result in (
         ("Qdrant", qdrant_result),
         ("Celery", celery_result),
         ("Playwright", playwright_result),
+        ("Playwright apt deps", apt_result),
+        ("GeoLite", geolite_result),
     ):
         outcome = verify_component_outcome(result)
         if outcome == "verified":
@@ -589,7 +712,7 @@ async def _interactive_main() -> int:
 
 
 def main() -> int:
-    """Interactive Qdrant + Celery + Playwright COS check / update menu."""
+    """Interactive Qdrant, Celery, Playwright, and GeoLite COS menu."""
     return asyncio.run(_interactive_main())
 
 

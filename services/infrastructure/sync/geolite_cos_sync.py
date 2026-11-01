@@ -39,15 +39,24 @@ def read_geolite_cos_meta() -> Optional[Dict[str, Any]]:
 
 async def publish_geolite_to_cos(*, force: bool = False) -> Dict[str, Any]:
     """Upload local GeoLite2-Country.mmdb to COS (publisher only)."""
+    if not is_cos_publisher():
+        return {
+            "ok": False,
+            "skipped": False,
+            "error": "not_publisher",
+            "source": "local",
+        }
+    return await publish_geolite_to_cos_manual(force=force)
+
+
+async def publish_geolite_to_cos_manual(*, force: bool = False) -> Dict[str, Any]:
+    """Upload local GeoLite2-Country.mmdb when COS credentials exist (CLI)."""
     result: Dict[str, Any] = {
         "ok": False,
         "skipped": False,
         "error": None,
         "source": "local",
     }
-    if not is_cos_publisher():
-        result["error"] = "not_publisher"
-        return result
     if not tencent_cos_client.cos_credentials_configured():
         result["error"] = "cos_not_configured"
         return result
@@ -196,3 +205,67 @@ async def get_geolite_cos_status() -> Dict[str, Any]:
         "cos_meta": cos_meta,
         "sync_state": sync_state,
     }
+
+
+async def geolite_cos_update_needed() -> Dict[str, Any]:
+    """Plan dict for the stack CLI (same shape as Qdrant/Celery/Playwright)."""
+    empty = {
+        "update_needed": False,
+        "reason": "cos_not_configured",
+        "installed_version": None,
+        "cos_version": None,
+    }
+    if not tencent_cos_client.cos_credentials_configured():
+        return empty
+    if not tencent_cos_client.cos_sdk_available():
+        empty["reason"] = "cos_sdk_missing"
+        return empty
+    status = await get_geolite_cos_status()
+    cos_meta = status.get("cos_meta") if isinstance(status.get("cos_meta"), dict) else None
+    installed = "present" if status.get("local_present") else None
+    if not cos_meta:
+        return {
+            "update_needed": False,
+            "reason": "cos_meta_missing",
+            "installed_version": installed,
+            "cos_version": None,
+        }
+    uploaded = cos_meta.get("uploaded_at")
+    cos_label = uploaded if isinstance(uploaded, str) and uploaded else None
+    behind = status.get("sync_state") == "consumer_behind"
+    return {
+        "update_needed": behind,
+        "reason": "cos_newer" if behind else "up_to_date",
+        "installed_version": installed,
+        "cos_version": cos_label,
+    }
+
+
+async def verify_geolite_cos_pull() -> Dict[str, Any]:
+    """Download the MMDB from COS and verify SHA-256 without replacing the local file."""
+    result: Dict[str, Any] = {"ok": False, "error": None, "verified": False}
+    if not tencent_cos_client.cos_credentials_configured():
+        result["error"] = "cos_not_configured"
+        return result
+    cos_meta = await asyncio.to_thread(read_geolite_cos_meta)
+    if not cos_meta:
+        result["error"] = "cos_meta_missing"
+        return result
+    expected_sha = cos_meta.get("sha256")
+    mmdb_key = geolite_mmdb_cos_key()
+
+    def _fetch() -> Optional[bytes]:
+        return tencent_cos_client.get_object_bytes(mmdb_key, log_prefix="[GeoLiteCOS]")
+
+    raw = await asyncio.to_thread(_fetch)
+    if raw is None:
+        result["error"] = "cos_download_failed"
+        return result
+    actual_sha = tencent_cos_client.sha256_hex(raw)
+    if isinstance(expected_sha, str) and actual_sha != expected_sha:
+        result["error"] = "sha256_mismatch"
+        return result
+    result["ok"] = True
+    result["verified"] = True
+    result["sha256"] = actual_sha
+    return result

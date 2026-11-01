@@ -20,7 +20,7 @@
 #
 # LAST UPDATED: 2026-11-01 - PyPI floor sweep. websockets 17.x (langgraph-sdk 0.4.11
 # dropped the <16 cap). Stay on openai 2.x, dashscope 1.x, Pillow 12.x, PyMuPDF 1.x,
-# pycryptodome 3.x, SQLAlchemy 2.0.x, pydantic <3, qdrant-client <1.19 (server 1.18.1).
+# pycryptodome 3.x, SQLAlchemy 2.0.x, pydantic <3, qdrant-client <1.19 (server 1.18.3).
 
 # ============================================================================
 # WEB FRAMEWORK

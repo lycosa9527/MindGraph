@@ -353,7 +353,7 @@ MIN_POSTGRESQL_VERSION = (18, 3, 0)
 
 # Qdrant server binary from GitHub Releases (see docs/QDRANT_SETUP.md).
 # Keep aligned with qdrant-client pin in requirements.txt.
-QDRANT_GITHUB_VERSION = "1.18.1"
+QDRANT_GITHUB_VERSION = "1.18.3"
 QDRANT_LOCAL_BIN = "/usr/local/bin/qdrant"
 QDRANT_CONFIG_PATH = "/etc/qdrant/config.yaml"
 QDRANT_SYSTEMD_PATH = "/etc/systemd/system/qdrant.service"

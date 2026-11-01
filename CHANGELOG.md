@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.196] - 2026-11-01
+
+> **The COS stack updater installs Qdrant, Celery, Playwright with its apt libraries, and GeoLite2-Country together. The Qdrant server pin is 1.18.3.**
+
+### Changed
+
+- **COS stack update** — [`scripts/db/update_stack_from_cos.py`](scripts/db/update_stack_from_cos.py) checks, installs, publishes, and SHA-verifies Qdrant, Celery, Playwright Chromium, the Playwright Ubuntu apt `.deb` bundle, and `GeoLite2-Country.mmdb`. Missing Chromium OS libraries count as a Playwright update. A failed install exits 1. The header prints the sync prefix (`COS_SYNC_KEY_PREFIX`). CrowdSec and AbuseIPDB stay on [`scripts/db/publish_blocklists_to_cos.py`](scripts/db/publish_blocklists_to_cos.py).
+- **Qdrant server pin** — Setup and COS publish target **1.18.3**, the last 1.18 patch. `qdrant-client` stays below 1.19.
+
+### Tests
+
+- [`tests/scripts/test_update_stack_from_cos.py`](tests/scripts/test_update_stack_from_cos.py), [`tests/services/test_stack_cos_plan.py`](tests/services/test_stack_cos_plan.py)
+
 ## [5.180.195] - 2026-11-01
 
 > **Startup confirms Chromium with `--version` only, and Redis leaves immutable `io-threads` in redis.conf.**

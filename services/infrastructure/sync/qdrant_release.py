@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 from typing import Optional
 
-QDRANT_GITHUB_VERSION = "1.18.1"
+QDRANT_GITHUB_VERSION = "1.18.3"
 QDRANT_LOCAL_BIN = "/usr/local/bin/qdrant"
 QDRANT_CONFIG_PATH = "/etc/qdrant/config.yaml"
 QDRANT_SYSTEMD_PATH = "/etc/systemd/system/qdrant.service"
