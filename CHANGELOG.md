@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.194] - 2026-11-01
+
+> **Python and frontend dependencies move to the current release on each existing line. Realtime voice can use websockets 17.**
+
+### Changed
+
+- **Python dependencies** — Floors in [`requirements.txt`](requirements.txt) match current PyPI releases on the same line, including FastAPI 0.162, LangChain 1.4, and LangGraph 1.2. `websockets` is 17.4 now that `langgraph-sdk` 0.4.11 no longer caps it below 16. OpenAI stays on 2.x, DashScope on 1.x, Pillow on 12.x, PyMuPDF on 1.x, pycryptodome on 3.x, and SQLAlchemy on 2.0.x. Pydantic stays below 3. The Qdrant client stays below 1.19 so it matches server 1.18.1. The file-reader and desktop-pet requirement files use the same caps.
+- **Frontend dependencies** — Vue, Vite, Element Plus, ESLint, pdfjs-dist, and the other same-line packages are raised. The shipped PDF worker matches pdfjs-dist 6.4.299. The `axios` override is 1.21.0, and Workbox uses `source-map` 0.8.0. `html-to-image` stays at 1.11.11. KaTeX stays at 0.18.10. jsdom stays at 30.0.1, because 30.1 hides Blob bytes and Vitest 4 then throws from `URL.createObjectURL`. TypeScript stays on 6.x. VueUse, Vitest, and vite-plugin-pwa stay off their next majors.
+
 ## [5.180.193] - 2026-11-01
 
 > **Cross-school seminars show a clear 跨校 label, unread counts appear on MindMate and history, and seminar files still save when COS is not configured.**

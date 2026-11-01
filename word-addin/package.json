@@ -17,8 +17,11 @@
     "dev_server_port": 3000
   },
   "devDependencies": {
-    "@types/office-js": "^1.0.396",
+    "@types/office-js": "^1.0.615",
     "office-addin-dev-certs": "^2.0.10",
-    "vite": "^6.4.3"
+    "vite": "^6.4.5"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
   }
 }
