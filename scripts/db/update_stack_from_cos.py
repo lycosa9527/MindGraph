@@ -5,7 +5,7 @@ Install or upgrade Qdrant, Celery, Playwright (Chromium plus apt deps), and GeoL
 When COS ``meta.json`` for each artifact reports a newer version than locally
 installed, choose **Update** to pull from COS (Qdrant requires root).
 
-COS layout (under ``COS_SYNC_KEY_PREFIX``, else ``COS_KEY_PREFIX``)::
+COS layout (under ``COS_SYNC_KEY_PREFIX``, default ``backups/mindgraph-shared``)::
 
     sync/qdrant/meta.json
     sync/qdrant/v{version}/qdrant-{arch}.tar.gz
@@ -627,7 +627,7 @@ async def _action_publish() -> int:
     if not conn.get("ok"):
         print(f"[ERROR] COS connection failed: {conn.get('error')}", file=sys.stderr)
         return 1
-    print(f"[INFO] COS bucket={conn.get('bucket')} prefix={conn.get('key_prefix')}")
+    print(f"[INFO] COS bucket={conn.get('bucket')} sync_prefix={normalized_cos_sync_prefix()}")
 
     targets = _prompt_publish_targets()
     exit_code = 0

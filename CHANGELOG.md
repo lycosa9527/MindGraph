@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.197] - 2026-11-01
+
+> **A host without `COS_SYNC_KEY_PREFIX` still installs Qdrant, Celery, Playwright, and GeoLite from the shared COS mirror.**
+
+### Fixed
+
+- **COS sync prefix** — When `COS_SYNC_KEY_PREFIX` is unset, stack and blocklist keys use `backups/mindgraph-shared`. They no longer follow the per-host backup prefix (`COS_KEY_PREFIX`). On `bayi.mindspringedu.com` that prefix is `backups/bayi.mindspringedu.com`, so `meta.json` was missing even though the objects are in the shared mirror.
+
+### Tests
+
+- [`tests/services/test_cos_sync_env.py`](tests/services/test_cos_sync_env.py)
+
 ## [5.180.196] - 2026-11-01
 
 > **The COS stack updater installs Qdrant, Celery, Playwright with its apt libraries, and GeoLite2-Country together. The Qdrant server pin is 1.18.3.**

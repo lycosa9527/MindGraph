@@ -2,9 +2,19 @@
 
 from __future__ import annotations
 
+import os
 from unittest.mock import patch
 
 from services.infrastructure.sync import cos_sync_env
+
+
+def test_normalized_cos_sync_prefix_defaults_to_shared_mirror():
+    env = os.environ.copy()
+    env.pop("COS_SYNC_KEY_PREFIX", None)
+    env["COS_KEY_PREFIX"] = "backups/bayi.mindspringedu.com"
+    with patch.dict("os.environ", env, clear=True):
+        assert cos_sync_env.normalized_cos_sync_prefix() == "backups/mindgraph-shared"
+        assert cos_sync_env.qdrant_meta_cos_key() == "backups/mindgraph-shared/sync/qdrant/meta.json"
 
 
 def test_normalized_cos_sync_prefix_uses_dedicated_env():

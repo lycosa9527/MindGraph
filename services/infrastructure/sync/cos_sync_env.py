@@ -69,13 +69,13 @@ def normalized_cos_sync_prefix() -> str:
     """
     Prefix for infra sync artifacts (blocklists, Qdrant, Celery, Playwright, GeoLite).
 
-    Uses ``COS_SYNC_KEY_PREFIX`` when set; otherwise falls back to ``COS_KEY_PREFIX``
-    (legacy shared layout with PG dumps).
+    Uses ``COS_SYNC_KEY_PREFIX`` when set. Otherwise ``backups/mindgraph-shared``.
+    Per-host PostgreSQL dumps stay under ``COS_KEY_PREFIX``.
     """
     raw = os.getenv("COS_SYNC_KEY_PREFIX", "").strip()
     if raw:
         return normalized_cos_prefix(raw)
-    return normalized_cos_prefix()
+    return normalized_cos_prefix(_DEFAULT_COS_SYNC_KEY_PREFIX)
 
 
 def cos_sync_object_key(relative_key: str) -> str:
