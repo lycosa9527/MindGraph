@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { type PackageDetailResponse, fileCenterKeys } from '@/composables/fileCenter/useFileCenter'
 import { resizeImageFileForVisionUpload } from '@/composables/media/resizeImageFileForVisionUpload'
 import {
@@ -19,7 +20,7 @@ import {
 } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
+import { useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
@@ -191,7 +192,7 @@ export function useMindMapDocumentSummary() {
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
   const queryClient = useQueryClient()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
 

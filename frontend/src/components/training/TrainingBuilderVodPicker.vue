@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { ElCheckbox, ElOption, ElSelect } from 'element-plus'
+import { ElCheckbox } from 'element-plus'
 
+import { Clapperboard, Folder, Play, Video } from '@lucide/vue'
+
+import TrainingBuilderPickButton from '@/components/training/TrainingBuilderPickButton.vue'
 import { useLanguage } from '@/composables'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { TrainingCourseStep } from '@/types/training'
@@ -34,6 +37,15 @@ const visibleItems = computed(() => {
   if (folderId.value === 'none') return items.value.filter((item) => !item.folder_id)
   return items.value.filter((item) => item.folder_id === folderId.value)
 })
+const folderOptions = computed(() => [
+  { value: '', label: String(t('admin.vod.folderAll')) },
+  { value: 'none', label: String(t('admin.vod.folderNone')) },
+  ...folders.value.map((folder) => ({ value: folder.id, label: folder.name })),
+])
+const videoOptions = computed(() => [
+  { value: '', label: String(t('training.builder.vodNone')) },
+  ...visibleItems.value.map((item) => ({ value: item.id, label: item.title })),
+])
 
 function syncFolderFromStep(): void {
   const current = items.value.find((item) => item.id === props.step.vod_media_id)
@@ -71,53 +83,44 @@ onMounted(async () => {
     v-if="enabled"
     class="vod-picker"
   >
-    <span class="vod-picker__label"><I18nText k="training.builder.vodLibrary" /></span>
-    <ElSelect
-      v-model="folderId"
-      class="admin-swiss-select vod-picker__select"
-      size="small"
-      :placeholder="t('training.builder.vodFolder')"
-    >
-      <ElOption
-        value=""
-        :label="t('admin.vod.folderAll')"
-      >
-        <I18nText k="admin.vod.folderAll" />
-      </ElOption>
-      <ElOption
-        value="none"
-        :label="t('admin.vod.folderNone')"
-      >
-        <I18nText k="admin.vod.folderNone" />
-      </ElOption>
-      <ElOption
-        v-for="folder in folders"
-        :key="folder.id"
-        :value="folder.id"
-        :label="folder.name"
+    <span class="vod-picker__label">
+      <Video
+        :size="15"
+        aria-hidden="true"
       />
-    </ElSelect>
-    <ElSelect
-      class="admin-swiss-select vod-picker__select"
-      size="small"
+      <I18nText k="training.builder.vodLibrary" />
+    </span>
+    <TrainingBuilderPickButton
+      :model-value="folderId"
+      :options="folderOptions"
+      :ariaLabel="String(t('training.builder.vodFolder'))"
+      @change="folderId = $event"
+    >
+      <template #icon>
+        <Folder
+          :size="15"
+          aria-hidden="true"
+        />
+      </template>
+    </TrainingBuilderPickButton>
+    <TrainingBuilderPickButton
       :model-value="step.vod_media_id || ''"
-      :placeholder="t('training.builder.vodVideo')"
+      :options="videoOptions"
+      :ariaLabel="String(t('training.builder.vodVideo'))"
       @change="onVideo"
     >
-      <ElOption
-        value=""
-        :label="t('training.builder.vodNone')"
-      >
-        <I18nText k="training.builder.vodNone" />
-      </ElOption>
-      <ElOption
-        v-for="item in visibleItems"
-        :key="item.id"
-        :value="item.id"
-        :label="item.title"
-      />
-    </ElSelect>
+      <template #icon>
+        <Clapperboard
+          :size="15"
+          aria-hidden="true"
+        />
+      </template>
+    </TrainingBuilderPickButton>
     <label class="vod-picker__auto">
+      <Play
+        :size="15"
+        aria-hidden="true"
+      />
       <ElCheckbox
         :model-value="Boolean(step.vod_autoplay)"
         :disabled="!step.vod_media_id"
@@ -144,11 +147,11 @@ onMounted(async () => {
 }
 .vod-picker__label,
 .vod-picker__empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-size: 0.75rem;
   color: #57534e;
-}
-.vod-picker__select {
-  width: 9.5rem;
 }
 .vod-picker__auto {
   display: inline-flex;

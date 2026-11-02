@@ -45,7 +45,6 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
-  feature_mindmate_seminar: boolean
   feature_training: boolean
   feature_vod: boolean
   feature_student_learning_space: boolean
@@ -67,7 +66,6 @@ type RowDef = {
 /** Permissions UI only for keys enforced by ``user_has_feature_access`` on the API. */
 const ORG_ACCESS_SUPPORTED_KEYS = new Set<ApiKey>([
   'feature_workshop_chat',
-  'feature_mindmate_seminar',
   'feature_mindbot',
   'feature_mindmate_export',
 ])
@@ -78,12 +76,6 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_WORKSHOP_CHAT',
     labelKey: 'admin.feature.workshopChat',
     hintKey: 'admin.feature.workshopChatHint',
-  },
-  {
-    apiKey: 'feature_mindmate_seminar',
-    envKey: 'FEATURE_MINDMATE_SEMINAR',
-    labelKey: 'admin.feature.mindmateSeminar',
-    hintKey: 'admin.feature.mindmateSeminarHint',
   },
   {
     apiKey: 'feature_training',

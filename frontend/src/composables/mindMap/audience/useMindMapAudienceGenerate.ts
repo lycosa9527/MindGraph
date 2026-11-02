@@ -1,23 +1,24 @@
 /**
  * Mind-map AI generate — 专业程度 instructions, not classic 学段.
  */
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   mergeMindMapAudienceInstructions,
   resolveMindMapAudienceInstructions,
 } from '@/composables/mindMap/audience/aiContentLevelInstructions'
-import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
-import { useAiContentLevelStore, useDiagramStore } from '@/stores'
+import { useAiContentLevelStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
 
 export function useMindMapAudienceGenerate() {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
   const aiContentLevelStore = useAiContentLevelStore()
   const uiStore = useUIStore()

@@ -5,9 +5,15 @@
  */
 import { computed, onUnmounted, provide, ref, watch } from 'vue'
 
+import { ElButton } from 'element-plus'
+
+import { PanelLeftOpen } from '@lucide/vue'
+
 import AppSidebar from '@/components/sidebar/AppSidebar.vue'
 import TrainingCanvasPreview from '@/components/training/TrainingCanvasPreview.vue'
 import TrainingSlideAudio from '@/components/training/TrainingSlideAudio.vue'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { builderSlideSidebarClosed } from '@/composables/training/builderSlideChrome'
 import {
   type TrainingDeckTarget,
   applyDeckPage,
@@ -42,13 +48,31 @@ const props = withDefaults(
     /** Null keeps playback audible and the builder quiet until the editor asks. */
     playAudio?: boolean | null
     step?: TrainingCourseStep | null
+    /** Use the builder slide's sidebar instead of starting open. */
+    useBuilderChrome?: boolean
   }>(),
-  { authoring: false, step: null, playAudio: null }
+  { authoring: false, step: null, playAudio: null, useBuilderChrome: false }
 )
 
 const shouldPlayAudio = computed(() =>
   props.playAudio === null ? !props.authoring : props.playAudio
 )
+const { t } = useLanguage()
+/** Playback pages start open. The builder and its preview share one closed flag. */
+const localSidebarClosed = ref(props.authoring)
+const sharesBuilderChrome = computed(() => props.authoring || props.useBuilderChrome)
+const sidebarClosed = computed({
+  get: () =>
+    sharesBuilderChrome.value ? builderSlideSidebarClosed.value : localSidebarClosed.value,
+  set: (closed: boolean) => {
+    if (sharesBuilderChrome.value) builderSlideSidebarClosed.value = closed
+    else localSidebarClosed.value = closed
+  },
+})
+
+function toggleSlideSidebar(): void {
+  sidebarClosed.value = !sidebarClosed.value
+}
 
 const scopeId = `deck-${Math.random().toString(36).slice(2, 10)}`
 provide(TRAINING_LOCK_SCOPE, scopeId)
@@ -137,12 +161,33 @@ onUnmounted(() => {
     @click.capture="armTrainingDeckNavigation"
   >
     <div class="live-shell">
-      <AppSidebar class="live-shell__side" />
+      <AppSidebar
+        class="live-shell__side"
+        :collapsed="sidebarClosed"
+        @toggle-collapsed="toggleSlideSidebar"
+      />
       <div class="live-shell__main">
+        <ElButton
+          v-if="sidebarClosed"
+          text
+          circle
+          class="live-shell__expand"
+          :title="t('sidebar.expandSidebar')"
+          :aria-label="t('sidebar.expandSidebar')"
+          @click="sidebarClosed = false"
+        >
+          <PanelLeftOpen
+            class="h-[18px] w-[18px]"
+            aria-hidden="true"
+          />
+        </ElButton>
         <TrainingCanvasPreview
           v-if="isCanvas"
           :diagram-type="shownDiagram"
           :interactive="interactive"
+          :publish-bridge="authoring"
+          :follow-walk="!authoring"
+          :step="step"
         />
         <div
           v-else
@@ -191,6 +236,12 @@ onUnmounted(() => {
   min-width: 0;
   min-height: 0;
   flex: 1;
+}
+.live-shell__expand {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  z-index: 5;
 }
 .live-frame__world--full {
   position: absolute;

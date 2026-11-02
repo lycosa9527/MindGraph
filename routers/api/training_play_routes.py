@@ -143,15 +143,21 @@ async def step_course(
         raise HTTPException(status_code=404, detail="Course not found or has no steps")
     current = int(session.get("step_index") or 0)
     live_step = session.get("step") if isinstance(session.get("step"), dict) else None
+    read_at: int | None = 0
     if body.index is not None:
         target = body.index
         mark_at = 1
     else:
-        target, mark_at = resolve_play_cursor(steps, current, live_step, int(body.delta or 0))
+        target, mark_at, read_at = resolve_play_cursor(steps, current, live_step, int(body.delta or 0))
     if target < 0 or target >= len(steps):
         raise HTTPException(status_code=400, detail="Step index out of range")
     extras = _step_extras(course_id, target, steps[target])
     extras["step"]["mark_step"] = mark_at
+    interact = extras["step"].get("interact")
+    if isinstance(interact, dict) and read_at is not None:
+        copied = dict(interact)
+        copied["play_index"] = read_at
+        extras["step"]["interact"] = copied
     extras["step_count"] = len(steps)
     started = time.monotonic()
     try:

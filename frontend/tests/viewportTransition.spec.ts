@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
+import {
+  animateViewportTransition,
+  cancelViewportTransition,
+  viewportFrameAt,
+} from '@/utils/viewportTransition'
 
 const from = { x: 0, y: 0, zoom: 1 }
 const to = { x: 40, y: 0, zoom: 2 }
@@ -37,5 +41,20 @@ describe('viewport transition lanes', () => {
 
     cancelViewportTransition('library-demo')
     await second
+  })
+
+  it('glides the subject in a straight line while zoom eases', () => {
+    const frame = { width: 800, height: 600 }
+    const start = viewportFrameAt(from, to, 0, frame)
+    const end = viewportFrameAt(from, to, 1, frame)
+    expect(start).toEqual(from)
+    expect(end.x).toBeCloseTo(to.x)
+    expect(end.y).toBeCloseTo(to.y)
+    expect(end.zoom).toBeCloseTo(to.zoom)
+    const mid = viewportFrameAt(from, to, 0.5, frame)
+    const worldX = (frame.width / 2 - to.x) / to.zoom
+    const startScreen = worldX * from.zoom + from.x
+    const midScreen = worldX * mid.zoom + mid.x
+    expect(midScreen).toBeCloseTo(startScreen + (frame.width / 2 - startScreen) * 0.5)
   })
 })

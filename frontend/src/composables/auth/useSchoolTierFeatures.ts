@@ -31,7 +31,6 @@ export function useSchoolTierFeatures() {
     )
   )
 
-  const canUseOnlineCollab = computed(() => features.value.online_collab)
   const canUsePresentationTools = computed(() => features.value.presentation_tools)
   const canUseChromeExtension = computed(() => features.value.chrome_extension)
   const canUseApiToken = computed(() => features.value.api_token)
@@ -39,7 +38,6 @@ export function useSchoolTierFeatures() {
   return {
     schoolTier,
     features,
-    canUseOnlineCollab,
     canUsePresentationTools,
     canUseChromeExtension,
     canUseApiToken,

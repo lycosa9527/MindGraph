@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  canBrowserPutPresignedUrl,
   filenameForTrainingUpload,
   uploadTrainingFile,
 } from '@/composables/training/uploadTrainingFile'
@@ -44,7 +45,37 @@ describe('uploadTrainingFile', () => {
     expect(apiRequest).not.toHaveBeenCalled()
   })
 
+  it('skips the browser COS PUT on localhost', async () => {
+    vi.stubGlobal('location', { hostname: 'localhost' })
+    expect(canBrowserPutPresignedUrl()).toBe(false)
+    const put = vi.fn(async () => ({ ok: true }))
+    vi.stubGlobal('fetch', put)
+    const file = new File([new Uint8Array([1])], 'slide.png', { type: 'image/png' })
+    apiRequest.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        key: `courses/${COURSE_ID}/slides/a.png`,
+        asset_id: 'asset-1',
+        put_url: 'https://cos.example/put',
+        backend: 'cos',
+        headers: { 'Content-Type': 'image/png' },
+      }),
+    })
+    apiUpload.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 'asset-1',
+        role: 'slide',
+        url: `/api/training/assets/courses/${COURSE_ID}/slides/a.png`,
+        logical_key: `courses/${COURSE_ID}/slides/a.png`,
+      }),
+    })
+    await uploadTrainingFile(COURSE_ID, 'slide', file)
+    expect(put).not.toHaveBeenCalled()
+  })
+
   it('PUTs to COS then completes without the file body', async () => {
+    vi.stubGlobal('location', { hostname: 'mindgraph.example' })
     const file = new File([new Uint8Array([1, 2, 3])], 'slide.png', {
       type: 'image/png',
     })

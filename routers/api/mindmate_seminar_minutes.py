@@ -8,10 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from models.domain.mindmate_seminar import MindmateSeminarSession
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.background_files import load_folder_session
 from services.features.mindmate_seminar.group_members import user_observes_seminar
 from services.features.mindmate_seminar.minutes_draft import MinutesDraftInput, draft_seminar_minutes
@@ -19,8 +17,6 @@ from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -65,16 +61,6 @@ class SeminarMinutesBody(BaseModel):
         return text
 
 
-async def _require_collab_tier(current_user: User, lang: Language) -> None:
-    async with actor_rls_session(current_user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            current_user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 def _http_error(exc: ValueError) -> HTTPException:
     code = str(exc)
     return HTTPException(status_code=_STATUS.get(code, status.HTTP_400_BAD_REQUEST), detail=code)
@@ -104,10 +90,8 @@ async def create_seminar_minutes_draft(
     body: SeminarMinutesBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
     """Return qwen3.8-flash minutes JSON. The client edits it before anyone else sees it."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_minutes",
         get_rate_limit_identifier(current_user, request),

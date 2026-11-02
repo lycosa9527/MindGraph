@@ -6,7 +6,6 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 import { refreshOfficeEmbedLayout, useMobileDetect } from '@/composables/core/useMobileDetect'
 import { consumeTrainingDeckNavigation } from '@/composables/training/trainingDeckNav'
 import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
-import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -541,13 +540,6 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'MindmateSeminar') {
     const collabCode = to.query.code
     if (typeof collabCode !== 'string' || !collabCode.trim()) {
-      return { name: 'MindMate' }
-    }
-    if (!featureFlagsStore.getFeatureMindmateSeminar()) {
-      return { name: 'MindMate' }
-    }
-    const user = authStore.user
-    if (user && !userCanUseOnlineCollab(user.schoolId, user.schoolTier, user.schoolTierFeatures)) {
       return { name: 'MindMate' }
     }
   }

@@ -118,25 +118,10 @@ export function useCanvasPageEditorShortcuts(options: {
     eventBus.emit('diagram:add_node_requested', {})
   }
 
-  function handleAddBranchKey() {
-    if (isTypingInInput()) return
-    if (diagramStore.type === 'concept_map') return
-    if (
-      diagramStore.type === 'mindmap' ||
-      diagramStore.type === 'mind_map' ||
-      diagramStore.type === 'brace_map' ||
-      diagramStore.type === 'flow_map'
-    ) {
-      eventBus.emit('diagram:add_branch_requested', {})
-    } else {
-      eventBus.emit('diagram:add_node_requested', {})
-    }
-  }
-
   function handleAddChildKey() {
     if (isTypingInInput()) return
     if (diagramStore.type === 'concept_map') return
-    if (diagramStore.type === 'tree_map' || diagramStore.type === 'multi_flow_map') {
+    if (diagramStore.type === 'tree_map') {
       eventBus.emit('diagram:add_node_requested', {})
       return
     }
@@ -144,7 +129,9 @@ export function useCanvasPageEditorShortcuts(options: {
       diagramStore.type === 'mindmap' ||
       diagramStore.type === 'mind_map' ||
       diagramStore.type === 'brace_map' ||
-      diagramStore.type === 'flow_map'
+      diagramStore.type === 'flow_map' ||
+      diagramStore.type === 'multi_flow_map' ||
+      diagramStore.type === 'double_bubble_map'
     ) {
       eventBus.emit('diagram:add_child_requested', {})
     }
@@ -154,11 +141,8 @@ export function useCanvasPageEditorShortcuts(options: {
     if (event.repeat) return
     if (isTypingInInput()) return
     const routed = resolveTabKeyEvent(diagramStore.type)
-    if (routed) {
-      eventBus.emit(routed, {})
-      return
-    }
-    handleAddBranchKey()
+    if (!routed) return
+    eventBus.emit(routed, {})
   }
 
   function handleInsertKey(event: KeyboardEvent) {

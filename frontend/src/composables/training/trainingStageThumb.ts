@@ -39,6 +39,7 @@ export function trainingStepPageKey(step: TrainingCourseStep | null | undefined)
 export function trainingStepThumbKey(step: TrainingCourseStep | null | undefined): string {
   if (!step) return ''
   return [
+    step.id || `pos-${step.position}`,
     trainingStepPageKey(step),
     step.vod_width || '',
     step.vod_height || '',

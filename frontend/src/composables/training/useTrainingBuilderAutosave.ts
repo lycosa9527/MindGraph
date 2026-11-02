@@ -1,4 +1,4 @@
-import { onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -7,6 +7,7 @@ import {
   trainingCourseWriteBody,
 } from '@/composables/training/trainingBuilderSteps'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
+import { parseApiInstant } from '@/utils/beijingClock'
 import { saveTrainingCourse } from '@/utils/trainingApi'
 
 export type TrainingBuilderSyncState = 'idle' | 'saving' | 'saved' | 'error'
@@ -15,31 +16,37 @@ const AUTOSAVE_MS = 700
 
 export function useTrainingBuilderAutosave(options: { persistAllPending: () => Promise<void> }): {
   flush: () => Promise<void>
-  markClean: () => void
-  syncState: ReturnType<typeof ref<TrainingBuilderSyncState>>
+  markClean: (savedAt?: string | null) => void
+  syncState: Ref<TrainingBuilderSyncState>
+  lastSavedAt: Ref<Date | null>
+  isDirty: ComputedRef<boolean>
 } {
   const { t } = useLanguage()
   const notify = useNotifications()
   const builder = useTrainingBuilderStore()
   const syncState = ref<TrainingBuilderSyncState>('idle')
+  const lastSaved = ref('')
+  const lastSavedAt = ref<Date | null>(null)
   let timer = 0
   let generation = 0
-  let lastSaved = ''
   let inflight: Promise<void> | null = null
 
   function documentKey(): string {
     return trainingCourseFingerprint(builder.title, builder.description, builder.steps)
   }
 
-  function markClean(): void {
-    lastSaved = documentKey()
-    syncState.value = lastSaved ? 'saved' : 'idle'
+  const isDirty = computed(() => Boolean(lastSaved.value) && documentKey() !== lastSaved.value)
+
+  function markClean(savedAt?: string | null): void {
+    lastSaved.value = documentKey()
+    lastSavedAt.value = parseApiInstant(savedAt) ?? new Date()
+    syncState.value = lastSaved.value ? 'saved' : 'idle'
   }
 
   async function persistNow(): Promise<void> {
     if (!builder.courseId || !builder.steps.length) return
     const key = documentKey()
-    if (key === lastSaved) return
+    if (key === lastSaved.value) return
     const token = (generation += 1)
     syncState.value = 'saving'
     try {
@@ -51,7 +58,8 @@ export function useTrainingBuilderAutosave(options: { persistAllPending: () => P
       )
       if (token !== generation) return
       mergeSavedStepMeta(builder.steps, saved.steps)
-      lastSaved = documentKey()
+      lastSaved.value = documentKey()
+      lastSavedAt.value = parseApiInstant(saved.updated_at) ?? new Date()
       syncState.value = 'saved'
     } catch (error) {
       if (token !== generation) return
@@ -75,7 +83,7 @@ export function useTrainingBuilderAutosave(options: { persistAllPending: () => P
 
   function schedule(): void {
     if (!builder.courseId) return
-    if (documentKey() === lastSaved) return
+    if (documentKey() === lastSaved.value) return
     window.clearTimeout(timer)
     timer = window.setTimeout(() => {
       void flush().catch((error: unknown) => {
@@ -88,7 +96,7 @@ export function useTrainingBuilderAutosave(options: { persistAllPending: () => P
   watch(
     () => [builder.title, builder.description, builder.steps] as const,
     () => {
-      if (!lastSaved) return
+      if (!lastSaved.value) return
       schedule()
     },
     { deep: true }
@@ -96,7 +104,7 @@ export function useTrainingBuilderAutosave(options: { persistAllPending: () => P
 
   function onHidden(): void {
     if (document.visibilityState !== 'hidden') return
-    if (documentKey() !== lastSaved) {
+    if (documentKey() !== lastSaved.value) {
       void flush().catch(() => undefined)
     }
   }
@@ -107,7 +115,7 @@ export function useTrainingBuilderAutosave(options: { persistAllPending: () => P
     document.removeEventListener('visibilitychange', onHidden)
     window.removeEventListener('pagehide', onHidden)
     window.clearTimeout(timer)
-    if (builder.courseId && documentKey() !== lastSaved) {
+    if (builder.courseId && documentKey() !== lastSaved.value) {
       void persistNow().catch(() => undefined)
     }
   })
@@ -116,5 +124,7 @@ export function useTrainingBuilderAutosave(options: { persistAllPending: () => P
     flush,
     markClean,
     syncState,
+    lastSavedAt,
+    isDirty,
   }
 }

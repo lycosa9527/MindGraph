@@ -55,6 +55,12 @@ export function filenameForTrainingUpload(file: File, contentType: string): stri
   return ext ? `${name}${ext}` : name
 }
 
+export function canBrowserPutPresignedUrl(): boolean {
+  if (typeof window === 'undefined') return false
+  const host = window.location.hostname
+  return host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]'
+}
+
 function isBrowserCorsOrNetworkFailure(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   const message = error.message || ''
@@ -127,7 +133,7 @@ export async function uploadTrainingFile(
       content_type: contentType,
       size_bytes: file.size,
     })
-    if (init.put_url) {
+    if (init.put_url && canBrowserPutPresignedUrl()) {
       try {
         await putToPresignedUrl(init.put_url, file, init.headers || {})
         return completeUpload(courseId, role, init, filename)

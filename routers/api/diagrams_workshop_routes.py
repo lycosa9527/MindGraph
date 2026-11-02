@@ -14,21 +14,15 @@ from sqlalchemy import select
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from models.domain.messages import Language
 from models.requests.requests_diagram import (
     WorkshopJoinOrganizationRequest,
     WorkshopStartRequest,
 )
-from routers.auth.dependencies import get_language_dependency
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.learning_space.assignments import assert_homework_diagram_writable
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from utils.auth import get_current_user
-from utils.auth.school_tier import (
-    TIER_FEATURE_ONLINE_COLLAB,
-    assert_user_has_school_tier_feature,
-)
 from utils.auth.thinking_coin_config import EVENT_WORKSHOP_JOIN
 from utils.db.session_open import actor_rls_session, user_rls_session
 
@@ -53,27 +47,12 @@ async def _owner_has_active_workshop(diagram_id: str, user_id: int) -> bool:
         return bool(code and str(code).strip())
 
 
-async def _require_online_collab_tier(
-    current_user: User,
-    lang: Language,
-) -> None:
-    """Require online collab tier."""
-    async with actor_rls_session(current_user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            current_user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 @router.post("/diagrams/{diagram_id}/workshop/start")
 async def start_workshop(
     diagram_id: str,
     request: Request,
     body: Optional[WorkshopStartRequest] = Body(default=None),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """
     Start presentation mode for a diagram (live collaborative editing).
@@ -83,7 +62,6 @@ async def start_workshop(
 
     Rate limited: 10 requests per minute per user.
     """
-    await _require_online_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=10, window_seconds=60)
     async with actor_rls_session(current_user) as db:
@@ -193,14 +171,12 @@ async def join_workshop(
     request: Request,
     code: str = Query(..., description="Presentation code (xxx-xxx format)"),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """
     Join presentation mode using a share code.
 
     Rate limited: 20 requests per minute per user.
     """
-    await _require_online_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=20, window_seconds=60)
 
@@ -237,12 +213,10 @@ async def join_workshop(
 async def list_organization_workshop_sessions(
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """
     List active organization-scoped workshops for the same school (校内).
     """
-    await _require_online_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=30, window_seconds=60)
 
@@ -255,12 +229,10 @@ async def join_workshop_organization(
     request: Request,
     body: WorkshopJoinOrganizationRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """
     Join a 校内 session by diagram id (no meeting code in the UI).
     """
-    await _require_online_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=20, window_seconds=60)
 

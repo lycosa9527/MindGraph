@@ -13,6 +13,10 @@ import {
   cancelScheduledLearningSheetPick,
   scheduleLearningSheetPickNodeClick,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import {
+  cancelTrainingDragKnock,
+  trainingDragKnockNode,
+} from '@/composables/training/trainingDragKnock'
 import type { MindGraphNode } from '@/types'
 
 const FIT_TRIGGERING_CHANGE_TYPES = ['position', 'dimensions', 'remove', 'add'] as const
@@ -131,6 +135,10 @@ export function useDiagramCanvasVueFlowHandlers(
   onNodeClick(({ node }) => {
     const mindNode = node as unknown as MindGraphNode
     if (applyFormatBrushToNode(mindNode.id)) return
+    if (trainingDragKnockNode(mindNode.id)) {
+      diagramStore.clearSelection()
+      return
+    }
     if (scheduleLearningSheetPickNodeClick(mindNode.id)) return
     eventBus.emit('canvas:node_clicked', { nodeId: mindNode.id })
     emit('nodeClick', mindNode)
@@ -138,6 +146,7 @@ export function useDiagramCanvasVueFlowHandlers(
 
   onNodeDoubleClick(({ node }) => {
     cancelScheduledLearningSheetPick()
+    cancelTrainingDragKnock()
     emit('nodeDoubleClick', node as unknown as MindGraphNode)
   })
 

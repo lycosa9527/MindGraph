@@ -44,7 +44,6 @@ SCHOOL_TIER_TRIAL = school_tier_defs.SCHOOL_TIER_TRIAL
 SCHOOL_TIERS = school_tier_defs.SCHOOL_TIERS
 TIER_FEATURE_API_TOKEN = school_tier_defs.TIER_FEATURE_API_TOKEN
 TIER_FEATURE_CHROME_EXTENSION = school_tier_defs.TIER_FEATURE_CHROME_EXTENSION
-TIER_FEATURE_ONLINE_COLLAB = school_tier_defs.TIER_FEATURE_ONLINE_COLLAB
 TIER_FEATURE_PRESENTATION_TOOLS = school_tier_defs.TIER_FEATURE_PRESENTATION_TOOLS
 diagram_limit_reached_message = school_tier_defs.diagram_limit_reached_message
 format_diagram_save_limit_error = school_tier_defs.format_diagram_save_limit_error

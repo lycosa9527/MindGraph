@@ -20,23 +20,22 @@ import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import MindmateSeminarStartPicker from '@/components/mindmate/MindmateSeminarStartPicker.vue'
 import MindmateSeminarBriefForm from '@/components/mindmate/MindmateSeminarBriefForm.vue'
+import MindmateSeminarStartPicker from '@/components/mindmate/MindmateSeminarStartPicker.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import {
   applyThinkingCoinMutation,
   extractThinkingCoinsFooter,
 } from '@/composables/auth/useThinkingCoinSync'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { authFetch } from '@/utils/api'
+import type { SeminarBrief } from '@/utils/mindmateSeminarBrief'
+import { seminarTitleFromTopic } from '@/utils/mindmateSeminarHome'
 import { notifyMindmateSeminarLibraryChanged } from '@/utils/mindmateSeminarLibrarySave'
 import {
   formatMindmateSeminarCode,
   trackLocalMindmateSeminarSession,
 } from '@/utils/mindmateSeminarSessions'
-import type { SeminarBrief } from '@/utils/mindmateSeminarBrief'
-import { seminarTitleFromTopic } from '@/utils/mindmateSeminarHome'
 
 const props = withDefaults(
   defineProps<{
@@ -73,8 +72,6 @@ const CODE_SAFE_RE = /[^2-9A-HJ-KM-NP-Z]/g
 const { t } = useLanguage()
 const notify = useNotifications()
 const router = useRouter()
-const { canUseOnlineCollab } = useSchoolTierFeatures()
-
 const collabPopoverVisible = ref(false)
 const briefDialogOpen = ref(false)
 const collabPanelMode = ref<'organization' | 'network' | 'start'>('network')
@@ -408,7 +405,7 @@ defineExpose({
 </script>
 
 <template>
-  <template v-if="canUseOnlineCollab && inConversation">
+  <template v-if="inConversation">
     <ElButton
       type="default"
       class="join-workshop-btn join-workshop-btn--label"
@@ -432,7 +429,7 @@ defineExpose({
     </ElDialog>
   </template>
   <ElPopover
-    v-else-if="canUseOnlineCollab"
+    v-else
     v-model:visible="collabPopoverVisible"
     :trigger="'manual' as 'click'"
     placement="bottom-end"

@@ -250,7 +250,6 @@ export interface AdminFeatureFlagsPayload {
   feature_smart_response?: boolean
   feature_teacher_usage?: boolean
   feature_workshop_chat?: boolean
-  feature_mindmate_seminar?: boolean
   feature_training?: boolean
   feature_vod?: boolean
   feature_markets?: boolean

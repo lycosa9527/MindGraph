@@ -12,7 +12,9 @@ import asyncio
 import logging
 from typing import Optional, Tuple
 
-from config.settings import config
+from services.features.mindmate_seminar.idle_monitor import (
+    start_mindmate_seminar_idle_monitor,
+)
 from services.features.ws_pg_notify_fanout import start_pg_notify_listener
 from services.online_collab import start_online_collab_cleanup_scheduler
 from services.online_collab.core.online_collab_manager import start_online_collab_manager
@@ -26,24 +28,16 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
-MMC_IDLE_MONITOR_START = None
-if config.FEATURE_MINDMATE_SEMINAR:
-    from services.features.mindmate_seminar.idle_monitor import (
-        start_mindmate_seminar_idle_monitor as MMC_IDLE_MONITOR_START,
-    )
 
-
-def _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker: bool) -> Optional[asyncio.Task]:
-    if MMC_IDLE_MONITOR_START is None:
-        return None
+def _start_mindmate_seminar_idle_monitor(is_main_worker: bool) -> Optional[asyncio.Task]:
     try:
-        task = MMC_IDLE_MONITOR_START()
+        task = start_mindmate_seminar_idle_monitor()
         if is_main_worker:
-            logger.debug("MindMate collab idle monitor started")
+            logger.debug("MindMate seminar idle monitor started")
         return task
     except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
-            logger.warning("Failed to start MindMate collab idle monitor: %s", exc)
+            logger.warning("Failed to start MindMate seminar idle monitor: %s", exc)
         return None
 
 
@@ -89,7 +83,7 @@ async def start_online_collab_subsystem_async(
         if is_main_worker:
             logger.warning("Failed to start workshop session manager: %s", exc)
 
-    seminar_idle_task = _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker)
+    seminar_idle_task = _start_mindmate_seminar_idle_monitor(is_main_worker)
 
     try:
         start_pg_notify_listener()

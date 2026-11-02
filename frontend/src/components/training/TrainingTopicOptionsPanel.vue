@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
+import { ListChecks } from '@lucide/vue'
+
 import { useLanguage } from '@/composables'
 import {
   TRAINING_TOPICS_DRAG,
@@ -94,6 +96,10 @@ watch(dual, () => {
       @dragend="onDragEnd"
       @click="beginEdit"
     >
+      <ListChecks
+        :size="15"
+        aria-hidden="true"
+      />
       <I18nText k="training.builder.topicChoices" />
       <span
         v-if="count"

@@ -13,12 +13,12 @@ import {
   stage2StageNameForType,
 } from '@/composables/aiBrainstorm/stageHelpers'
 import { i18n } from '@/i18n'
-import { useDiagramStore } from '@/stores'
+import type { DiagramSession } from '@/stores/diagram'
 import type { NodeSuggestion } from '@/types/panels'
 import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 
 export interface ApplyAiBrainstormContext {
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: DiagramSession
   diagramKey: string
   toApply: NodeSuggestion[]
   stage: string | undefined

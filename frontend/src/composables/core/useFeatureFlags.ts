@@ -41,7 +41,6 @@ export function useFeatureFlags() {
   const featureSmartResponse = computed(() => live.value?.feature_smart_response ?? false)
   const featureTeacherUsage = computed(() => live.value?.feature_teacher_usage ?? false)
   const featureWorkshopChat = computed(() => live.value?.feature_workshop_chat ?? false)
-  const featureMindmateSeminar = computed(() => live.value?.feature_mindmate_seminar ?? false)
   const featureTraining = computed(() => live.value?.feature_training ?? false)
   const featureVod = computed(() => live.value?.feature_vod ?? false)
   const featureStudentLearningSpace = computed(
@@ -70,7 +69,6 @@ export function useFeatureFlags() {
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,
-    featureMindmateSeminar,
     featureTraining,
     featureVod,
     featureStudentLearningSpace,

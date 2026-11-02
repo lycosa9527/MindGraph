@@ -2,7 +2,7 @@
 Regression tests for admin feature hot on/off.
 
 Covers feature_flag_gate prefixes, workshop WS await on org-access, env reload
-fan-out origin skip, and MindMate collab feature key mapping.
+fan-out origin skip, and MindMate seminar staying outside the flag map.
 """
 
 from __future__ import annotations
@@ -42,14 +42,10 @@ def _request(path: str, method: str = "GET") -> Request:
 
 
 @pytest.mark.asyncio
-async def test_feature_flag_gate_allows_mindmate_org_roster_when_collab_off():
-    """Seminar colleague list is not behind FEATURE_MINDMATE_SEMINAR."""
+async def test_feature_flag_gate_allows_seminar_without_a_flag():
+    """MindMate seminar is a regular service and is not behind a feature flag."""
     call_next = AsyncMock(return_value=MagicMock(status_code=200))
-    with patch(
-        "services.infrastructure.http.feature_gate.config",
-        SimpleNamespace(FEATURE_MINDMATE_SEMINAR=False, FEATURE_WORKSHOP_CHAT=False),
-    ):
-        response = await feature_flag_gate(_request("/api/mindmate/org-members"), call_next)
+    response = await feature_flag_gate(_request("/api/mindmate/seminar/start"), call_next)
     call_next.assert_awaited_once()
     assert response.status_code == 200
 
@@ -245,10 +241,10 @@ async def test_feature_flag_gate_allows_mcp_when_enabled():
     call_next.assert_awaited_once()
 
 
-def test_mindmate_seminar_feature_key_mapped_and_permissions_supported():
-    """Permissions for MindMate collab must resolve FEATURE_MINDMATE_SEMINAR."""
-    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mindmate_seminar"] == "FEATURE_MINDMATE_SEMINAR"
-    assert "feature_mindmate_seminar" in FEATURE_KEYS_WITH_ORG_ACCESS
+def test_mindmate_seminar_is_not_a_feature_flag():
+    """Seminar is always on, so it has no env key and no org-grant row."""
+    assert "feature_mindmate_seminar" not in FEATURE_KEY_TO_CONFIG_ATTR
+    assert "feature_mindmate_seminar" not in FEATURE_KEYS_WITH_ORG_ACCESS
 
 
 def test_workshop_chat_is_grant_gated_to_preview_orgs():

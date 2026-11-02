@@ -40,6 +40,10 @@ export interface TrainingStepOverlay {
   src?: string | null
   depth?: TrainingRoleDepth
   text?: string
+  /** Guided-reading node this mark belongs to. Absent marks stay on the slide. */
+  node_id?: string
+  /** Uploaded picture placed like a mascot, kept distinct from a WebP mascot. */
+  link?: 'image'
 }
 
 export interface TrainingCourseStep {
@@ -72,6 +76,53 @@ export interface TrainingCourseStep {
   notes?: string | null
   mark_step?: number
   mark_steps?: number
+  /** Guided reading, drag-to-build, or a node quiz. Absent means off. */
+  interact?: TrainingInteract | null
+  /** Saved canvas spec for this slide. Reloads the same nodes and edges. */
+  diagram_spec?: Record<string, unknown> | null
+}
+
+export type TrainingInteractMode = 'read' | 'drag' | 'quiz'
+
+export interface TrainingInteractBlank {
+  node_id: string
+  answer: string
+  /** Shown when a drag-to-build drop on this node is wrong. */
+  hint?: string
+}
+
+export interface TrainingInteractChoice {
+  id: string
+  label: string
+  correct: boolean
+}
+
+export interface TrainingInteractQuiz {
+  node_id: string
+  prompt: string
+  choices: TrainingInteractChoice[]
+}
+
+export type TrainingInteractExtraKind = 'note' | 'mascot' | 'video' | 'image'
+
+export interface TrainingInteractNodeExtra {
+  node_id: string
+  kinds: TrainingInteractExtraKind[]
+  /** Library video that plays when the walk reaches this node. */
+  vod_media_id?: string | null
+}
+
+export interface TrainingInteract {
+  mode: TrainingInteractMode
+  read_order: string[]
+  blanks: TrainingInteractBlank[]
+  quizzes: TrainingInteractQuiz[]
+  /** Teacher committed the walk order. Playback uses guided reading. */
+  sequence_saved: boolean
+  /** Live playback position in read_order. Not stored on the course. */
+  play_index?: number
+  /** Video linked to a walk node. Notes, mascots, and pictures live on overlays. */
+  node_extras: TrainingInteractNodeExtra[]
 }
 
 export interface TrainingCourse {

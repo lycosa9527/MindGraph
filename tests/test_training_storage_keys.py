@@ -10,7 +10,12 @@ from config.cos_env_prefix import cos_app_identity, cos_feature_prefix
 from config.settings import config
 from services.features.training.courses.constants import DOUBLE_BUBBLE_COURSE_ID
 from services.features.training.storage import backend as storage_backend
-from services.features.training.storage.backend import delete_course_prefix
+from services.features.training.storage.backend import (
+    STORAGE_COS,
+    STORAGE_LOCAL,
+    delete_course_prefix,
+    put_bytes_sync,
+)
 from services.features.training.storage.keys import (
     build_object_key,
     course_folder,
@@ -108,6 +113,75 @@ def test_cos_feature_prefix_follows_environment(
     assert cos_feature_prefix("training", "training/mindgraph-e2e-smoke") == ("training/mindgraph-e2e-smoke")
     with pytest.raises(ValueError):
         cos_feature_prefix("  ")
+
+
+def test_course_builder_load_from_cos_defaults_true(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unset COURSE_BUILDER_LOAD_FROM_COS stays on (local WSL sets false in .env)."""
+    monkeypatch.delenv("COURSE_BUILDER_LOAD_FROM_COS", raising=False)
+    config.refresh_env_cache()
+    try:
+        assert config.COURSE_BUILDER_LOAD_FROM_COS is True
+        monkeypatch.setenv("COURSE_BUILDER_LOAD_FROM_COS", "false")
+        config.refresh_env_cache()
+        assert config.COURSE_BUILDER_LOAD_FROM_COS is False
+    finally:
+        config.refresh_env_cache()
+
+
+def test_course_media_uses_cos_requires_both_gates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """COS credentials alone do not send local course files to the bucket."""
+    monkeypatch.setattr(storage_backend, "cos_training_enabled", lambda: True)
+    monkeypatch.setattr(type(config), "COURSE_BUILDER_LOAD_FROM_COS", False)
+    assert storage_backend.course_media_uses_cos() is False
+    monkeypatch.setattr(type(config), "COURSE_BUILDER_LOAD_FROM_COS", True)
+    assert storage_backend.course_media_uses_cos() is True
+    monkeypatch.setattr(storage_backend, "cos_training_enabled", lambda: False)
+    assert storage_backend.course_media_uses_cos() is False
+
+
+def test_put_bytes_stays_local_when_course_builder_gate_off(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """COURSE_BUILDER_LOAD_FROM_COS=false writes course files to disk only."""
+    monkeypatch.setattr(storage_backend, "cos_training_enabled", lambda: True)
+    monkeypatch.setattr(storage_backend, "course_media_uses_cos", lambda: False)
+    monkeypatch.chdir(tmp_path)
+    uploaded: list[str] = []
+    monkeypatch.setattr(
+        storage_backend,
+        "upload_bytes",
+        lambda *_args, **_kwargs: uploaded.append("cos") or True,
+    )
+    key = f"courses/{DOUBLE_BUBBLE_COURSE_ID}/cover.png"
+    put_bytes_sync(key, b"png-bytes", content_type="image/png")
+    assert not uploaded
+    assert storage_backend.storage_backend() == STORAGE_LOCAL
+    assert (tmp_path / "static" / "training" / key).read_bytes() == b"png-bytes"
+
+
+def test_put_bytes_uploads_cos_when_hosted(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test/prod persist course files to COS."""
+    monkeypatch.setattr(storage_backend, "cos_training_enabled", lambda: True)
+    monkeypatch.setattr(storage_backend, "course_media_uses_cos", lambda: True)
+    monkeypatch.chdir(tmp_path)
+    uploaded: list[str] = []
+    monkeypatch.setattr(
+        storage_backend,
+        "upload_bytes",
+        lambda *_args, **_kwargs: uploaded.append("cos") or True,
+    )
+    key = f"courses/{DOUBLE_BUBBLE_COURSE_ID}/cover.png"
+    put_bytes_sync(key, b"png-bytes", content_type="image/png")
+    assert uploaded == ["cos"]
+    assert storage_backend.storage_backend() == STORAGE_COS
 
 
 def test_training_prefix_follows_environment(

@@ -4,7 +4,7 @@ import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { notify } from '@/composables/core/notifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { i18n } from '@/i18n'
-import { useDiagramStore } from '@/stores'
+import type { DiagramSession } from '@/stores/diagram'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 
@@ -34,10 +34,7 @@ const PROTECTED_NODE_IDS = new Set([
   'outer-boundary',
 ])
 
-function isProtectedNodeId(
-  nodeId: string,
-  diagramStore: ReturnType<typeof useDiagramStore>
-): boolean {
+function isProtectedNodeId(nodeId: string, diagramStore: DiagramSession): boolean {
   if (PROTECTED_NODE_IDS.has(nodeId)) return true
   const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
   if (!node) return true
@@ -90,7 +87,7 @@ export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
     return true
   }
 
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
 
   if (!diagramStore.isLearningSheet) {
     diagramStore.setLearningSheetMode(true)
@@ -129,7 +126,7 @@ export function resetLearningSheetCustomModeUi(): void {
 
 export function toggleLearningSheetAnswersVisibility(): boolean {
   if (!learningSheetAuthoringAllowed()) return false
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   if (!diagramStore.isLearningSheet) {
     return false
   }
@@ -143,7 +140,7 @@ export function restoreLearningSheetUiFromDiagram(): void {
     resetLearningSheetCustomModeUi()
     return
   }
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   if (!diagramStore.isLearningSheet) {
     resetLearningSheetCustomModeUi()
     return
@@ -158,7 +155,7 @@ export function restoreLearningSheetUiFromDiagram(): void {
  * (teacher presents the worksheet as-is).
  */
 export function suspendLearningSheetForPresentation(): void {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   if (!diagramStore.isLearningSheet && !learningSheetFloatBarOpen.value) {
     learningSheetFloatBarBeforePresentation.value = false
     return
@@ -173,7 +170,7 @@ export function resumeLearningSheetAfterPresentation(): void {
     learningSheetFloatBarBeforePresentation.value = false
     return
   }
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   if (
     learningSheetFloatBarBeforePresentation.value &&
     diagramStore.isLearningSheet &&

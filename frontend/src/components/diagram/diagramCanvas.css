@@ -47,6 +47,17 @@
   cursor: grabbing;
 }
 
+/* Trackpad: two-finger pan should grab even when the gesture starts on a node. */
+.diagram-canvas.diagram-canvas--hand-tool .vue-flow__node,
+.diagram-canvas.diagram-canvas--hand-tool .vue-flow__edge {
+  cursor: grab;
+}
+
+.diagram-canvas.diagram-canvas--hand-tool .vue-flow__pane.dragging .vue-flow__node,
+.diagram-canvas.diagram-canvas--hand-tool .vue-flow__pane.dragging .vue-flow__edge {
+  cursor: grabbing;
+}
+
 .vue-flow-wrapper {
   transition: filter 0.2s ease;
 }

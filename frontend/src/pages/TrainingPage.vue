@@ -16,6 +16,7 @@ import {
   requestTrainingStart,
   requestTrainingTakeover,
 } from '@/composables/training/trainingCommands'
+import { mergeSavedCourseCard } from '@/composables/training/trainingCourseTitle'
 import { useTrainingHeartbeat } from '@/composables/training/useTrainingHeartbeat'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
@@ -65,6 +66,20 @@ async function applyCourse(course: TrainingCourse): Promise<void> {
 function onSelectOrg(orgId: number | null): void {
   preview.value = null
   requestTrainingSelectOrg(orgId)
+}
+
+function onCourseRenamed(saved: TrainingCourse): void {
+  training.courses = training.courses.map((row) =>
+    row.id === saved.id ? mergeSavedCourseCard(row, saved) : row
+  )
+  if (preview.value?.id === saved.id) {
+    preview.value = mergeSavedCourseCard(preview.value, saved)
+  }
+}
+
+function onCourseDeleted(courseId: string): void {
+  training.courses = training.courses.filter((row) => row.id !== courseId)
+  if (preview.value?.id === courseId) preview.value = null
 }
 
 onMounted(() => {
@@ -122,6 +137,8 @@ onMounted(() => {
         :courses="training.courses"
         :active-course-id="training.snapshot.course_id ?? null"
         @select="applyCourse"
+        @renamed="onCourseRenamed"
+        @deleted="onCourseDeleted"
       />
     </div>
     <TrainingLandingPreview

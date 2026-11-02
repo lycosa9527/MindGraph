@@ -12,9 +12,11 @@ import { AppSidebar } from '@/components/sidebar'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
+import { useTrainingBuilderSidebar } from '@/composables/training/useTrainingBuilderSidebar'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
+import { isTrainingBuilderPath } from '@/utils/trainingClient'
 
 const route = useRoute()
 
@@ -31,10 +33,13 @@ const uiStore = useUIStore()
 const { t } = useLanguage()
 const { canViewSettingsSubtab } = useAdminAccess()
 
-/** Inline expand control exists on MindMate, MindGraph, Showcase, Voice Notes. */
+useTrainingBuilderSidebar()
+
+/** Inline expand control exists on MindMate, MindGraph, Showcase, Voice Notes, Learning Space, and Course Builder. */
 const showCollapsedSidebarExpand = computed(
   () =>
     uiStore.sidebarCollapsed &&
+    !isTrainingBuilderPath(route.path) &&
     !route.path.startsWith('/mindmate') &&
     !route.path.startsWith('/mindgraph') &&
     !route.path.startsWith('/showcase') &&
@@ -58,6 +63,11 @@ const shouldBlurGuestMain = computed(() => isGuest.value)
  */
 const overlayIcpOnLanding = computed(
   () => route.path.startsWith('/mindgraph') || route.path.startsWith('/mindmate')
+)
+
+/** Course builder uses the full canvas; the filing number stays on other pages. */
+const showIcpFooter = computed(
+  () => !hideAppSidebar.value && !isTrainingBuilderPath(route.path)
 )
 </script>
 
@@ -94,7 +104,7 @@ const overlayIcpOnLanding = computed(
           <slot />
         </div>
         <div
-          v-if="!hideAppSidebar"
+          v-if="showIcpFooter"
           class="icp-footer"
           :class="{ 'icp-footer--overlay': overlayIcpOnLanding }"
         >

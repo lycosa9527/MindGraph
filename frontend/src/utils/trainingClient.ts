@@ -33,8 +33,12 @@ export function isTrainingRemotePath(path: string): boolean {
   return path === '/m/training' || path.startsWith('/m/training/')
 }
 
+export function isTrainingBuilderPath(path: string): boolean {
+  return path.startsWith('/training/builder')
+}
+
 export function shouldHideTrainingDesktopChrome(path: string): boolean {
-  return isMobileRoutePath(path) || path.startsWith('/training/builder')
+  return isMobileRoutePath(path) || isTrainingBuilderPath(path)
 }
 
 export function shouldHoldTrainingHostOnMobile(

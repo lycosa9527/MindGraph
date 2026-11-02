@@ -4,6 +4,7 @@
  */
 import { type InjectionKey, type Ref, inject, toRef } from 'vue'
 
+import { builderDiagramSession } from '@/composables/training/builderDiagramBridge'
 import { type DiagramSession, useDiagramStore } from '@/stores/diagram'
 
 export const DiagramSessionKey: InjectionKey<DiagramSession> = Symbol('DiagramSession')
@@ -15,7 +16,15 @@ export const DiagramSessionKey: InjectionKey<DiagramSession> = Symbol('DiagramSe
 export function useDiagramSession(): DiagramSession {
   const injected = inject(DiagramSessionKey, null)
   if (injected) return injected
-  return useDiagramStore() as unknown as DiagramSession
+  return resolvePaintDiagramSession()
+}
+
+/**
+ * Pinia stores cannot inject. Prefer the builder canvas session when published,
+ * otherwise the editor Pinia store (standalone /canvas).
+ */
+export function resolvePaintDiagramSession(): DiagramSession {
+  return builderDiagramSession.value ?? (useDiagramStore() as unknown as DiagramSession)
 }
 
 /**

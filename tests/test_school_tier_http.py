@@ -10,7 +10,6 @@ import pytest
 from tests.typing_helpers import as_user
 from utils.auth.school_tier import (
     TIER_FEATURE_API_TOKEN,
-    TIER_FEATURE_ONLINE_COLLAB,
     assert_user_has_school_tier_feature,
 )
 
@@ -64,34 +63,12 @@ def fixture_lite_org_user(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.asyncio
-async def test_lite_tier_allows_online_collab(lite_org_user: SimpleNamespace) -> None:
-    """Lite schools can start online collaboration."""
-    await assert_user_has_school_tier_feature(
-        AsyncMock(),
-        as_user(lite_org_user),
-        TIER_FEATURE_ONLINE_COLLAB,
-        "en",
-    )
-
-
-@pytest.mark.asyncio
 async def test_lite_tier_allows_api_token(lite_org_user: SimpleNamespace) -> None:
     """Lite schools can mint an API token."""
     await assert_user_has_school_tier_feature(
         AsyncMock(),
         as_user(lite_org_user),
         TIER_FEATURE_API_TOKEN,
-        "en",
-    )
-
-
-@pytest.mark.asyncio
-async def test_trial_tier_allows_online_collab(trial_org_user: SimpleNamespace) -> None:
-    """Trial schools can start online collaboration."""
-    await assert_user_has_school_tier_feature(
-        AsyncMock(),
-        as_user(trial_org_user),
-        TIER_FEATURE_ONLINE_COLLAB,
         "en",
     )
 

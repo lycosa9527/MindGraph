@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 
-import { useDiagramStore } from '@/stores/diagram'
+import { resolvePaintDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingTopicOption } from '@/types/training'
 import { postTrainingActivity } from '@/utils/trainingApi'
@@ -12,14 +12,13 @@ export function useTrainingCanvasGenerate(
   handleAIGenerate: (options?: { topicOverride?: string }) => Promise<void> | void
 ): void {
   const training = useTrainingStore()
-  const diagramStore = useDiagramStore()
   let chipInFlight = false
 
   watch(
     () => training.pendingJump,
     (option) => {
       if (!option) return
-      applyTrainingTopicToDiagram(diagramStore, option)
+      applyTrainingTopicToDiagram(resolvePaintDiagramSession(), option)
       training.setPendingJump(null)
     }
   )
@@ -34,7 +33,7 @@ export function useTrainingCanvasGenerate(
 
   async function runChipGenerate(option: TrainingTopicOption): Promise<void> {
     chipInFlight = true
-    applyTrainingTopicToDiagram(diagramStore, option)
+    applyTrainingTopicToDiagram(resolvePaintDiagramSession(), option)
     const topic = chipTopicOverride(option)
     training.setPendingChip(null)
     const activity = {

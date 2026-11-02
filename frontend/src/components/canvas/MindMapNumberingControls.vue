@@ -13,7 +13,7 @@ import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   MIND_MAP_NUMBERING_GLYPH_PRESETS,
   MIND_MAP_NUMBERING_NESTED_PRESETS,
@@ -39,7 +39,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 type NumberingVisibility = 'enable' | 'hide'
 

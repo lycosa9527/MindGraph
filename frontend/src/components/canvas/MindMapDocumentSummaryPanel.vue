@@ -32,6 +32,7 @@ import { useBrowserPluginInstalled } from '@/composables/browserPluginPresence'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCenter/useFileCenter'
 import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
@@ -45,7 +46,6 @@ import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocum
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_MAX_INPUT_CHARS } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
-import { useDiagramStore } from '@/stores'
 import { urlRequiresBrowserFileExtract } from '@/utils/browserFileExtractUrl'
 import { diagramSourceKindFromDocument } from '@/utils/diagramSourceKind'
 import { docSummarySourceLabel, toDocSummaryMarkdownName } from '@/utils/docSummaryMarkdownName'
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const { featureKnowledgeSpace } = useFeatureFlags()
 const { canUseChromeExtension } = useSchoolTierFeatures()
 const browserPluginInstalled = useBrowserPluginInstalled()

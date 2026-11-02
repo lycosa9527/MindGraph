@@ -359,7 +359,8 @@ run_frontend() {
     tests/applyTrainingSnapshot.spec.ts tests/trainingStore.spec.ts \
     tests/trainingClient.spec.ts tests/useTrainingFollow.spec.ts \
     tests/useTrainingHeartbeat.spec.ts tests/trainingPadAnchor.spec.ts \
-    tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
+    tests/trainingCourses.spec.ts tests/trainingCourseTitle.spec.ts \
+    tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
     tests/trainingUiLock.spec.ts tests/deliverExportFile.spec.ts tests/schoolDiagramCard.spec.ts \
     tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \

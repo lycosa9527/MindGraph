@@ -4,6 +4,13 @@ import { useRoute } from 'vue-router'
 import { useLanguage, useNotifications } from '@/composables'
 import { refreshUserDropdownMenu } from '@/composables/sidebar/useUserDropdownMenu'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
+import {
+  clearBuilderDiagramBinding,
+  isBoundToStep,
+  noteBuilderStepRemoved,
+  noteBuilderStepsInserted,
+  syncBoundBuilderStep,
+} from '@/composables/training/builderDiagramBridge'
 import { uploadedSlideSteps } from '@/composables/training/trainingBuilderSteps'
 import { requestTrainingModalsClose } from '@/composables/training/trainingCommands'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
@@ -17,6 +24,8 @@ import {
 import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
 import { useTrainingBuilderAutosave } from '@/composables/training/useTrainingBuilderAutosave'
+import { useTrainingBuilderSaveStatus } from '@/composables/training/useTrainingBuilderSaveStatus'
+import { flushPublishedBuilderSpec } from '@/composables/training/trainingCanvasSpec'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
 import { TRAINING_MODALS } from '@/config/trainingUiTargets'
 import { useTrainingStore } from '@/stores/training'
@@ -35,7 +44,8 @@ export type TrainingBuilderSessionApi = {
   onTopicsDrop: (pos: { x: number; y: number }) => void
   onLockArm: () => void
   onLock: (index: number) => void
-  syncState: ReturnType<typeof useTrainingBuilderAutosave>['syncState']
+  saveLabel: ReturnType<typeof useTrainingBuilderSaveStatus>['saveLabel']
+  saveTone: ReturnType<typeof useTrainingBuilderSaveStatus>['saveTone']
 }
 
 export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
@@ -44,7 +54,10 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   const route = useRoute()
   const builder = useTrainingBuilderStore()
   const { rememberIfNeeded, persistAllPending } = useTrainingBuilderThumbs()
-  const { flush, markClean, syncState } = useTrainingBuilderAutosave({ persistAllPending })
+  const { flush, markClean, syncState, lastSavedAt, isDirty } = useTrainingBuilderAutosave({
+    persistAllPending,
+  })
+  const { saveLabel, saveTone } = useTrainingBuilderSaveStatus(syncState, lastSavedAt, isDirty)
 
   useTrainingAuthoringBind()
   requestTrainingModalsClose()
@@ -73,23 +86,31 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   async function selectStep(index: number): Promise<void> {
     if (index === builder.selected) return
     await rememberIfNeeded()
+    flushPublishedBuilderSpec()
     builder.applySelectAwake(index, builder.steps[index])
     builder.setSelected(index)
   }
 
   async function addSlide(): Promise<void> {
     await rememberIfNeeded()
+    flushPublishedBuilderSpec()
     const step = builder.pushBlankPage()
     const index = builder.steps.length - 1
     builder.applySelectAwake(index, step)
     builder.setSelected(index)
+    syncBoundBuilderStep(builder.steps)
   }
 
   async function removeStep(index: number): Promise<void> {
+    const removed = builder.steps[index]
     if (builder.steps.length <= 1) {
       await rememberIfNeeded()
     }
+    flushPublishedBuilderSpec()
+    if (isBoundToStep(removed)) clearBuilderDiagramBinding()
+    else noteBuilderStepRemoved(index)
     builder.removeStepAt(index)
+    syncBoundBuilderStep(builder.steps)
   }
 
   function uploadFailedMessage(error: unknown): string {
@@ -122,11 +143,14 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     builder.setBusy(true)
     try {
       await rememberIfNeeded()
+      flushPublishedBuilderSpec()
       const at = builder.selected
       const uploaded = await Promise.all(
         files.map((file) => uploadTrainingFile(builder.courseId, 'slide', file))
       )
       builder.insertCreatedSteps(at, uploadedSlideSteps(at, uploaded))
+      noteBuilderStepsInserted(at, uploaded.length)
+      syncBoundBuilderStep(builder.steps)
     } catch (error) {
       notify.error(uploadFailedMessage(error))
     } finally {
@@ -216,13 +240,15 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     () => String(route.params.courseId || ''),
     async (id) => {
       const token = (loadGeneration += 1)
+      flushPublishedBuilderSpec()
+      clearBuilderDiagramBinding()
       builder.reset()
       builder.setCourseId(id)
       if (!id) return
       const course = await fetchTrainingCourse(id)
       if (token !== loadGeneration) return
       builder.applyCourse(course)
-      markClean()
+      markClean(course.updated_at)
     },
     { immediate: true }
   )
@@ -231,6 +257,8 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     loadGeneration += 1
     requestTrainingModalsClose()
     if (useTrainingStore().snapshot.state !== 'live') releaseTrainingUiLock()
+    flushPublishedBuilderSpec()
+    clearBuilderDiagramBinding()
     builder.reset()
   })
 
@@ -246,6 +274,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     onTopicsDrop,
     onLockArm: armTrainingUiLock,
     onLock,
-    syncState,
+    saveLabel,
+    saveTone,
   }
 }

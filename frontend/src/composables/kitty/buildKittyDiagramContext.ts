@@ -12,7 +12,7 @@ import { resolveMindMapAudienceInstructions } from '@/composables/mindMap/audien
 import { buildDiagramData } from '@/composables/aiBrainstorm/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
-import { useDiagramStore } from '@/stores/diagram'
+import { type DiagramSession, useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -49,7 +49,7 @@ function nodeDisplayText(node: VoiceContextNode): string {
 }
 
 export function buildKittyDiagramContext(
-  diagramStore: ReturnType<typeof useDiagramStore>,
+  diagramStore: DiagramSession | ReturnType<typeof useDiagramStore>,
   activePanel: string,
   options?: { oneSentencePhase?: 'create' | 'edit' }
 ): KittyAgentContext {

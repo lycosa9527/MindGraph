@@ -11,10 +11,11 @@ import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
+import { usePanelsStore, useSavedDiagramsStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 
 export type MindMapSideToolId =
@@ -76,7 +77,7 @@ export function coveringMindMapSideToolOpen(): boolean {
 export function useMindMapSideToolbarState() {
   bindOneSentenceYieldsToDiagramBrainstorm()
   const route = useRoute()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const notify = useNotifications()

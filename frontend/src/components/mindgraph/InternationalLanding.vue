@@ -17,7 +17,6 @@ import { Check, Globe, PanelLeftOpen } from '@lucide/vue'
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useBrowserPluginInstalled } from '@/composables/browserPluginPresence'
 import { executeLandingPrompt } from '@/composables/mindgraph/runLandingPromptGeneration'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
@@ -44,7 +43,6 @@ const route = useRoute()
 const router = useRouter()
 const deckNav = useTrainingDeckNav()
 const { t } = useLanguage()
-const { canUseOnlineCollab } = useSchoolTierFeatures()
 const browserPluginInstalled = useBrowserPluginInstalled()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
@@ -226,10 +224,6 @@ onMounted(() => {
   const newQuery = { ...route.query }
   delete newQuery.join_workshop
   router.replace({ query: newQuery })
-  if (!canUseOnlineCollab.value) {
-    notify.warningKey('auth.schoolTierFeatureUnavailable')
-    return
-  }
   collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
 })
 </script>

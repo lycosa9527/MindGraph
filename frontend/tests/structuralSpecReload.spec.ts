@@ -53,6 +53,30 @@ describe('structural diagram reloads', () => {
     expect(store.canUndo).toBe(false)
   })
 
+  it('adds a flow substep under the step it belongs to', () => {
+    const store = useDiagramStore()
+    expect(
+      store.loadFromSpec(
+        {
+          title: 'Plan',
+          steps: [
+            { id: 'step-keep', text: 'Start' },
+            { id: 'step-next', text: 'Next' },
+          ],
+        },
+        'flow_map',
+        { emitLoaded: false }
+      )
+    ).toBe(true)
+
+    expect(store.addFlowMapSubstep('Start', 'Detail', 0, 'step-keep')).toBe(true)
+    expect(store.addFlowMapSubstep('Start', 'Detail 2', 0, 'step-keep')).toBe(true)
+
+    const subs = store.data?.nodes.filter((node) => node.type === 'flowSubstep') ?? []
+    expect(subs.map((node) => node.text)).toEqual(['Detail', 'Detail 2'])
+    expect(subs.every((node) => node.data?.parentStepId === 'step-keep')).toBe(true)
+  })
+
   it('keeps a tree node id, style, and hidden answer across a structural reload', () => {
     const store = useDiagramStore()
     const spec = {

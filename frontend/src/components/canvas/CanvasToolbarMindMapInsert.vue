@@ -19,8 +19,8 @@ import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimit
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapAssociationLine } from '@/composables/mindMap/useMindMapAssociationLine'
-import { useDiagramStore } from '@/stores'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { summaryInsertFailureReason } from '@/stores/diagram/mindMapSummaryOps'
 import {
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<{ compact?: boolean; hideStructureInserts
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const { startFromSelection } = useMindMapAssociationLine()
 const mathOpen = ref(false)
 const iconOpen = ref(false)

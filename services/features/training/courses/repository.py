@@ -29,6 +29,8 @@ from services.features.training.courses.constants import (
     optional_step_key,
     optional_vod_span,
 )
+from services.features.training.courses.diagram_spec import clean_diagram_spec
+from services.features.training.courses.interact import clean_interact
 from services.features.training.storage.backend import delete_course_folder
 
 
@@ -195,6 +197,8 @@ def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
         "notes": optional_notes(raw.get("notes")),
         "mark_step": clamped_mark_step(raw.get("mark_step"), 1),
         "mark_steps": clamped_mark_step(raw.get("mark_steps"), 1),
+        "interact": clean_interact(raw.get("interact")),
+        "diagram_spec": clean_diagram_spec(raw.get("diagram_spec")),
     }
 
 

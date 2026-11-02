@@ -5,6 +5,7 @@ import {
   isPersistedTrainingThumb,
 } from '@/composables/training/persistTrainingThumb'
 import {
+  canCommitBuilderThumb,
   isTrainingMediaStep,
   shouldAwakeOnSelect,
   shouldRecaptureThumb,
@@ -57,6 +58,18 @@ describe('training builder hibernate', () => {
     expect(shouldAwakeOnSelect(null)).toBe(true)
   })
 
+  it('does not commit a live canvas thumb until the session is bound', () => {
+    const step: ReturnType<typeof blankPageStep> = {
+      ...blankPageStep(0),
+      type: 'canvas',
+      page_key: 'canvas',
+      diagram_type: 'mindmap',
+    }
+    expect(canCommitBuilderThumb(0, 0, step, false)).toBe(false)
+    expect(canCommitBuilderThumb(0, 0, step, true)).toBe(true)
+    expect(canCommitBuilderThumb(1, 0, step, true)).toBe(false)
+  })
+
   it('never wakes a media slide and skips recapture while asleep', () => {
     const image = blankSlideStep(0)
     image.asset_url = '/api/training/assets/courses/x/slides/a.png'
@@ -87,6 +100,12 @@ describe('training builder hibernate', () => {
 
   it('rejects a data URL with no payload', () => {
     expect(() => dataUrlToPngFile('not-a-data-url', 'slide-1.png')).toThrow('invalid data url')
+  })
+
+  it('keeps two canvas slides on different thumb keys', () => {
+    const first = blankPageStep(0)
+    const second = blankPageStep(1)
+    expect(trainingStepThumbKey(first)).not.toBe(trainingStepThumbKey(second))
   })
 
   it('recaptures when the live page or its marks change', () => {

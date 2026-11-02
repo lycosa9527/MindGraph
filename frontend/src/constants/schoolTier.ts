@@ -42,14 +42,12 @@ export function isManagerAssignmentUnavailable(limit: number): boolean {
 }
 
 export interface SchoolTierFeatures {
-  online_collab: boolean
   chrome_extension: boolean
   presentation_tools: boolean
   api_token: boolean
 }
 
 export const PREMIUM_SCHOOL_TIER_FEATURES: SchoolTierFeatures = {
-  online_collab: true,
   chrome_extension: true,
   presentation_tools: true,
   api_token: true,
@@ -60,7 +58,7 @@ export function isPaidSchoolTier(tier: SchoolTier | null | undefined): boolean {
   return tier === 'lite' || tier === 'standard' || tier === 'professional'
 }
 
-/** Collab, presentation tools, the Chrome extension, and API tokens are on for every tier. */
+/** Presentation tools, the Chrome extension, and API tokens are on for every tier. */
 export function tierFeaturesForSchoolTier(tier: SchoolTier | null | undefined): SchoolTierFeatures {
   const features: Record<SchoolTier, SchoolTierFeatures> = {
     trial: PREMIUM_SCHOOL_TIER_FEATURES,
@@ -69,18 +67,6 @@ export function tierFeaturesForSchoolTier(tier: SchoolTier | null | undefined): 
     professional: PREMIUM_SCHOOL_TIER_FEATURES,
   }
   return { ...features[normalizeSchoolTier(tier)] }
-}
-
-/** Resolve online collab tier access for router guards and deep links. */
-export function userCanUseOnlineCollab(
-  schoolId: string | null | undefined,
-  schoolTier: SchoolTier | null | undefined,
-  fromApi: Partial<SchoolTierFeatures> | null | undefined
-): boolean {
-  if (!schoolId) {
-    return true
-  }
-  return mergeSchoolTierFeatures(schoolTier, fromApi).online_collab
 }
 
 /**
@@ -97,7 +83,6 @@ export function mergeSchoolTierFeatures(
     return base
   }
   return {
-    online_collab: base.online_collab || fromApi.online_collab === true,
     chrome_extension: base.chrome_extension || fromApi.chrome_extension === true,
     presentation_tools: base.presentation_tools || fromApi.presentation_tools === true,
     api_token: base.api_token || fromApi.api_token === true,

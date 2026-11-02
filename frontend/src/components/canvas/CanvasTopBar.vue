@@ -28,7 +28,12 @@ import { eventBus, getDefaultDiagramName, useDiagramSpecForSave } from '@/compos
 import { useLanguage } from '@/composables'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
+import {
+  BUILDER_CANVAS_TABS_TARGET,
+  BUILDER_CANVAS_TOOLS_TARGET,
+} from '@/composables/training/builderCanvasRibbon'
 import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
+import { useBuilderCanvasRibbonMerge } from '@/composables/training/useBuilderCanvasRibbonMerge'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
@@ -54,6 +59,10 @@ const compactCanvasToolbar = ref(false)
 let topBarResizeObserver: ResizeObserver | null = null
 
 function updateCompactFromTopBarWidth(width: number): void {
+  if (inBuilder.value) {
+    compactCanvasToolbar.value = false
+    return
+  }
   const w = width > 0 ? width : 0
   compactCanvasToolbar.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_TOOLBAR_BREAKPOINT_PX
 }
@@ -76,6 +85,10 @@ function resetRibbonTabCollapse(): void {
 }
 
 function updateRibbonTabLabels(): void {
+  if (inBuilder.value) {
+    ribbonTabsIconLabels.value = false
+    return
+  }
   const tabs = tabsHostRef.value
   if (!isMindMapEditor.value || !tabs) return
   const next = nextLabelCollapse(ribbonTabCollapse, ribbonTabRoomPx(), tabs.offsetWidth)
@@ -132,12 +145,14 @@ const diagramTypeForName = computed(
 const isMindMapEditor = computed(() =>
   isCanvasEditorRibbonFamily(diagramTypeForName.value, diagramStore.mindMapCanvasMode)
 )
-const { activeTab, classic, selectTab } = useMindMapRibbonState()
+const { activeTab, classic, selectTab, setActiveTab, setClassic } = useMindMapRibbonState()
+const { inBuilder, quietCanvasTabs, onRibbonTab } = useBuilderCanvasRibbonMerge({
+  classic,
+  selectTab,
+  setActiveTab,
+  setClassic,
+})
 
-/**
- * Generate default diagram name (simple, no timestamp)
- * Format: "新圆圈图" / "New Circle Map"
- */
 function generateDefaultName(): string {
   return getDefaultDiagramName(diagramTypeForName.value, currentLanguage.value)
 }
@@ -154,7 +169,6 @@ const fileName = computed({
 
 const showSlotFullModal = ref(false)
 
-// Cleanup watcher on unmount
 onUnmounted(() => {
   topBarResizeObserver?.disconnect()
   topBarResizeObserver = null
@@ -324,13 +338,15 @@ function handleSlotModalCancel(): void {
     ref="topBarRootRef"
     class="canvas-top-bar relative w-full min-h-12 shrink-0"
     :class="
-      isMindMapEditor
-        ? {
-            'canvas-top-bar--mindmap': true,
-            'canvas-top-bar--collapsed': !classic,
-            'canvas-top-bar--collab-flush': Boolean(workshopCode),
-          }
-        : 'px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
+      inBuilder
+        ? 'canvas-top-bar--in-builder'
+        : isMindMapEditor
+          ? {
+              'canvas-top-bar--mindmap': true,
+              'canvas-top-bar--collapsed': !classic,
+              'canvas-top-bar--collab-flush': Boolean(workshopCode),
+            }
+          : 'px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
     "
   >
     <div
@@ -414,20 +430,26 @@ function handleSlotModalCancel(): void {
           </span>
         </div>
       </div>
-      <div
+      <Teleport
         v-if="isMindMapEditor"
-        ref="tabsHostRef"
-        class="canvas-top-bar__tabs"
+        :to="`#${BUILDER_CANVAS_TABS_TARGET}`"
+        :disabled="!inBuilder"
       >
-        <MindMapRibbonTabs
-          :active-tab="activeTab"
-          :expanded="classic"
-          :short-labels="ribbonTabsIconLabels"
-          @update:active-tab="selectTab"
-        />
-      </div>
+        <div
+          ref="tabsHostRef"
+          class="canvas-top-bar__tabs"
+        >
+          <MindMapRibbonTabs
+            :active-tab="activeTab"
+            :expanded="classic"
+            :short-labels="ribbonTabsIconLabels"
+            :quiet="quietCanvasTabs"
+            @update:active-tab="onRibbonTab"
+          />
+        </div>
+      </Teleport>
       <div
-        v-if="isMindMapEditor"
+        v-if="isMindMapEditor && !inBuilder"
         ref="globalClusterRef"
         class="canvas-top-bar__global"
       >
@@ -440,28 +462,34 @@ function handleSlotModalCancel(): void {
     </div>
 
     <!-- Col 2: editing toolbar (hidden for viewers) -->
-    <div
-      :id="isMindMapEditor ? MIND_MAP_RIBBON_TOOLS_ID : undefined"
-      class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-5"
-      :class="{
-        'canvas-top-bar__tools-row': isMindMapEditor,
-        'canvas-top-bar__tools-row--collapsed': isMindMapEditor && !classic,
-      }"
-      :aria-hidden="isMindMapEditor && !classic"
+    <Teleport
+      :to="`#${BUILDER_CANVAS_TOOLS_TARGET}`"
+      :disabled="!inBuilder"
     >
-      <span
-        v-if="props.isViewer"
-        class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2.5 py-1 select-none"
+      <div
+        :id="isMindMapEditor ? MIND_MAP_RIBBON_TOOLS_ID : undefined"
+        class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-5"
+        :class="{
+          'canvas-top-bar__tools-row': isMindMapEditor,
+          'canvas-top-bar__tools-row--collapsed': isMindMapEditor && !classic,
+          'canvas-top-bar__tools-row--merged': inBuilder,
+        }"
+        :aria-hidden="isMindMapEditor && !classic"
       >
-        👁 <I18nText k="canvas.topBar.viewOnly" />
-      </span>
-      <CanvasToolbar
-        v-else
-        embedded
-        :compact-toolbar="compactCanvasToolbar"
-        :ribbon-tab="isMindMapEditor ? activeTab : undefined"
-      />
-    </div>
+        <span
+          v-if="props.isViewer"
+          class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2.5 py-1 select-none"
+        >
+          👁 <I18nText k="canvas.topBar.viewOnly" />
+        </span>
+        <CanvasToolbar
+          v-else
+          embedded
+          :compact-toolbar="compactCanvasToolbar"
+          :ribbon-tab="isMindMapEditor ? activeTab : undefined"
+        />
+      </div>
+    </Teleport>
 
     <DiagramSlotFullModal
       v-model:visible="showSlotFullModal"
@@ -480,6 +508,10 @@ function handleSlotModalCancel(): void {
 <style scoped>
 .canvas-top-bar {
   z-index: 100;
+}
+
+.canvas-top-bar--in-builder {
+  display: none;
 }
 
 .canvas-top-bar__title-row {
@@ -559,6 +591,10 @@ function handleSlotModalCancel(): void {
   display: flex;
   align-items: center;
   height: 36px;
+}
+
+.canvas-top-bar__global:empty {
+  display: none;
 }
 
 .canvas-top-bar__doc :deep(.el-button) {
@@ -646,6 +682,15 @@ function handleSlotModalCancel(): void {
 :global(.dark) .canvas-top-bar__tools-row {
   background: #1f2937;
   box-shadow: 0 10px 18px -8px rgb(0 0 0 / 0.35);
+}
+
+.canvas-top-bar__tools-row.canvas-top-bar__tools-row--merged {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 :global(.dark) .canvas-top-bar--mindmap {

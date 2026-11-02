@@ -169,11 +169,6 @@ def fixture_client() -> Iterator[TestClient]:
     """Minutes route with seminar access stubbed and the real model left in place."""
     app.dependency_overrides[get_current_user] = _user
     patches = (
-        patch(
-            "routers.api.mindmate_seminar_routes.user_has_feature_access",
-            new=AsyncMock(return_value=True),
-        ),
-        patch("routers.api.mindmate_seminar_minutes._require_collab_tier", new=AsyncMock()),
         patch("routers.api.mindmate_seminar_minutes.check_endpoint_rate_limit", new=AsyncMock()),
         patch("routers.api.mindmate_seminar_minutes._writable_session", new=AsyncMock()),
         patch("services.llm.assert_llm_usage_budget", new=AsyncMock()),

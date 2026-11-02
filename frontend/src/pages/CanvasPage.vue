@@ -89,7 +89,6 @@ import {
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
-import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import {
   clearBlankCanvasLoadDedupe,
   getDiagramDataType,
@@ -233,7 +232,7 @@ const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const notify = useNotifications()
-const { canUseOnlineCollab, canUsePresentationTools } = useSchoolTierFeatures()
+const { canUsePresentationTools } = useSchoolTierFeatures()
 const featureFlagsStore = useFeatureFlagsStore()
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
 useTrainingCanvasGenerate(handleAIGenerate)
@@ -304,10 +303,6 @@ const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId ?? nu
 const collabOverlayRef = ref<InstanceType<typeof CanvasCollabOverlay> | null>(null)
 
 function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
-  if (mode !== 'stop' && !canUseOnlineCollab.value) {
-    notify.warningKey('auth.schoolTierFeatureUnavailable')
-    return
-  }
   if (mode === 'stop') {
     void collabOverlayRef.value?.stopNow()
     return
@@ -1210,12 +1205,6 @@ watch(canUsePresentationTools, (allowed) => {
   }
 })
 
-watch(canUseOnlineCollab, (allowed) => {
-  if (!allowed) {
-    leaveCanvasCollabRoom()
-  }
-})
-
 const { handleSaveKey } = useCanvasPageEditorShortcuts({
   workshopCode,
   activeEditors,
@@ -1340,13 +1329,6 @@ onMounted(async () => {
   // The diagram spec arrives from the server via the WebSocket snapshot message —
   // do not attempt a library load (the diagram belongs to the host, not the guest).
   if (route.query.join_workshop) {
-    if (!canUseOnlineCollab.value) {
-      notify.warningKey('auth.schoolTierFeatureUnavailable')
-      const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
-      delete nextQuery.join_workshop
-      router.replace({ query: nextQuery })
-      return
-    }
     applyJoinWorkshopFromQuery()
     return
   }
@@ -1356,12 +1338,8 @@ onMounted(async () => {
   {
     const saved = readWorkshopSession()
     if (saved && shouldRestoreWorkshopSession(route.query as Record<string, unknown>)) {
-      if (!canUseOnlineCollab.value) {
-        clearWorkshopSessionStorage()
-      } else {
-        applyWorkshopCodeFromSession(saved.code, saved.diagramId)
-        return
-      }
+      applyWorkshopCodeFromSession(saved.code, saved.diagramId)
+      return
     } else if (saved) {
       clearWorkshopSessionStorage()
     }

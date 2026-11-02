@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { Lock, LockOpen } from '@lucide/vue'
+import { Lock, LockOpen, PanelLeftClose } from '@lucide/vue'
 
 import TrainingSlidePreview from '@/components/training/TrainingSlidePreview.vue'
 import { useLanguage } from '@/composables'
@@ -15,6 +15,7 @@ defineProps<{
   thumbs?: (string | null)[]
   busy?: boolean
   readonly?: boolean
+  collapsed?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,6 +25,7 @@ const emit = defineEmits<{
   remove: [index: number]
   lockArm: []
   lock: [index: number]
+  'update:collapsed': [value: boolean]
 }>()
 
 const { t } = useLanguage()
@@ -43,88 +45,112 @@ function onImages(event: Event): void {
 </script>
 
 <template>
-  <aside class="filmstrip">
-    <div
-      v-if="!readonly"
-      class="filmstrip__actions"
-    >
-      <ElButton
-        size="small"
-        class="admin-swiss-btn filmstrip__add"
-        @click="emit('add')"
+  <aside
+    v-show="!collapsed"
+    class="filmstrip"
+  >
+    <div class="filmstrip__scroll">
+      <div
+        v-if="!readonly"
+        class="filmstrip__actions"
       >
-        <I18nText k="training.builder.addSlide" />
-      </ElButton>
-      <ElButton
-        size="small"
-        class="admin-swiss-btn filmstrip__add"
-        :disabled="busy"
-        @click="pickImages"
+        <ElButton
+          size="small"
+          class="admin-swiss-btn filmstrip__add"
+          @click="emit('add')"
+        >
+          <I18nText k="training.builder.addSlide" />
+        </ElButton>
+        <ElButton
+          size="small"
+          class="admin-swiss-btn filmstrip__add"
+          :disabled="busy"
+          @click="pickImages"
+        >
+          <I18nText k="training.builder.addImage" />
+        </ElButton>
+      </div>
+      <input
+        ref="imageInput"
+        class="filmstrip__file"
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        multiple
+        :aria-label="t('training.builder.addImage')"
+        @change="onImages"
+      />
+      <div
+        v-for="(step, index) in steps"
+        :key="`${step.type}-${index}`"
+        class="filmstrip__item"
+        :class="{ 'is-active': index === selected }"
       >
-        <I18nText k="training.builder.addImage" />
-      </ElButton>
+        <button
+          type="button"
+          class="filmstrip__pick"
+          @click="emit('select', index)"
+        >
+          <TrainingSlidePreview
+            :step="step"
+            :index="index"
+            :thumb="thumbs?.[index]"
+            compact
+          />
+        </button>
+        <button
+          v-if="!readonly"
+          type="button"
+          class="filmstrip__lock"
+          :class="{ 'is-on': Boolean(step.ui_lock || step.modal_key) }"
+          :aria-pressed="Boolean(step.ui_lock || step.modal_key)"
+          :aria-label="
+            step.ui_lock || step.modal_key
+              ? t('training.builder.unlock')
+              : t('training.builder.lock')
+          "
+          @pointerdown="emit('lockArm')"
+          @keydown.enter="emit('lockArm')"
+          @keydown.space="emit('lockArm')"
+          @click.stop="emit('lock', index)"
+        >
+          <Lock
+            v-if="step.ui_lock || step.modal_key"
+            class="filmstrip__lock-icon"
+          />
+          <LockOpen
+            v-else
+            class="filmstrip__lock-icon"
+          />
+          <I18nText
+            :k="
+              step.ui_lock || step.modal_key ? 'training.builder.unlock' : 'training.builder.lock'
+            "
+          />
+        </button>
+        <button
+          v-if="!readonly"
+          type="button"
+          class="filmstrip__delete"
+          :aria-label="t('training.builder.deleteSlide')"
+          @click.stop="emit('remove', index)"
+        >
+          ×
+        </button>
+      </div>
     </div>
-    <input
-      ref="imageInput"
-      class="filmstrip__file"
-      type="file"
-      accept="image/png,image/jpeg,image/webp"
-      multiple
-      :aria-label="t('training.builder.addImage')"
-      @change="onImages"
-    />
-    <div
-      v-for="(step, index) in steps"
-      :key="`${step.type}-${index}`"
-      class="filmstrip__item"
-      :class="{ 'is-active': index === selected }"
-    >
+    <div class="filmstrip__dock">
       <button
         type="button"
-        class="filmstrip__pick"
-        @click="emit('select', index)"
+        class="filmstrip__collapse"
+        :title="t('training.builder.collapseSlides')"
+        :aria-label="t('training.builder.collapseSlides')"
+        aria-expanded="true"
+        @click="emit('update:collapsed', true)"
       >
-        <TrainingSlidePreview
-          :step="step"
-          :index="index"
-          :thumb="thumbs?.[index]"
-          compact
+        <PanelLeftClose
+          :size="18"
+          aria-hidden="true"
         />
-      </button>
-      <button
-        v-if="!readonly"
-        type="button"
-        class="filmstrip__lock"
-        :class="{ 'is-on': Boolean(step.ui_lock || step.modal_key) }"
-        :aria-pressed="Boolean(step.ui_lock || step.modal_key)"
-        :aria-label="
-          step.ui_lock || step.modal_key ? t('training.builder.unlock') : t('training.builder.lock')
-        "
-        @pointerdown="emit('lockArm')"
-        @keydown.enter="emit('lockArm')"
-        @keydown.space="emit('lockArm')"
-        @click.stop="emit('lock', index)"
-      >
-        <Lock
-          v-if="step.ui_lock || step.modal_key"
-          class="filmstrip__lock-icon"
-        />
-        <LockOpen
-          v-else
-          class="filmstrip__lock-icon"
-        />
-        <I18nText
-          :k="step.ui_lock || step.modal_key ? 'training.builder.unlock' : 'training.builder.lock'"
-        />
-      </button>
-      <button
-        v-if="!readonly"
-        type="button"
-        class="filmstrip__delete"
-        :aria-label="t('training.builder.deleteSlide')"
-        @click.stop="emit('remove', index)"
-      >
-        ×
       </button>
     </div>
   </aside>
@@ -135,26 +161,63 @@ function onImages(event: Event): void {
 .filmstrip {
   display: flex;
   width: 11.5rem;
+  min-height: 0;
   flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid #e7e5e4;
+  background: #fff;
+  padding: 0.75rem 0.75rem 0.45rem;
+}
+.filmstrip__scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: 0.65rem;
   overflow: auto;
-  border-right: 1px solid #e7e5e4;
-  background: #fff;
-  padding: 0.75rem;
+}
+.filmstrip__dock {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-start;
+  padding-top: 0.35rem;
+}
+.filmstrip__collapse {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #57534e;
+  cursor: pointer;
+}
+.filmstrip__collapse:hover {
+  background: #f5f5f4;
+  color: #1c1917;
 }
 @media (max-width: 768px) {
   .filmstrip {
     width: 100%;
     max-height: 8.5rem;
     flex-direction: row;
-    overflow: auto;
     border-right: 0;
     border-bottom: 1px solid #e7e5e4;
+  }
+  .filmstrip__scroll {
+    flex-direction: row;
   }
   .filmstrip__actions {
     flex-direction: row;
     align-items: center;
+  }
+  .filmstrip__dock {
+    order: -1;
+    align-self: flex-end;
+    padding-top: 0;
   }
 }
 .filmstrip__actions {

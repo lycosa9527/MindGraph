@@ -3,9 +3,7 @@
  */
 import { type ComputedRef, type Ref, computed, onMounted, onUnmounted, ref } from 'vue'
 
-import type { LocaleCode } from '@/i18n/locales'
-import { intlLocaleForUiCode } from '@/i18n/locales'
-import { formatInBeijing } from '@/utils/beijingClock'
+import { editorSavedAgo } from '@/utils/editorSavedAgo'
 
 import { useLanguage } from '../core/useLanguage'
 import type { useDiagramAutoSave } from '../editor/useDiagramAutoSave'
@@ -29,22 +27,10 @@ export function useCanvasAutoSaveStatus(options: UseCanvasAutoSaveStatusOptions)
 
   function formatRelativeTime(date: Date): string {
     void relativeTimeTick.value
-    const diffMs = Date.now() - date.getTime()
-    const diffSec = Math.floor(diffMs / 1000)
-    if (diffSec < 10) return t('editor.savedJustNow')
-    if (diffSec < 60) return t('editor.savedSecondsAgo', { n: diffSec })
-    const diffMin = Math.floor(diffSec / 60)
-    if (diffMin < 60) return t('editor.savedMinutesAgo', { n: diffMin })
-    const timeStr = formatInBeijing(
-      date,
-      intlLocaleForUiCode(currentLanguage.value as LocaleCode),
-      {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }
-    )
-    return t('editor.autoSavedAt').replace('{time}', timeStr)
+    const ago = editorSavedAgo(date, currentLanguage.value)
+    if (ago.key === 'editor.autoSavedAt') return t(ago.key).replace('{time}', ago.time)
+    if ('n' in ago) return t(ago.key, { n: ago.n })
+    return t(ago.key)
   }
 
   const autoSavedStatusText = computed(() => {

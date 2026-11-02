@@ -4,6 +4,8 @@
  */
 import { ref } from 'vue'
 
+import { Mic, Music } from '@lucide/vue'
+
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
@@ -76,6 +78,16 @@ async function onFile(event: Event): Promise<void> {
 
 <template>
   <label class="slide-audio">
+    <Mic
+      v-if="kind === 'voice'"
+      :size="15"
+      aria-hidden="true"
+    />
+    <Music
+      v-else
+      :size="15"
+      aria-hidden="true"
+    />
     <span class="slide-audio__label"><I18nText :k="labelKey()" /></span>
     <input
       type="file"

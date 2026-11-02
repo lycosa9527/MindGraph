@@ -27,6 +27,7 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   AUTO_COMPLETE_VALIDATION_I18N,
   validateAutoCompleteRules,
@@ -36,7 +37,6 @@ import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { canvasRunModel } from '@/config/canvasLlmMenu'
 import { diagramGenerationLanguages } from '@/diagramBilingual/generationRequest'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore } from '@/stores/diagram'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { type ModelLoadPhase, useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -65,7 +65,7 @@ import {
  * Auto-complete composable for AI diagram generation
  */
 export function useAutoComplete() {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const llmResultsStore = useLLMResultsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const { t } = useLanguage()

@@ -10,6 +10,7 @@ import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   CURRENT_DIAGRAM_VERSION,
   canMutateDiagramSnapshots,
@@ -18,7 +19,6 @@ import {
   snapshotsNewestFirst,
 } from '@/composables/editor/diagramSnapshotVersions'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
-import { useDiagramStore } from '@/stores'
 
 const props = withDefaults(
   defineProps<{
@@ -29,7 +29,7 @@ const props = withDefaults(
 
 const { t, currentLanguage } = useLanguage()
 const ribbon = useMindMapRibbonActions()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const snapshotHistory = useSnapshotHistory()
 
 const collabCanvas = inject<{ isDiagramOwner?: ComputedRef<boolean> } | undefined>(

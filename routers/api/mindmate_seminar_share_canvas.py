@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from routers.api.helpers import (
     build_public_temp_image_url,
     check_endpoint_rate_limit,
@@ -17,7 +16,6 @@ from routers.api.helpers import (
     get_rate_limit_identifier,
 )
 from routers.api.vueflow_screenshot import DiagramScreenshotError, capture_diagram_screenshot
-from routers.auth.dependencies import get_language_dependency
 from services.diagram.temp_image_storage import persist_diagram_preview_png, temp_images_signed_ttl
 from services.features.mindmate_seminar.diagram_library import (
     COPY_FAILED,
@@ -37,8 +35,6 @@ from services.features.mindmate_seminar.share_canvas import (
 )
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -72,17 +68,6 @@ class OpenSharedCanvasRequest(BaseModel):
     diagram_id: str = Field(min_length=36, max_length=36)
 
 
-async def _require_collab_tier(user: User, lang: Language) -> None:
-    """Ensure the caller has the online_collab school tier feature."""
-    async with actor_rls_session(user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 async def _preview_url(request: Request, user_id: int, diagram_id: str) -> str:
     """Public preview URL for the chat bubble. Empty when capture is unavailable."""
     record = await get_diagram_cache().get_diagram(user_id, diagram_id)
@@ -113,10 +98,8 @@ async def share_canvas_diagram(
     session_id: str,
     body: ShareCanvasDiagramRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Post the caller's saved diagram into a live seminar."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_share_diagram",
@@ -146,10 +129,8 @@ async def preview_shared_canvas_diagram(
     session_id: str,
     diagram_id: str,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return the shared diagram spec so the seminar bubble can render it."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_canvas_preview",
@@ -174,10 +155,8 @@ async def open_shared_canvas_diagram(
     session_id: str,
     body: OpenSharedCanvasRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return a library id the caller can open. Members receive a personal copy."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_canvas_diagram",

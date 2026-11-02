@@ -1,5 +1,7 @@
 import type { TrainingCourseStep, TrainingSnapshot, TrainingStepOverlay } from '@/types/training'
 
+import { interactReadCursor, playOrderIds, readPlayIndex, savedReadOrder } from './trainingInteract'
+
 export const TRAINING_MARK_STEPS_MIN = 1
 export const TRAINING_MARK_STEPS_MAX = 8
 
@@ -90,6 +92,22 @@ export function visibleMarkOverlays(step: TrainingCourseStep, at?: number): Trai
   })
 }
 
+function readBeat(step: TrainingCourseStep): { length: number; at: number } {
+  const ids = playOrderIds(step)
+  return { length: ids.length, at: ids.length > 0 ? readPlayIndex(step, ids.length) : 0 }
+}
+
+/** Marks first, then the guided-reading list. Both finish before the filmstrip moves. */
+function canLeaveBeat(step: TrainingCourseStep, delta: number): boolean {
+  const beat = readBeat(step)
+  if (delta > 0) {
+    if (currentMarkStep(step) < markStepCount(step)) return false
+    return beat.at >= beat.length - 1
+  }
+  if (beat.at > 0) return false
+  return currentMarkStep(step) <= 1
+}
+
 export function advancePlayCursor(
   steps: TrainingCourseStep[],
   selected: number,
@@ -97,25 +115,42 @@ export function advancePlayCursor(
 ): number {
   const step = steps[selected]
   if (!step || !delta) return selected
+  const beat = readBeat(step)
   if (delta > 0) {
-    const count = markStepCount(step)
-    const at = currentMarkStep(step)
-    if (at < count) {
-      setCurrentMarkStep(step, at + 1)
+    const markAt = currentMarkStep(step)
+    if (markAt < markStepCount(step)) {
+      setCurrentMarkStep(step, markAt + 1)
+      return selected
+    }
+    if (beat.at < beat.length - 1) {
+      interactReadCursor.value = beat.at + 1
       return selected
     }
     const next = Math.min(steps.length - 1, selected + 1)
-    if (next !== selected) setCurrentMarkStep(steps[next], 1)
+    if (next !== selected) {
+      interactReadCursor.value = 0
+      const landed = steps[next]
+      if (landed) setCurrentMarkStep(landed, 1)
+    }
     return next
   }
-  const at = currentMarkStep(step)
-  if (at > 1) {
-    setCurrentMarkStep(step, at - 1)
+  if (beat.at > 0) {
+    interactReadCursor.value = beat.at - 1
+    return selected
+  }
+  const markAt = currentMarkStep(step)
+  if (markAt > 1) {
+    setCurrentMarkStep(step, markAt - 1)
     return selected
   }
   const prev = Math.max(0, selected - 1)
   if (prev !== selected) {
-    setCurrentMarkStep(steps[prev], markStepCount(steps[prev]))
+    const previous = steps[prev]
+    if (previous) {
+      setCurrentMarkStep(previous, markStepCount(previous))
+      const previousIds = savedReadOrder(previous)
+      interactReadCursor.value = previousIds.length > 0 ? previousIds.length - 1 : 0
+    }
   }
   return prev
 }
@@ -127,19 +162,17 @@ export function canAdvancePlayCursor(
 ): boolean {
   const step = steps[selected]
   if (!step || !delta) return false
-  if (delta > 0) {
-    return currentMarkStep(step) < markStepCount(step) || selected < steps.length - 1
-  }
-  return currentMarkStep(step) > 1 || selected > 0
+  if (!canLeaveBeat(step, delta)) return true
+  if (delta > 0) return selected < steps.length - 1
+  return selected > 0
 }
 
 export function canSteerLiveSnapshot(snapshot: TrainingSnapshot, delta: number): boolean {
   const step = snapshot.step
   if (!step || !delta) return false
+  if (!canLeaveBeat(step, delta)) return true
   const index = snapshot.step_index || 0
   const count = snapshot.step_count || 0
-  if (delta > 0) {
-    return currentMarkStep(step) < markStepCount(step) || (count > 0 && index < count - 1)
-  }
-  return currentMarkStep(step) > 1 || index > 0
+  if (delta > 0) return count > 0 && index < count - 1
+  return index > 0
 }

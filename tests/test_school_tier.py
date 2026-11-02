@@ -19,7 +19,6 @@ from utils.auth.school_tier import (
     SCHOOL_TIER_STANDARD,
     SCHOOL_TIER_TRIAL,
     TIER_FEATURE_API_TOKEN,
-    TIER_FEATURE_ONLINE_COLLAB,
     apply_extra_member_seats_on_update,
     apply_school_tier_on_create,
     apply_school_tier_on_update,
@@ -134,7 +133,8 @@ def test_school_tier_list_fields():
     assert trial_fields["extra_member_seats"] == 0
     assert trial_fields["member_limit_effective"] == 0
     assert trial_fields["school_tier_manager_limit"] == 0
-    assert trial_fields["school_tier_features"]["online_collab"] is True
+    assert trial_fields["school_tier_features"]["presentation_tools"] is True
+    assert "online_collab" not in trial_fields["school_tier_features"]
 
     fields = school_tier_list_fields(_org(SCHOOL_TIER_STANDARD), 25)
     assert fields["school_tier"] == SCHOOL_TIER_STANDARD
@@ -144,7 +144,7 @@ def test_school_tier_list_fields():
     assert fields["school_tier_manager_limit"] == 3
     assert fields["school_tier_diagram_storage_bytes_per_member"] == 2 * 1024**3
     assert fields["school_tier_diagram_storage_bytes"] == 50 * 1024**3
-    assert fields["school_tier_features"]["online_collab"] is True
+    assert fields["school_tier_features"]["presentation_tools"] is True
 
     lite_extra = school_tier_list_fields(_org(SCHOOL_TIER_LITE, extra_member_seats=10), 5)
     assert lite_extra["extra_member_seats"] == 10
@@ -274,10 +274,9 @@ def test_school_tier_feature_gating():
         SCHOOL_TIER_STANDARD,
         SCHOOL_TIER_PROFESSIONAL,
     ):
-        assert school_tier_allows_feature(tier, TIER_FEATURE_ONLINE_COLLAB) is True
         assert school_tier_allows_feature(tier, TIER_FEATURE_API_TOKEN) is True
         features = school_tier_features_payload(tier)
-        assert features["online_collab"] is True
+        assert "online_collab" not in features
         assert features["presentation_tools"] is True
         assert features["chrome_extension"] is True
         assert features["api_token"] is True
@@ -365,7 +364,7 @@ async def test_user_has_school_tier_feature_denied_when_org_missing(monkeypatch)
         "utils.auth.school_tier._organization_for_user",
         _no_org,
     )
-    allowed = await user_has_school_tier_feature(AsyncMock(), as_user(user), TIER_FEATURE_ONLINE_COLLAB)
+    allowed = await user_has_school_tier_feature(AsyncMock(), as_user(user), TIER_FEATURE_API_TOKEN)
     assert allowed is False
 
 

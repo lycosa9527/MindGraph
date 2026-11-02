@@ -54,11 +54,9 @@ from services.online_collab.participant.online_collab_ws_rate_limit import (
     check_canvas_collab_join_rate_limits,
 )
 from services.utils.error_types import DATABASE_ERRORS
-from utils.auth import user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
 from utils.collab_ws_origin import close_ws_if_origin_disallowed
-from utils.db.session_open import actor_rls_session, system_rls_session
+from utils.db.session_open import system_rls_session
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -165,11 +163,6 @@ def _resume_token_from_websocket(websocket: WebSocket) -> str:
     return (websocket.query_params.get("resume") or websocket.query_params.get("resume_token") or "").strip()
 
 
-async def _tier_allowed(user: User) -> bool:
-    async with actor_rls_session(user) as db:
-        return await user_has_school_tier_feature(db, user, TIER_FEATURE_ONLINE_COLLAB)
-
-
 def _reader_label(user: User) -> Optional[str]:
     """Name shown when someone hovers a read mark."""
     username = getattr(user, "username", None) or getattr(user, "name", None)
@@ -228,20 +221,6 @@ async def mindmate_seminar_websocket(websocket: WebSocket, code: str) -> None:
     if auth_err or not user:
         try:
             await websocket.close(code=1008, reason=auth_err or "Unauthorized")
-        except (RuntimeError, OSError):
-            pass
-        return
-
-    if not await user_has_feature_access(user, "feature_mindmate_seminar"):
-        try:
-            await websocket.close(code=1008, reason="Feature disabled")
-        except (RuntimeError, OSError):
-            pass
-        return
-
-    if not await _tier_allowed(user):
-        try:
-            await websocket.close(code=1008, reason="Feature unavailable")
         except (RuntimeError, OSError):
             pass
         return

@@ -213,6 +213,8 @@ function buttonStyle(handle: { strokeColor: string }): Record<string, string> {
 let unsubOpen: (() => void) | undefined
 let unsubClose: (() => void) | undefined
 let unsubPaneClick: (() => void) | undefined
+let unsubZoom: (() => void) | undefined
+let unsubFit: (() => void) | undefined
 let containerHoverEl: HTMLElement | null = null
 
 function bindContainerHoverListeners(el: HTMLElement | null): void {
@@ -239,8 +241,8 @@ onMounted(() => {
     if (editingNodeId.value === nodeId) editingNodeId.value = null
     scheduleMeasure()
   })
-  eventBus.on('view:zoom_changed', scheduleMeasure)
-  eventBus.on('view:fit_completed', scheduleMeasure)
+  unsubZoom = diagramStore.viewBus.on('view:zoom_changed', scheduleMeasure)
+  unsubFit = diagramStore.viewBus.on('view:fit_completed', scheduleMeasure)
   eventBus.on('diagram:operation_completed', scheduleMeasure)
   unsubPaneClick = eventBus.on('canvas:pane_clicked', () => {
     pinnedCollapseNodeId.value = null
@@ -254,6 +256,8 @@ onUnmounted(() => {
   unsubOpen?.()
   unsubClose?.()
   unsubPaneClick?.()
+  unsubZoom?.()
+  unsubFit?.()
   bindContainerHoverListeners(null)
   if (hoverClearTimer) clearTimeout(hoverClearTimer)
   window.removeEventListener('scroll', scheduleMeasure, true)

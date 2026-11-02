@@ -39,6 +39,8 @@ const props = withDefaults(
     allowOnlineCollab?: boolean
     /** Synced with canvas hand-tool state (owned by CanvasPage). */
     handToolActive?: boolean
+    /** Course-builder canvas: hand tool and fit only. */
+    minimal?: boolean
   }>(),
   {
     zoom: null,
@@ -48,6 +50,7 @@ const props = withDefaults(
     isCollabGuest: false,
     allowPresentationTools: true,
     allowOnlineCollab: true,
+    minimal: false,
   }
 )
 
@@ -168,6 +171,7 @@ defineExpose({
 
       <!-- Zoom out -->
       <I18nTooltip
+        v-if="!props.minimal"
         k="editor.zoomOut"
         placement="top"
       >
@@ -183,6 +187,7 @@ defineExpose({
 
       <!-- Zoom level dropdown -->
       <ElDropdown
+        v-if="!props.minimal"
         trigger="click"
         placement="bottom"
         popper-class="canvas-zoom-select-popper"
@@ -212,6 +217,7 @@ defineExpose({
 
       <!-- Zoom in -->
       <I18nTooltip
+        v-if="!props.minimal"
         k="editor.zoomIn"
         placement="top"
       >
@@ -225,7 +231,10 @@ defineExpose({
         </ElButton>
       </I18nTooltip>
 
-      <div class="divider" />
+      <div
+        v-if="!props.minimal"
+        class="divider"
+      />
 
       <!-- Fit to screen -->
       <I18nTooltip
@@ -242,11 +251,14 @@ defineExpose({
         </ElButton>
       </I18nTooltip>
 
-      <div class="divider" />
+      <div
+        v-if="!props.minimal && props.allowPresentationTools"
+        class="divider"
+      />
 
       <!-- Toggle presentation tools rail (right) -->
       <I18nTooltip
-        v-if="props.allowPresentationTools"
+        v-if="!props.minimal && props.allowPresentationTools"
         :k="
           props.presentationRailOpen
             ? 'canvas.zoomControls.hidePresentationTools'
@@ -271,7 +283,11 @@ defineExpose({
         </ElButton>
       </I18nTooltip>
 
-      <template v-if="!props.isCollabGuest && (props.allowOnlineCollab || props.workshopCode)">
+      <template
+        v-if="
+          !props.minimal && !props.isCollabGuest && (props.allowOnlineCollab || props.workshopCode)
+        "
+      >
         <div class="divider" />
 
         <!-- Online collaboration trigger (host only) -->

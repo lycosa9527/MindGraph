@@ -25,10 +25,49 @@ def test_resolve_play_cursor_stays_on_slide_until_marks_done() -> None:
         {"mark_step": 1, "mark_steps": 1, "overlays": []},
     ]
     live = {"mark_step": 1, "mark_steps": 3, "overlays": [{"step": 2}, {"step": 3}]}
-    assert resolve_play_cursor(steps, 0, live, 1) == (0, 2)
+    assert resolve_play_cursor(steps, 0, live, 1) == (0, 2, None)
     live["mark_step"] = 3
-    assert resolve_play_cursor(steps, 0, live, 1) == (1, 1)
-    assert resolve_play_cursor(steps, 1, steps[1], -1) == (0, 3)
+    assert resolve_play_cursor(steps, 0, live, 1) == (1, 1, None)
+    assert resolve_play_cursor(steps, 1, steps[1], -1) == (0, 3, None)
+
+
+def test_resolve_play_cursor_walks_a_saved_order_before_the_next_slide() -> None:
+    """A committed node list is the slide's play sequence."""
+    slide = {
+        "mark_step": 1,
+        "interact": {
+            "mode": "read",
+            "sequence_saved": True,
+            "read_order": ["a", "b", "c"],
+            "play_index": 0,
+        },
+    }
+    steps = [slide, {"mark_step": 1, "mark_steps": 1}]
+    assert resolve_play_cursor(steps, 0, slide, 1) == (0, 1, 1)
+    slide["interact"]["play_index"] = 2
+    assert resolve_play_cursor(steps, 0, slide, 1) == (1, 1, 0)
+    assert resolve_play_cursor(steps, 1, steps[1], -1) == (0, 1, 2)
+
+
+def test_resolve_play_cursor_finishes_marks_then_the_order_then_the_strip() -> None:
+    """A slide keeps the teacher until every beat is done, then the filmstrip continues."""
+    slide = {
+        "mark_step": 1,
+        "mark_steps": 2,
+        "interact": {
+            "mode": "read",
+            "sequence_saved": True,
+            "read_order": ["a", "b"],
+            "play_index": 0,
+        },
+    }
+    steps = [slide, {"mark_step": 1, "mark_steps": 1}, {"mark_step": 1, "mark_steps": 1}]
+    assert resolve_play_cursor(steps, 0, slide, 1) == (0, 2, 0)
+    slide["mark_step"] = 2
+    assert resolve_play_cursor(steps, 0, slide, 1) == (0, 2, 1)
+    slide["interact"]["play_index"] = 1
+    assert resolve_play_cursor(steps, 0, slide, 1) == (1, 1, 0)
+    assert resolve_play_cursor(steps, 1, steps[1], 1) == (2, 1, None)
 
 
 def test_command_etag_is_per_session() -> None:

@@ -11,9 +11,15 @@ import {
   applyPageKey,
   blankPageStep,
   insertStepsAt,
+  reindexTrainingSteps,
   selectedIndexAfterRemove,
 } from '@/composables/training/trainingBuilderSteps'
-import { advancePlayCursor, canAdvancePlayCursor } from '@/composables/training/trainingMarkSteps'
+import { interactReadCursor } from '@/composables/training/trainingInteract'
+import {
+  advancePlayCursor,
+  canAdvancePlayCursor,
+  setCurrentMarkStep,
+} from '@/composables/training/trainingMarkSteps'
 import { trainingStepThumbKey } from '@/composables/training/trainingStageThumb'
 import type { TrainingPageKey } from '@/config/trainingPages'
 import type { TrainingCourse, TrainingCourseStep, TrainingStepOverlay } from '@/types/training'
@@ -68,6 +74,11 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
 
   function setPreviewing(value: boolean): void {
     previewing.value = value
+    if (value) {
+      interactReadCursor.value = 0
+      const step = steps.value[selected.value]
+      if (step) setCurrentMarkStep(step, 1)
+    }
     if (!value) previewFree.value = false
   }
 
@@ -166,6 +177,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
 
   function removeStepAt(index: number): number {
     steps.value.splice(index, 1)
+    reindexTrainingSteps(steps.value)
     removeThumb(index)
     if (!steps.value.length) {
       const step = pushBlankPage()

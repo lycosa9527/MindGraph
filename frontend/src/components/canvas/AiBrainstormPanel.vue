@@ -16,8 +16,9 @@ import {
   setEmptyNativeDragImage,
 } from '@/composables/aiBrainstorm/mindMapBrainstormDrag'
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { getLLMColor } from '@/config/llmModelColors'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
 const emit = defineEmits<{
@@ -28,7 +29,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const {
   isLoading,

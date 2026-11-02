@@ -11,12 +11,12 @@ import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.v
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { setNodeExplainOutlineEditing } from '@/composables/mindMap/nodeExplainEditGate'
 import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranchNumbering'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDrag'
 import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutlineMirror'
-import { useDiagramStore } from '@/stores'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 import {
@@ -31,7 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const { prefixFor } = useMindMapBranchNumbering()
 const thinkingMapOutline = computed(() => isThinkingMapDiagramType(diagramStore.type))
 

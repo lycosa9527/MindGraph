@@ -14,11 +14,9 @@ Shared MindMate AI chatroom for teachers: one room, one Dify conversation, all p
 | Entry UI | `MindmateSeminarPanel.vue` on `/mindmate` toolbar |
 | Sidebar | `MindmateSeminarHistory.vue` above personal chat history |
 
-## Feature flag
+## Availability
 
-Set `FEATURE_MINDMATE_SEMINAR=True` in `.env` (default **off**). When disabled, REST/WS routes are not registered at startup, runtime requests to `/api/mindmate/seminar/*` return 404 via the feature gate, and the MindMate toolbar pill / sidebar history are hidden. Admins can toggle via **Admin → Features** (writes `.env` + hot reload). A full process restart is required if the module was never loaded at boot.
-
-Tier gate (when the flag is on): `TIER_FEATURE_ONLINE_COLLAB` (same as diagram collab).
+MindMate seminar and MindGraph online collaboration are regular services. They are not behind `FEATURE_*` switches or a school-tier feature. School versions still differ by member seats and diagram storage.
 
 ## Visibility (mirrors canvas collab)
 
@@ -51,20 +49,20 @@ Operational parity with canvas collab: see [`docs/operations/online-collab-runbo
 | Identifier | Scope | Client-visible? | Notes |
 |------------|-------|-----------------|-------|
 | `session_id` (UUID) | One collab room | Yes — join/browse/history | Unguessable; route-level visibility checks before access |
-| `code` (XXX-XXX) | One live room | Yes — invite link, WS path | Network rooms: code-as-secret (~32^6 combinations) + rate limits |
+| `code` (XXX-XXX) | One live room | Yes — invite link, WS path | Addresses one live room. A network room also requires an accepted invite |
 | `dify_conversation_id` | One shared AI thread per room | **No** — server-internal only | Stored as `s{server}:{difyId}` so 主服务器 and 备用服务器 stay distinct. Dify user: `{MINDMATE_DIFY_USER_PREFIX}_mindmate_seminar_{orgId}_{sessionId}` |
 | `resume_token` | One reconnect | Yes — `joined` frame | Bound to `{user, code, session}`; one-time Redis consume |
 
 **Org join parity (canvas collab):** when the host has no `organization_id`, any authenticated org member may join an `organization`-visible room ([`online_collab_visibility_helpers.py`](../../services/online_collab/lifecycle/online_collab_visibility_helpers.py)).
 
-**Network rooms:** anyone with `TIER_FEATURE_ONLINE_COLLAB` and a valid code may join and see room history — intentional secret-link model.
+**Network rooms:** a network room is invite-only. A signed-in teacher enters after they are on the invite list and have accepted. The code addresses the room.
 
-**Access layers:** feature flag → school tier → visibility rules → per-route authorization → PostgreSQL RLS on user-scoped reads.
+**Access layers:** visibility rules → per-route authorization → PostgreSQL RLS on user-scoped reads.
 
 
 ## WebSocket frames
 
-Join is **implicit** on WebSocket connect (after auth, tier, and visibility checks). There is no server handler for a client `join` frame.
+Join is **implicit** on WebSocket connect (after auth and visibility checks). There is no server handler for a client `join` frame.
 
 Client → server: `ping`, `socket_ping`, `read`. A chat line is `POST /api/mindmate/seminar/{session_id}/messages`, not a socket frame.
 

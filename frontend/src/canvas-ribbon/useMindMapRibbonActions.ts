@@ -64,6 +64,14 @@ export function useMindMapRibbonActions() {
       handleAddSibling()
       return
     }
+    if (id === 'step') {
+      handleAddNode()
+      return
+    }
+    if (id === 'substep' || id === 'leaf' || id === 'subpart' || id === 'difference') {
+      handleAddChild()
+      return
+    }
     if (id === 'cause') {
       handleAddCause()
       return

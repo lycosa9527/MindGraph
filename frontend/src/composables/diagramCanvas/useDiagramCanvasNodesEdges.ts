@@ -1,4 +1,4 @@
-import { type MaybeRefOrGetter, computed, toValue } from 'vue'
+import { type MaybeRefOrGetter, computed, nextTick, shallowRef, toValue, watch } from 'vue'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
@@ -8,6 +8,13 @@ import {
   getMindMapCollapsedPaths,
 } from '@/stores/diagram/mindMapCollapse'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+
+export function keepEdgesForNodes<T extends { source: string; target: string }>(
+  edges: readonly T[],
+  nodeIds: ReadonlySet<string>
+): T[] {
+  return edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+}
 
 export interface UseDiagramCanvasNodesEdgesOptions {
   diagramStore: ReturnType<typeof useDiagramSession>
@@ -122,14 +129,31 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
   })
 
   const nodesLength = computed(() => nodes.value.length)
+  const edgesArmed = shallowRef(false)
+
+  watch(
+    nodesLength,
+    (count) => {
+      if (count < 1) {
+        edgesArmed.value = false
+        return
+      }
+      if (edgesArmed.value) return
+      void nextTick(() => {
+        if (nodesLength.value > 0) edgesArmed.value = true
+      })
+    },
+    { immediate: true }
+  )
 
   const edges = computed(() => {
-    if (diagramStore.type === 'brace_map') {
+    if (!edgesArmed.value || diagramStore.type === 'brace_map') {
       return []
     }
     const hidden = branchMove.state.value.hiddenIds
     const collapseHidden = mindMapCollapseHiddenIds.value
-    const baseList =
+    const presentIds = new Set(nodes.value.map((node) => node.id))
+    const visibleEdges =
       hidden.size > 0 || collapseHidden.size > 0
         ? storeEdges.value.filter(
             (e) =>
@@ -139,6 +163,7 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
               !collapseHidden.has(e.target)
           )
         : storeEdges.value
+    const baseList = keepEdgesForNodes(visibleEdges, presentIds)
 
     const slideDimFocusNodeIds = toValue(mindMapSlideDimFocusNodeIds) ?? null
     const withSlideEdgeDim = baseList.map((e) => {

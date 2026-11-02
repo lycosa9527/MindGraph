@@ -15,10 +15,11 @@ import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
+import { resolvePaintDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { canvasRunModel } from '@/config/canvasLlmMenu'
-import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
+import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { DiagramType } from '@/types'
@@ -64,7 +65,9 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
   const { onError, _asSingleton } = options
   const { t } = useI18n()
   const route = useRoute()
-  const diagramStore = useDiagramStore()
+  function paintSession() {
+    return resolvePaintDiagramSession()
+  }
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const uiStore = useUIStore()
@@ -174,7 +177,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
     return streamBrainstormBatch(streamDeps, url, body, options)
   }
 
-  const rawDiagramType = computed(() => diagramStore.type)
+  const rawDiagramType = computed(() => paintSession().type)
   const diagramType = computed(() => {
     const dt = rawDiagramType.value
     return dt === 'mind_map' ? 'mindmap' : dt
@@ -242,16 +245,16 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
 
   const showNextButton = computed(() => isDimensionsStage.value || isStage1WithNext.value)
   const diagramData = computed(() => {
-    const nodes = diagramStore.data?.nodes ?? []
+    const nodes = paintSession().data?.nodes ?? []
     const dt = diagramType.value
     if (dt === 'concept_map') {
-      const spec = diagramStore.data as { focus_question?: string } | undefined
+      const spec = paintSession().data as { focus_question?: string } | undefined
       const fq =
         typeof spec?.focus_question === 'string' && spec.focus_question.trim()
           ? spec.focus_question.trim()
           : undefined
       return buildDiagramData(dt, nodes, {
-        connections: diagramStore.data?.connections,
+        connections: paintSession().data?.connections,
         focusQuestionFromSpec: fq,
       })
     }
@@ -292,7 +295,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
     const mode = panelsStore.diagramBrainstormPanel.mode
     if (!mode || mode === 'topic') return topicText.value
     if (typeof mode === 'string' && mode.startsWith('domain_')) return topicText.value
-    const node = diagramStore.data?.nodes?.find((n) => n.id === mode)
+    const node = paintSession().data?.nodes?.find((n) => n.id === mode)
     return (node?.text ?? '').trim() || topicText.value
   })
 
@@ -402,7 +405,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
 
   async function initializeConceptMapRootModal(): Promise<boolean> {
     if (diagramType.value !== 'concept_map') return false
-    if (!diagramStore.data?.nodes?.length) {
+    if (!paintSession().data?.nodes?.length) {
       errorMessage.value = t('aiBrainstorm.error.createDiagramFirst')
       return false
     }
@@ -617,7 +620,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
   const isWaitingForTopicInput = ref(false)
 
   async function startSession(options?: { keepSessionId?: boolean }): Promise<boolean> {
-    if (!diagramType.value || !diagramStore.data?.nodes?.length) {
+    if (!diagramType.value || !paintSession().data?.nodes?.length) {
       errorMessage.value = t('aiBrainstorm.error.createDiagramFirst')
       return false
     }
@@ -627,9 +630,9 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
 
     const topic =
       diagramType.value === 'concept_map' ? conceptMapCenterTopic.value : topicText.value
-    const nodes = diagramStore.data?.nodes ?? []
-    const connections = diagramStore.data?.connections
-    const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
+    const nodes = paintSession().data?.nodes ?? []
+    const connections = paintSession().data?.connections
+    const dataDimension = (paintSession().data as Record<string, unknown>)?.dimension as
       string | null | undefined
     const stage =
       panelsStore.diagramBrainstormPanel.stage ??
@@ -718,7 +721,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
       const parents = isStage2 && dt ? getStage2ParentsForDiagram(dt, nodes, connections) : []
       const dim =
         (stageData as { dimension?: string })?.dimension ??
-        (diagramStore.data as { dimension?: string })?.dimension ??
+        (paintSession().data as { dimension?: string })?.dimension ??
         ''
 
       if (isStage2 && parents.length > 1) {
@@ -766,9 +769,9 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
       (panelsStore.diagramBrainstormPanel.stage === 'dimensions' ||
         getDefaultStage(
           diagramType.value,
-          diagramStore.data?.nodes ?? [],
-          diagramStore.data?.connections,
-          (diagramStore.data as Record<string, unknown>)?.dimension as string | null | undefined
+          paintSession().data?.nodes ?? [],
+          paintSession().data?.connections,
+          (paintSession().data as Record<string, unknown>)?.dimension as string | null | undefined
         ) === 'dimensions')
     if (!sessionId.value || (!centerTopic.value && !canLoadWithoutTopic) || isLoadingMore.value)
       return false
@@ -778,9 +781,9 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
       ensurePaletteStreamSession()
       const dt = diagramType.value
       const isStaged = STAGED_DIAGRAM_TYPES.includes(dt as (typeof STAGED_DIAGRAM_TYPES)[number])
-      const nodes = diagramStore.data?.nodes ?? []
-      const connections = diagramStore.data?.connections
-      const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
+      const nodes = paintSession().data?.nodes ?? []
+      const connections = paintSession().data?.connections
+      const dataDimension = (paintSession().data as Record<string, unknown>)?.dimension as
         string | null | undefined
       const stage =
         panelsStore.diagramBrainstormPanel.stage ??
@@ -856,7 +859,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
     if (toApply.length === 0) return false
     if (isDimensionsStage && toApply.length !== 1) return false
 
-    diagramStore.pushHistory(t('aiBrainstorm.history.replaceAddNodes'))
+    paintSession().pushHistory(t('aiBrainstorm.history.replaceAddNodes'))
 
     const mode =
       panelsStore.diagramBrainstormPanel.mode ??
@@ -869,7 +872,7 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
     )
 
     return applySelectionToDiagram({
-      diagramStore: diagramStore as Parameters<typeof applySelectionToDiagram>[0]['diagramStore'],
+      diagramStore: paintSession() as Parameters<typeof applySelectionToDiagram>[0]['diagramStore'],
       panelsStore: panelsStore as Parameters<typeof applySelectionToDiagram>[0]['panelsStore'],
       diagramType: diagramType.value,
       diagramKey,
@@ -965,8 +968,8 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
 
   const stage2Parents = computed(() => {
     const dt = diagramType.value
-    const nodes = diagramStore.data?.nodes ?? []
-    const connections = diagramStore.data?.connections
+    const nodes = paintSession().data?.nodes ?? []
+    const connections = paintSession().data?.connections
     return getStage2ParentsForDiagram(dt, nodes, connections)
   })
 
@@ -976,9 +979,9 @@ export function useDiagramBrainstorm(options: UseDiagramBrainstormOptions = {}) 
 
   const defaultStage = computed(() => {
     const dt = diagramType.value
-    const nodes = diagramStore.data?.nodes ?? []
-    const connections = diagramStore.data?.connections
-    const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
+    const nodes = paintSession().data?.nodes ?? []
+    const connections = paintSession().data?.connections
+    const dataDimension = (paintSession().data as Record<string, unknown>)?.dimension as
       string | null | undefined
     return getDefaultStage(dt, nodes, connections, dataDimension)
   })

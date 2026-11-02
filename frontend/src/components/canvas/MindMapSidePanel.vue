@@ -10,8 +10,8 @@ import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useDiagramStore } from '@/stores'
 
 import MindMapDocumentSummaryPanel from './MindMapDocumentSummaryPanel.vue'
 import MindMapOneSentencePanel from './MindMapOneSentencePanel.vue'
@@ -27,7 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const { isPickActive, activatePick, startRandomLearningSheet, startFullBlankLearningSheet } =
   useLearningSheetCustomMode()

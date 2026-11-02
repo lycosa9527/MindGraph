@@ -40,40 +40,28 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     const claimed = new Set(data.value.nodes.map((n) => n.id).filter(Boolean))
     claimed.add('brace-whole')
     claimed.add('dimension-label')
-    const newId = takeBraceMapStableId(claimed)
 
-    ctx.addNode({
-      id: newId,
-      text: partText,
-      type: 'brace',
-      position: { x: 0, y: 0 },
-      data: { [BRACE_MAP_UID_DATA_KEY]: newId },
-    })
-    ctx.addConnection(attachParentId, newId)
-
-    if (isAddingPart) {
-      const [sub1Text, sub2Text] = subpartTexts ?? [
-        `${String(t('diagram.newSubpart'))} 1`,
-        `${String(t('diagram.newSubpart'))} 2`,
-      ]
-      const sub1Id = takeBraceMapStableId(claimed)
-      const sub2Id = takeBraceMapStableId(claimed)
+    const place = (parent: string, label: string): string => {
+      const id = takeBraceMapStableId(claimed)
       ctx.addNode({
-        id: sub1Id,
-        text: sub1Text,
+        id,
+        text: label,
         type: 'brace',
         position: { x: 0, y: 0 },
-        data: { [BRACE_MAP_UID_DATA_KEY]: sub1Id },
+        data: { [BRACE_MAP_UID_DATA_KEY]: id },
       })
-      ctx.addNode({
-        id: sub2Id,
-        text: sub2Text,
-        type: 'brace',
-        position: { x: 0, y: 0 },
-        data: { [BRACE_MAP_UID_DATA_KEY]: sub2Id },
-      })
-      ctx.addConnection(newId, sub1Id)
-      ctx.addConnection(newId, sub2Id)
+      ctx.addConnection(parent, id)
+      return id
+    }
+
+    if (!isAddingPart && subpartTexts) {
+      for (const label of subpartTexts) place(attachParentId, label)
+    } else {
+      const newId = place(attachParentId, partText)
+      if (isAddingPart && subpartTexts) {
+        place(newId, subpartTexts[0])
+        place(newId, subpartTexts[1])
+      }
     }
 
     ctx.pushHistory('Add brace map part')

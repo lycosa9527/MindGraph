@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.204] - 2026-11-02
+
+> **A course slide can walk, knock, or quiz the diagram, and seminar plus canvas collaboration are on for every school.**
+
+### Added
+
+- **Course interactions** — A slide stores guided reading, drag-to-build, or a three-choice quiz. Guided reading steps through a saved node order. Drag knocks nodes into a tray. A node can carry post-notes, a mascot, a video, or an image. Next and previous stay on that reading order before they leave the slide.
+- **Course builder ribbon** — Slide, media, page, class, rules, insert, spotlight, roles, audio, and video sit on one ribbon. The course card menu renames or deletes a course you created. System courses stay locked.
+- **Thinking-map levels** — Enter adds the outer level (step, branch, part, similarity, cause). Tab adds the inner level (substep, item, subpart, difference, effect) when that map has one. The shortcut card lists both. A slash on a nested node adds the inner level.
+
+### Changed
+
+- **Seminar and online collaboration** — Both are regular services. `FEATURE_MINDMATE_SEMINAR` and the school-tier online-collaboration flag no longer gate them. School versions still differ by member seats and diagram storage. Alembic `0164` deletes leftover `feature_mindmate_seminar` and `feature_mindmate_collab` grant rows. The seminar idle monitor starts with the process.
+- **Training media** — Course files go to COS when credentials are set and `COURSE_BUILDER_LOAD_FROM_COS` is on. A local WSL host sets that flag false and keeps the bytes on the API.
+- **Canvas camera** — A fit beside a right-hand panel frames the subject in the open area. Zoom eases while that subject stays on a straight path.
+
+### Fixed
+
+- **Brace map** — Adding subparts under an existing part places those subparts on the part. A new part still arrives with two subparts.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_training_interact.py`](tests/test_training_interact.py), [`tests/test_training_play_advance.py`](tests/test_training_play_advance.py), [`tests/test_training_storage_keys.py`](tests/test_training_storage_keys.py), [`tests/test_school_tier.py`](tests/test_school_tier.py)
+- [`frontend/tests/trainingInteract.spec.ts`](frontend/tests/trainingInteract.spec.ts), [`frontend/tests/thinkingMapNodeSlash.spec.ts`](frontend/tests/thinkingMapNodeSlash.spec.ts), [`frontend/tests/mindMapShortcutGuide.spec.ts`](frontend/tests/mindMapShortcutGuide.spec.ts), [`frontend/tests/openCanvasNodeFrame.spec.ts`](frontend/tests/openCanvasNodeFrame.spec.ts)
+
 ## [5.180.203] - 2026-11-01
 
 > **A diagram generated in a seminar is saved to the person who asked.**

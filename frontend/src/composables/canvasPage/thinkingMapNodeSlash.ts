@@ -6,7 +6,13 @@ import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilit
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import type { Connection, DiagramNode } from '@/types'
 import type { NodeSlashAction } from '@/utils/canvasTouchGestures'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isFlowMapStepNode, isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import {
+  isMultiFlowCauseNode,
+  isMultiFlowEffectNode,
+  isMultiFlowEventId,
+} from '@/utils/multiFlowMapIdentity'
 import { isTreeMapCategoryNode, isTreeMapLeafNode } from '@/utils/treeMapIdentity'
 
 /** Handler the slash event bus should call after selecting the cut node. */
@@ -16,13 +22,7 @@ export type ThinkingMapSlashCommand =
 /** Where the cut node sits in that map. */
 export type ThinkingMapSlashRole = 'topic' | 'peer' | 'nested' | 'other'
 
-const FLAT_ADD_TYPES = new Set([
-  'circle_map',
-  'bubble_map',
-  'bridge_map',
-  'double_bubble_map',
-  'multi_flow_map',
-])
+const FLAT_ADD_TYPES = new Set(['circle_map', 'bubble_map', 'bridge_map'])
 
 export function readThinkingMapSlashRole(
   diagramType: string | null | undefined,
@@ -57,6 +57,20 @@ export function readThinkingMapSlashRole(
     return 'peer'
   }
 
+  if (diagramType === 'double_bubble_map') {
+    const role = readDoubleBubbleRole(node)
+    if (role === 'leftDiff' || role === 'rightDiff') return 'nested'
+    if (role === 'similarity') return 'peer'
+    return 'topic'
+  }
+
+  if (diagramType === 'multi_flow_map') {
+    if (isMultiFlowEventId(nodeId) || node.type === 'topic') return 'topic'
+    if (isMultiFlowEffectNode(node)) return 'nested'
+    if (isMultiFlowCauseNode(node)) return 'peer'
+    return 'other'
+  }
+
   return 'other'
 }
 
@@ -67,18 +81,31 @@ export function resolveThinkingMapNodeSlash(
 ): ThinkingMapSlashCommand | null {
   if (!isThinkingMapDiagramType(diagramType) || typeof diagramType !== 'string') return null
   if (action === 'delete') return 'delete'
-  if (FLAT_ADD_TYPES.has(diagramType)) return 'add_node'
-
-  if (diagramType === 'tree_map') {
-    if (role !== 'nested') return 'add_tree_category'
+  if (diagramType === 'double_bubble_map') {
+    if (role === 'nested') return 'add_child'
     return 'add_node'
   }
 
-  if (diagramType === 'flow_map') return 'add_node'
+  if (FLAT_ADD_TYPES.has(diagramType)) return 'add_node'
+
+  if (diagramType === 'tree_map') {
+    if (role === 'nested') return 'add_child'
+    return 'add_tree_category'
+  }
+
+  if (diagramType === 'flow_map') {
+    if (role === 'nested') return 'add_child'
+    return 'add_node'
+  }
 
   if (diagramType === 'brace_map') {
     if (role === 'nested') return 'add_child'
     return 'add_branch'
+  }
+
+  if (diagramType === 'multi_flow_map') {
+    if (role === 'nested') return 'add_child'
+    return 'add_node'
   }
 
   return 'add_node'

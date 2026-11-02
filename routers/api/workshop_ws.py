@@ -62,12 +62,10 @@ from services.online_collab.core.online_collab_manager import (
     get_online_collab_manager,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
 from utils.collab_ws_origin import (
     canvas_collab_websocket_origin_is_allowed,
     load_collab_ws_allowed_origins_env,
 )
-from utils.db.session_open import actor_rls_session
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -166,23 +164,6 @@ async def canvas_collab_websocket(
 
     user, auth_err = await authenticate_canvas_collab_user(websocket)
     if auth_err or user is None:
-        return
-
-    async with actor_rls_session(user) as tier_db:
-        collab_allowed = await user_has_school_tier_feature(
-            tier_db,
-            user,
-            TIER_FEATURE_ONLINE_COLLAB,
-        )
-    if not collab_allowed:
-        await websocket.close(
-            code=1008,
-            reason="School tier does not include online collaboration",
-        )
-        logger.warning(
-            "[WorkshopWS] School tier blocked collab for user_id=%s",
-            user.id,
-        )
         return
 
     norm_code = normalize_canvas_collab_code(code)

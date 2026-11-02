@@ -19,10 +19,12 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import { createThinkingMapLevelAdds } from '@/composables/editor/thinkingMapLevelAdd'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { braceMapRootId } from '@/stores/diagram/braceMapParentResolve'
 import { doubleBubbleDeleteKeepWarningKey } from '@/stores/diagram/doubleBubbleMapOps'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { orderFlowStepNodes, substepsForFlowStep } from '@/stores/specLoader/flowMapSubsteps'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramNode } from '@/types'
 import {
@@ -33,7 +35,6 @@ import {
 } from '@/utils/bridgeMapIdentity'
 import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode, takeCircleMapStableId } from '@/utils/circleMapIdentity'
-import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { findFlowMapParentStep, readFlowStepIndex } from '@/utils/flowMapIdentity'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
@@ -41,12 +42,8 @@ import {
   isMindMapSiblingDebugEnabled,
   recordMindMapSiblingInsertAttempt,
 } from '@/utils/mindMapSiblingDebug'
-import { readMultiFlowRole, takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
-import {
-  isTreeMapCategoryNode,
-  isTreeMapLeafNode,
-  readTreeParentCategoryId,
-} from '@/utils/treeMapIdentity'
+import { takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
+import { isTreeMapCategoryNode, isTreeMapLeafNode } from '@/utils/treeMapIdentity'
 
 /** V2/V3 canvas: Enter/Tab create focuses inline edit — success toasts steal focus. */
 function shouldToastMindMapNodeAdd(sessionMode: MindMapCanvasMode): boolean {
@@ -66,22 +63,6 @@ const DEFAULT_NODE_ACTIONS_OPTIONS: Required<UseNodeActionsOptions> = {
   includeTreeMapPrimaryAdd: true,
   includeMultiFlowPrimaryAdd: true,
   registerEventBusListeners: true,
-}
-
-function getDoubleBubbleGroup(
-  node: { id?: string; data?: Record<string, unknown> } | undefined
-): 'similarity' | 'leftDiff' | 'rightDiff' | null {
-  return node ? readDoubleBubbleRole(node) : null
-}
-
-function resolveTreeCategoryId(nodes: DiagramNode[], selectedId: string): string | null {
-  const selected = nodes.find((n) => n.id === selectedId)
-  if (!selected) return null
-  if (isTreeMapCategoryNode(selected)) return selected.id
-  if (isTreeMapLeafNode(selected)) {
-    return readTreeParentCategoryId(selected)
-  }
-  return null
 }
 
 export type DiagramNodeActionBusHandlers = {
@@ -125,8 +106,73 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   const diagramStore = useDiagramSession()
   const { t } = useLanguage()
   const notify = useNotifications()
+  const {
+    addTreeCategoryNode,
+    addTreeItemNode,
+    addBracePartNode,
+    addBraceSubpartNode,
+    addDoubleBubbleSimilarityNode,
+    addDoubleBubbleDifferenceNode,
+  } = createThinkingMapLevelAdds(
+    diagramStore,
+    (key, named) => (named ? t(key, named) : t(key)),
+    notify
+  )
 
   // ---- Add helpers ----
+
+  function selectFlowNode(nodeId: string | undefined): void {
+    if (nodeId) diagramStore.selectNodes(nodeId)
+  }
+
+  /** Enter and the Add Step button add one step, with no bundled substeps. */
+  function addFlowStepNode(): boolean {
+    if (!diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'))) return false
+    const ordered = orderFlowStepNodes(diagramStore.data?.nodes ?? [])
+    selectFlowNode(ordered[ordered.length - 1]?.id)
+    notify.successKey('canvas.toolbar.stepAdded')
+    return true
+  }
+
+  /**
+   * Tab and the Add Substep button add one substep.
+   * A selected step or substep chooses the parent; otherwise the last step does.
+   */
+  function addFlowSubstepNode(): boolean {
+    const nodes = diagramStore.data?.nodes
+    if (!nodes) {
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
+      return false
+    }
+    const selectedId = diagramStore.selectedNodes[0]
+    const selected = selectedId ? nodes.find((node) => node.id === selectedId) : undefined
+    const fromSelection = selected ? findFlowMapParentStep(selected, nodes) : undefined
+    const orderedSteps = orderFlowStepNodes(nodes)
+    const stepNode = fromSelection ?? orderedSteps[orderedSteps.length - 1]
+    if (!stepNode) {
+      notify.warningKey('canvas.toolbar.selectStepForSubstep')
+      return false
+    }
+    const addStepIndex = readFlowStepIndex(stepNode)
+    const added = diagramStore.addFlowMapSubstep(
+      stepNode.text ?? '',
+      t('canvas.toolbar.newSubstep'),
+      addStepIndex >= 0 ? addStepIndex : undefined,
+      stepNode.id
+    )
+    if (!added) return false
+    const refreshed = diagramStore.data?.nodes ?? []
+    const parent = refreshed.find((node) => node.id === stepNode.id)
+    const children = parent
+      ? substepsForFlowStep(
+          refreshed.filter((node) => node.type === 'flowSubstep'),
+          parent
+        )
+      : []
+    selectFlowNode(children[children.length - 1]?.id)
+    notify.successKey('canvas.toolbar.substepAdded')
+    return true
+  }
 
   function handleAddBranch(): void {
     if (isDiagramPresentationReadOnly(diagramStore)) return
@@ -137,31 +183,12 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     }
 
     if (diagramType === 'flow_map') {
-      const stepCount = diagramStore.data.nodes.filter((n) => n.type === 'flow').length
-      const stepNum = stepCount + 1
-      const subs: [string, string] = [
-        t('canvas.toolbar.substepDefault1', { n: stepNum }),
-        t('canvas.toolbar.substepDefault2', { n: stepNum }),
-      ]
-      if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), subs)) {
-        notify.successKey('canvas.toolbar.stepAdded')
-      }
+      addFlowStepNode()
       return
     }
 
     if (diagramType === 'brace_map') {
-      const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
-      const rootId =
-        diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
-        diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
-      if (!rootId) return
-      const subparts: [string, string] = [
-        t('canvas.toolbar.subpartLabel1'),
-        t('canvas.toolbar.subpartLabel2'),
-      ]
-      if (diagramStore.addBraceMapPart(rootId, t('canvas.toolbar.newPart'), subparts)) {
-        notify.successKey('canvas.toolbar.partAdded')
-      }
+      addBracePartNode()
       return
     }
 
@@ -187,56 +214,28 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
-    if (diagramType === 'tree_map' || diagramType === 'multi_flow_map') {
-      handleAddNode()
+    if (diagramType === 'multi_flow_map') {
+      handleAddEffect()
+      return
+    }
+
+    if (diagramType === 'tree_map') {
+      addTreeItemNode()
       return
     }
 
     if (diagramType === 'flow_map') {
-      const selectedId = diagramStore.selectedNodes[0]
-      const selectedNode = selectedId
-        ? diagramStore.data.nodes.find((n) => n.id === selectedId)
-        : undefined
-
-      const stepNode = selectedNode
-        ? findFlowMapParentStep(selectedNode, diagramStore.data.nodes)
-        : undefined
-
-      if (!stepNode?.text) {
-        notify.warningKey('canvas.toolbar.selectStepForSubstep')
-        return
-      }
-      const addStepIndex = readFlowStepIndex(stepNode)
-      if (
-        diagramStore.addFlowMapSubstep(
-          stepNode.text,
-          t('canvas.toolbar.newSubstep'),
-          addStepIndex >= 0 ? addStepIndex : undefined,
-          stepNode.id
-        )
-      ) {
-        notify.successKey('canvas.toolbar.substepAdded')
-      }
+      addFlowSubstepNode()
       return
     }
 
     if (diagramType === 'brace_map') {
-      const selectedId = diagramStore.selectedNodes[0]
-      if (!selectedId) {
-        notify.warningKey('canvas.toolbar.selectPartForSubpart')
-        return
-      }
-      const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
-      const rootId =
-        diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
-        diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
-      if (selectedId === rootId || selectedId === 'dimension-label') {
-        notify.warningKey('canvas.toolbar.selectPartThenEnter')
-        return
-      }
-      if (diagramStore.addBraceMapPart(selectedId, t('canvas.toolbar.newSubpart'))) {
-        notify.successKey('canvas.toolbar.subpartAdded')
-      }
+      addBraceSubpartNode()
+      return
+    }
+
+    if (diagramType === 'double_bubble_map') {
+      addDoubleBubbleDifferenceNode()
       return
     }
 
@@ -388,14 +387,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     }
 
     if (diagramType === 'brace_map') {
-      const selectedId = diagramStore.selectedNodes[0]
-      const connections = diagramStore.data.connections ?? []
-      const rootId = braceMapRootId(diagramStore.data.nodes, connections)
-      if (!selectedId || selectedId === 'dimension-label' || selectedId === rootId) {
-        handleAddBranch()
-      } else {
-        handleAddChild()
-      }
+      addBracePartNode()
       return
     }
 
@@ -404,98 +396,17 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         notify.infoKey('canvas.toolbar.addNodeInDevelopment')
         return
       }
-      const selectedId = diagramStore.selectedNodes[0]
-      if (!selectedId || selectedId === 'tree-topic') {
-        if (diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) {
-          notify.successKey('canvas.toolbar.branchAdded')
-        }
-      } else {
-        if (selectedId === 'dimension-label') {
-          notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
-          return
-        }
-        const catId = resolveTreeCategoryId(diagramStore.data.nodes, selectedId)
-        if (!catId) {
-          notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
-          return
-        }
-        if (diagramStore.addTreeMapChild(catId, t('canvas.toolbar.newChild'))) {
-          notify.successKey('canvas.toolbar.childAdded')
-        } else {
-          notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
-        }
-      }
+      addTreeCategoryNode()
       return
     }
 
     if (diagramType === 'flow_map') {
-      const selectedId = diagramStore.selectedNodes[0]
-      const selectedNode = selectedId
-        ? diagramStore.data.nodes.find((n) => n.id === selectedId)
-        : undefined
-
-      if (selectedNode?.type === 'flowSubstep') {
-        const stepNode = findFlowMapParentStep(selectedNode, diagramStore.data.nodes)
-        const enterStepIndex = stepNode ? readFlowStepIndex(stepNode) : -1
-        if (
-          stepNode?.text &&
-          diagramStore.addFlowMapSubstep(
-            stepNode.text,
-            t('canvas.toolbar.newSubstep'),
-            enterStepIndex >= 0 ? enterStepIndex : undefined,
-            stepNode.id
-          )
-        ) {
-          notify.successKey('canvas.toolbar.substepAdded')
-        }
-      } else {
-        // Step selected or nothing selected → add a step
-        const stepCount = diagramStore.data.nodes.filter((n) => n.type === 'flow').length
-        const stepNum = stepCount + 1
-        const subs: [string, string] = [
-          t('canvas.toolbar.substepDefault1', { n: stepNum }),
-          t('canvas.toolbar.substepDefault2', { n: stepNum }),
-        ]
-        if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), subs)) {
-          notify.successKey('canvas.toolbar.stepAdded')
-        }
-      }
+      addFlowStepNode()
       return
     }
 
     if (diagramType === 'double_bubble_map') {
-      const selectedId = diagramStore.selectedNodes[0]
-      const selectedNode = selectedId
-        ? diagramStore.data.nodes.find((n) => n.id === selectedId)
-        : undefined
-      const group = getDoubleBubbleGroup(selectedNode)
-      if (!group) {
-        notify.warningKey('canvas.toolbar.selectSimilarityOrDifferenceFirst')
-        return
-      }
-      const spec = diagramStore.getDoubleBubbleSpecFromData()
-      if (!spec) return
-      const similarities = (spec.similarities as string[]) || []
-      const leftDifferences = (spec.leftDifferences as string[]) || []
-      const rightDifferences = (spec.rightDifferences as string[]) || []
-      const simIndex = similarities.length + 1
-      const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
-      const text =
-        group === 'similarity'
-          ? t('canvas.toolbar.similarityWithIndex', { n: simIndex })
-          : t('canvas.toolbar.differenceAWithIndex', { n: pairIndex })
-      const pairText =
-        group === 'similarity'
-          ? undefined
-          : t('canvas.toolbar.differenceBWithIndex', { n: pairIndex })
-      if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
-        diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
-        notify.success(
-          group === 'similarity'
-            ? t('canvas.toolbar.nodeAddedGeneric')
-            : t('canvas.toolbar.differencePairAdded')
-        )
-      }
+      addDoubleBubbleSimilarityNode()
       return
     }
 
@@ -504,36 +415,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         notify.infoKey('canvas.toolbar.addNodeInDevelopment')
         return
       }
-      const selectedId = diagramStore.selectedNodes[0]
-      const selectedNode = selectedId
-        ? diagramStore.data.nodes.find((n) => n.id === selectedId)
-        : undefined
-      const selectedRole = selectedNode ? readMultiFlowRole(selectedNode) : null
-      const isCause = selectedRole === 'cause'
-      const isEffect = selectedRole === 'effect'
-      if (!selectedId || selectedId === 'event' || (!isCause && !isEffect)) {
-        notify.warningKey('canvas.toolbar.selectCauseOrEffectForAdd')
-        return
-      }
-      const category = isCause ? 'causes' : 'effects'
-      const label =
-        category === 'causes' ? t('canvas.toolbar.newCause') : t('canvas.toolbar.newEffect')
-      const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
-      diagramStore.addNode({
-        id: takeMultiFlowMapStableId(claimed),
-        text: label,
-        type: 'flow',
-        position: { x: 0, y: 0 },
-        category,
-      } as DiagramNode & { category?: string })
-      diagramStore.pushHistory(
-        category === 'causes'
-          ? t('canvas.toolbar.addCauseHistory')
-          : t('canvas.toolbar.addEffectHistory')
-      )
-      notify.success(
-        category === 'causes' ? t('canvas.toolbar.causeAdded') : t('canvas.toolbar.effectAdded')
-      )
+      handleAddCause()
       return
     }
 
@@ -665,7 +547,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (diagramType === 'double_bubble_map') {
       const toDelete = selectedNodesArray.filter((id) => {
         const node = diagramStore.data?.nodes.find((n) => n.id === id)
-        return Boolean(node && getDoubleBubbleGroup(node))
+        return Boolean(node && readDoubleBubbleRole(node))
       })
       if (toDelete.length === 0) {
         notify.warningKey('canvas.toolbar.selectSimilarityOrDifferenceDelete')

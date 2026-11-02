@@ -23,8 +23,10 @@ const props = withDefaults(
     expanded?: boolean
     /** Short tab titles until hover when the strip overlaps the filename or collab controls. */
     shortLabels?: boolean
+    /** Shared course-builder bar: canvas tabs stay visible but none look selected. */
+    quiet?: boolean
   }>(),
-  { expanded: true, shortLabels: false }
+  { expanded: true, shortLabels: false, quiet: false }
 )
 
 const emit = defineEmits<{
@@ -90,10 +92,13 @@ function tabTitle(tab: MindMapRibbonTabId): string | undefined {
       type="button"
       class="mm-ribbon-tabs__tab"
       role="tab"
-      :class="{ 'is-active': activeTab === tab, 'mm-ribbon-tabs__tab--ai': tab === 'ai' }"
-      :aria-selected="activeTab === tab"
+      :class="{
+        'is-active': !quiet && activeTab === tab,
+        'mm-ribbon-tabs__tab--ai': tab === 'ai',
+      }"
+      :aria-selected="!quiet && activeTab === tab"
       :aria-controls="MIND_MAP_RIBBON_TOOLS_ID"
-      :aria-expanded="activeTab === tab ? expanded : undefined"
+      :aria-expanded="!quiet && activeTab === tab ? expanded : undefined"
       :title="tabTitle(tab)"
       :data-testid="`mindmap-ribbon-tab-${tab}`"
       @click="emit('update:activeTab', tab)"

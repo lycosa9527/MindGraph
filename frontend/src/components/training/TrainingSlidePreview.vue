@@ -5,6 +5,7 @@ import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.v
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { overlaysForReadNode, readFocusNodeId } from '@/composables/training/trainingInteract'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { trainingPageDef } from '@/config/trainingPages'
@@ -48,7 +49,9 @@ const showLive = computed(() => {
   return hasTrainingLivePreview(props.step.page_key)
 })
 const showMarks = computed(() => props.compact)
-const marks = computed(() => visibleMarkOverlays(props.step))
+const marks = computed(() =>
+  overlaysForReadNode(visibleMarkOverlays(props.step), readFocusNodeId(props.step))
+)
 </script>
 
 <template>

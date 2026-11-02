@@ -4,7 +4,8 @@
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
-import { useDiagramStore, usePanelsStore } from '@/stores'
+import { usePanelsStore } from '@/stores'
+import type { DiagramSession } from '@/stores/diagram'
 import { flowStepIndexFromNodeId } from '@/stores/specLoader/flowMapSubsteps'
 import type { DiagramNode, DiagramType } from '@/types'
 import type { NodeSuggestion } from '@/types/panels'
@@ -39,7 +40,7 @@ function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {
 }
 
 export interface ApplySelectionContext {
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: DiagramSession
   panelsStore: ReturnType<typeof usePanelsStore>
   diagramType: DiagramType | null
   diagramKey: string

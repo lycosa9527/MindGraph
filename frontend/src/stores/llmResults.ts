@@ -17,6 +17,7 @@ import { computed, nextTick, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { resolvePaintDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { attachLlmExportAttribution } from '@/utils/llmExportWatermark'
 import {
   isMindMapDiagramType,
@@ -24,7 +25,6 @@ import {
 } from '@/utils/mindMapLiveSpecExtras'
 
 import { useAiContentLevelStore } from './aiContentLevel'
-import { useDiagramStore } from './diagram'
 import {
   isLlmResultForCurrentSession,
   shouldPaintCompletedLlmModel,
@@ -82,7 +82,9 @@ export {
 } from './llmResultsPaint'
 
 export const useLLMResultsStore = defineStore('llmResults', () => {
-  const diagramStore = useDiagramStore()
+  function paintSession() {
+    return resolvePaintDiagramSession()
+  }
 
   // State
   const results = ref<Record<string, LLMResult>>({})
@@ -219,7 +221,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     // Flow map: preserve current orientation (LLM spec typically omits it, defaulting to horizontal)
     // Mind map: preserve theme / diagram style / canvas (LLM/vision specs omit them).
     let specToLoad = result.spec
-    const currentData = diagramStore.data as Record<string, unknown> | null
+    const currentData = paintSession().data as Record<string, unknown> | null
     if (diagramType === 'flow_map') {
       const currentOrientation = currentData?.orientation ?? 'horizontal'
       specToLoad = { ...result.spec, orientation: currentOrientation }
@@ -244,7 +246,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     // Mark before load so auto-save skips: content change is programmatic replace,
     // not a user edit. save-before-replace already saved user edits.
     contentChangeIsFromModelSwitch.value = true
-    const loaded = diagramStore.loadFromSpec(
+    const loaded = paintSession().loadFromSpec(
       specToLoad,
       diagramType as import('@/types').DiagramType,
       {
@@ -261,7 +263,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       }
       // Defer stamp so getSpecForSave does not block first paint after soft load.
       void nextTick(() => {
-        const stamped = diagramStore.getSpecForSave()
+        const stamped = paintSession().getSpecForSave()
         if (stamped) {
           updateCurrentModelSpec(stamped)
         }
@@ -330,7 +332,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   // Menu choice. Stamp the painted model first so a later switch still has its edits.
   function setSelectedModel(model: string | null): void {
     if (model !== selectedModel.value && !isGenerating.value) {
-      const spec = diagramStore.getSpecForSave()
+      const spec = paintSession().getSpecForSave()
       if (spec) {
         updateCurrentModelSpec(spec)
       }
@@ -421,7 +423,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       return false
     }
 
-    const currentDiagramType = diagramStore.type
+    const currentDiagramType = paintSession().type
     let normalizedCurrentType = currentDiagramType
     if (normalizedCurrentType === 'mind_map') {
       normalizedCurrentType = 'mindmap'

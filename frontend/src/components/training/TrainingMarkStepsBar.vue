@@ -3,6 +3,8 @@ import { computed } from 'vue'
 
 import { ElButton } from 'element-plus'
 
+import { Minus, Plus } from '@lucide/vue'
+
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage } from '@/composables'
 import {
@@ -55,11 +57,10 @@ function onRemove(): void {
 </script>
 
 <template>
-  <div class="builder-toolbar__row">
-    <span class="builder-toolbar__label"><I18nText k="training.builder.groupSteps" /></span>
+  <div class="builder-steps">
     <AdminSwissSegmented
       v-model="current"
-      :equal="count <= 4"
+      fit
       :options="options"
       :aria-label="t('training.builder.groupSteps')"
     />
@@ -70,7 +71,10 @@ function onRemove(): void {
       :aria-label="t('training.builder.markStepAdd')"
       @click="onAdd"
     >
-      +
+      <Plus
+        class="builder-steps__icon"
+        aria-hidden="true"
+      />
     </ElButton>
     <ElButton
       size="small"
@@ -79,25 +83,27 @@ function onRemove(): void {
       :aria-label="t('training.builder.markStepRemove')"
       @click="onRemove"
     >
-      −
+      <Minus
+        class="builder-steps__icon"
+        aria-hidden="true"
+      />
     </ElButton>
-    <slot />
   </div>
 </template>
 
 <style scoped src="@/styles/admin-swiss-controls.css"></style>
 <style scoped>
-.builder-toolbar__row {
-  display: flex;
-  flex-wrap: wrap;
+.builder-steps {
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem;
 }
-.builder-toolbar__label {
-  min-width: 2.5rem;
-  color: #78716c;
-  font-size: 0.7rem;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+.builder-steps :deep(.admin-swiss-segment) {
+  white-space: nowrap;
+}
+.builder-steps__icon {
+  width: 15px;
+  height: 15px;
 }
 </style>

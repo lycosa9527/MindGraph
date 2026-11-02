@@ -8,10 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from models.domain.mindmate_seminar import MindmateSeminarSession
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.background_files import load_folder_session
 from services.features.mindmate_seminar.face_chat_files import (
     hold_face_chat_lock,
@@ -21,8 +19,6 @@ from services.features.mindmate_seminar.face_chat_files import (
 from services.features.mindmate_seminar.group_members import user_observes_seminar
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -56,16 +52,6 @@ class FaceChatLockBody(BaseModel):
     refresh: bool = False
 
 
-async def _require_collab_tier(current_user: User, lang: Language) -> None:
-    async with actor_rls_session(current_user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            current_user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 def _http_error(exc: ValueError) -> HTTPException:
     code = str(exc)
     return HTTPException(status_code=_STATUS.get(code, status.HTTP_400_BAD_REQUEST), detail=code)
@@ -88,10 +74,8 @@ async def save_seminar_face_chat(
     body: FaceChatSaveBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Overwrite the live face-to-face markdown for this recorder."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_face_chat",
         get_rate_limit_identifier(current_user, request),
@@ -129,10 +113,8 @@ async def claim_seminar_face_chat(
     body: FaceChatLockBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Take or refresh the single recorder lock before the microphone opens."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_face_chat_claim",
         get_rate_limit_identifier(current_user, request),
@@ -157,10 +139,8 @@ async def release_seminar_face_chat(
     body: FaceChatLockBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Release the recorder lock when this client stops."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_face_chat_release",
         get_rate_limit_identifier(current_user, request),

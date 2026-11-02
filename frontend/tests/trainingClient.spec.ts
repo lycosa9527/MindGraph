@@ -6,6 +6,7 @@ import {
   TRAINING_RAIL_VISIBLE_ROWS,
   canOpenTrainingEvents,
   emptyTrainingSnapshot,
+  isTrainingBuilderPath,
   isTrainingOwnerHeartbeat,
   isTrainingRailVisible,
   isTrainingRemotePath,
@@ -85,6 +86,9 @@ describe('trainingClient', () => {
     expect(shouldHideTrainingDesktopChrome('/m')).toBe(true)
     expect(shouldHideTrainingDesktopChrome('/m/mindmate')).toBe(true)
     expect(shouldHideTrainingDesktopChrome('/training/builder/c1')).toBe(true)
+    expect(isTrainingBuilderPath('/training/builder')).toBe(true)
+    expect(isTrainingBuilderPath('/training/builder/c1')).toBe(true)
+    expect(isTrainingBuilderPath('/training')).toBe(false)
     expect(shouldHideTrainingDesktopChrome('/canvas')).toBe(false)
   })
 

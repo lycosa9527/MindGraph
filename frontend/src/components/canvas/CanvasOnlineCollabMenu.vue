@@ -8,7 +8,6 @@ import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import I18nText from '@/components/common/I18nText.vue'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramStore } from '@/stores'
 
@@ -28,15 +27,12 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
-const { canUseOnlineCollab } = useSchoolTierFeatures()
 const diagramStore = useDiagramStore()
 const actions = useMindMapRibbonActions()
 
 const sessionLive = computed(() => Boolean(props.workshopCode) || diagramStore.collabSessionActive)
 
-const showMenu = computed(
-  () => !props.isViewer && !props.isCollabGuest && (canUseOnlineCollab.value || sessionLive.value)
-)
+const showMenu = computed(() => !props.isViewer && !props.isCollabGuest)
 </script>
 
 <template>
@@ -61,21 +57,15 @@ const showMenu = computed(
     </button>
     <template #dropdown>
       <ElDropdownMenu>
-        <ElDropdownItem
-          v-if="canUseOnlineCollab"
-          command="organization"
-        >
+        <ElDropdownItem command="organization">
           <I18nText k="canvas.zoomControls.collabWithinOrg" />
         </ElDropdownItem>
-        <ElDropdownItem
-          v-if="canUseOnlineCollab"
-          command="network"
-        >
+        <ElDropdownItem command="network">
           <I18nText k="canvas.zoomControls.collabCrossOrg" />
         </ElDropdownItem>
         <ElDropdownItem
           v-if="sessionLive"
-          :divided="canUseOnlineCollab"
+          divided
           command="stop"
         >
           <I18nText k="canvas.zoomControls.collabTurnOff" />

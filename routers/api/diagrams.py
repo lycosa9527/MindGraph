@@ -86,11 +86,9 @@ from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
-    TIER_FEATURE_ONLINE_COLLAB,
     diagram_limit_reached_message,
     max_diagrams_for_user,
     parse_diagram_save_limit_error,
-    user_has_school_tier_feature,
 )
 from utils.auth.thinking_coin_config import EVENT_DIAGRAM_SAVE, EVENT_DIAGRAM_SNAPSHOT
 from utils.db.session_open import actor_rls_session, user_rls_session
@@ -446,18 +444,11 @@ async def get_diagram(
         # snapshot arrives.
         org_id = getattr(current_user, "organization_id", None)
         if org_id is not None:
-            async with actor_rls_session(current_user) as tier_db:
-                collab_allowed = await user_has_school_tier_feature(
-                    tier_db,
-                    current_user,
-                    TIER_FEATURE_ONLINE_COLLAB,
-                )
-            if collab_allowed:
-                diagram = await _get_diagram_as_org_workshop_participant(
-                    diagram_id,
-                    org_id,
-                    int(current_user.id),
-                )
+            diagram = await _get_diagram_as_org_workshop_participant(
+                diagram_id,
+                org_id,
+                int(current_user.id),
+            )
 
     if not diagram:
         raise HTTPException(status_code=404, detail="Diagram not found")

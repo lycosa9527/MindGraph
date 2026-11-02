@@ -8,7 +8,7 @@
  * - Enter to save / confirm edit (does not add nodes)
  * - Escape to cancel
  * - Tab (mind map): save then add child (edit opens on the new node)
- * - Tab (thinking maps): no insert
+ * - Tab (flow, tree, brace, double bubble): save then add the inner level
  * - Tab (concept map): emits node_editor:tab_pressed (draftText); optional syncBaselineOnTab
  * - Click outside to save
  * - Seamless transition between display and edit modes
@@ -17,6 +17,7 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { useLanguage, useNotifications } from '@/composables'
+import { tabAddsNestedNode } from '@/composables/canvasPage/canvasPageEditorShortcutRouting'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
@@ -28,6 +29,11 @@ import {
   setMindMapPostEditSiblingAnchor,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
+import {
+  trainingDragBlankIds,
+  trainingDragFilledIds,
+  trainingDragMarks,
+} from '@/composables/training/trainingDragKnock'
 import {
   isNodeDisplayPlaceholderLabel,
   shouldReplaceLabelWithMathInsert,
@@ -147,6 +153,15 @@ const diagramStore = useDiagramSession()
 const learningSheetBlanked = computed(
   () => diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.nodeId)
 )
+const trainingDragBlanked = computed(
+  () =>
+    trainingDragBlankIds.value.includes(props.nodeId) &&
+    !trainingDragFilledIds.value.includes(props.nodeId)
+)
+const trainingDragMark = computed((): boolean | null => {
+  const mark = trainingDragMarks.value[props.nodeId]
+  return typeof mark === 'boolean' ? mark : null
+})
 const bilingualSecondary = computed(() => {
   const node = diagramStore.data?.nodes?.find((item) => item.id === props.nodeId)
   return (node?.textSecondary ?? '').trim()
@@ -962,6 +977,13 @@ function handleKeydown(event: KeyboardEvent): void {
     }
     event.preventDefault()
     event.stopPropagation()
+    if (tabAddsNestedNode(diagramStore.type)) {
+      saveEdit('tab-commit')
+      nextTick(() => {
+        eventBus.emit('diagram:add_child_requested', {})
+      })
+      return
+    }
     if (isThinkingMapDiagramType(diagramStore.type)) {
       return
     }
@@ -1386,6 +1408,7 @@ onUnmounted(() => {
         'inline-editable-text--image': hasNodeImage,
         'inline-editable-text--bilingual': bilingualSecondary || (localIsEditing && bilingualEdit),
         'learning-sheet-blanked': learningSheetBlanked,
+        'training-drag-blanked': trainingDragBlanked,
       },
     ]"
     @dblclick="handleDoubleClick"
@@ -1393,6 +1416,13 @@ onUnmounted(() => {
     @touchend.passive="handleTouchEnd"
     @mousedown="handleMouseDown"
   >
+    <span
+      v-if="trainingDragMark !== null"
+      class="training-drag-mark"
+      :class="trainingDragMark ? 'is-ok' : 'is-bad'"
+      aria-hidden="true"
+      >{{ trainingDragMark ? '✓' : '✕' }}</span
+    >
     <MindMapNodeAdornments
       v-if="showThinkingMapAdornments"
       :node-id="nodeId"
@@ -1641,6 +1671,32 @@ onUnmounted(() => {
 
 .inline-editable-text--full-width {
   width: 100%;
+}
+.training-drag-blanked :deep(.inline-edit-display),
+.training-drag-blanked .inline-edit-display {
+  visibility: hidden;
+}
+.training-drag-mark {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  z-index: 2;
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.training-drag-mark.is-ok {
+  background: #d1fae5;
+  color: #047857;
+}
+.training-drag-mark.is-bad {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .inline-editable-text--image {

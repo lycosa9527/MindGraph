@@ -33,7 +33,6 @@ export type AnyUserRole = UserRole | LegacyUserRole
 export type SchoolTier = 'trial' | 'lite' | 'standard' | 'professional'
 
 export interface SchoolTierFeatures {
-  online_collab: boolean
   chrome_extension: boolean
   presentation_tools: boolean
   api_token: boolean

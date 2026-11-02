@@ -533,6 +533,8 @@ export type EventTypes = {
     /** Keeps this camera off the editor's viewport animation. */
     transitionLane?: string
     userInitiated?: boolean
+    /** Pixels of the canvas hidden on the right. The fit lands in the open area. */
+    occludeRightPx?: number
   }
   /**
    * Pan-only (no zoom): keep a node inside the central safeFraction of the canvas.

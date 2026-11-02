@@ -1,8 +1,8 @@
-import type { useDiagramStore } from '@/stores/diagram'
+import type { DiagramSession, useDiagramStore } from '@/stores/diagram'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
-type DiagramStore = ReturnType<typeof useDiagramStore>
+type DiagramSurface = DiagramSession | ReturnType<typeof useDiagramStore>
 type SavedDiagramsStore = ReturnType<typeof useSavedDiagramsStore>
 type LlmResultsStore = ReturnType<typeof useLLMResultsStore>
 
@@ -11,7 +11,7 @@ type LlmResultsStore = ReturnType<typeof useLLMResultsStore>
  * Safe to switch diagram type without a confirmation dialog.
  */
 export function isCanvasPristineForTypeSwitch(
-  diagramStore: DiagramStore,
+  diagramStore: DiagramSurface,
   savedDiagramsStore: SavedDiagramsStore,
   llmResultsStore?: LlmResultsStore
 ): boolean {

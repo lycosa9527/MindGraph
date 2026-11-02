@@ -37,7 +37,7 @@ import {
 
 import MindMapClassroomRemoteTopics from '@/canvas-ribbon/MindMapClassroomRemoteTopics.vue'
 import MindMapRibbonAiMark from '@/canvas-ribbon/MindMapRibbonAiMark.vue'
-import { diagramInsertActions } from '@/canvas-ribbon/diagramInsertActions'
+import { type DiagramInsertGlyph, diagramInsertActions } from '@/canvas-ribbon/diagramInsertActions'
 import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   CLASSROOM_REMOTE_TABS,
@@ -69,13 +69,11 @@ import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 
 import './mindMapClassroomRemote.css'
 
-type RemoteInsertKind = 'child' | 'sibling'
-
 type RemoteTool = {
   id: string
   labelKey: string
   testid?: string
-  insertKind?: RemoteInsertKind
+  insertKind?: DiagramInsertGlyph
   icon?: Component
   active?: boolean
   dimmed?: boolean

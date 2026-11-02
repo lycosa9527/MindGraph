@@ -1,9 +1,9 @@
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
-import type { useDiagramStore } from '@/stores/diagram'
+import type { DiagramSession, useDiagramStore } from '@/stores/diagram'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
-type DiagramStore = ReturnType<typeof useDiagramStore>
+type DiagramSurface = DiagramSession | ReturnType<typeof useDiagramStore>
 type SavedDiagramsStore = ReturnType<typeof useSavedDiagramsStore>
 type LlmResultsStore = ReturnType<typeof useLLMResultsStore>
 
@@ -15,7 +15,7 @@ function isMindMapType(diagramType: string | null | undefined): boolean {
 /**
  * True when the canvas already has at least one non-topic branch node.
  */
-export function isMindMapCanvasReadyForOneSentenceEdit(diagramStore: DiagramStore): boolean {
+export function isMindMapCanvasReadyForOneSentenceEdit(diagramStore: DiagramSurface): boolean {
   if (!isMindMapType(diagramStore.type)) {
     return false
   }
@@ -37,7 +37,7 @@ export function isMindMapCanvasReadyForOneSentenceEdit(diagramStore: DiagramStor
  * Route one-sentence chat to Kitty structural edits (not full LLM regen).
  */
 export function shouldUseOneSentenceEditFlow(
-  diagramStore: DiagramStore,
+  diagramStore: DiagramSurface,
   savedDiagramsStore: SavedDiagramsStore,
   llmResultsStore: LlmResultsStore,
   phase: 'create' | 'edit'

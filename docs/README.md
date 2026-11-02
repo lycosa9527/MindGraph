@@ -1,6 +1,6 @@
 # MindGraph documentation
 
-App version **5.180.203**. This index lists the living docs. Historical behavior stays in [CHANGELOG.md](../CHANGELOG.md).
+App version **5.180.204**. This index lists the living docs. Historical behavior stays in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Start here
 

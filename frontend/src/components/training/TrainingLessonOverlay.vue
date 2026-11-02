@@ -5,6 +5,11 @@ import { useRoute } from 'vue-router'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
 import { liveLessonCoversMedia, liveLessonStep } from '@/composables/training/applyTrainingSnapshot'
+import {
+  nodeVodId,
+  overlaysForReadNode,
+  readFocusNodeId,
+} from '@/composables/training/trainingInteract'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { useTrainingStore } from '@/stores/training'
 import { shouldHideTrainingDesktopChrome, shouldSkipTrainingFollow } from '@/utils/trainingClient'
@@ -19,8 +24,14 @@ const liveStep = computed(() =>
   })
 )
 const coverMedia = computed(() => liveLessonCoversMedia(liveStep.value))
-const marks = computed(() => (liveStep.value ? visibleMarkOverlays(liveStep.value) : []))
-const hasVod = computed(() => Boolean(liveStep.value?.vod_media_id))
+const focusNodeId = computed(() => (liveStep.value ? readFocusNodeId(liveStep.value) : null))
+const marks = computed(() =>
+  liveStep.value ? overlaysForReadNode(visibleMarkOverlays(liveStep.value), focusNodeId.value) : []
+)
+const nodeVod = computed(() =>
+  liveStep.value ? nodeVodId(liveStep.value, focusNodeId.value) : null
+)
+const hasVod = computed(() => Boolean(liveStep.value?.vod_media_id || nodeVod.value))
 const visible = computed(() =>
   Boolean(liveStep.value && (coverMedia.value || marks.value.length || hasVod.value))
 )
@@ -48,9 +59,9 @@ const visible = computed(() =>
       controls
     />
     <TrainingVodPlayer
-      v-if="liveStep.vod_media_id"
+      v-if="nodeVod || liveStep.vod_media_id"
       class="lesson-overlay__vod"
-      :media-id="liveStep.vod_media_id"
+      :media-id="nodeVod || liveStep.vod_media_id || ''"
       :autoplay="Boolean(liveStep.vod_autoplay)"
       :width="liveStep.vod_width"
       :height="liveStep.vod_height"

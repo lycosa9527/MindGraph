@@ -7,7 +7,8 @@ import { getDiagramBrainstorm } from '@/composables/aiBrainstorm/useDiagramBrain
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
+import { resolvePaintDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { usePanelsStore, useSavedDiagramsStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 
 function paletteOpenOptions(
@@ -23,7 +24,7 @@ function paletteOpenOptions(
 }
 
 export function openThinkingMapAiExpand(nodeId: string): void {
-  const diagramStore = useDiagramStore()
+  const diagramStore = resolvePaintDiagramSession()
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const nodes = diagramStore.data?.nodes ?? []

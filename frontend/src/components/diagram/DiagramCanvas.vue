@@ -88,6 +88,12 @@ import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
 } from '@/composables/presentation/presentationDiagramEdit'
+import {
+  noteTrainingDragWrongDrop,
+  trainingDragDropActive,
+  trainingDragDropOnNode,
+  trainingDragKnockActive,
+} from '@/composables/training/trainingDragKnock'
 import type {
   CanvasExportAnswerMode,
   CanvasExportColorMode,
@@ -106,6 +112,7 @@ import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationRead
 import { usePanelsStore } from '@/stores/panels'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 import { type MindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
@@ -396,10 +403,13 @@ function onCanvasPaste(event: ClipboardEvent): void {
 
 const { isPickActive: isLearningSheetPickActive } = useLearningSheetCustomMode()
 const hammerPickCursor = LEARNING_SHEET_HAMMER_CURSOR
+const hammerCursorOn = computed(
+  () => isLearningSheetPickActive.value || trainingDragKnockActive.value
+)
 useLearningSheetPickKeyboard()
 
 watch(
-  isLearningSheetPickActive,
+  hammerCursorOn,
   (active) => {
     document.documentElement.classList.toggle('mg-learning-sheet-pick', active)
     if (active) {
@@ -411,7 +421,26 @@ watch(
   { immediate: true }
 )
 
+function onTrainingDragOver(event: DragEvent): void {
+  if (!trainingDragDropActive.value) return
+  const node = event.target instanceof Element ? event.target.closest('.vue-flow__node') : null
+  if (!node) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+}
+
+function onTrainingDrop(event: DragEvent): void {
+  if (!trainingDragDropActive.value) return
+  const node = event.target instanceof Element ? event.target.closest('.vue-flow__node') : null
+  const nodeId = node?.getAttribute('data-id') ?? ''
+  if (!nodeId) return
+  event.preventDefault()
+  const matched = trainingDragDropOnNode(nodeId, event.dataTransfer?.getData('text/plain') ?? '')
+  if (!matched) noteTrainingDragWrongDrop(nodeId)
+}
+
 const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
+const { previewing: trainingPreviewing } = storeToRefs(useTrainingBuilderStore())
 
 const floatingToolbarNodeIds = computed(() => {
   if (
@@ -427,7 +456,10 @@ const floatingToolbarNodeIds = computed(() => {
 const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
 
 const floatingToolbarEnabled = computed(
-  () => followNodeStyleToolbar.value && floatingToolbarNodeIds.value.length > 0
+  () =>
+    followNodeStyleToolbar.value &&
+    floatingToolbarNodeIds.value.length > 0 &&
+    !trainingPreviewing.value
 )
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
@@ -791,6 +823,8 @@ onMounted(() => {
   })
   syncTouchPanPinchLayer()
   cleanupMouseSlash = setupMouseSlash()
+  canvasContainer.value?.addEventListener('dragover', onTrainingDragOver)
+  canvasContainer.value?.addEventListener('drop', onTrainingDrop)
 })
 
 watch(
@@ -801,6 +835,8 @@ watch(
 )
 
 onUnmounted(() => {
+  canvasContainer.value?.removeEventListener('dragover', onTrainingDragOver)
+  canvasContainer.value?.removeEventListener('drop', onTrainingDrop)
   document.documentElement.classList.remove('mg-learning-sheet-pick')
   document.documentElement.style.removeProperty('--mg-hammer-cursor')
   unregisterLayoutRecalcSession?.()
@@ -834,7 +870,7 @@ defineExpose({
       'canvas-touch': canvasTouchGesturesActive,
       'diagram-canvas--hand-tool': useHandToolPanClass,
       'diagram-canvas--browse': props.browseMode,
-      'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
+      'diagram-canvas--learning-sheet-pick': hammerCursorOn,
       'diagram-canvas--format-brush': formatBrushActive,
       'diagram-canvas--bulk-load': mindMapBulkLoading || layoutMeasureSettling,
     }"
@@ -870,8 +906,9 @@ defineExpose({
         :elements-selectable="elementsSelectable"
         :select-nodes-on-drag="selectNodesOnDrag"
         :selection-mode="SelectionMode.Partial"
-        :pan-on-scroll="false"
-        :zoom-on-scroll="true"
+        :pan-on-scroll="useHandToolPanClass"
+        :pan-on-scroll-speed="1"
+        :zoom-on-scroll="!useHandToolPanClass"
         :zoom-on-pinch="true"
         :zoom-on-double-click="false"
         :delete-key-code="null"

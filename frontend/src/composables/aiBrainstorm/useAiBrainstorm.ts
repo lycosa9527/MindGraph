@@ -34,11 +34,12 @@ import {
 import { streamBrainstormBatch } from '@/composables/aiBrainstorm/streamBrainstormBatch'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
+import { resolvePaintDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { canvasRunModel } from '@/config/canvasLlmMenu'
-import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
+import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { NodeSuggestion } from '@/types/panels'
@@ -76,7 +77,9 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   const { onError, _asSingleton } = options
   const { t } = useI18n()
   const route = useRoute()
-  const diagramStore = useDiagramStore()
+  function paintSession() {
+    return resolvePaintDiagramSession()
+  }
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const uiStore = useUIStore()
@@ -183,7 +186,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   }
 
   const diagramData = computed(() => {
-    const nodes = diagramStore.data?.nodes ?? []
+    const nodes = paintSession().data?.nodes ?? []
     return buildDiagramData('mindmap', nodes)
   })
 
@@ -218,8 +221,8 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   const stage2Parents = computed(() =>
     getStage2ParentsForDiagram(
       'mindmap',
-      diagramStore.data?.nodes ?? [],
-      diagramStore.data?.connections
+      paintSession().data?.nodes ?? [],
+      paintSession().data?.connections
     )
   )
   const showStage2Tabs = computed(
@@ -288,8 +291,8 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   }
 
   async function startFromCanvasSelection(keepSessionId: boolean): Promise<boolean> {
-    const nodes = diagramStore.data?.nodes ?? []
-    const sources = resolveMindMapWaterfallSources(diagramStore.selectedNodes, nodes)
+    const nodes = paintSession().data?.nodes ?? []
+    const sources = resolveMindMapWaterfallSources(paintSession().selectedNodes, nodes)
     const tabs = sources.map((s) => ({ id: s.id, name: tabLabel(s.name) }))
     const key = diagramKey()
     if (!keepSessionId || !sessionId.value) {
@@ -355,13 +358,16 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
 
   async function startSession(sessionOptions?: { keepSessionId?: boolean }): Promise<boolean> {
     if (
-      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+      isCollabGuestAiBlocked(
+        paintSession().collabSessionActive,
+        paintSession().collabIsDiagramOwner
+      )
     ) {
       errorMessage.value = t('canvas.toolbar.collabAiBlocked')
       return false
     }
-    const dt = diagramStore.type
-    if ((dt !== 'mindmap' && dt !== 'mind_map') || !diagramStore.data?.nodes?.length) {
+    const dt = paintSession().type
+    if ((dt !== 'mindmap' && dt !== 'mind_map') || !paintSession().data?.nodes?.length) {
       errorMessage.value = t('aiBrainstorm.error.createDiagramFirst')
       return false
     }
@@ -373,13 +379,18 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     }
 
     const keepSessionId = sessionOptions?.keepSessionId ?? false
-    const selected = diagramStore.selectedNodes
+    const selected = paintSession().selectedNodes
     if (selected.length > 0) {
       return startFromCanvasSelection(keepSessionId)
     }
 
-    const nodes = diagramStore.data.nodes
-    const connections = diagramStore.data?.connections
+    const data = paintSession().data
+    if (!data?.nodes?.length) {
+      errorMessage.value = t('aiBrainstorm.error.createDiagramFirst')
+      return false
+    }
+    const nodes = data.nodes
+    const connections = data.connections
     const resolvedStage =
       panelsStore.aiBrainstormPanel.stage ?? getDefaultStage('mindmap', nodes, connections)
     const isStage2 = resolvedStage === 'children'
@@ -487,7 +498,10 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
 
   async function loadNextBatch(): Promise<boolean> {
     if (
-      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+      isCollabGuestAiBlocked(
+        paintSession().collabSessionActive,
+        paintSession().collabIsDiagramOwner
+      )
     ) {
       errorMessage.value = t('canvas.toolbar.collabAiBlocked')
       return false
@@ -564,9 +578,9 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     const toApply = suggestionsList.filter((s) => selected.includes(s.id))
     if (toApply.length === 0) return false
 
-    diagramStore.pushHistory(t('aiBrainstorm.history.replaceAddNodes'))
+    paintSession().pushHistory(t('aiBrainstorm.history.replaceAddNodes'))
     return applyAiBrainstormSelection({
-      diagramStore,
+      diagramStore: paintSession(),
       diagramKey: diagramKey(),
       toApply,
       stage: panelsStore.aiBrainstormPanel.stage ?? undefined,

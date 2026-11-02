@@ -40,7 +40,6 @@ describe('schoolTier constants', () => {
   it('enables product features on every tier, including trial', () => {
     for (const tier of SCHOOL_TIER_OPTIONS) {
       const features = tierFeaturesForSchoolTier(tier)
-      expect(features.online_collab).toBe(true)
       expect(features.chrome_extension).toBe(true)
       expect(features.presentation_tools).toBe(true)
       expect(features.api_token).toBe(true)
@@ -49,10 +48,8 @@ describe('schoolTier constants', () => {
 
   it('mergeSchoolTierFeatures keeps trial features on when a cached payload says off', () => {
     const merged = mergeSchoolTierFeatures('trial', {
-      online_collab: false,
       api_token: false,
     })
-    expect(merged.online_collab).toBe(true)
     expect(merged.api_token).toBe(true)
   })
 

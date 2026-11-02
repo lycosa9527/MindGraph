@@ -16,19 +16,31 @@ const ENTER_ADD_NODE_TYPES = new Set([
   'diagram',
 ])
 
+/** Maps where Tab adds the second level and Enter adds the first. */
+const TAB_NESTED_ADD_TYPES = new Set([
+  'flow_map',
+  'tree_map',
+  'brace_map',
+  'double_bubble_map',
+  'multi_flow_map',
+])
+
+export function tabAddsNestedNode(diagramType: string | null | undefined): boolean {
+  return typeof diagramType === 'string' && TAB_NESTED_ADD_TYPES.has(diagramType)
+}
+
 /**
- * Tab adds a mind-map child.
- * Thinking maps do not use Tab; Enter adds a node after the click selection.
+ * Tab adds a mind-map child, or the second level on flow, tree, brace, double bubble, and cause-effect maps.
+ * Other thinking maps do not use Tab. Enter adds the first level.
  */
 export function resolveTabKeyEvent(
   diagramType: string | null | undefined
 ): CanvasPageShortcutEvent | null {
-  if (!diagramType || diagramType === 'concept_map' || isThinkingMapDiagramType(diagramType)) {
-    return null
-  }
-  if (isMindMapDiagramType(diagramType)) {
+  if (!diagramType || diagramType === 'concept_map') return null
+  if (tabAddsNestedNode(diagramType) || isMindMapDiagramType(diagramType)) {
     return 'diagram:add_child_requested'
   }
+  if (isThinkingMapDiagramType(diagramType)) return null
   return 'diagram:add_node_requested'
 }
 

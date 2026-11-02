@@ -8,15 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.background_files import list_reply_artifacts, load_folder_session
 from services.features.mindmate_seminar.reply_artifacts import archive_assistant_reply
 from services.mindmate.teaching_design_template_store import DOCX_READ_ERRORS
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -39,16 +35,6 @@ class ReplyArtifactBody(BaseModel):
     message_id: int = Field(..., ge=1)
 
 
-async def _require_collab_tier(current_user: User, lang: Language) -> None:
-    async with actor_rls_session(current_user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            current_user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 def _http_error(exc: ValueError) -> HTTPException:
     code = str(exc)
     return HTTPException(status_code=_STATUS.get(code, status.HTTP_400_BAD_REQUEST), detail=code)
@@ -59,10 +45,8 @@ async def list_seminar_reply_artifacts(
     session_id: str,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List Word files archived from MindMate replies in this seminar."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_reply_artifacts_list",
         get_rate_limit_identifier(current_user, request),
@@ -82,10 +66,8 @@ async def create_seminar_reply_artifact(
     body: ReplyArtifactBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Turn one stored assistant reply into a Word file and keep it in 产物."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_reply_artifacts",
         get_rate_limit_identifier(current_user, request),

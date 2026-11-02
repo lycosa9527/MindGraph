@@ -32,6 +32,7 @@ type FitApi = {
       padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
       maxZoom?: number
       transitionLane?: string
+      occludeRightPx?: number
     }
   ) => Promise<void>
   ensureNodeVisibleInSafeFraction: (
@@ -192,6 +193,7 @@ export function useDiagramCanvasEventBus(): {
           padding: data.padding,
           maxZoom: data.maxZoom,
           transitionLane: data.transitionLane,
+          occludeRightPx: data.occludeRightPx,
         })
       })
     )

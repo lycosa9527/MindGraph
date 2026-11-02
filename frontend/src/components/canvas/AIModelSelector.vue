@@ -21,10 +21,11 @@ import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
-import { useConceptMapFocusReviewStore, useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useConceptMapFocusReviewStore, useLLMResultsStore } from '@/stores'
 import { selectCanvasLlmModel } from '@/stores/llmMenuChoice'
 
 const props = withDefaults(
@@ -50,7 +51,7 @@ const { t } = useLanguage()
 const { canvasModels, displayNameForModel } = useOrgCustomLlm()
 const { cancelGeneration } = useAutoComplete()
 const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const llmResultsStore = useLLMResultsStore()
 const focusReviewStore = useConceptMapFocusReviewStore()
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')

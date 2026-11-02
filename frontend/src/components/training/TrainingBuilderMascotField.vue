@@ -4,6 +4,8 @@
  */
 import { computed, ref } from 'vue'
 
+import { Cat } from '@lucide/vue'
+
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
@@ -58,6 +60,10 @@ async function onFile(event: Event): Promise<void> {
 
 <template>
   <label class="slide-mascot">
+    <Cat
+      :size="15"
+      aria-hidden="true"
+    />
     <span class="slide-mascot__label"><I18nText k="training.builder.mascot" /></span>
     <input
       type="file"

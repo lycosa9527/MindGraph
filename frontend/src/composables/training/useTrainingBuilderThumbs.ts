@@ -1,18 +1,25 @@
 import { onUnmounted, watch } from 'vue'
 
 import {
+  builderDiagramNodes,
+  isBoundToStep,
+} from '@/composables/training/builderDiagramBridge'
+import {
   isPersistedTrainingThumb,
   persistTrainingStageThumb,
 } from '@/composables/training/persistTrainingThumb'
 import {
+  canCommitBuilderThumb,
   isTrainingMediaStep,
   shouldRecaptureThumb,
 } from '@/composables/training/trainingBuilderHibernate'
+import { flushPublishedBuilderSpec } from '@/composables/training/trainingCanvasSpec'
 import {
   captureTrainingStage,
   trainingStepThumbKey,
 } from '@/composables/training/trainingStageThumb'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
+import type { TrainingCourseStep } from '@/types/training'
 
 const CAPTURE_DELAY_MS = 400
 
@@ -23,6 +30,19 @@ export function useTrainingBuilderThumbs(): {
   const builder = useTrainingBuilderStore()
   let timer = 0
   let generation = 0
+
+  function liveNodeFingerprint(): string {
+    return builderDiagramNodes.value.map((node) => `${node.id}:${node.text}`).join('|')
+  }
+
+  function acceptLiveCapture(index: number, step: TrainingCourseStep | null): boolean {
+    return canCommitBuilderThumb(
+      builder.selected,
+      index,
+      step,
+      Boolean(step && builder.steps[index] === step && isBoundToStep(step))
+    )
+  }
 
   async function persistThumbAt(
     index: number,
@@ -51,10 +71,11 @@ export function useTrainingBuilderThumbs(): {
   async function rememberCurrentThumb(): Promise<void> {
     window.clearTimeout(timer)
     const index = builder.selected
-    const captureKey = trainingStepThumbKey(builder.current)
+    const step = builder.current
+    const captureKey = trainingStepThumbKey(step)
     const token = (generation += 1)
     const url = await captureTrainingStage()
-    if (token !== generation || !url) return
+    if (token !== generation || !url || !acceptLiveCapture(index, step)) return
     builder.writeThumb(index, url, captureKey)
     await persistThumbAt(index, url, captureKey)
   }
@@ -82,6 +103,7 @@ export function useTrainingBuilderThumbs(): {
   }
 
   async function persistAllPending(): Promise<void> {
+    flushPublishedBuilderSpec()
     for (let index = 0; index < builder.steps.length; index += 1) {
       const url = builder.thumbs[index]
       if (!url) continue
@@ -98,18 +120,22 @@ export function useTrainingBuilderThumbs(): {
     if (!builder.awake) return
     window.clearTimeout(timer)
     const index = builder.selected
-    const captureKey = trainingStepThumbKey(builder.current)
+    const step = builder.current
+    const captureKey = trainingStepThumbKey(step)
     const token = (generation += 1)
     timer = window.setTimeout(() => {
       void captureTrainingStage().then((url) => {
-        if (token !== generation || !url) return
+        if (token !== generation || !url || !acceptLiveCapture(index, step)) return
         builder.writeThumb(index, url, captureKey)
         void persistThumbAt(index, url, captureKey)
       })
     }, CAPTURE_DELAY_MS)
   }
 
-  watch(() => trainingStepThumbKey(builder.current), scheduleThumb)
+  watch(
+    () => [builder.selected, trainingStepThumbKey(builder.current), liveNodeFingerprint()] as const,
+    scheduleThumb
+  )
 
   onUnmounted(() => {
     window.clearTimeout(timer)

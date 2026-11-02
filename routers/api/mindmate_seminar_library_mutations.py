@@ -14,16 +14,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.library_archive import (
     delete_saved_seminar,
     update_saved_seminar,
 )
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 router = APIRouter()
 
@@ -44,26 +40,14 @@ def raise_saved_seminar_error(error: Optional[str]) -> NoReturn:
     raise HTTPException(status_code=404, detail="Saved seminar not found")
 
 
-async def _require_collab_tier(user: User, lang: Language) -> None:
-    async with actor_rls_session(user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 @router.patch("/my/library/{session_id}")
 async def update_my_saved_seminar(
     request: Request,
     session_id: str,
     body: UpdateSavedSeminarRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Rename a saved seminar, pin it, or both."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_library_update",
@@ -87,10 +71,8 @@ async def delete_my_saved_seminar(
     request: Request,
     session_id: str,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Delete a saved seminar and its transcript."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_library_delete",

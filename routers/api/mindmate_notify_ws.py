@@ -16,8 +16,6 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from models.domain.auth import User
 from routers.features.workshop_chat.dependencies import presence_org_ids_for_user
 from services.features.mindmate_notify_ws_manager import mindmate_notify_ws_manager
-from utils.auth import user_has_feature_access
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
 from utils.auth_ws import authenticate_websocket_user
 from utils.collab_ws_origin import close_ws_if_origin_disallowed
 from utils.db.session_open import actor_rls_session
@@ -34,11 +32,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-async def _tier_allowed(user: User) -> bool:
-    async with actor_rls_session(user) as db:
-        return await user_has_school_tier_feature(db, user, TIER_FEATURE_ONLINE_COLLAB)
-
-
 @router.websocket("/ws/mindmate-notify")
 async def mindmate_notify_websocket(websocket: WebSocket) -> None:
     """Lightweight notify socket for MindMate org presence and collab poke toasts."""
@@ -49,20 +42,6 @@ async def mindmate_notify_websocket(websocket: WebSocket) -> None:
     if auth_err or not user:
         try:
             await websocket.close(code=1008, reason=auth_err or "Unauthorized")
-        except (RuntimeError, OSError):
-            pass
-        return
-
-    if not await user_has_feature_access(user, "feature_mindmate_seminar"):
-        try:
-            await websocket.close(code=1008, reason="Feature disabled")
-        except (RuntimeError, OSError):
-            pass
-        return
-
-    if not await _tier_allowed(user):
-        try:
-            await websocket.close(code=1008, reason="Feature unavailable")
         except (RuntimeError, OSError):
             pass
         return

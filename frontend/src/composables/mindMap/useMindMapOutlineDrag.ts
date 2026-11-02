@@ -1,14 +1,14 @@
 import { ref } from 'vue'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore } from '@/stores'
 import { isMindMapBranchId } from '@/utils/mindMapLocation'
 import { must } from '@/utils/must'
 
 export type OutlineDropPosition = 'before' | 'after' | 'child'
 
 export function useMindMapOutlineDrag() {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const draggingNodeId = ref<string | null>(null)
   const dropTarget = ref<{ nodeId: string; position: OutlineDropPosition } | null>(null)
 

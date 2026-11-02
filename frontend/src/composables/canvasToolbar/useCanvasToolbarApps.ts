@@ -1,17 +1,17 @@
 import { computed } from 'vue'
 
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
-import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import {
   buildEducationStageInstructions,
   isEducationStage,
   mergeGenerationInstructions,
 } from '@/constants/educationStage'
-import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 
@@ -22,7 +22,7 @@ import {
 
 export function useCanvasToolbarApps() {
   ensureCanvasVirtualKeyboardUiVersionSync()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const uiStore = useUIStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()

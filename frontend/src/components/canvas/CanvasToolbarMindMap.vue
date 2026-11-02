@@ -70,6 +70,7 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
@@ -87,7 +88,6 @@ import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import {
   useAuthStore,
   useCanvasExportStore,
-  useDiagramStore,
   useMindClassroomStore,
   useSavedDiagramsStore,
   useVoiceNotesStore,
@@ -112,7 +112,7 @@ const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { showCanvasAiFeatures } = useLearningAiGate()
 const lsCanvas = useLearningAssignmentCanvasStore()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const shareSeminarOpen = ref(false)
@@ -571,6 +571,7 @@ watch(
             v-for="action in insertActions"
             :key="action.id"
             :k="action.labelKey"
+            :suffix="action.shortcutKeys?.join(' · ')"
             placement="bottom"
           >
             <button

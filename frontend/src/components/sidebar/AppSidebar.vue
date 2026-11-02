@@ -5,6 +5,7 @@
  * Workshop mode hides admin items and fills remaining space.
  */
 import { computed, inject, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { ElButton } from 'element-plus'
 
@@ -22,29 +23,49 @@ import { useLogoSiteQrHover } from '@/composables/sidebar/useLogoSiteQrHover'
 import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { TRAINING_LOCK_SCOPE, registerTrainingUiLock } from '@/composables/training/trainingUiLock'
 import type { TrainingModalKey } from '@/config/trainingUiTargets'
+import { isTrainingBuilderPath } from '@/utils/trainingClient'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
 import AppSidebarNav from './AppSidebarNav.vue'
 import LogoQrScanModal from './LogoQrScanModal.vue'
 
+const props = defineProps<{
+  /** Set by the course slide frame. Absent on the real app sidebar. */
+  collapsed?: boolean
+}>()
+
+const emit = defineEmits<{
+  toggleCollapsed: []
+}>()
+
 const sidebar = useAppSidebar()
+const route = useRoute()
 const inline = isTrainingInlineHost()
+/** Course builder hosts the toggle in its own header. */
+const sidebarOwnsCollapse = computed(() => inline || !isTrainingBuilderPath(route.path))
 const lockScope = inject(TRAINING_LOCK_SCOPE, '')
 const localCollapsed = ref(false)
-const collapsed = computed(() => (inline ? localCollapsed.value : sidebar.isCollapsed.value))
+const isClosed = computed(() => {
+  if (!inline) return sidebar.isCollapsed.value
+  return props.collapsed ?? localCollapsed.value
+})
 
 function toggleCollapsed(): void {
-  if (inline) {
-    localCollapsed.value = !localCollapsed.value
+  if (!inline) {
+    sidebar.toggleSidebar()
     return
   }
-  sidebar.toggleSidebar()
+  if (props.collapsed !== undefined) {
+    emit('toggleCollapsed')
+    return
+  }
+  localCollapsed.value = !localCollapsed.value
 }
 
 const providedSidebar = inline
   ? {
       ...sidebar,
-      isCollapsed: collapsed,
+      isCollapsed: isClosed,
       toggleSidebar: toggleCollapsed,
     }
   : sidebar
@@ -137,7 +158,7 @@ const {
   close: closeLogoQrScan,
   clearHoverCloseTimer,
   scheduleHoverClose,
-} = useLogoSiteQrHover(() => !collapsed.value)
+} = useLogoSiteQrHover(() => !isClosed.value)
 
 function onLogoClick(): void {
   if (showLogoQrScan.value) {
@@ -146,10 +167,8 @@ function onLogoClick(): void {
   sidebar.handleLogoClick()
 }
 
-watch(collapsed, (isClosed) => {
-  if (isClosed) {
-    closeLogoQrScan()
-  }
+watch(isClosed, (closed) => {
+  if (closed) closeLogoQrScan()
 })
 
 const releaseModalLocks = [
@@ -217,11 +236,11 @@ onBeforeUnmount(() => {
   <div
     class="app-sidebar bg-stone-50 flex flex-col h-full min-h-0 shrink-0 overflow-hidden"
     :class="
-      collapsed
+      isClosed
         ? 'w-0 min-w-0 max-w-0 border-transparent pointer-events-none'
         : 'w-[var(--mg-sidebar-width)] border-r border-stone-200'
     "
-    :aria-hidden="collapsed"
+    :aria-hidden="isClosed"
   >
     <!-- Header: brand + collapse (expand when hidden is on the active page) -->
     <div
@@ -281,6 +300,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <el-button
+        v-if="sidebarOwnsCollapse"
         text
         circle
         size="small"

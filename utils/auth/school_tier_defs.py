@@ -62,14 +62,12 @@ SCHOOL_TIER_LIMITS: Final[dict[str, dict[str, int]]] = {
 }
 
 
-TIER_FEATURE_ONLINE_COLLAB: Final[str] = "online_collab"
 TIER_FEATURE_CHROME_EXTENSION: Final[str] = "chrome_extension"
 TIER_FEATURE_PRESENTATION_TOOLS: Final[str] = "presentation_tools"
 TIER_FEATURE_API_TOKEN: Final[str] = "api_token"
 
 _STANDARD_PLUS_FEATURES: Final[frozenset[str]] = frozenset(
     {
-        TIER_FEATURE_ONLINE_COLLAB,
         TIER_FEATURE_CHROME_EXTENSION,
         TIER_FEATURE_PRESENTATION_TOOLS,
         TIER_FEATURE_API_TOKEN,
@@ -86,9 +84,10 @@ def normalize_school_tier(value: object | None) -> str:
 
 
 def school_tier_allows_feature(tier: str, feature: str) -> bool:
-    """Every school tier includes collab, presentation tools, the Chrome extension, and API tokens.
+    """Every school tier includes presentation tools, the Chrome extension, and API tokens.
 
-    Tiers differ by member cap and diagram storage, not by these product features.
+    Online collaboration and MindMate seminar are regular services.
+    Tiers differ by member cap and diagram storage.
     """
     if feature not in _STANDARD_PLUS_FEATURES:
         return True
@@ -99,7 +98,6 @@ def school_tier_features_payload(tier: str) -> dict[str, bool]:
     """Feature flags for a school. Every tier enables the same product features."""
     enabled = normalize_school_tier(tier) in SCHOOL_TIER_LIMITS
     return {
-        TIER_FEATURE_ONLINE_COLLAB: enabled,
         TIER_FEATURE_CHROME_EXTENSION: enabled,
         TIER_FEATURE_PRESENTATION_TOOLS: enabled,
         TIER_FEATURE_API_TOKEN: enabled,

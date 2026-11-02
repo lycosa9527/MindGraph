@@ -54,15 +54,6 @@ def _sanitize_feature_org_access_map(
     return out
 
 
-async def _effective_feature_mindmate_seminar(current_user: Optional[User]) -> bool:
-    """Match ``FEATURE_MINDMATE_SEMINAR`` plus org/user grants when the caller is signed in."""
-    if not config.FEATURE_MINDMATE_SEMINAR:
-        return False
-    if current_user is None:
-        return True
-    return await user_has_feature_access(current_user, "feature_mindmate_seminar")
-
-
 async def _effective_feature_workshop_chat(current_user: Optional[User]) -> bool:
     """Match ``FEATURE_WORKSHOP_CHAT`` plus preview-org / grant rules when signed in."""
     if not config.FEATURE_WORKSHOP_CHAT:
@@ -91,7 +82,6 @@ class FeatureFlagsResponse(BaseModel):
     feature_smart_response: bool
     feature_teacher_usage: bool
     feature_workshop_chat: bool
-    feature_mindmate_seminar: bool
     feature_training: bool = False
     feature_vod: bool = False
     feature_student_learning_space: bool = True
@@ -132,11 +122,6 @@ async def get_feature_flags(
     external_base = normalize_external_base_url(env_base)
     raw_access = await load_feature_org_access_map() if current_user is not None else {}
     access_map = _sanitize_feature_org_access_map(current_user, raw_access) if current_user is not None else {}
-    mindmate_seminar_flag = (
-        config.FEATURE_MINDMATE_SEMINAR
-        if current_user is not None and is_admin(current_user)
-        else await _effective_feature_mindmate_seminar(current_user)
-    )
     workshop_chat_flag = (
         config.FEATURE_WORKSHOP_CHAT
         if current_user is not None and is_admin(current_user)
@@ -153,7 +138,6 @@ async def get_feature_flags(
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
         feature_workshop_chat=workshop_chat_flag,
-        feature_mindmate_seminar=mindmate_seminar_flag,
         feature_training=config.FEATURE_TRAINING,
         feature_vod=config.FEATURE_VOD,
         feature_student_learning_space=config.FEATURE_STUDENT_LEARNING_SPACE,

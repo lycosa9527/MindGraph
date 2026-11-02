@@ -1,47 +1,61 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { ElButton, ElIcon } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
+import { PanelLeftClose, PanelLeftOpen } from '@lucide/vue'
+
+import { useLanguage } from '@/composables'
+import { useUIStore } from '@/stores/ui'
+
 defineProps<{
   current: string
-  showSave?: boolean
   showNew?: boolean
   busy?: boolean
-  previewing?: boolean
-  readonly?: boolean
-  syncLabel?: string
-  syncError?: boolean
 }>()
 
 const emit = defineEmits<{
-  save: []
-  info: []
-  preview: []
   create: []
 }>()
+
+const { t } = useLanguage()
+const uiStore = useUIStore()
+const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed)
+const sidebarToggleLabel = computed(() =>
+  sidebarCollapsed.value ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')
+)
 </script>
 
 <template>
   <header class="training-header">
-    <nav
-      class="training-header__crumb"
-      aria-label="breadcrumb"
-    >
-      <span class="training-header__crumb-root"><I18nText k="training.title" /></span>
-      <span
-        class="training-header__crumb-sep"
-        aria-hidden="true"
-        >/</span
+    <div class="training-header__lead">
+      <button
+        type="button"
+        class="training-header__sidebar"
+        :title="sidebarToggleLabel"
+        :aria-label="sidebarToggleLabel"
+        @click="uiStore.toggleSidebar()"
       >
-      <span class="training-header__crumb-current">{{ current }}</span>
-    </nav>
+        <PanelLeftOpen
+          v-if="sidebarCollapsed"
+          :size="18"
+          aria-hidden="true"
+        />
+        <PanelLeftClose
+          v-else
+          :size="18"
+          aria-hidden="true"
+        />
+      </button>
+      <h1 class="training-header__title">{{ current }}</h1>
+    </div>
     <div
-      v-if="showSave || showNew"
+      v-if="showNew"
       class="training-header__actions"
     >
       <ElButton
-        v-if="showNew"
         size="small"
         class="admin-swiss-btn admin-swiss-btn--primary"
         :loading="busy"
@@ -50,44 +64,6 @@ const emit = defineEmits<{
         <ElIcon class="training-header__icon"><Plus /></ElIcon>
         <I18nText k="training.builder.new" />
       </ElButton>
-      <template v-if="showSave">
-        <span
-          v-if="syncLabel"
-          class="training-header__sync"
-          :class="{ 'is-error': syncError }"
-          >{{ syncLabel }}</span
-        >
-        <ElButton
-          size="small"
-          class="admin-swiss-btn"
-          @click="emit('info')"
-        >
-          <I18nText k="training.builder.info" />
-        </ElButton>
-        <ElButton
-          v-if="!readonly"
-          size="small"
-          class="admin-swiss-btn admin-swiss-btn--primary"
-          :loading="busy"
-          @click="emit('save')"
-        >
-          <I18nText k="training.builder.save" />
-        </ElButton>
-        <ElButton
-          size="small"
-          class="admin-swiss-btn training-header__preview"
-          :class="{ 'is-previewing': previewing }"
-          @click="emit('preview')"
-        >
-          <I18nText
-            v-if="previewing"
-            k="training.builder.previewExit"
-          /><I18nText
-            v-else
-            k="training.builder.preview"
-          />
-        </ElButton>
-      </template>
     </div>
   </header>
 </template>
@@ -105,23 +81,36 @@ const emit = defineEmits<{
   background: #fff;
   padding: 0 1rem;
 }
-.training-header__crumb {
+.training-header__lead {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
+  gap: 0.35rem;
 }
-.training-header__crumb-root {
-  color: #78716c;
+.training-header__sidebar {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #57534e;
+  cursor: pointer;
 }
-.training-header__crumb-sep {
-  color: #a8a29e;
-}
-.training-header__crumb-current {
-  overflow: hidden;
-  font-weight: 600;
+.training-header__sidebar:hover {
+  background: #f5f5f4;
   color: #1c1917;
+}
+.training-header__title {
+  margin: 0;
+  overflow: hidden;
+  color: #1c1917;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -130,29 +119,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.5rem;
 }
-.training-header__sync {
-  color: #78716c;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.training-header__sync.is-error {
-  color: #b91c1c;
-}
 .training-header__icon {
   margin-right: 0.25rem;
-}
-.training-header__preview.el-button {
-  --el-button-bg-color: #15803d;
-  --el-button-border-color: #15803d;
-  --el-button-text-color: #fafaf9;
-  --el-button-hover-bg-color: #166534;
-  --el-button-hover-border-color: #166534;
-  --el-button-hover-text-color: #fafaf9;
-  --el-button-active-bg-color: #14532d;
-  --el-button-active-border-color: #14532d;
-}
-.training-header__preview.is-previewing.el-button {
-  --el-button-bg-color: #166534;
-  --el-button-border-color: #166534;
 }
 </style>

@@ -15,7 +15,6 @@ import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import {
   applyThinkingCoinMutation,
   extractThinkingCoinsFooter,
@@ -24,8 +23,6 @@ import { authFetch } from '@/utils/api'
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const { canUseOnlineCollab } = useSchoolTierFeatures()
-
 // ── Popover state ─────────────────────────────────────────────────────────
 const collabPopoverVisible = ref(false)
 const collabPanelMode = ref<'organization' | 'network'>('network')
@@ -222,7 +219,6 @@ defineExpose({ prefillAndAutoJoin })
 
 <template>
   <ElPopover
-    v-if="canUseOnlineCollab"
     v-model:visible="collabPopoverVisible"
     :trigger="'manual' as 'click'"
     placement="bottom-end"

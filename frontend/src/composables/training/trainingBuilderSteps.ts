@@ -63,10 +63,14 @@ export function insertStepsAt(
   if (!incoming.length) return index
   const at = Math.max(0, Math.min(index, steps.length))
   steps.splice(at, 0, ...incoming)
+  reindexTrainingSteps(steps)
+  return at
+}
+
+export function reindexTrainingSteps(steps: TrainingCourseStep[]): void {
   for (let position = 0; position < steps.length; position += 1) {
     steps[position].position = position
   }
-  return at
 }
 
 export function pruneTrainingFocus(step: TrainingCourseStep): void {
@@ -248,6 +252,11 @@ export function trainingCourseWriteBody(
       delete next.thumb_url
       delete next.voice_url
       delete next.music_url
+      if (next.interact) {
+        const interact = { ...next.interact }
+        delete interact.play_index
+        next.interact = interact
+      }
       next.overlays = (next.overlays || []).map((row) => {
         const copy = { ...row }
         delete copy.src
@@ -275,23 +284,38 @@ export function trainingCourseFingerprint(
   })
 }
 
+function copySavedStepMeta(to: TrainingCourseStep, from: TrainingCourseStep): void {
+  if (from.id) to.id = from.id
+  if (from.thumb_id) to.thumb_id = from.thumb_id
+  if (from.thumb_url && !to.thumb_url) to.thumb_url = from.thumb_url
+  if (from.asset_id) to.asset_id = from.asset_id
+  if (from.asset_url && !to.asset_url) to.asset_url = from.asset_url
+  if (from.voice_asset_id) to.voice_asset_id = from.voice_asset_id
+  if (from.voice_url) to.voice_url = from.voice_url
+  if (from.music_asset_id) to.music_asset_id = from.music_asset_id
+  if (from.music_url) to.music_url = from.music_url
+}
+
 export function mergeSavedStepMeta(
   local: TrainingCourseStep[],
   saved: TrainingCourseStep[] | undefined
 ): void {
   if (!saved?.length) return
-  const count = Math.min(local.length, saved.length)
-  for (let index = 0; index < count; index += 1) {
-    const from = saved[index]
-    const to = local[index]
-    if (from.id) to.id = from.id
-    if (from.thumb_id) to.thumb_id = from.thumb_id
-    if (from.thumb_url && !to.thumb_url) to.thumb_url = from.thumb_url
-    if (from.asset_id) to.asset_id = from.asset_id
-    if (from.asset_url && !to.asset_url) to.asset_url = from.asset_url
-    if (from.voice_asset_id) to.voice_asset_id = from.voice_asset_id
-    if (from.voice_url) to.voice_url = from.voice_url
-    if (from.music_asset_id) to.music_asset_id = from.music_asset_id
-    if (from.music_url) to.music_url = from.music_url
+  const leftover = saved.filter((row) => row.id)
+  const claimed = new Set<string>()
+  for (const to of local) {
+    if (!to.id) continue
+    const from = leftover.find((row) => row.id === to.id)
+    if (!from?.id) continue
+    claimed.add(from.id)
+    copySavedStepMeta(to, from)
+  }
+  if (local.length !== saved.length) return
+  for (const to of local) {
+    if (to.id) continue
+    const from = leftover.find((row) => row.id && !claimed.has(row.id) && row.position === to.position)
+    if (!from || !from.id) continue
+    claimed.add(from.id)
+    copySavedStepMeta(to, from)
   }
 }

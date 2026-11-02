@@ -1,7 +1,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isMindMapPathCollapsed } from '@/stores/diagram/mindMapCollapse'
 import { type MindMapOutlineNode, buildMindMapOutlineTree } from '@/utils/mindMapOutlineTree'
 import { buildThinkingMapOutlineTree } from '@/utils/thinkingMapOutlineTree'
@@ -30,7 +30,7 @@ export function useMindMapOutlineMirror(options: {
   enabled: () => boolean
   scrollToRow: (nodeId: string) => void
 }) {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const syncingFromOutline = ref(false)
 
   /** Reactive tree — tracks text, topology, and positions used for canvas-Y ordering. */

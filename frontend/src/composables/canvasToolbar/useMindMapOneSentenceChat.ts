@@ -34,6 +34,7 @@ import {
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { mergeKittyConversationTurn } from '@/composables/kitty/applyKittyConversationTurn'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
@@ -66,7 +67,6 @@ import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMi
 import {
   type OneSentenceClarifyChoice,
   useAuthStore,
-  useDiagramStore,
   useFeatureFlagsStore,
   useLLMResultsStore,
   useOneSentenceStore,
@@ -90,7 +90,7 @@ export function useMindMapOneSentenceChat() {
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
   const featureFlagsStore = useFeatureFlagsStore()

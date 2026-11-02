@@ -38,9 +38,14 @@ def cos_training_enabled() -> bool:
     return cos_credentials_configured()
 
 
+def course_media_uses_cos() -> bool:
+    """Write course files to COS when credentials and the builder COS gate are on."""
+    return cos_training_enabled() and config.COURSE_BUILDER_LOAD_FROM_COS
+
+
 def storage_backend() -> str:
     """Active backend: cos | local."""
-    return STORAGE_COS if cos_training_enabled() else STORAGE_LOCAL
+    return STORAGE_COS if course_media_uses_cos() else STORAGE_LOCAL
 
 
 def put_bytes_sync(
@@ -105,8 +110,8 @@ def head_object_sync(logical_key: str) -> Optional[dict]:
 
 
 def create_presigned_put(logical_key: str, content_type: str) -> Optional[str]:
-    """Short-TTL PUT URL, or None when COS is off."""
-    if not cos_training_enabled():
+    """Short-TTL PUT URL, or None when COS writes are off."""
+    if not course_media_uses_cos():
         return None
     return generate_presigned_put_url(
         full_cos_key(logical_key),

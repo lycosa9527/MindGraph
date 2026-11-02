@@ -16,11 +16,25 @@ describe('diagramInsertActions', () => {
     expect(diagramInsertActions('bubble_map').map((action) => action.labelKey)).toEqual([
       'canvas.toolbar.addNode',
     ])
-    expect(diagramInsertActions('tree_map').map((action) => action.id)).toEqual(['node'])
-    expect(diagramInsertActions('flow_map').map((action) => action.id)).toEqual(['node'])
-    expect(diagramInsertActions('brace_map').map((action) => action.id)).toEqual(['node'])
-    expect(diagramInsertActions('double_bubble_map').map((action) => action.id)).toEqual(['node'])
+    expect(diagramInsertActions('tree_map').map((action) => action.id)).toEqual(['branch', 'leaf'])
+    expect(diagramInsertActions('flow_map').map((action) => action.id)).toEqual(['step', 'substep'])
+    expect(diagramInsertActions('flow_map').map((action) => action.labelKey)).toEqual([
+      'canvas.toolbar.addStep',
+      'canvas.toolbar.addSubstep',
+    ])
+    expect(diagramInsertActions('brace_map').map((action) => action.id)).toEqual([
+      'part',
+      'subpart',
+    ])
+    expect(diagramInsertActions('double_bubble_map').map((action) => action.id)).toEqual([
+      'similarity',
+      'difference',
+    ])
     expect(diagramInsertActions('multi_flow_map').map((action) => action.id)).toEqual([
+      'cause',
+      'effect',
+    ])
+    expect(diagramInsertActions('multi_flow_map').map((action) => action.insertKind)).toEqual([
       'cause',
       'effect',
     ])

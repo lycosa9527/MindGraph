@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.mindmate_seminar_library_mutations import router as saved_seminar_mutation_router
 from routers.api.mindmate_seminar_background_files import router as seminar_files_router
@@ -27,7 +26,6 @@ from routers.api.mindmate_seminar_share_canvas import router as seminar_share_ro
 from routers.api.mindmate_seminar_members import router as seminar_members_router
 from routers.api.mindmate_seminar_messages import router as seminar_messages_router
 from routers.api.mindmate_seminar_minutes import router as seminar_minutes_router
-from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.dependencies import resolve_social_org_id
 from routers.features.workshop_chat.schemas import OrgMembersPage
 from services.auth.thinking_coin.client_event_service import load_user_org
@@ -61,27 +59,14 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
-from utils.auth import get_current_user, user_has_feature_access
-from utils.auth.school_tier import (
-    TIER_FEATURE_ONLINE_COLLAB,
-    assert_user_has_school_tier_feature,
-)
+from utils.auth import get_current_user
 from utils.auth.thinking_coin_config import EVENT_WORKSHOP_JOIN
 from utils.db.session_open import actor_rls_session, system_rls_session
-
-
-async def _require_mindmate_seminar_access(
-    current_user: User = Depends(get_current_user),
-) -> None:
-    """Return 404 when collab is off globally or the user lacks org/user grants."""
-    if not await user_has_feature_access(current_user, "feature_mindmate_seminar"):
-        raise HTTPException(status_code=404, detail="Feature is disabled")
 
 
 router = APIRouter(
     prefix="/mindmate/seminar",
     tags=["mindmate-seminar"],
-    dependencies=[Depends(_require_mindmate_seminar_access)],
 )
 router.include_router(saved_seminar_mutation_router)
 router.include_router(seminar_members_router)
@@ -161,26 +146,13 @@ class SaveCollabDiagramRequest(BaseModel):
     preview_id: str = Field(min_length=8, max_length=8)
 
 
-async def _require_collab_tier(user: User, lang: Language) -> None:
-    """Ensure the caller has the online_collab school tier feature."""
-    async with actor_rls_session(user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 @router.post("/start")
 async def start_collab_room(
     request: Request,
     body: StartCollabRequest = Body(default_factory=StartCollabRequest),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Start a MindMate collab room (org or network visibility)."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_start", identifier, max_requests=10, window_seconds=60)
 
@@ -221,10 +193,8 @@ async def rename_collab_room(
     request: Request,
     body: RenameCollabRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Rename a live seminar. Host only."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_rename",
@@ -247,10 +217,8 @@ async def update_collab_brief(
     request: Request,
     body: UpdateCollabBriefRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Let the host fill in or change goals and materials on the pinned brief."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_brief",
@@ -277,10 +245,8 @@ async def stop_collab_room(
     request: Request,
     body: StopCollabRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Stop a hosted MindMate collab room."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_stop", identifier, max_requests=10, window_seconds=60)
 
@@ -295,10 +261,8 @@ async def leave_collab_room(
     request: Request,
     body: StopCollabRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Leave a live seminar. The room stays open for everyone else."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_leave", identifier, max_requests=20, window_seconds=60)
     result = await leave_live_seminar(current_user.id, body.session_id)
@@ -314,10 +278,8 @@ async def reopen_collab_room(
     request: Request,
     body: ReopenCollabRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Continue a saved seminar by opening the same room again."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_start", identifier, max_requests=10, window_seconds=60)
 
@@ -336,10 +298,8 @@ async def join_collab_by_code(
     request: Request,
     code: str = Query(..., min_length=7, max_length=7),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Join a MindMate collab room by invite code."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_join", identifier, max_requests=20, window_seconds=60)
 
@@ -367,10 +327,8 @@ async def join_collab_organization(
     request: Request,
     body: JoinOrganizationRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Join an org-visible MindMate collab room from the browse list."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_join", identifier, max_requests=20, window_seconds=60)
 
@@ -394,10 +352,8 @@ async def poke_collab_member(
     request: Request,
     body: PokeCollabRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Nudge a colleague to join the MindMate collab seminar (real-time toast)."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_poke",
@@ -453,10 +409,8 @@ async def list_collab_session_members(
     limit: int = Query(default=200, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List teachers currently in a network seminar this person may enter."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_session_members",
@@ -494,10 +448,8 @@ async def list_collab_org_members(
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List school/org colleagues for the MindMate collab member panel."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_org_members", identifier, max_requests=60, window_seconds=60)
 
@@ -516,10 +468,8 @@ async def lookup_collab_user_by_phone(
     request: Request,
     phone: str = Query(..., min_length=11, max_length=11),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Look up a platform account by phone for cross-school seminar invites."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_lookup_phone",
@@ -570,10 +520,8 @@ async def lookup_collab_user_by_phone(
 async def list_organization_sessions(
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List active org-visible MindMate collab rooms for the viewer's school."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_list", identifier, max_requests=60, window_seconds=60)
 
@@ -589,10 +537,8 @@ async def collab_status(
     request: Request,
     code: str = Query(..., min_length=7, max_length=7),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return live status for a MindMate collab room code."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_status",
@@ -616,10 +562,8 @@ async def collab_status(
 async def my_hosted_session(
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return live seminars the caller hosts or has agreed to join."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_my_hosted",
@@ -635,10 +579,8 @@ async def my_hosted_session(
 async def list_my_saved_seminars(
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List finished seminars the owner saved into their MindMate library."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_library_list",
@@ -655,10 +597,8 @@ async def get_my_saved_seminar(
     request: Request,
     session_id: str,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return one saved seminar and its transcript for the owner."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_library_read",
@@ -677,10 +617,8 @@ async def save_collab_seminar_to_library(
     request: Request,
     session_id: str,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Save a finished seminar into the owner's MindMate library."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_library_save",
@@ -702,10 +640,8 @@ async def save_collab_diagram_to_library(
     session_id: str,
     body: SaveCollabDiagramRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Save a seminar diagram preview into the caller's library, then return its id."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_diagram_library",

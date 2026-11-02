@@ -1,9 +1,19 @@
 import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
 
-import { useVueFlow } from '@vue-flow/core'
+import {
+  type GraphNode,
+  type Padding,
+  getRectOfNodes,
+  getTransformForBounds,
+  useVueFlow,
+} from '@vue-flow/core'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import {
+  type OpenCanvasFrameNode,
+  frameNodesInOpenCanvas,
+} from '@/composables/diagramCanvas/openCanvasNodeFrame'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import type { usePanelsStore } from '@/stores/panels'
@@ -71,6 +81,7 @@ export function useDiagramCanvasFit(options: {
       padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
       maxZoom?: number
       transitionLane?: string
+      occludeRightPx?: number
     }
   ) => Promise<void>
   ensureNodeVisibleInSafeFraction: (
@@ -245,12 +256,15 @@ export function useDiagramCanvasFit(options: {
       presentationRailOpen.value &&
       presentationToolIsNotTimer.value &&
       presentationSideToolbarVisible.value
-    return resolveDiagramFitChromeInsetsPx({
+    const insets = resolveDiagramFitChromeInsetsPx({
       ribbonChrome: mindMapV2Chrome.value,
       conceptMap: diagramStore.type === 'concept_map',
       treeMapAltDims: hasTreeMapAlternativeDimensions(),
       presentationRailVisible: railVisible,
     })
+    const dock = document.querySelector('.interact-dock')
+    if (!(dock instanceof HTMLElement)) return insets
+    return { ...insets, right: insets.right + Math.round(dock.getBoundingClientRect().width) }
   }
 
   function fitPaddingFromInsets(insets: DiagramFitChromeInsets): {
@@ -377,6 +391,7 @@ export function useDiagramCanvasFit(options: {
       padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
       maxZoom?: number
       transitionLane?: string
+      occludeRightPx?: number
     }
   ): Promise<void> {
     if (!nodeIds.length || getNodes().length === 0) return
@@ -395,19 +410,38 @@ export function useDiagramCanvasFit(options: {
       maxZoom,
       includeHiddenNodes: false,
     } as Parameters<FitViewFn>[0]
+    const occludeRightPx = options?.occludeRightPx ?? 0
 
     if (!animate) {
       cancelViewportTransition(lane)
       void fitView({ ...fitOptions, duration: 0 })
+      placeFittedNodesInOpenCanvas(nodeIds, occludeRightPx, maxZoom)
       viewBus.emit('view:fit_completed', { mode: 'nodes', animate: false })
       return
     }
 
-    const from = getViewport()
+    const from = { ...getViewport() }
     cancelViewportTransition(lane)
-    await fitView(fitOptions)
-    const to = getViewport()
-    setViewport(from, { duration: 0 })
+    const container = canvasContainer.value
+    const width = container?.clientWidth ?? 0
+    const height = container?.clientHeight ?? 0
+    const picked = (getNodes() as GraphNode[]).filter((node) => nodeIds.includes(node.id))
+    const bounds = picked.length > 0 ? getRectOfNodes(picked) : null
+    const fitted =
+      bounds && width >= 80 && height >= 80
+        ? getTransformForBounds(bounds, width, height, ZOOM.MIN, maxZoom, padding as Padding)
+        : null
+    const to = fitted ? { x: fitted.x, y: fitted.y, zoom: fitted.zoom } : { ...from }
+    if (!fitted) {
+      await fitView(fitOptions)
+      const jumped = { ...getViewport() }
+      to.x = jumped.x
+      to.y = jumped.y
+      to.zoom = jumped.zoom
+      setViewport(from, { duration: 0 })
+    }
+    placeFittedNodesInOpenCanvas(nodeIds, occludeRightPx, maxZoom, to)
+    const focusX = occludeRightPx > 0 ? (width - occludeRightPx) / 2 : width / 2
 
     await animateViewportTransition(
       from,
@@ -416,10 +450,42 @@ export function useDiagramCanvasFit(options: {
       (vp) => {
         setViewport(vp, { duration: 0 })
       },
-      lane
+      lane,
+      width >= 80 && height >= 80 ? { width, height, focusX, focusY: height / 2 } : undefined
     )
 
     viewBus.emit('view:fit_completed', { mode: 'nodes', animate: true })
+  }
+
+  /**
+   * fitView centers on the full canvas. A right-hand list covers that side,
+   * so the carousel frame is recentered in the open area and kept inside it.
+   */
+  function placeFittedNodesInOpenCanvas(
+    nodeIds: string[],
+    occludeRightPx: number,
+    maxZoom: number,
+    target?: { x: number; y: number; zoom: number }
+  ): void {
+    const container = canvasContainer.value
+    const framed = frameNodesInOpenCanvas({
+      nodes: getNodes() as OpenCanvasFrameNode[],
+      nodeIds,
+      canvasWidth: container?.clientWidth ?? 0,
+      canvasHeight: container?.clientHeight ?? 0,
+      occludeRightPx,
+      minZoom: ZOOM.MIN,
+      maxZoom,
+      viewport: target ?? getViewport(),
+    })
+    if (!framed) return
+    if (target) {
+      target.x = framed.x
+      target.y = framed.y
+      target.zoom = framed.zoom
+      return
+    }
+    setViewport(framed, { duration: 0 })
   }
 
   type FlowNodeLike = {

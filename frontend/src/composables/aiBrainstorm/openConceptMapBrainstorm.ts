@@ -5,10 +5,11 @@
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useDiagramStore, usePanelsStore } from '@/stores'
+import { resolvePaintDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { usePanelsStore } from '@/stores'
 
 export function openConceptMapBrainstorm(options?: { toggle?: boolean }): void {
-  const diagramStore = useDiagramStore()
+  const diagramStore = resolvePaintDiagramSession()
   const panelsStore = usePanelsStore()
   const nodes = diagramStore.data?.nodes ?? []
   if (!nodes.length) {

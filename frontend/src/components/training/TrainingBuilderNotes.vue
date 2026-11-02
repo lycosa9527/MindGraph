@@ -36,19 +36,22 @@ function onInput(event: Event): void {
 
 <template>
   <section class="builder-notes">
-    <button
-      type="button"
-      class="builder-notes__toggle"
-      :aria-expanded="open"
-      :aria-label="t('training.builder.notes')"
-      @click="toggle"
-    >
-      <span
-        class="builder-notes__chevron"
-        :class="{ 'is-open': open }"
-      />
-      <span><I18nText k="training.builder.notes" /></span>
-    </button>
+    <div class="builder-notes__bar">
+      <slot name="lead" />
+      <button
+        type="button"
+        class="builder-notes__toggle"
+        :aria-expanded="open"
+        :aria-label="t('training.builder.notes')"
+        @click="toggle"
+      >
+        <span
+          class="builder-notes__chevron"
+          :class="{ 'is-open': open }"
+        />
+        <span><I18nText k="training.builder.notes" /></span>
+      </button>
+    </div>
     <textarea
       v-show="open"
       class="builder-notes__field"
@@ -72,11 +75,17 @@ function onInput(event: Event): void {
   background: #fff;
   padding: 0.45rem 0.85rem;
 }
+.builder-notes__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
 .builder-notes__toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  width: 100%;
+  min-width: 0;
+  flex: 1;
   border: none;
   background: transparent;
   padding: 0.15rem 0;

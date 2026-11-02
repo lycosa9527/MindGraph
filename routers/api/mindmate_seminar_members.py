@@ -16,9 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.group_members import (
     actor_is_seminar_leader,
     list_group_member_ids,
@@ -48,8 +46,7 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session, system_rls_session
+from utils.db.session_open import system_rls_session
 
 router = APIRouter()
 
@@ -92,10 +89,8 @@ async def list_seminar_group_members(
     limit: int = Query(default=200, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List teachers invited into this seminar, including people who are offline."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_group_members",
@@ -165,10 +160,8 @@ async def add_seminar_group_members(
     request: Request,
     body: AddSeminarMembersRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Invite more colleagues into a school seminar and nudge them to open it."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_add_members",
@@ -237,10 +230,8 @@ async def update_seminar_member_role(
     request: Request,
     body: UpdateSeminarMemberRoleRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Leader-only: change a member's seminar role (leader transfers leadership)."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_member_role",
@@ -269,10 +260,8 @@ async def remove_seminar_group_member(
     request: Request,
     body: RemoveSeminarMemberRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Leader-only: remove a member from the seminar group."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_remove_member",
@@ -299,10 +288,8 @@ async def remove_seminar_group_member(
 async def list_my_seminar_invites(
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Pending cross-school invites for the signed-in teacher."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_member_invites",
@@ -319,10 +306,8 @@ async def respond_my_seminar_invite(
     request: Request,
     body: RespondSeminarInviteRequest,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Agree or decline a cross-school seminar invite."""
-    await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "mindmate_seminar_member_respond",
@@ -334,14 +319,3 @@ async def respond_my_seminar_invite(
     if result is None:
         raise HTTPException(status_code=404, detail="Invite not found")
     return result
-
-
-async def _require_collab_tier(user: User, lang: Language) -> None:
-    """Ensure the caller has the online_collab school tier feature."""
-    async with actor_rls_session(user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )

@@ -300,6 +300,23 @@ describe('training course playback', () => {
     expect(trainingCourseFingerprint('登录课', '', [step])).not.toBe(before)
   })
 
+  it('drops live play_index from the saved course body', () => {
+    const step = blankPageStep(0)
+    step.interact = {
+      mode: 'read',
+      read_order: ['a'],
+      blanks: [],
+      quizzes: [],
+      sequence_saved: true,
+      play_index: 3,
+      node_extras: [],
+    }
+    const body = trainingCourseWriteBody('读图课', '', [step])
+    expect(body.steps[0]?.interact?.play_index).toBeUndefined()
+    expect(body.steps[0]?.interact?.read_order).toEqual(['a'])
+    expect(step.interact.play_index).toBe(3)
+  })
+
   it('merges saved step ids onto the live draft', () => {
     const local = [blankPageStep(0)]
     local[0].notes = '讲稿'
@@ -314,6 +331,17 @@ describe('training course playback', () => {
     expect(local[0].id).toBe('step-1')
     expect(local[0].thumb_id).toBe('thumb-1')
     expect(local[0].notes).toBe('讲稿')
+  })
+
+  it('does not give a newly inserted slide another slide’s saved id', () => {
+    const inserted = blankPageStep(0)
+    const known = { ...blankPageStep(1), id: 'step-b', notes: '第二页' }
+    mergeSavedStepMeta([inserted, known], [
+      { ...blankPageStep(0), id: 'step-b', thumb_id: 'thumb-b' },
+    ])
+    expect(inserted.id).toBeUndefined()
+    expect(known.id).toBe('step-b')
+    expect(known.thumb_id).toBe('thumb-b')
   })
 
   it('keeps the account chip modals on every slide, including canvas', () => {

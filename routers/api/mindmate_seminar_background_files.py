@@ -15,9 +15,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.background_file_preview import (
     resolve_background_preview_pdf,
 )
@@ -37,8 +35,6 @@ from services.features.mindmate_seminar.seminar_shelf import shelve_seminar_item
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -54,16 +50,6 @@ _STATUS = {
     "preview_missing": status.HTTP_404_NOT_FOUND,
     "preview_failed": status.HTTP_503_SERVICE_UNAVAILABLE,
 }
-
-
-async def _require_collab_tier(current_user: User, lang: Language) -> None:
-    async with actor_rls_session(current_user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            current_user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
 
 
 class BackgroundFileRenameBody(BaseModel):
@@ -138,10 +124,8 @@ async def shelve_seminar_background_item(
     body: SeminarShelfBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Archive one chat file or shared diagram into resources or artifacts."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_seminar_shelf",
         get_rate_limit_identifier(current_user, request),
@@ -169,10 +153,8 @@ async def list_seminar_background_files(
     request: Request,
     session_id: str = Query(..., min_length=8, max_length=36),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """List background files shared in this seminar."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_files",
         get_rate_limit_identifier(current_user, request),
@@ -193,7 +175,6 @@ async def upload_seminar_background_file(
     file: UploadFile = File(...),
     listed: str = Form("true"),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Upload one background file that everyone in the seminar can open."""
     logger.info(
@@ -202,7 +183,6 @@ async def upload_seminar_background_file(
         session_id,
         getattr(file, "filename", None),
     )
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_upload",
         get_rate_limit_identifier(current_user, request),
@@ -252,10 +232,8 @@ async def rename_seminar_background_file(
     body: BackgroundFileRenameBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Rename one shared background file."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_rename",
         get_rate_limit_identifier(current_user, request),
@@ -281,10 +259,8 @@ async def pin_seminar_background_file(
     body: BackgroundFilePinBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Pin or unpin one shared background file."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_pin",
         get_rate_limit_identifier(current_user, request),
@@ -305,10 +281,8 @@ async def delete_seminar_background_file(
     request: Request,
     session_id: str = Query(..., min_length=8, max_length=36),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Delete one shared background file."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_delete",
         get_rate_limit_identifier(current_user, request),
@@ -342,10 +316,8 @@ async def get_seminar_background_file(
     request: Request,
     session_id: str = Query(..., min_length=8, max_length=36),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return metadata for one seminar file, including unlisted chat attachments."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_file",
         get_rate_limit_identifier(current_user, request),
@@ -368,10 +340,8 @@ async def download_seminar_background_file(
     request: Request,
     session_id: str = Query(..., min_length=8, max_length=36),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Download one shared background file."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_download",
         get_rate_limit_identifier(current_user, request),
@@ -396,10 +366,8 @@ async def read_seminar_background_file(
     request: Request,
     session_id: str = Query(..., min_length=8, max_length=36),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Return file bytes for in-room viewing. Observers may open files here, not via download."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_content",
         get_rate_limit_identifier(current_user, request),
@@ -422,10 +390,8 @@ async def preview_seminar_background_file(
     request: Request,
     session_id: str = Query(..., min_length=8, max_length=36),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Inline-readable PDF for a shared file (native PDF or LibreOffice convert)."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_background_preview",
         get_rate_limit_identifier(current_user, request),

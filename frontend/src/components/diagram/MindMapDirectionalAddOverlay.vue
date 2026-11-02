@@ -90,6 +90,8 @@ function handleClick(direction: 'top' | 'bottom' | 'left' | 'right', event: Mous
 
 let unsubOpen: (() => void) | undefined
 let unsubClose: (() => void) | undefined
+let unsubZoom: (() => void) | undefined
+let unsubFit: (() => void) | undefined
 
 onMounted(() => {
   unsubOpen = eventBus.on('node_editor:opening', ({ nodeId }) => {
@@ -99,8 +101,8 @@ onMounted(() => {
     if (editingNodeId.value === nodeId) editingNodeId.value = null
     scheduleMeasure()
   })
-  eventBus.on('view:zoom_changed', scheduleMeasure)
-  eventBus.on('view:fit_completed', scheduleMeasure)
+  unsubZoom = diagramStore.viewBus.on('view:zoom_changed', scheduleMeasure)
+  unsubFit = diagramStore.viewBus.on('view:fit_completed', scheduleMeasure)
   eventBus.on('diagram:node_added', () => {
     scheduleMeasure()
     setTimeout(scheduleMeasure, 80)
@@ -113,6 +115,8 @@ onMounted(() => {
 onUnmounted(() => {
   unsubOpen?.()
   unsubClose?.()
+  unsubZoom?.()
+  unsubFit?.()
   window.removeEventListener('scroll', scheduleMeasure, true)
   window.removeEventListener('resize', scheduleMeasure)
 })

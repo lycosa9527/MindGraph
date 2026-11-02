@@ -1,7 +1,5 @@
-import {
-  isMindMapDiagramType,
-  isThinkingMapDiagramType,
-} from '@/canvas-ribbon/diagramRibbonCapabilities'
+import { diagramInsertActions } from '@/canvas-ribbon/diagramInsertActions'
+import { isMindMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 
 /** Mind-map v2 shortcut guide rows (display-only reference panel). */
 
@@ -113,15 +111,14 @@ function keysRow(id: string, labelKey: string, keys: string[]): MindMapShortcutG
   return { id, labelKey, kind: 'keys', keys }
 }
 
-/** Enter adds a node for the clicked selection. Tab and Insert are not shortcuts. */
+/** Enter adds the first toolbar level. Tab adds the second level when that map has one. */
 function thinkingMapInsertRows(diagramType: string | null | undefined): MindMapShortcutGuideRow[] {
-  if (diagramType === 'bridge_map') {
-    return [keysRow('enter', 'canvas.toolbar.addAnalogyPair', ['Enter'])]
-  }
-  if (isThinkingMapDiagramType(diagramType)) {
-    return [keysRow('enter', 'canvas.toolbar.addNode', ['Enter'])]
-  }
-  return []
+  return diagramInsertActions(diagramType).flatMap((action) => {
+    const keys = action.shortcutKeys
+    if (!keys || keys.length === 0) return []
+    const id = keys[0] === 'Tab' ? 'tab' : 'enter'
+    return [keysRow(id, action.labelKey, [...keys])]
+  })
 }
 
 /** Pin learning-sheet shortcut at top while mode is active (visible without scrolling). */
@@ -134,7 +131,7 @@ export function resolveMindMapShortcutGuideRows(
 /**
  * Shortcut card for the open diagram.
  * Mind maps keep child / sibling / arrow navigation.
- * Thinking maps list Enter to add a node, and keep Space / double-click to edit.
+ * Thinking maps list Enter for the first add. Maps with a second level also list Tab.
  */
 export function resolveDiagramShortcutGuideRows(
   diagramType: string | null | undefined,

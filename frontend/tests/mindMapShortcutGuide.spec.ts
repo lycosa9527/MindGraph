@@ -20,11 +20,18 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveTabKeyEvent('mind_map')).toBe('diagram:add_child_requested')
     })
 
-    it('does not add a node when Tab is pressed on a thinking map', () => {
-      expect(resolveTabKeyEvent('brace_map')).toBeNull()
-      expect(resolveTabKeyEvent('flow_map')).toBeNull()
+    it('routes flow, tree, brace, double bubble, and cause-effect Tab to the second level', () => {
+      expect(resolveTabKeyEvent('flow_map')).toBe('diagram:add_child_requested')
+      expect(resolveTabKeyEvent('tree_map')).toBe('diagram:add_child_requested')
+      expect(resolveTabKeyEvent('brace_map')).toBe('diagram:add_child_requested')
+      expect(resolveTabKeyEvent('double_bubble_map')).toBe('diagram:add_child_requested')
+      expect(resolveTabKeyEvent('multi_flow_map')).toBe('diagram:add_child_requested')
+    })
+
+    it('does not add a node when Tab is pressed on a single-level thinking map', () => {
       expect(resolveTabKeyEvent('bubble_map')).toBeNull()
-      expect(resolveTabKeyEvent('tree_map')).toBeNull()
+      expect(resolveTabKeyEvent('circle_map')).toBeNull()
+      expect(resolveTabKeyEvent('bridge_map')).toBeNull()
     })
 
     it('routes the generic diagram type Tab to add node', () => {
@@ -137,12 +144,38 @@ describe('mindMapShortcutGuide parity', () => {
     }
   })
 
-  it('lists Enter and hides Tab on a thinking map', () => {
+  it('lists Enter and hides Tab on a single-level thinking map', () => {
     const rows = resolveDiagramShortcutGuideRows('circle_map', false)
     expect(rows.some((row) => row.id === 'tab')).toBe(false)
     expect(rows[0]?.id).toBe('enter')
+    expect(rows[0]?.kind === 'keys' && rows[0].labelKey).toBe('canvas.toolbar.addNode')
     const bridge = resolveDiagramShortcutGuideRows('bridge_map', false)
     expect(bridge[0]?.id).toBe('enter')
+    expect(bridge[0]?.kind === 'keys' && bridge[0].labelKey).toBe('canvas.toolbar.addAnalogyPair')
+    expect(bridge.some((row) => row.id === 'tab')).toBe(false)
+  })
+
+  it('lists Enter for the first level and Tab for the second', () => {
+    const expected: Record<string, [string, string]> = {
+      flow_map: ['canvas.toolbar.addStep', 'canvas.toolbar.addSubstep'],
+      tree_map: ['canvas.toolbar.addBranch', 'canvas.toolbar.addTreeItem'],
+      brace_map: ['canvas.toolbar.addPart', 'canvas.toolbar.addSubpart'],
+      double_bubble_map: ['canvas.toolbar.addSimilarity', 'canvas.toolbar.addDifference'],
+      multi_flow_map: ['canvas.toolbar.addCause', 'canvas.toolbar.addEffect'],
+    }
+    for (const [diagramType, [enterLabel, tabLabel]] of Object.entries(expected)) {
+      const rows = resolveDiagramShortcutGuideRows(diagramType, false)
+      expect(rows[0]?.id).toBe('enter')
+      expect(rows[1]?.id).toBe('tab')
+      if (rows[0]?.kind === 'keys') {
+        expect(rows[0].keys).toEqual(['Enter'])
+        expect(rows[0].labelKey).toBe(enterLabel)
+      }
+      if (rows[1]?.kind === 'keys') {
+        expect(rows[1].keys).toEqual(['Tab'])
+        expect(rows[1].labelKey).toBe(tabLabel)
+      }
+    }
   })
 
   it('pins learning sheet answers shortcut at top while learning sheet mode is active', () => {

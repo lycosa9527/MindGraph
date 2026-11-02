@@ -20,3 +20,16 @@ export function shouldRecaptureThumb(
   if (!thumb) return true
   return capturedKey !== trainingStepThumbKey(step)
 }
+
+/** Canvas thumbs commit only after the live session belongs to that slide. */
+export function canCommitBuilderThumb(
+  selected: number,
+  index: number,
+  step: TrainingCourseStep | null | undefined,
+  boundToStep: boolean
+): boolean {
+  if (selected !== index || !step) return false
+  if (isTrainingMediaStep(step)) return true
+  if (step.page_key === 'canvas' || step.type === 'canvas') return boundToStep
+  return true
+}

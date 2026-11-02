@@ -24,7 +24,6 @@ import {
   loadThinkingCoinsWallet,
   thinkingCoinsWalletScopeKey as resolveThinkingCoinsWalletScopeKey,
 } from '@/composables/auth/fetchThinkingCoinsWallet'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
 import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -71,7 +70,6 @@ export function useAppSidebar() {
   const { displayName: mindMateNavLabel, hasCustomAgentName: hasCustomMindMateName } =
     useMindMateBranding()
   const mindMateLabelKey = computed(() => (hasCustomMindMateName.value ? '' : 'sidebar.mindMate'))
-  const { canUseOnlineCollab } = useSchoolTierFeatures()
   const {
     featureRagChunkTest,
     featureShowcase,
@@ -83,7 +81,6 @@ export function useAppSidebar() {
     featureKittyAgent,
     featureMindmateExport,
     featureWorkshopChat,
-    featureMindmateSeminar,
     featureTraining,
     featureMindbot,
     featureStudentLearningSpace,
@@ -765,9 +762,7 @@ export function useAppSidebar() {
     }
   )
 
-  const showMindmateSeminarSessions = computed(
-    () => featureMindmateSeminar.value && canUseOnlineCollab.value
-  )
+  const showMindmateSeminarSessions = computed(() => isAuthenticated.value)
   const showTrainingNav = computed(
     () => featureTraining.value && authStore.isPlatformLevel && isAuthenticated.value
   )
@@ -851,7 +846,6 @@ export function useAppSidebar() {
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,
-    featureMindmateSeminar,
     showMindmateSeminarSessions,
     featureTraining,
     showTrainingNav,

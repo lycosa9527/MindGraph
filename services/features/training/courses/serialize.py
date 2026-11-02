@@ -119,6 +119,8 @@ def serialize_step(
         "notes": str(payload.get("notes") or ""),
         "mark_step": payload.get("mark_step") or 1,
         "mark_steps": payload.get("mark_steps") or 1,
+        "interact": payload.get("interact"),
+        "diagram_spec": payload.get("diagram_spec"),
     }
 
 
@@ -176,4 +178,6 @@ def snapshot_step_payload(step_body: dict[str, Any]) -> dict[str, Any]:
         "ui_lock": step_body.get("ui_lock"),
         "mark_step": step_body.get("mark_step") or 1,
         "mark_steps": step_body.get("mark_steps") or 1,
+        "interact": step_body.get("interact"),
+        "diagram_spec": step_body.get("diagram_spec"),
     }

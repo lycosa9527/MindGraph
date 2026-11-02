@@ -4,10 +4,17 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import TrainingDragChipTray from '@/components/training/TrainingDragChipTray.vue'
+import TrainingDragHintModal from '@/components/training/TrainingDragHintModal.vue'
 import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import {
+  nodeVodId,
+  overlaysForReadNode,
+  readFocusNodeId,
+} from '@/composables/training/trainingInteract'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import type { TrainingCourse, TrainingCourseStep } from '@/types/training'
 
@@ -24,7 +31,11 @@ const index = ref(0)
 const steps = computed(() => props.course?.steps || [])
 const step = computed<TrainingCourseStep | null>(() => steps.value[index.value] || null)
 const last = computed(() => steps.value.length > 0 && index.value >= steps.value.length - 1)
-const marks = computed(() => (step.value ? visibleMarkOverlays(step.value) : []))
+const focusNodeId = computed(() => (step.value ? readFocusNodeId(step.value) : null))
+const marks = computed(() =>
+  step.value ? overlaysForReadNode(visibleMarkOverlays(step.value), focusNodeId.value) : []
+)
+const nodeVod = computed(() => (step.value ? nodeVodId(step.value, focusNodeId.value) : null))
 
 watch(
   () => props.course?.id,
@@ -98,12 +109,24 @@ function onNext(): void {
       <div
         v-else-if="step"
         class="course-walkthrough__stage"
+        :class="{
+          'course-walkthrough__stage--drag':
+            step.interact?.mode === 'drag' && step.interact.sequence_saved === true,
+        }"
       >
         <TrainingPageLiveFrame
           :page-key="step.page_key"
           :diagram-type="step.diagram_type"
           :step="step"
           interactive
+        />
+        <TrainingDragChipTray
+          v-if="step.interact?.mode === 'drag' && step.interact.sequence_saved === true"
+          class="course-walkthrough__drag-list"
+          :step="step"
+        />
+        <TrainingDragHintModal
+          v-if="step.interact?.mode === 'drag' && step.interact.sequence_saved === true"
         />
         <TrainingStepMarks
           :overlays="marks"
@@ -112,9 +135,9 @@ function onNext(): void {
           remote-roles
         />
         <TrainingVodPlayer
-          v-if="step.vod_media_id"
+          v-if="nodeVod || step.vod_media_id"
           class="course-walkthrough__player"
-          :media-id="step.vod_media_id"
+          :media-id="nodeVod || step.vod_media_id || ''"
           :autoplay="Boolean(step.vod_autoplay)"
           :width="step.vod_width"
           :height="step.vod_height"
@@ -195,6 +218,14 @@ function onNext(): void {
   position: relative;
   min-height: 0;
   flex: 1;
+}
+.course-walkthrough__drag-list {
+  position: absolute;
+  top: 0.75rem;
+  right: 0;
+  z-index: 6;
+  width: min(16rem, 42%);
+  max-height: calc(100% - 5.5rem);
 }
 .course-walkthrough__player {
   position: absolute;

@@ -7,8 +7,6 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { MindmatePanel } from '@/components/panels'
-import { useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useMindmateSeminarNotify } from '@/composables/social/useMindmateSeminarNotify'
 import { useVoiceStore } from '@/stores'
@@ -18,8 +16,6 @@ import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
 const featureFlagsStore = useFeatureFlagsStore()
 const uiStore = useUIStore()
-const { canUseOnlineCollab } = useSchoolTierFeatures()
-const notify = useNotifications()
 const route = useRoute()
 const router = useRouter()
 
@@ -40,13 +36,6 @@ async function consumeJoinCollabQuery(): Promise<void> {
   delete nextQuery.join_mindmate_seminar
   void router.replace({ query: nextQuery })
 
-  if (!featureFlagsStore.getFeatureMindmateSeminar()) {
-    return
-  }
-  if (!canUseOnlineCollab.value) {
-    notify.warningKey('auth.schoolTierFeatureUnavailable')
-    return
-  }
   await nextTick()
   mindmatePanelRef.value?.prefillCollabJoin(joinCode.trim())
 }

@@ -15,11 +15,12 @@ import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables'
 import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { useMindMapOneSentenceChat } from '@/composables/canvasToolbar/useMindMapOneSentenceChat'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   ONE_SENTENCE_SUGGESTION_ROTATE_MS,
   oneSentenceSuggestionKeysForDiagram,
 } from '@/config/oneSentenceNodeActionSuggestions'
-import { useAuthStore, useDiagramStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
@@ -29,7 +30,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const {
   draft,

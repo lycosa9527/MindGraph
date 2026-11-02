@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 
+import TrainingInteractDock from '@/components/training/TrainingInteractDock.vue'
 import TrainingSlidePreview from '@/components/training/TrainingSlidePreview.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
+import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
+import { builderDiagramNodes } from '@/composables/training/builderDiagramBridge'
+import { registerTrainingDragKnock } from '@/composables/training/trainingDragKnock'
+import {
+  nodeVodId,
+  overlaysForReadNode,
+  readFocusNodeId,
+  toggleInteractBlank,
+} from '@/composables/training/trainingInteract'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { overlayClientPercent } from '@/composables/training/trainingOverlayDrag'
 import {
@@ -22,13 +32,23 @@ const props = withDefaults(
     playAudio?: boolean | null
     readonly?: boolean
     canNext?: boolean
+    playing?: boolean
   }>(),
-  { canNext: true, playAudio: null }
+  { canNext: true, playAudio: null, playing: false }
 )
 
 const stageRef = ref<HTMLElement | null>(null)
-const marks = computed(() => visibleMarkOverlays(props.step))
+const focusNodeId = computed(() => readFocusNodeId(props.step))
+const marks = computed(() =>
+  overlaysForReadNode(visibleMarkOverlays(props.step), focusNodeId.value)
+)
+const nodeVod = computed(() => nodeVodId(props.step, focusNodeId.value))
 const topicsDragLive = useTrainingTopicsDragLive()
+const showInteract = computed(() => {
+  const interactMode = props.step.interact?.mode
+  const canvas = props.step.page_key === 'canvas' || props.step.type === 'canvas'
+  return canvas && (interactMode === 'read' || interactMode === 'drag' || interactMode === 'quiz')
+})
 
 const emit = defineEmits<{
   wake: []
@@ -36,6 +56,20 @@ const emit = defineEmits<{
   resize: [size: { width: number; height: number }]
   next: []
 }>()
+
+const releaseDragKnock = registerTrainingDragKnock((nodeId) => {
+  if (readInteractMode() !== 'drag') return
+  const node = builderDiagramNodes.value.find((row) => row.id === nodeId)
+  if (!node) return
+  emit('wake')
+  toggleInteractBlank(props.step, node)
+})
+
+function readInteractMode(): string | null {
+  return props.step.interact?.mode ?? null
+}
+
+onUnmounted(releaseDragKnock)
 
 function onStageClick(event: MouseEvent): void {
   const raw = event.target
@@ -64,7 +98,11 @@ function onDrop(event: DragEvent): void {
   <div
     ref="stageRef"
     class="builder-stage"
-    :class="{ 'builder-stage--hibernated': hibernated }"
+    :class="{
+      'builder-stage--hibernated': hibernated,
+      'builder-stage--dock': showInteract && !playing,
+      'builder-stage--play': playing,
+    }"
     @click="hibernated ? onStageClick($event) : undefined"
   >
     <TrainingSlidePreview
@@ -83,6 +121,18 @@ function onDrop(event: DragEvent): void {
       :step="step"
       :editable="!readonly"
       :selectable="!readonly"
+      @awake="emit('wake')"
+    />
+    <TrainingVodPlayer
+      v-if="nodeVod"
+      class="builder-stage__vod"
+      :media-id="nodeVod"
+      :step-key="`${step.id || index}:${focusNodeId}`"
+      :can-next="false"
+    />
+    <TrainingInteractDock
+      v-if="showInteract && !playing"
+      :step="step"
       @awake="emit('wake')"
     />
     <div
@@ -104,8 +154,29 @@ function onDrop(event: DragEvent): void {
   border: 1px solid #e7e5e4;
   background: #fff;
 }
+.builder-stage__vod {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 5;
+}
+.builder-stage--play {
+  min-height: 0;
+  border: 0;
+}
+.builder-stage--play :deep(.canvas-preview__zoom),
+.builder-stage--play :deep(.live-shell__side),
+.builder-stage--play :deep(.live-shell__expand) {
+  display: none;
+}
 .builder-stage--hibernated {
   cursor: pointer;
+}
+.builder-stage--dock {
+  --builder-dock-width: min(16rem, 42%);
+}
+.builder-stage--dock :deep(.canvas-preview__zoom) {
+  right: calc(var(--builder-dock-width) + 0.75rem);
 }
 .builder-stage__catch {
   position: absolute;

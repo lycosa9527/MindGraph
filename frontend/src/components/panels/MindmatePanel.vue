@@ -15,22 +15,15 @@ import { Plus } from '@element-plus/icons-vue'
 import { PanelLeftOpen, Share2, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
-import MindmateSeminarStartPicker from '@/components/mindmate/MindmateSeminarStartPicker.vue'
 import MindmateSeminarMemberDialog from '@/components/mindmate/MindmateSeminarMemberDialog.vue'
 import MindmateSeminarRosterBar from '@/components/mindmate/MindmateSeminarRosterBar.vue'
 import MindmateSeminarShareDialog from '@/components/mindmate/MindmateSeminarShareDialog.vue'
+import MindmateSeminarStartPicker from '@/components/mindmate/MindmateSeminarStartPicker.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import {
   applyThinkingCoinMutation,
   extractThinkingCoinsFooter,
 } from '@/composables/auth/useThinkingCoinSync'
-import {
-  embeddedCollabRoomCode,
-  hydrateEmbeddedCollabRoomCode,
-  setEmbeddedCollabRoomCode,
-} from '@/composables/mindmate/mindmateSeminarEmbeddedBridge'
-import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateSeminarLiveSession'
 import {
   applySeminarGroup,
   bumpSeminarFolderReload,
@@ -39,6 +32,12 @@ import {
   toggleSeminarMembersPane,
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import {
+  embeddedCollabRoomCode,
+  hydrateEmbeddedCollabRoomCode,
+  setEmbeddedCollabRoomCode,
+} from '@/composables/mindmate/mindmateSeminarEmbeddedBridge'
+import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateSeminarLiveSession'
+import {
   clearSeminarGroupRoster,
   loadSeminarGroupRoster,
   seminarGroupMembers,
@@ -46,20 +45,38 @@ import {
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useMindmateSavedSeminar } from '@/composables/mindmate/useMindmateSavedSeminar'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useMindmateSeminarFaces } from '@/composables/mindmate/useMindmateSeminarFaces'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/stores'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import {
+  isMindmateBlockedDocUpload,
+  isMindmateComposerUploadableFile,
+} from '@/utils/mindmateComposerUpload'
+import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
+import {
+  type SeminarBrief,
+  type SeminarBriefRole,
+  filledBriefLines,
+  seminarBriefMissing,
+  seminarSeedFromBrief,
+} from '@/utils/mindmateSeminarBrief'
+import {
   confirmMindmateSeminarLeave,
   confirmMindmateSeminarStop,
 } from '@/utils/mindmateSeminarConfirm'
+import { seminarFolderErrorKey, uploadSeminarBackgroundFile } from '@/utils/mindmateSeminarFolder'
+import {
+  addSeminarGroupMembers,
+  removeSeminarGroupMember,
+  renameSeminarSession,
+  updateSeminarMemberRole,
+} from '@/utils/mindmateSeminarGroup'
 import {
   notifyMindmateSeminarLibraryChanged,
   saveFinishedSeminar,
@@ -73,6 +90,8 @@ import {
   trackLocalMindmateSeminarSession,
   wasMindmateSeminarCodeRecentlyEnded,
 } from '@/utils/mindmateSeminarSessions'
+import { formatSeminarShareLine } from '@/utils/mindmateSeminarShare'
+import { startSeminarRoom } from '@/utils/mindmateSeminarStart'
 import {
   requestMindmateSeminarLeave,
   requestMindmateSeminarStop,
@@ -81,35 +100,6 @@ import {
   shouldRemoveCollabFromHistory,
   teardownMindmateSeminarClient,
 } from '@/utils/mindmateSeminarTeardown'
-import {
-  isMindmateBlockedDocUpload,
-  isMindmateComposerUploadableFile,
-} from '@/utils/mindmateComposerUpload'
-import {
-  hasGeneratedDiagramImage,
-  parseMindmateDiagramLibraryId,
-} from '@/utils/mindmateDiagramMeta'
-import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
-import {
-  type SeminarBrief,
-  type SeminarBriefRole,
-  filledBriefLines,
-  seminarBriefMissing,
-  seminarSeedFromBrief,
-} from '@/utils/mindmateSeminarBrief'
-import {
-  seminarBubblePlainText,
-  seminarFolderErrorKey,
-  uploadSeminarBackgroundFile,
-} from '@/utils/mindmateSeminarFolder'
-import { formatSeminarShareLine } from '@/utils/mindmateSeminarShare'
-import {
-  addSeminarGroupMembers,
-  removeSeminarGroupMember,
-  renameSeminarSession,
-  updateSeminarMemberRole,
-} from '@/utils/mindmateSeminarGroup'
-import { startSeminarRoom } from '@/utils/mindmateSeminarStart'
 import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
 import MindmateHeader from './mindmate/MindmateHeader.vue'
@@ -175,13 +165,10 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
-const featureFlagsStore = useFeatureFlagsStore()
 const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
 const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
-const showMindmateSeminar = computed(() => featureFlagsStore.getFeatureMindmateSeminar())
-const { canUseOnlineCollab } = useSchoolTierFeatures()
 const homeMode = ref<'dialogue' | 'seminar'>('dialogue')
 const mindmateInputRef = ref<MindmateInputHandle | null>(null)
 const memberDialogOpen = ref(false)
@@ -349,23 +336,13 @@ const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
 
 const showHomeModeSwitch = computed(() => showWelcome.value && !isCollabChatroomMode.value)
 
-function requireCollabTier(): boolean {
-  if (canUseOnlineCollab.value) {
-    return true
-  }
-  notify.warningKey('auth.schoolTierFeatureUnavailable')
-  return false
-}
-
 const collabSessionTitle = computed(
   () => collabRoomTitle.value || mindMateStore.conversationTitle || t('mindmate.collabPill')
 )
 
 const canStopCollabSession = computed(() => isSeminarLeader.value)
 
-const canLeaveCollabSession = computed(
-  () => isCollabChatroomMode.value && !isSeminarLeader.value
-)
+const canLeaveCollabSession = computed(() => isCollabChatroomMode.value && !isSeminarLeader.value)
 
 function handleCollabSessionStarted(payload: {
   code: string
@@ -888,7 +865,7 @@ async function openSeminarFromBrief(
   brief: SeminarBrief,
   options?: { includeThread?: boolean }
 ): Promise<void> {
-  if (!requireCollabTier() || !takeSeminarBrief(brief) || memberBusy.value) {
+  if (!takeSeminarBrief(brief) || memberBusy.value) {
     return
   }
   memberBusy.value = true
@@ -1303,9 +1280,7 @@ const shareLines = computed(() => {
     )
     .map((message) => {
       const raw =
-        message.role === 'user'
-          ? displayMindmateUserQueryForUi(message.content)
-          : message.content
+        message.role === 'user' ? displayMindmateUserQueryForUi(message.content) : message.content
       const formatted = formatSeminarShareLine(raw, t)
       const mindgraph = formatted.kind === 'diagram'
       const authorName =
@@ -1449,12 +1424,7 @@ function isLastAssistantMessage(messageId: string): boolean {
         class="flex-1"
       />
       <MindmateSeminarPanel
-        v-if="
-          showMindmateSeminar &&
-          !isCollabChatroomMode &&
-          !showWelcome &&
-          !savedSeminar.sessionId.value
-        "
+        v-if="!isCollabChatroomMode && !showWelcome && !savedSeminar.sessionId.value"
         ref="collabPanelRef"
         :in-conversation="inConversation"
         :conversation-title="mindMateStore.conversationTitle || displayTitle"

@@ -64,6 +64,11 @@ onMounted(() => {
 function toggleExpanded(): void {
   persistExpanded(toggleCanvasGuide('shortcut'))
 }
+
+/** `Ctrl+Shift+L` is three caps. A lone key stays one cap. */
+function chordParts(combo: string): string[] {
+  return combo.split('+').filter((part) => part.length > 0)
+}
 </script>
 
 <template>
@@ -90,7 +95,7 @@ function toggleExpanded(): void {
     <Transition name="shortcut-guide-card">
       <div
         v-if="expanded"
-        class="shortcut-guide-card shortcut-guide-card--popover w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
+        class="shortcut-guide-card shortcut-guide-card--popover w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
       >
         <div
           class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 pb-1 pt-2 dark:border-slate-700"
@@ -122,50 +127,59 @@ function toggleExpanded(): void {
           <li
             v-for="row in rows"
             :key="row.id"
-            class="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5"
+            class="shortcut-guide-row rounded-md border px-2 py-1.5"
             :class="
               row.id === 'learningSheetAnswers' && diagramStore.isLearningSheet
                 ? 'border-amber-200 bg-amber-50/90 dark:border-amber-700/60 dark:bg-amber-950/40'
                 : 'border-slate-100 bg-slate-50/80 dark:border-slate-700/80 dark:bg-slate-800/60'
             "
           >
-            <span class="text-xs text-slate-700 dark:text-slate-200">
+            <span class="min-w-0 text-xs text-slate-700 dark:text-slate-200">
               <I18nText :k="row.labelKey" />
+              <span
+                v-if="row.kind === 'edit'"
+                class="mt-0.5 block text-[10px] leading-tight text-slate-400"
+              >
+                <I18nText k="canvas.shortcutGuide.doubleClick" />
+              </span>
             </span>
 
             <div
               v-if="row.kind === 'keys'"
-              class="flex shrink-0 items-center gap-1"
+              class="shortcut-guide-keys"
             >
-              <kbd
-                v-for="(key, index) in row.keys"
-                :key="`${row.id}-${index}`"
-                class="shortcut-kbd"
+              <span
+                v-for="(combo, comboIndex) in row.keys"
+                :key="`${row.id}-${comboIndex}`"
+                class="shortcut-guide-combo"
               >
-                {{ key }}
-              </kbd>
+                <kbd
+                  v-for="(part, partIndex) in chordParts(combo)"
+                  :key="`${row.id}-${comboIndex}-${partIndex}`"
+                  class="shortcut-kbd"
+                >
+                  {{ part }}
+                </kbd>
+              </span>
             </div>
 
             <div
               v-else-if="row.kind === 'edit'"
-              class="flex shrink-0 items-center gap-1"
+              class="shortcut-guide-keys"
             >
               <kbd class="shortcut-kbd">Space</kbd>
-              <span class="text-[10px] text-slate-400"
-                ><I18nText k="canvas.shortcutGuide.doubleClick"
-              /></span>
             </div>
 
-            <kbd
+            <div
               v-else-if="row.kind === 'arrows'"
-              class="shortcut-kbd shortcut-kbd--group"
+              class="shortcut-guide-keys"
             >
-              ↑ ↓ ← →
-            </kbd>
+              <kbd class="shortcut-kbd shortcut-kbd--group">↑ ↓ ← →</kbd>
+            </div>
 
             <div
               v-else
-              class="flex max-w-[52%] shrink-0 items-center justify-end gap-1 text-right"
+              class="flex items-center justify-end gap-1 text-right"
             >
               <MousePointer2
                 v-if="row.icon === 'mouse'"
@@ -202,12 +216,39 @@ function toggleExpanded(): void {
   z-index: 60;
 }
 
+.shortcut-guide-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.shortcut-guide-keys {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 7rem;
+  flex-shrink: 0;
+}
+
+.shortcut-guide-combo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
 .shortcut-kbd {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: auto;
+  min-width: 1.15rem;
   min-height: 1.25rem;
-  padding: 0.125rem 0.375rem;
+  padding: 0.125rem 0.3rem;
   border: 1px solid rgb(226 232 240);
   border-radius: 0.25rem;
   background: rgb(255 255 255);

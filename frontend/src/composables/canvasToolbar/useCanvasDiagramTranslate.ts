@@ -9,8 +9,8 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
@@ -50,7 +50,7 @@ function asDiagramType(value: unknown): DiagramType | null {
 }
 
 export function useCanvasDiagramTranslate() {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const diagramTranslateUi = useDiagramTranslateUiStore()
   const llmResultsStore = useLLMResultsStore()
   const savedDiagramsStore = useSavedDiagramsStore()

@@ -7,13 +7,11 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useMindmateSeminarPresenceBridge } from '@/composables/mindmate/mindmateSeminarPresenceBridge'
 import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
 import { useAuthStore } from '@/stores/auth'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { handleMindmateSeminarPokeFrame } from '@/utils/mindmateSeminarPokeNotify'
 import { loadPendingSeminarInvites } from '@/utils/mindmateSeminarConsent'
+import { handleMindmateSeminarPokeFrame } from '@/utils/mindmateSeminarPokeNotify'
 
 const CONNECT_DEBOUNCE_MS = 200
 const PRESENCE_SYNC_MS = 60_000
@@ -35,8 +33,6 @@ function buildWsUrl(): string {
 
 export function useMindmateSeminarNotify(): void {
   const authStore = useAuthStore()
-  const featureFlagsStore = useFeatureFlagsStore()
-  const { canUseOnlineCollab } = useSchoolTierFeatures()
   const notify = useNotifications()
   const { t } = useLanguage()
   const { applyPresenceSnapshot, updatePresence, hydrateLastSeen } =
@@ -51,14 +47,7 @@ export function useMindmateSeminarNotify(): void {
   /** True when we wanted to drop a socket that was still handshaking. */
   let cancelConnecting = false
 
-  const shouldConnect = computed(
-    () =>
-      authStore.isAuthenticated &&
-      authStore.isAuthSessionVerified &&
-      featureFlagsStore.flags !== null &&
-      featureFlagsStore.getFeatureMindmateSeminar() &&
-      canUseOnlineCollab.value
-  )
+  const shouldConnect = computed(() => authStore.isAuthenticated && authStore.isAuthSessionVerified)
 
   function resolveOrgId(): number | null {
     const raw = authStore.user?.schoolId

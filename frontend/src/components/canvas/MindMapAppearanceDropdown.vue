@@ -14,6 +14,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   MIND_MAP_DIAGRAM_STYLES,
   type MindMapDiagramStyleId,
@@ -25,7 +26,6 @@ import {
   resolveMindMapThemeId,
 } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
-import { useDiagramStore } from '@/stores'
 
 const props = withDefaults(defineProps<{ compact?: boolean; hideDiagramStyle?: boolean }>(), {
   compact: false,
@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<{ compact?: boolean; hideDiagramStyle?: b
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const dropdownOpen = ref(false)
 

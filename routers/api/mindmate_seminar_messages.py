@@ -14,9 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
-from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_seminar.config import MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
 from services.features.mindmate_seminar.seminar_message import (
@@ -24,8 +22,6 @@ from services.features.mindmate_seminar.seminar_message import (
     send_seminar_message,
 )
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -49,16 +45,6 @@ class SendSeminarMessageBody(BaseModel):
     kind: Literal["chat", "minutes"] = SEMINAR_MESSAGE_KIND_CHAT
 
 
-async def _require_collab_tier(current_user: User, lang: Language) -> None:
-    async with actor_rls_session(current_user) as db:
-        await assert_user_has_school_tier_feature(
-            db,
-            current_user,
-            TIER_FEATURE_ONLINE_COLLAB,
-            lang,
-        )
-
-
 def _display_name(user: User) -> Optional[str]:
     username = getattr(user, "username", None) or getattr(user, "name", None)
     if isinstance(username, str) and username.strip():
@@ -72,10 +58,8 @@ async def create_seminar_message(
     body: SendSeminarMessageBody,
     request: Request,
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """Save a seminar line. Open sockets receive the saved row; the socket is not the writer."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_send_message",
         get_rate_limit_identifier(current_user, request),
@@ -123,10 +107,8 @@ async def list_seminar_messages(
     after_id: Optional[int] = Query(None, ge=0),
     before_id: Optional[int] = Query(None, ge=0),
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
 ):
     """One page of seminar lines. ``after_id`` is newer; ``before_id`` is older."""
-    await _require_collab_tier(current_user, lang)
     await check_endpoint_rate_limit(
         "mindmate_seminar_history",
         get_rate_limit_identifier(current_user, request),

@@ -259,7 +259,10 @@ export async function deleteTrainingCourse(courseId: string): Promise<void> {
   const res = await apiRequest(`${API}/courses/${encodeURIComponent(courseId)}`, {
     method: 'DELETE',
   })
-  if (!res.ok) throw new Error('delete')
+  if (!res.ok) {
+    const payload: unknown = await res.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, 'delete'))
+  }
 }
 
 export async function playTrainingCourse(
