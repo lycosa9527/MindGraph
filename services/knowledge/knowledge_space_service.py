@@ -10,6 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import hashlib
 import logging
 import os
@@ -20,7 +21,6 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from clients.dashscope_embedding import get_embedding_client
 from models.domain.knowledge_space import (
     DocumentBatch,
     DocumentChunk,
@@ -28,34 +28,38 @@ from models.domain.knowledge_space import (
     KnowledgeDocument,
     KnowledgeSpace,
 )
-from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_policy import resolve_chunking_policy
-from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_batch_service import batch_upload_documents as batch_upload_documents_helper
 from services.knowledge.document_batch_service import update_batch_progress as update_batch_progress_helper
 from services.knowledge.document_cleaner import get_document_cleaner
-from services.knowledge.document_processing import (
-    chunk_text_with_mode,
-    extract_and_clean_text,
-    generate_embeddings_with_cache,
-    prepare_qdrant_metadata,
-)
+from services.knowledge.document_processing import extract_and_clean_text
 from services.knowledge.document_processor import get_document_processor
 from services.knowledge.doc_summary_storage import clear_package_redis, delete_extracted_content
 from services.knowledge.doc_summary_temp import remove_job_dir
+from services.knowledge.package_rag_scope import PERSONAL_KNOWLEDGE_SOURCES
 from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
-from services.knowledge.document_reindexing import (
-    chunk_text_for_reindexing,
-    compare_chunks,
-    process_new_chunks,
-    process_updated_chunks,
-)
+from services.knowledge.vibeflow_cut import VibeflowPiece, build_vibeflow_pieces
+from services.knowledge.vibeflow_store import delete_document_objects, upload_pieces
 from services.knowledge.document_versioning import get_document_versions as get_document_versions_helper
 from services.knowledge.document_versioning import rollback_document as rollback_document_helper
-from services.llm.qdrant_service import get_qdrant_service
-from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+def _replace_personal_objects(
+    user_id: int,
+    package_id: int,
+    document_id: int,
+    pieces: List[VibeflowPiece],
+) -> bool:
+    """Replace one document's markdown objects. False when a write fails."""
+    delete_document_objects(user_id, package_id, document_id)
+    return upload_pieces(user_id, package_id, document_id, pieces)
+
+
+# Three folders, ten sources each. The per-user cap is the product of those two.
+MAX_DOCUMENTS_PER_PACKAGE = 10
+MAX_DOCUMENTS_PER_USER_DEFAULT = MAX_DOCUMENTS_PER_PACKAGE * 3
 
 
 class KnowledgeSpaceService:
@@ -76,15 +80,11 @@ class KnowledgeSpaceService:
         self.db = db
         self.user_id = user_id
         self.processor = get_document_processor()
-        self.chunking = get_chunking_service()
         self.cleaner = get_document_cleaner()
-        self.qdrant = get_qdrant_service()
-        self.embedding_client = get_embedding_client()
-        self.kb_rate_limiter = get_kb_rate_limiter()
 
         # Configuration
-        self.max_documents = int(os.getenv("MAX_DOCUMENTS_PER_USER", "5"))
-        self.max_file_size = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
+        self.max_documents = int(os.getenv("MAX_DOCUMENTS_PER_USER", str(MAX_DOCUMENTS_PER_USER_DEFAULT)))
+        self.max_file_size = int(os.getenv("MAX_FILE_SIZE", "52428800"))  # 50MB
         self.storage_dir = Path(os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents"))
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
@@ -147,6 +147,13 @@ class KnowledgeSpaceService:
         )
         return result.scalar_one()
 
+    async def count_documents_in_batch(self, batch_id: int) -> int:
+        """How many sources are already stored in one folder."""
+        result = await self.db.execute(
+            select(func.count(KnowledgeDocument.id)).where(KnowledgeDocument.batch_id == batch_id)
+        )
+        return int(result.scalar_one())
+
     async def upload_document(
         self,
         file_name: str,
@@ -173,6 +180,13 @@ class KnowledgeSpaceService:
         count = await self.get_document_count()
         if count >= self.max_documents:
             raise ValueError(f"Maximum {self.max_documents} documents allowed. Please delete a document first.")
+
+        if batch_id is not None:
+            batch_count = await self.count_documents_in_batch(batch_id)
+            if batch_count >= MAX_DOCUMENTS_PER_PACKAGE:
+                raise ValueError(
+                    f"Maximum {MAX_DOCUMENTS_PER_PACKAGE} documents allowed in a folder. Please delete a source first."
+                )
 
         if file_size > self.max_file_size:
             raise ValueError(f"File size ({file_size} bytes) exceeds maximum ({self.max_file_size} bytes)")
@@ -268,6 +282,50 @@ class KnowledgeSpaceService:
         )
         return effective_rules
 
+    async def _publish_personal_knowledge(
+        self,
+        document: KnowledgeDocument,
+        cleaned_text: str,
+        structure_headings: Optional[list],
+        page_info: Optional[list] = None,
+    ) -> bool:
+        """Store a personal-knowledge file as markdown objects. False for other sources."""
+        if document.batch_id is None:
+            return False
+        batch = await self.db.get(DocumentBatch, document.batch_id)
+        if batch is None or batch.source not in PERSONAL_KNOWLEDGE_SOURCES:
+            return False
+        pieces = build_vibeflow_pieces(cleaned_text, structure_headings, page_info)
+        if not pieces:
+            raise ValueError(f"Personal knowledge cut produced no pieces for document {document.id}")
+        saved = await asyncio.to_thread(
+            _replace_personal_objects,
+            self.user_id,
+            batch.id,
+            document.id,
+            pieces,
+        )
+        if not saved:
+            raise ValueError(f"Personal knowledge upload failed for document {document.id}")
+        metadata = dict(document.doc_metadata or {})
+        metadata["vibeflow"] = True
+        metadata["local_original_removed"] = True
+        document.doc_metadata = metadata
+        document.chunk_count = len(pieces)
+        document.status = "completed"
+        document.processing_progress = None
+        document.processing_progress_percent = 100
+        if document.file_path and Path(document.file_path).exists():
+            Path(document.file_path).unlink()
+        document.file_path = ""
+        await self.db.commit()
+        logger.info(
+            "[VibeFlow] Stored %s markdown objects for document %s",
+            len(pieces),
+            document.id,
+        )
+        return True
+
     async def process_document(self, document_id: int) -> None:
         """
         Process document: extract text, chunk, embed, store.
@@ -293,21 +351,12 @@ class KnowledgeSpaceService:
         try:
             await self._clear_document_index_if_present(document_id)
 
-            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
-            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
             logger.info(
-                "[RAG] → Processing: doc_id=%s, file='%s', type=%s, chunking_engine=%s, chunking_method=%s",
+                "[RAG] → Processing: doc_id=%s, file='%s', type=%s, chunking_method=semchunk",
                 document_id,
                 document.file_name,
                 document.file_type,
-                chunking_engine,
-                chunking_method,
             )
-            if chunking_method == "mindchunk":
-                logger.info(
-                    "[RAG] 🧠 MindChunk ACTIVE: LLM-based semantic chunking will be used for doc_id=%s",
-                    document_id,
-                )
 
             document.status = "processing"
             document.processing_progress = "extracting"
@@ -325,7 +374,7 @@ class KnowledgeSpaceService:
                 )
             except ValueError as value_error:
                 raise value_error
-            except QDRANT_ERRORS as extract_error:
+            except OSError as extract_error:
                 error_msg = f"文本提取失败: {str(extract_error)}"
                 logger.error(
                     "[KnowledgeSpace] Text extraction failed for document %s: %s",
@@ -338,193 +387,15 @@ class KnowledgeSpaceService:
             document.processing_progress_percent = 20
             await self.db.commit()
 
-            mode = "automatic"
-            if processing_rules:
-                mode = processing_rules.get("mode", "automatic")
+            if await self._publish_personal_knowledge(document, cleaned_text, structure_headings, page_info):
+                return
 
-            chunks = await chunk_text_with_mode(
-                self.chunking,
-                cleaned_text,
-                document,
-                processing_rules,
-                page_info,
-                document_id,
-                user_id=self.user_id,
-                structure_headings=structure_headings,
-            )
+            batch = await self.db.get(DocumentBatch, document.batch_id) if document.batch_id else None
+            if batch is not None and batch.source == "doc_summary":
+                raise ValueError("Document summary uses its own ingest")
+            raise ValueError("Only a personal knowledge folder is indexed")
 
-            if len(chunks) == 0:
-                raise ValueError(
-                    f"Chunking returned 0 chunks for document {document_id}. "
-                    "This may indicate an issue with MindChunk or document content. "
-                    "Check logs above for chunking errors."
-                )
-            if not self.chunking.validate_chunk_count(len(chunks), self.user_id):
-                raise ValueError(f"Chunk count ({len(chunks)}) exceeds limit")
-
-            logger.info(
-                "[RAG] ✓ Chunking: doc_id=%s, created %s chunks, method=%s, mode=%s",
-                document_id,
-                len(chunks),
-                chunking_method,
-                mode,
-            )
-            if chunking_method == "mindchunk" and chunks:
-                sample_chunk = chunks[0]
-                logger.debug(
-                    "[RAG] MindChunk sample metadata for doc_id=%s: keys=%s, structure_type=%s, has_token_count=%s",
-                    document_id,
-                    list(sample_chunk.metadata.keys()),
-                    sample_chunk.metadata.get("structure_type"),
-                    "token_count" in sample_chunk.metadata,
-                )
-
-            document.processing_progress = "chunking"
-            document.processing_progress_percent = 40
-            await self.db.commit()
-
-            document.processing_progress = "embedding"
-            document.processing_progress_percent = 50
-            await self.db.commit()
-
-            texts = [chunk.text for chunk in chunks]
-            embeddings = await generate_embeddings_with_cache(
-                self.embedding_client,
-                self.kb_rate_limiter,
-                texts,
-                self.user_id,
-                self.db,
-            )
-
-            document.processing_progress_percent = 80
-            await self.db.commit()
-            logger.info(
-                "[RAG] ✓ Embedding: doc=%s, %s vectors generated",
-                document_id,
-                len(embeddings),
-            )
-
-            if len(embeddings) != len(chunks):
-                raise ValueError(f"Embedding count ({len(embeddings)}) != chunk count ({len(chunks)})")
-
-            document.processing_progress = "indexing"
-            document.processing_progress_percent = 85
-            await self.db.commit()
-
-            try:
-                chunk_ids = []
-                for chunk, _ in zip(chunks, embeddings):
-                    db_chunk = DocumentChunk(
-                        document_id=document.id,
-                        chunk_index=chunk.chunk_index,
-                        text=chunk.text,
-                        start_char=chunk.start_char,
-                        end_char=chunk.end_char,
-                    )
-                    self.db.add(db_chunk)
-                    await self.db.flush()
-                    chunk_ids.append(db_chunk.id)
-                logger.info(
-                    "[RAG] ✓ Chunking: doc=%s, %s chunks saved to database",
-                    document_id,
-                    len(chunk_ids),
-                )
-            except QDRANT_ERRORS as chunk_db_error:
-                error_msg = f"保存分块数据失败: {str(chunk_db_error)}"
-                logger.error(
-                    "[RAG] ✗ Chunking FAILED: doc=%s, error=%s",
-                    document_id,
-                    chunk_db_error,
-                )
-                raise ValueError(error_msg) from chunk_db_error
-
-            try:
-                try:
-                    qdrant_metadata = prepare_qdrant_metadata(chunks, document)
-                    await self.qdrant.add_documents(
-                        user_id=self.user_id,
-                        chunk_ids=chunk_ids,
-                        embeddings=embeddings,
-                        document_ids=[document.id] * len(chunk_ids),
-                        metadata=qdrant_metadata,
-                    )
-                    logger.info(
-                        "[RAG] ✓ Vector Store: doc=%s, %s vectors stored in Qdrant",
-                        document_id,
-                        len(chunk_ids),
-                    )
-                except QDRANT_ERRORS as qdrant_insert_error:
-                    error_msg = f"向量存储失败: {str(qdrant_insert_error)}"
-                    logger.error(
-                        "[RAG] ✗ Vector Store FAILED: doc=%s, error=%s",
-                        document_id,
-                        qdrant_insert_error,
-                    )
-                    raise ValueError(error_msg) from qdrant_insert_error
-
-                document.status = "completed"
-                document.chunk_count = len(chunks)
-                document.processing_progress = None
-                document.processing_progress_percent = 100
-                await self.db.commit()
-
-            except ValueError as value_error:
-                raise value_error
-            except QDRANT_ERRORS as qdrant_error:
-                error_msg = f"数据保存失败: {str(qdrant_error)}"
-                logger.error(
-                    "[KnowledgeSpace] Qdrant write succeeded but database commit failed: %s",
-                    qdrant_error,
-                )
-                try:
-                    await self.db.rollback()
-                    await self.qdrant.delete_document(self.user_id, document.id)
-                    logger.info(
-                        "[KnowledgeSpace] Cleaned up orphaned Qdrant vectors for document %s",
-                        document_id,
-                    )
-                except QDRANT_ERRORS as cleanup_error:
-                    logger.error(
-                        "[KnowledgeSpace] Failed to cleanup Qdrant after database failure: %s",
-                        cleanup_error,
-                    )
-                raise ValueError(error_msg) from qdrant_error
-
-            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
-            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
-            logger.info(
-                "[RAG] ✓ Processing complete: doc_id=%s, file='%s', chunks=%s, method=%s, user=%s",
-                document_id,
-                document.file_name,
-                len(chunks),
-                chunking_method,
-                self.user_id,
-            )
-
-            try:
-                if document.file_type == "application/pdf":
-                    text, _ = self.processor.extract_text_with_pages(document.file_path, document.file_type)
-                else:
-                    text = self.processor.extract_text(document.file_path, document.file_type)
-                if isinstance(text, list):
-                    text = "\n".join(str(item) for item in text)
-                if not isinstance(text, str):
-                    text = str(text) if text else ""
-                references = self.processor.extract_references(text, document.id)
-                for ref in references:
-                    logger.debug(
-                        "[KnowledgeSpace] Found reference in document %s: %s",
-                        document.id,
-                        ref["text"],
-                    )
-            except QDRANT_ERRORS as ref_error:
-                logger.warning(
-                    "[KnowledgeSpace] Failed to extract references for document %s: %s",
-                    document_id,
-                    ref_error,
-                )
-
-        except QDRANT_ERRORS as e:
+        except (OSError, RuntimeError, ValueError) as e:
             logger.error("[KnowledgeSpace] Failed to process document %s: %s", document_id, e)
             document.status = "failed"
             document.error_message = str(e)
@@ -573,13 +444,12 @@ class KnowledgeSpaceService:
         await update_batch_progress_helper(self.db, self.user_id, batch_id, completed, failed)
 
     async def _clear_document_index_if_present(self, document_id: int) -> None:
-        """Remove existing DB chunks and Qdrant vectors before a full reprocess."""
+        """Remove leftover database chunks before a full reprocess."""
         result = await self.db.execute(select(DocumentChunk.id).where(DocumentChunk.document_id == document_id))
         chunk_ids = [row[0] for row in result.all()]
         if not chunk_ids:
             return
 
-        await self.qdrant.delete_chunks(self.user_id, chunk_ids)
         await self.db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document_id))
         await self.db.commit()
         logger.info(
@@ -618,9 +488,23 @@ class KnowledgeSpaceService:
                 await delete_extracted_content(metadata)
                 if document.batch_id is not None:
                     await clear_package_redis(document.batch_id)
+            elif metadata.get("vibeflow") and document.batch_id is not None:
+                await asyncio.to_thread(
+                    delete_document_objects,
+                    self.user_id,
+                    document.batch_id,
+                    document_id,
+                )
+                if document.file_path and Path(document.file_path).exists():
+                    Path(document.file_path).unlink()
             else:
-                await self.qdrant.delete_document(self.user_id, document_id)
-
+                if document.batch_id is not None:
+                    await asyncio.to_thread(
+                        delete_document_objects,
+                        self.user_id,
+                        document.batch_id,
+                        document_id,
+                    )
                 if document.file_path and Path(document.file_path).exists():
                     Path(document.file_path).unlink()
 
@@ -633,7 +517,7 @@ class KnowledgeSpaceService:
                 self.user_id,
             )
 
-        except QDRANT_ERRORS as e:
+        except OSError as e:
             logger.error("[KnowledgeSpace] Failed to delete document %s: %s", document_id, e)
             await self.db.rollback()
             raise e
@@ -806,7 +690,7 @@ class KnowledgeSpaceService:
                         document.version,
                         document.id,
                     )
-            except QDRANT_ERRORS as version_error:
+            except OSError as version_error:
                 logger.warning(
                     "[KnowledgeSpace] Failed to create version for document %s: %s",
                     document.id,
@@ -816,7 +700,7 @@ class KnowledgeSpaceService:
             if old_file_path != document.file_path and Path(old_file_path).exists():
                 try:
                     Path(old_file_path).unlink()
-                except QDRANT_ERRORS as e:
+                except OSError as e:
                     logger.warning(
                         "[KnowledgeSpace] Failed to delete old file %s: %s",
                         old_file_path,
@@ -838,7 +722,7 @@ class KnowledgeSpaceService:
             )
             return document
 
-        except QDRANT_ERRORS as e:
+        except (OSError, RuntimeError, ValueError) as e:
             logger.error("[KnowledgeSpace] Failed to update document %s: %s", document_id, e)
             document.status = "failed"
             document.error_message = str(e)
@@ -848,184 +732,36 @@ class KnowledgeSpaceService:
             raise e
 
     async def _reindex_chunks(self, document: KnowledgeDocument, content_hash: str) -> Dict[str, int]:
-        """
-        Reindex document chunks with partial reindexing support.
-
-        Only changed chunks are reindexed. Chunks are compared by text hash.
-
-        Args:
-            document: KnowledgeDocument instance
-            content_hash: Hash of new content
-
-        Returns:
-            Dict with change summary: {"added": count, "updated": count, "deleted": count}
-        """
+        """Republish one edited document into the personal knowledge store."""
         try:
             document.processing_progress = "extracting"
             document.processing_progress_percent = 10
             await self.db.commit()
 
-            result = await self.db.execute(select(KnowledgeSpace).where(KnowledgeSpace.id == document.space_id))
-            space = result.scalars().first()
-            processing_rules = space.processing_rules if space and space.processing_rules else None
-            processing_rules = await self._apply_file_center_chunking_policy(document, processing_rules)
-
-            try:
-                cleaned_text, page_info, structure_headings = await extract_and_clean_text(
-                    self.processor, self.cleaner, document, self.db, processing_rules
-                )
-            except ValueError as value_error:
-                raise value_error
-            except QDRANT_ERRORS as extract_error:
-                error_msg = f"文本提取失败: {str(extract_error)}"
-                logger.error(
-                    "[KnowledgeSpace] Text extraction failed for document %s: %s",
-                    document.id,
-                    extract_error,
-                    exc_info=True,
-                )
-                raise ValueError(error_msg) from extract_error
-
-            document.processing_progress = "cleaning"
-            document.processing_progress_percent = 20
-            await self.db.commit()
-
-            document.processing_progress = "chunking"
-            document.processing_progress_percent = 30
-            await self.db.commit()
-
-            new_chunks = chunk_text_for_reindexing(
-                self.chunking,
-                cleaned_text,
+            cleaned_text, page_info, structure_headings = await extract_and_clean_text(
+                self.processor,
+                self.cleaner,
                 document,
-                processing_rules,
+                self.db,
+                None,
+            )
+            published = await self._publish_personal_knowledge(
+                document,
+                cleaned_text,
+                structure_headings,
                 page_info,
-                structure_headings=structure_headings,
             )
-
-            if not self.chunking.validate_chunk_count(len(new_chunks), self.user_id):
-                raise ValueError(f"Chunk count ({len(new_chunks)}) exceeds limit")
-
-            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
-            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
-            mode = processing_rules.get("mode", "automatic") if processing_rules else "automatic"
-            logger.info(
-                "[RAG] ✓ Chunking (update): doc_id=%s, created %s chunks, method=%s, mode=%s",
-                document.id,
-                len(new_chunks),
-                chunking_method,
-                mode,
-            )
-
-            result = await self.db.execute(
-                select(DocumentChunk)
-                .where(DocumentChunk.document_id == document.id)
-                .order_by(DocumentChunk.chunk_index)
-            )
-            existing_chunks = list(result.scalars().all())
-
-            existing_chunk_map: Dict[int, DocumentChunk] = {}
-            for chunk in existing_chunks:
-                existing_chunk_map[chunk.chunk_index] = chunk
-
-            document.processing_progress = "comparing"
-            document.processing_progress_percent = 40
-            await self.db.commit()
-
-            chunks_to_add, chunks_to_update, chunks_to_delete = compare_chunks(
-                new_chunks, existing_chunks, self._calculate_chunk_hash
-            )
-
-            logger.info(
-                "[RAG] ✓ Chunk comparison: doc_id=%s, added=%s, updated=%s, deleted=%s",
-                document.id,
-                len(chunks_to_add),
-                len(chunks_to_update),
-                len(chunks_to_delete),
-            )
-
-            if chunks_to_delete:
-                chunk_ids_to_delete = [existing_chunk_map[i].id for i in chunks_to_delete]
-                await self.qdrant.delete_chunks(self.user_id, chunk_ids_to_delete)
-                await self.db.execute(delete(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids_to_delete)))
-                await self.db.commit()
-
-            if chunks_to_update:
-                document.processing_progress = "updating_chunks"
-                document.processing_progress_percent = 50
-                await self.db.commit()
-
-                updated_chunk_ids, updated_embeddings, updated_chunks = await process_updated_chunks(
-                    chunks_to_update,
-                    existing_chunk_map,
-                    document,
-                    self.embedding_client,
-                    self.kb_rate_limiter,
-                    self.user_id,
-                    self.db,
-                )
-
-                if updated_chunk_ids:
-                    updated_metadata = prepare_qdrant_metadata(updated_chunks, document)
-                    await self.qdrant.update_documents(
-                        user_id=self.user_id,
-                        chunk_ids=updated_chunk_ids,
-                        embeddings=updated_embeddings,
-                        document_ids=[document.id] * len(updated_chunk_ids),
-                        metadata=updated_metadata,
-                    )
-                    await self.db.commit()
-
-            if chunks_to_add:
-                document.processing_progress = "adding_chunks"
-                document.processing_progress_percent = 70
-                await self.db.commit()
-
-                new_chunk_ids, new_embeddings, new_chunks_list = await process_new_chunks(
-                    chunks_to_add,
-                    document,
-                    self.embedding_client,
-                    self.kb_rate_limiter,
-                    self.user_id,
-                    self.db,
-                )
-
-                if new_chunk_ids:
-                    new_metadata = prepare_qdrant_metadata(new_chunks_list, document)
-                    await self.qdrant.add_documents(
-                        user_id=self.user_id,
-                        chunk_ids=new_chunk_ids,
-                        embeddings=new_embeddings,
-                        document_ids=[document.id] * len(new_chunk_ids),
-                        metadata=new_metadata,
-                    )
-                    await self.db.commit()
+            if not published:
+                raise ValueError("Only a personal knowledge folder is indexed")
 
             document.status = "completed"
-            document.chunk_count = len(new_chunks)
             document.last_updated_hash = content_hash
             document.processing_progress = None
             document.processing_progress_percent = 100
             await self.db.commit()
+            return {"added": document.chunk_count or 0, "updated": 0, "deleted": 0}
 
-            change_summary = {
-                "added": len(chunks_to_add),
-                "updated": len(chunks_to_update),
-                "deleted": len(chunks_to_delete),
-            }
-
-            logger.info(
-                "[RAG] ✓ Reindexing complete: doc_id=%s, added=%s, updated=%s, deleted=%s, total_chunks=%s",
-                document.id,
-                change_summary["added"],
-                change_summary["updated"],
-                change_summary["deleted"],
-                document.chunk_count,
-            )
-
-            return change_summary
-
-        except QDRANT_ERRORS as e:
+        except (OSError, ValueError) as e:
             logger.error(
                 "[KnowledgeSpace] Failed to reindex chunks for document %s: %s",
                 document.id,

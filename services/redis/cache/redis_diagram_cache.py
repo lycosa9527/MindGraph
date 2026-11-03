@@ -259,6 +259,7 @@ class RedisDiagramCache:
             "is_deleted": False,
             "is_pinned": existing_data.get("is_pinned", False) if existing_data else False,
             "folder_id": existing_data.get("folder_id") if existing_data else None,
+            "knowledge_package_id": existing_data.get("knowledge_package_id") if existing_data else None,
         }
 
         # Then update Redis cache — all four Redis operations in a single pipeline.
@@ -568,6 +569,7 @@ class RedisDiagramCache:
                     "is_deleted": getattr(diagram, "is_deleted", False),
                     "is_pinned": getattr(diagram, "is_pinned", False),
                     "folder_id": getattr(diagram, "folder_id", None),
+                    "knowledge_package_id": getattr(diagram, "knowledge_package_id", None),
                 }
 
             if self._use_redis():

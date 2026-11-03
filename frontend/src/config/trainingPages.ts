@@ -64,13 +64,6 @@ export const TRAINING_PAGES: TrainingPageDef[] = [
     accent: '#b45309',
   },
   {
-    key: 'knowledge',
-    path: '/knowledge-space',
-    mobilePath: '/knowledge-space',
-    labelKey: 'sidebar.knowledgeSpace',
-    accent: '#4338ca',
-  },
-  {
     key: 'showcase',
     path: '/showcase',
     mobilePath: '/showcase',

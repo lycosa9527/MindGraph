@@ -17,19 +17,9 @@ from typing import Any, Dict, List, Optional
 
 import tiktoken
 
-from services.knowledge.chunking_service import Chunk, ChunkingService, MindChunkAdapter
+from services.knowledge.chunking_service import Chunk, ChunkingService
 from services.knowledge.rag_chunk_test.qa_generator import QAGenerator
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-
-LLMSemanticChunker: Any = None
-HAS_LLM_CHUNKING = False
-try:
-    from services.knowledge.llm_chunking.chunker import LLMSemanticChunker as _LLMSemanticChunker
-
-    LLMSemanticChunker = _LLMSemanticChunker
-    HAS_LLM_CHUNKING = True
-except ImportError:
-    pass
 
 np: Any = None
 HAS_NUMPY = False
@@ -90,7 +80,6 @@ class ChunkComparator:
     def __init__(self):
         """Initialize chunk comparator."""
         self.semchunk_service = None
-        self.mindchunk_service = None
         self._spacy_model = None  # Lazy-loaded spaCy model
 
     def chunk_with_method(
@@ -101,7 +90,7 @@ class ChunkComparator:
 
         Args:
             text: Text to chunk
-            method: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', or 'qa'
+            method: 'spacy', 'semchunk', 'chonkie', 'langchain', or 'qa'
             metadata: Optional metadata
 
         Returns:
@@ -319,21 +308,11 @@ class ChunkComparator:
         # Get chunking service for semchunk/mindchunk methods
         # Create separate service instances instead of modifying global state (thread-safe)
         if method == "semchunk":
-            # Create semchunk service instance directly (thread-safe)
-
             service = ChunkingService(mode="automatic")
-        elif method == "mindchunk":
-            # Create mindchunk service instance directly (thread-safe)
-            # Need to create LLMSemanticChunker first, then wrap it
-            if not HAS_LLM_CHUNKING or LLMSemanticChunker is None:
-                raise ValueError("MindChunk chunking requires services.knowledge.llm_chunking")
-
-            chunker = LLMSemanticChunker()
-            service = MindChunkAdapter(chunker)
         else:
             raise ValueError(
                 f"Unknown chunking method: {method}. "
-                f"Supported methods: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
+                "Supported methods: 'spacy', 'semchunk', 'chonkie', 'langchain', 'qa'"
             )
 
         # Chunk the text

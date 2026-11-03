@@ -57,13 +57,16 @@ from prompts.autocomplete_json_schema import (
     branch_expand_response_format,
     diagram_spec_response_format,
 )
-from services.knowledge.package_rag_scope import resolve_diagram_rag_scope
+from services.knowledge.package_rag_scope import (
+    personal_package_id_for_scope,
+    resolve_diagram_rag_scope,
+    resolve_package_rag_scope_by_id,
+)
+from services.knowledge.vibeflow_context import personal_context_block
 from services.llm.rag_context_state import suppress_implicit_rag
-from services.llm.rag_service import RAGService
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.bilingual_prompt import bilingual_prompt_scope
 from utils.db.session_open import user_rls_session
-from utils.prompt_locale import is_chinese_prompt_shell_language
 
 if TYPE_CHECKING:
     pass
@@ -299,6 +302,7 @@ async def agent_graph_workflow_with_styles(
     rag_top_k=5,
     # File Center: diagram-linked package scoping for RAG
     diagram_id=None,
+    knowledge_package_id=None,
     rag_document_ids=None,
     locked_topic=None,
     mind_map_topic=None,
@@ -498,103 +502,39 @@ auto-complete - user has dimension but no topic (generate topic and children)
         if sheet_mode:
             logger.debug("Using cleaned prompt for generation: '%s'", generation_prompt)
 
-        # RAG Integration: Retrieve relevant context from Knowledge Space if enabled
-        rag_context = None
         rag_context_block = ""
-
-        # File Center: scope retrieval to a diagram's linked package when present.
-        # Explicit rag_document_ids win; otherwise resolve from the diagram link.
-        rag_metadata_filter = None
         package_rag_active = False
-        resolved_document_ids = None
-        if rag_document_ids:
-            resolved_document_ids = [int(doc_id) for doc_id in rag_document_ids]
-        elif diagram_id and user_id:
+        personal_package_id = None
+        if user_id and (diagram_id or knowledge_package_id):
             try:
                 async with user_rls_session(int(user_id)) as scope_db:
-                    scope = await resolve_diagram_rag_scope(scope_db, int(user_id), str(diagram_id))
-                if scope and scope.has_corpus:
-                    resolved_document_ids = scope.document_ids
-                    logger.info(
-                        "[RAG] Package scope for diagram %s: %d completed source(s)",
-                        diagram_id,
-                        len(resolved_document_ids),
-                    )
+                    scope = None
+                    if diagram_id:
+                        scope = await resolve_diagram_rag_scope(scope_db, int(user_id), str(diagram_id))
+                    # A saved diagram's column wins. The request id only fills a
+                    # diagram that has no folder yet, or a canvas that is not saved.
+                    if scope is None and knowledge_package_id:
+                        scope = await resolve_package_rag_scope_by_id(
+                            scope_db,
+                            int(user_id),
+                            int(knowledge_package_id),
+                        )
+                personal_package_id = personal_package_id_for_scope(scope)
+                if personal_package_id is not None:
+                    use_rag = False
+                    package_rag_active = True
+                elif rag_document_ids or use_rag or rag_top_k:
+                    logger.debug("[Knowledge] No ready personal folder for this diagram")
             except LLM_PIPELINE_ERRORS as e:
                 logger.warning("[RAG] Failed to resolve package scope for diagram %s: %s", diagram_id, e)
 
-        if resolved_document_ids:
-            rag_metadata_filter = {"document_id": resolved_document_ids}
-            package_rag_active = True
-            use_rag = True  # auto-enable when a diagram's package has a corpus
-
-        if use_rag and user_id:
-            try:
-                rag_service = RAGService()
-                async with user_rls_session(int(user_id)) as db:
-                    if await rag_service.has_knowledge_base(db, user_id):
-                        logger.info(
-                            "[RAG] Retrieving context for user %d, top_k=%d, scoped=%s",
-                            user_id,
-                            rag_top_k,
-                            package_rag_active,
-                        )
-
-                        rag_context_chunks = await rag_service.retrieve_context(
-                            db=db,
-                            user_id=user_id,
-                            query=generation_prompt,
-                            method="hybrid",
-                            top_k=rag_top_k,
-                            score_threshold=0.3,
-                            source="diagram_generation",
-                            source_context={
-                                "stage": "generation",
-                                "diagram_type": diagram_type,
-                            },
-                            metadata_filter=rag_metadata_filter,
-                        )
-
-                        if rag_context_chunks:
-                            rag_context = (
-                                "\n\n".join(
-                                    [f"[知识库参考 {i + 1}]: {chunk}" for i, chunk in enumerate(rag_context_chunks)]
-                                )
-                                if is_chinese_prompt_shell_language(language)
-                                else "\n\n".join(
-                                    [
-                                        f"[Knowledge Base Reference {i + 1}]: {chunk}"
-                                        for i, chunk in enumerate(rag_context_chunks)
-                                    ]
-                                )
-                            )
-
-                            logger.info(
-                                "[RAG] Retrieved %d context chunks for diagram generation",
-                                len(rag_context_chunks),
-                            )
-                        else:
-                            logger.debug(
-                                "[RAG] No relevant context found for query: %s...",
-                                generation_prompt[:50],
-                            )
-                    else:
-                        logger.debug("[RAG] User %d has no knowledge base, skipping RAG", user_id)
-            except LLM_PIPELINE_ERRORS as e:
-                logger.warning("[RAG] Failed to retrieve context: %s", e, exc_info=True)
-
-        if rag_context:
-            if is_chinese_prompt_shell_language(language):
-                rag_context_block = f"""相关背景知识（来自用户的知识库）：
-{rag_context}
-
-请基于以上背景知识生成更准确、更详细的图表。"""
-            else:
-                rag_context_block = f"""Relevant Context (from user's knowledge base):
-{rag_context}
-
-Please generate a more accurate and detailed diagram based on the above context."""
-            logger.debug("[RAG] Prepared %d characters of context block", len(rag_context))
+        if personal_package_id is not None and user_id:
+            rag_context_block = await asyncio.to_thread(
+                personal_context_block,
+                int(user_id),
+                int(personal_package_id),
+                expand_label or generation_prompt,
+            )
 
         if is_mind_map_branch_expand:
             # MindMapAgent is the only builder of the branch-expand LLM message.

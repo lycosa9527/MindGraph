@@ -39,6 +39,7 @@ from models.domain.diagrams import Diagram
 from models.domain.messages import Language
 from models.requests.requests_diagram import (
     DiagramCreateRequest,
+    DiagramKnowledgePackageRequest,
     DiagramMoveFolderRequest,
     DiagramUpdateRequest,
     SnapshotTakeRequest,
@@ -78,6 +79,7 @@ from services.diagram_shares.access import (
     spec_write_owner_id,
 )
 from services.diagram_shares.lease import clear_lease
+from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
@@ -111,6 +113,13 @@ def _diagram_limit_http_detail(error: str | None, lang: Language) -> str | None:
     if cap is None:
         return None
     return diagram_limit_reached_message(lang, cap)
+
+
+def _knowledge_package_id(diagram: dict) -> Optional[int]:
+    raw = diagram.get("knowledge_package_id")
+    if isinstance(raw, int):
+        return raw
+    return None
 
 
 def _as_utc_aware_datetime(value: datetime | str) -> datetime:
@@ -330,6 +339,7 @@ async def create_diagram(
         spec=diagram["spec"] if isinstance(diagram.get("spec"), dict) else {},
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
+        knowledge_package_id=_knowledge_package_id(diagram),
         created_at=created_at,
         updated_at=updated_at,
     )
@@ -463,9 +473,28 @@ async def get_diagram(
         spec=spec,
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
+        knowledge_package_id=_knowledge_package_id(diagram),
         created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
         updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
+
+
+@router.put("/diagrams/{diagram_id}/knowledge-package")
+async def update_diagram_knowledge_package(
+    diagram_id: str,
+    req: DiagramKnowledgePackageRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Set or clear the personal-knowledge folder used by this diagram."""
+    service = KnowledgePackageService(db, current_user.id)
+    outcome = await service.set_diagram_knowledge_package(diagram_id, req.package_id)
+    if outcome == "missing":
+        raise HTTPException(status_code=404, detail="Diagram not found")
+    if outcome == "refused":
+        raise HTTPException(status_code=400, detail="Folder has no completed file")
+    await get_diagram_cache().invalidate_diagram(current_user.id, diagram_id)
+    return {"package_id": req.package_id}
 
 
 @router.put("/diagrams/{diagram_id}", response_model=DiagramResponse)
@@ -576,6 +605,7 @@ async def update_diagram(
         spec=overlay_spec,
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
+        knowledge_package_id=_knowledge_package_id(diagram),
         created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
         updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
@@ -681,6 +711,7 @@ async def duplicate_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
+        knowledge_package_id=_knowledge_package_id(diagram),
         created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
         updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )

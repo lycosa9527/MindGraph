@@ -103,7 +103,6 @@ function healthLabel(key: string): string {
     <ul class="admin-cos-health-list">
       <li><I18nText k="admin.cos.sectionBackups" />: {{ healthLabel('database_backups') }}</li>
       <li><I18nText k="admin.cos.sectionCrowdsec" />: {{ healthLabel('crowdsec') }}</li>
-      <li><I18nText k="admin.cos.sectionQdrant" />: {{ healthLabel('qdrant') }}</li>
       <li><I18nText k="admin.cos.sectionPlaywright" />: {{ healthLabel('playwright') }}</li>
     </ul>
   </div>

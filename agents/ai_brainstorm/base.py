@@ -207,9 +207,7 @@ class BaseBrainstormGenerator(ABC):
             endpoint_path=endpoint_path or "/thinking_mode/ai_brainstorm/start",
             session_id=session_id,
             # Node palette generates concept labels from a topic, not answers against
-            # the user's knowledge base. Skip RAG enhancement to avoid initializing
-            # Qdrant / DashScope / KeywordSearch / RAGService on every palette click
-            # and to avoid a per-LLM `has_knowledge_base` DB query on every batch.
+            # the user's knowledge base. Skip knowledge enhancement on every palette click.
             use_knowledge_base=False,
         ):
             event = chunk["event"]

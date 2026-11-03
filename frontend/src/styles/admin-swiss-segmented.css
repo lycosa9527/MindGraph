@@ -68,6 +68,11 @@
   text-align: center;
 }
 
+.admin-swiss-segment-badge--text {
+  min-width: 0;
+  padding: 0 0.45rem;
+}
+
 .admin-swiss-segment-badge {
   min-width: 1.125rem;
   padding: 0 0.3rem;

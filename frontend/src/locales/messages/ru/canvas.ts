@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'Заполните заголовок и категорию, создайте миниатюру и опубликуйте ее.',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'Изменить публикацию в сообществе',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

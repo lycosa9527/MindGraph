@@ -190,6 +190,10 @@ class DiagramResponse(BaseModel):
     spec: Dict[str, Any] = Field(..., description="Diagram specification")
     language: str = Field(..., description="Language code")
     thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
+    knowledge_package_id: Optional[int] = Field(
+        None,
+        description="Personal knowledge folder linked to this diagram. Null means generation does not use one.",
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -467,6 +471,8 @@ class PackageResponse(BaseModel):
     status: str
     document_count: int = 0
     completed_count: int = 0
+    processing_count: int = 0
+    failed_count: int = 0
     rag_status: str = "empty"
     wiki_page_count: int = 0
     wiki_status: str = "none"

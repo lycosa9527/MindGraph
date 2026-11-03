@@ -34,16 +34,6 @@ class KnowledgeConfigMixin:
             raise NotImplementedError
 
     @property
-    def QDRANT_COLLECTION_PREFIX(self) -> str:
-        """Qdrant collection name prefix"""
-        return self._get_cached_value("QDRANT_COLLECTION_PREFIX", "user_")
-
-    @property
-    def QDRANT_COMPRESSION(self) -> str:
-        """Qdrant compression method (SQ8, IVF_SQ8, or None for no compression)"""
-        return self._get_cached_value("QDRANT_COMPRESSION", "SQ8")
-
-    @property
     def DASHSCOPE_EMBEDDING_MODEL(self) -> str:
         """DashScope embedding model (text-embedding-v4 recommended)"""
         return self._get_cached_value("DASHSCOPE_EMBEDDING_MODEL", "text-embedding-v4")
@@ -205,17 +195,17 @@ class KnowledgeConfigMixin:
     @property
     def MAX_DOCUMENTS_PER_USER(self) -> int:
         """Maximum documents per user"""
-        return int(self._get_cached_value("MAX_DOCUMENTS_PER_USER", "5"))
+        return int(self._get_cached_value("MAX_DOCUMENTS_PER_USER", "30"))
 
     @property
     def MAX_FILE_SIZE(self) -> int:
-        """Maximum file size in bytes (10MB)"""
-        return int(self._get_cached_value("MAX_FILE_SIZE", "10485760"))
+        """Maximum file size in bytes (50MB)."""
+        return int(self._get_cached_value("MAX_FILE_SIZE", "52428800"))
 
     @property
     def MAX_STORAGE_PER_USER(self) -> int:
-        """Maximum storage per user in bytes (50MB)"""
-        return int(self._get_cached_value("MAX_STORAGE_PER_USER", "52428800"))
+        """Maximum storage per user in bytes (1.5GB, ten 50MB files in each of three folders)."""
+        return int(self._get_cached_value("MAX_STORAGE_PER_USER", "1572864000"))
 
     @property
     def MAX_CHUNKS_PER_USER(self) -> int:

@@ -23,6 +23,7 @@
  */
 import { computed } from 'vue'
 
+import { useDiagramKnowledgeSelection } from '@/composables/canvas/useDiagramKnowledgeSelection'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -68,6 +69,7 @@ export function useAutoComplete() {
   const diagramStore = useDiagramSession()
   const llmResultsStore = useLLMResultsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const { packageIdForGenerate } = useDiagramKnowledgeSelection()
   const { t } = useLanguage()
   const notify = useNotifications()
   const { guardCollabGuestAi } = useCollabGuestAiGate()
@@ -633,6 +635,9 @@ export function useAutoComplete() {
     const activeId = savedDiagramsStore.activeDiagramId
     if (activeId) {
       requestBody.diagram_id = activeId
+    }
+    if (packageIdForGenerate.value !== null) {
+      requestBody.knowledge_package_id = packageIdForGenerate.value
     }
 
     // Add bridge map specific data

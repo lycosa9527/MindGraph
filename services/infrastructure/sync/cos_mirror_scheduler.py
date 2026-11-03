@@ -1,5 +1,5 @@
 """
-Daily COS mirror scheduler (CrowdSec + Qdrant + Celery on consumer; publish on publisher).
+Daily COS mirror scheduler (CrowdSec, GeoLite, Celery, and Playwright).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -32,10 +32,6 @@ from services.infrastructure.sync.crowdsec_cos_sync import merge_crowdsec_blockl
 from services.infrastructure.sync.geolite_cos_sync import (
     install_geolite_from_cos,
     publish_geolite_to_cos,
-)
-from services.infrastructure.sync.qdrant_cos_sync import (
-    install_qdrant_from_cos,
-    publish_qdrant_release_to_cos,
 )
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -123,7 +119,7 @@ async def _run_consumer_cos_pull(*, force_blocklists: bool = False) -> None:
     """
     Pull consumer artifacts from COS when newer than local.
 
-    Blocklists, GeoLite, Qdrant, Celery, and Playwright each skip when already
+    Blocklists, GeoLite, Celery, and Playwright each skip when already
     in sync unless ``force_blocklists`` is set (scheduled mirror tick).
     """
     cs = await merge_crowdsec_blocklist_from_cos(force=force_blocklists)
@@ -135,11 +131,6 @@ async def _run_consumer_cos_pull(*, force_blocklists: bool = False) -> None:
     gl = await install_geolite_from_cos()
     if gl.get("ok") and not gl.get("skipped"):
         logger.info("[COSMirror] GeoLite installed from COS")
-    qd = await install_qdrant_from_cos()
-    if qd.get("ok") and not qd.get("skipped"):
-        logger.info("[COSMirror] Qdrant installed v%s from COS", qd.get("version"))
-    elif qd.get("needs_root"):
-        logger.info("[COSMirror] Qdrant COS update skipped (requires root)")
     cl = await install_celery_from_cos()
     if cl.get("ok") and not cl.get("skipped"):
         logger.info("[COSMirror] Celery installed v%s from COS", cl.get("version"))
@@ -153,9 +144,6 @@ async def _run_mirror_tick() -> None:
     if is_cos_consumer():
         await _run_consumer_cos_pull(force_blocklists=True)
     elif is_cos_publisher():
-        pub = await publish_qdrant_release_to_cos()
-        if pub.get("ok") and not pub.get("skipped"):
-            logger.info("[COSMirror] Qdrant published v%s to COS", pub.get("version"))
         cl_pub = await publish_celery_release_to_cos()
         if cl_pub.get("ok") and not cl_pub.get("skipped"):
             logger.info("[COSMirror] Celery published v%s to COS", cl_pub.get("version"))

@@ -251,7 +251,7 @@ export default {
   'knowledge.upload.drag': '或拖拽文件到此處',
   'knowledge.upload.fileTooLarge': '文件大小不能超過10MB',
   'knowledge.upload.hintFormats': '支持 PDF, DOCX, TXT, MD, 圖片 (最大10MB)',
-  'knowledge.upload.maxDocs': '已達到最大文檔數量限制 (5個)',
+  'knowledge.upload.maxDocs': '已達到最大文檔數量限制 (10個)',
   'knowledge.upload.title': '上傳文檔',
   'knowledge.upload.unsupportedType': '不支持的文件類型',
   'knowledgeSpace.confirmDeleteBody': '確定要刪除這個文檔嗎？刪除後無法恢復。',

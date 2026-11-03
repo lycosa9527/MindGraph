@@ -23,8 +23,16 @@ from models.domain.diagrams import Diagram
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge import package_wiki_store
 from services.knowledge.document_filenames import insert_unique_named_row
-from services.knowledge.knowledge_space_service import KnowledgeSpaceService
-from services.knowledge.package_rag_scope import PackageRagScope, resolve_diagram_rag_scope
+from services.knowledge.knowledge_space_service import (
+    MAX_DOCUMENTS_PER_PACKAGE,
+    KnowledgeSpaceService,
+)
+from services.knowledge.package_rag_scope import (
+    PackageRagScope,
+    personal_package_id_for_scope,
+    resolve_diagram_rag_scope,
+    resolve_package_rag_scope_by_id,
+)
 from services.utils.safe_upload import ensure_within_directory
 
 logger = logging.getLogger(__name__)
@@ -363,32 +371,40 @@ class KnowledgePackageService:
         }
 
     async def get_package_stats(self, package_ids: List[int]) -> Dict[int, Dict[str, int]]:
-        """Return live ``{package_id: {"total", "completed"}}`` source counts.
+        """Return live source counts for each package.
 
-        File Center uploads index one document at a time and do not maintain the
-        ``DocumentBatch`` completion counters, so the source counts are derived
-        from the documents themselves in a single grouped query (avoids N+1).
+        Keys are ``total``, ``completed``, ``processing`` (pending or processing),
+        and ``failed``. File Center does not keep the batch counters in step with
+        each upload, so the counts come from the documents in one grouped query.
         """
         if not package_ids:
             return {}
+        working = KnowledgeDocument.status.in_(("pending", "processing"))
         result = await self.db.execute(
             select(
                 KnowledgeDocument.batch_id,
                 func.count(KnowledgeDocument.id),
                 func.count(case((KnowledgeDocument.status == "completed", 1))),
+                func.count(case((working, 1))),
+                func.count(case((KnowledgeDocument.status == "failed", 1))),
             )
             .where(KnowledgeDocument.batch_id.in_(package_ids))
             .group_by(KnowledgeDocument.batch_id)
         )
         stats: Dict[int, Dict[str, int]] = {}
-        for batch_id, total, completed in result.all():
+        for batch_id, total, completed, processing, failed in result.all():
             if batch_id is None:
                 continue
-            stats[batch_id] = {"total": int(total or 0), "completed": int(completed or 0)}
+            stats[batch_id] = {
+                "total": int(total or 0),
+                "completed": int(completed or 0),
+                "processing": int(processing or 0),
+                "failed": int(failed or 0),
+            }
         return stats
 
     async def delete_package(self, package_id: int) -> None:
-        """Delete a package and all of its sources (Qdrant + DB + files)."""
+        """Delete a package and all of its sources (database rows and files)."""
         package = await self.get_package(package_id)
         if not package:
             raise ValueError(f"Package {package_id} not found or access denied")
@@ -468,6 +484,11 @@ class KnowledgePackageService:
             raise ValueError("Cannot ingest empty content")
 
         await self._enforce_quota()
+        batch_count = await self.ks.count_documents_in_batch(package_id)
+        if batch_count >= MAX_DOCUMENTS_PER_PACKAGE:
+            raise ValueError(
+                f"Maximum {MAX_DOCUMENTS_PER_PACKAGE} documents allowed in a folder. Please delete a source first."
+            )
         space = await self.ks.create_knowledge_space()
 
         encoded = text.encode("utf-8")
@@ -518,6 +539,39 @@ class KnowledgePackageService:
         fallback decided by the caller).
         """
         return await resolve_diagram_rag_scope(self.db, self.user_id, diagram_id)
+
+    async def set_diagram_knowledge_package(
+        self,
+        diagram_id: str,
+        package_id: Optional[int],
+    ) -> str:
+        """Link one personal folder to a diagram, or clear it.
+
+        Returns ``ok``, ``missing``, or ``refused``. An empty folder is refused
+        so it cannot become the diagram's source.
+        """
+        result = await self.db.execute(
+            select(Diagram).where(
+                and_(
+                    Diagram.id == diagram_id,
+                    Diagram.user_id == self.user_id,
+                    Diagram.is_deleted.is_(False),
+                )
+            )
+        )
+        diagram = result.scalars().first()
+        if diagram is None:
+            return "missing"
+        if package_id is None:
+            diagram.knowledge_package_id = None
+            await self.db.commit()
+            return "ok"
+        scope = await resolve_package_rag_scope_by_id(self.db, self.user_id, package_id)
+        if personal_package_id_for_scope(scope) is None:
+            return "refused"
+        diagram.knowledge_package_id = package_id
+        await self.db.commit()
+        return "ok"
 
     async def _link_diagram_to_package(self, diagram_id: str, package_id: int) -> None:
         """Best-effort: set diagrams.knowledge_package_id for an owned diagram."""

@@ -2,7 +2,7 @@
 
 PDF/DOCX get hierarchical semchunk (so ``section_title`` survives for branch
 retrieval); web/paste text gets flat semchunk; an explicit space mode always
-wins; the engine follows ``CHUNKING_ENGINE``.
+wins. The engine is semchunk.
 """
 
 from __future__ import annotations
@@ -34,9 +34,6 @@ def test_explicit_mode_wins():
     assert policy.mode == "automatic"
 
 
-def test_engine_follows_env(monkeypatch):
-    """The engine honors CHUNKING_ENGINE; default stays semchunk."""
-    monkeypatch.setenv("CHUNKING_ENGINE", "mindchunk")
-    assert resolve_chunking_policy("text/markdown", None).engine == "mindchunk"
-    monkeypatch.setenv("CHUNKING_ENGINE", "semchunk")
+def test_engine_is_semchunk():
+    """Upload chunking is semchunk."""
     assert resolve_chunking_policy("text/markdown", None).engine == "semchunk"

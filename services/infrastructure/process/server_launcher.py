@@ -56,11 +56,9 @@ from services.infrastructure.process.process_manager import (
     setup_signal_handlers,
     start_celery_worker,
     start_postgresql_server,
-    start_qdrant_server,
     start_redis_server,
     stop_celery_worker,
     stop_postgresql_server,
-    stop_qdrant_server,
 )
 from services.infrastructure.process.uvicorn_signal_diag import (
     log_uvicorn_supervisor_boot,
@@ -69,7 +67,6 @@ from services.infrastructure.process.uvicorn_signal_diag import (
 from services.infrastructure.utils.dependency_checker import (
     check_celery_installed,
     check_postgresql_installed,
-    check_qdrant_installed,
     check_redis_installed,
 )
 from services.infrastructure.utils.launch_commands import lines_http_port_in_use
@@ -232,26 +229,6 @@ def run_server() -> None:
                 print("        Or set PG_ADMIN_URL to a superuser URL in .env, then retry.")
                 sys.exit(1)
             logger.debug("[POSTGRESQL] RLS runtime ready: %s", rls_message)
-
-        # 3. Qdrant (REQUIRED only if Knowledge Space feature is enabled)
-        qdrant_server = None
-        if config.FEATURE_KNOWLEDGE_SPACE:
-            logger.debug("[QDRANT] Checking Qdrant installation...")
-            is_installed, message = check_qdrant_installed()
-            if not is_installed:
-                print("[ERROR] Qdrant is REQUIRED for Knowledge Space feature but not installed.")
-                print(f"        {message}")
-                print("        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled.")
-                sys.exit(1)
-            logger.debug("[QDRANT] %s", message)
-            logger.debug("[QDRANT] Starting Qdrant server...")
-            qdrant_server = start_qdrant_server()  # Verifies Qdrant is running (exits if not ready)
-            if qdrant_server:
-                logger.debug("[QDRANT] ✓ Qdrant server started as subprocess")
-            else:
-                logger.debug("[QDRANT] ✓ Qdrant server is running (external or systemd service)")
-        else:
-            logger.debug("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
 
         # 4. Celery — required for Knowledge Space, Showcase covers, and 思维讲堂
         celery_worker = None
@@ -435,8 +412,6 @@ def run_server() -> None:
             print("Shutting down gracefully...")
             if celery_worker_needed_for_app():
                 stop_celery_worker()
-            if config.FEATURE_KNOWLEDGE_SPACE:
-                stop_qdrant_server()
             if using_postgresql:
                 stop_postgresql_server()
             print("=" * 80)
@@ -445,8 +420,6 @@ def run_server() -> None:
             sys.excepthook = original_excepthook
             if celery_worker_needed_for_app():
                 stop_celery_worker()
-            if config.FEATURE_KNOWLEDGE_SPACE:
-                stop_qdrant_server()
             if using_postgresql:
                 stop_postgresql_server()
 

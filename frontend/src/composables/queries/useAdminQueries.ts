@@ -18,7 +18,6 @@ import {
   fetchAdminConfigFeatures,
   fetchAdminCosBackups,
   fetchAdminCosCrowdsecStatus,
-  fetchAdminCosQdrantStatus,
   fetchAdminCosStatus,
   fetchAdminDatabaseOrphans,
   fetchAdminDatabaseStats,
@@ -691,15 +690,6 @@ export function useAdminCosCrowdsecStatus(options?: { enabled?: MaybeRefOrGetter
   return useQuery({
     queryKey: adminKeys.cos.crowdsec(),
     queryFn: fetchAdminCosCrowdsecStatus,
-    staleTime: ADMIN_STALE_MS.default,
-    enabled: options?.enabled,
-  })
-}
-
-export function useAdminCosQdrantStatus(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
-  return useQuery({
-    queryKey: adminKeys.cos.qdrant(),
-    queryFn: fetchAdminCosQdrantStatus,
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
   })

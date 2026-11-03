@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'தலைப்பு மற்றும் வகையை நிரப்பவும், சிறுபடத்தை உருவாக்கி அதை வெளியிடவும்',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'சமூக இடுகையைத் திருத்தவும்',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

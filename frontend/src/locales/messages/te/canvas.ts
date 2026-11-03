@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'శీర్షిక మరియు వర్గాన్ని పూరించండి, సూక్ష్మచిత్రాన్ని రూపొందించండి మరియు దానిని ప్రచురించండి',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'సంఘం పోస్ట్‌ని సవరించండి',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

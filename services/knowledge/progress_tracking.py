@@ -194,7 +194,6 @@ def get_method_display_name(method: str) -> str:
         "spacy": "spaCy",
         "chonkie": "Chonkie",
         "langchain": "LangChain",
-        "mindchunk": "MindChunk",
     }
     return method_names.get(method, method.capitalize())
 

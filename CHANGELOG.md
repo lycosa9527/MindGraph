@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.206] - 2026-11-04
+
+> **Personal knowledge is the only folder index. The app no longer starts, watches, or installs a local vector server.**
+
+### Changed
+
+- **Personal knowledge** — Settings, the canvas, and the Chrome extension publish markdown objects and retrieve from that store. A finished folder is the diagram source. Document summary keeps its own ingest.
+- **Startup** — The process no longer requires, health-checks, or restarts a local vector server. The daily COS mirror no longer installs or publishes that server. Storage quota counts files only.
+- **Chunk lab** — Chunk comparison still stores method chunks. It no longer writes or searches a local vector index.
+
+### Removed
+
+- **Local vector client** — The application client, diagnostics, startup check, and process manager for that server are gone. `qdrant-client` is no longer an application dependency.
+
+### Tests
+
+- [`tests/test_file_center_rag_scope.py`](tests/test_file_center_rag_scope.py), [`tests/test_vibeflow_cut.py`](tests/test_vibeflow_cut.py)
+
 ## [5.180.205] - 2026-11-03
 
 > **A class owner can reset a student's password, a snapshot holds the canvas still, and a long flow or bridge map turns back after five boxes.**

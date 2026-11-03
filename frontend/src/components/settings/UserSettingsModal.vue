@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * User chip Settings: account, security, language, and plugins in one dialog.
+ * User chip Settings: account, security, language, plugins, and knowledge.
  * Each tab applies its own changes immediately.
  */
 import { computed, ref, watch } from 'vue'
@@ -13,6 +13,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import '@/styles/settings-language-swiss.css'
 
 import SettingsAccountPanels from './SettingsAccountPanels.vue'
+import SettingsKnowledgePanel from './SettingsKnowledgePanel.vue'
 import SettingsLanguagePanel from './SettingsLanguagePanel.vue'
 import { USER_SETTINGS_TAB_KEYS, type UserSettingsTab } from './userSettingsTabs'
 
@@ -35,9 +36,10 @@ const { t } = useLanguage()
 const tab = ref<UserSettingsTab>(props.initialTab)
 
 const tabOptions = computed(() =>
-  (['account', 'security', 'language', 'plugins'] as const).map((value) => ({
+  (['account', 'security', 'language', 'plugins', 'knowledge'] as const).map((value) => ({
     value,
     labelKey: USER_SETTINGS_TAB_KEYS[value],
+    badgeKey: value === 'knowledge' ? 'settings.knowledge.testing' : undefined,
   }))
 )
 
@@ -54,10 +56,9 @@ const accountSection = computed(() =>
   tab.value === 'security' || tab.value === 'plugins' ? tab.value : 'account'
 )
 
-/** A little wider than the other tabs so the small preview can sit beside the controls. */
-const dialogWidth = computed(() =>
-  tab.value === 'language' ? 'min(38rem, 96vw)' : 'min(480px, 92vw)'
-)
+const showAccountPanels = computed(() => tab.value !== 'language' && tab.value !== 'knowledge')
+
+const dialogWidth = 'min(36rem, 96vw)'
 </script>
 
 <template>
@@ -86,8 +87,9 @@ const dialogWidth = computed(() =>
       v-show="tab === 'language'"
       :open="visible"
     />
+    <SettingsKnowledgePanel v-if="tab === 'knowledge'" />
     <SettingsAccountPanels
-      v-show="tab !== 'language'"
+      v-show="showAccountPanels"
       :open="visible"
       :section="accountSection"
       @success="emit('success')"

@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'ಶೀರ್ಷಿಕೆ ಮತ್ತು ವರ್ಗವನ್ನು ಭರ್ತಿ ಮಾಡಿ, ಥಂಬ್‌ನೇಲ್ ರಚಿಸಿ ಮತ್ತು ಅದನ್ನು ಪ್ರಕಟಿಸಿ',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'ಸಮುದಾಯ ಪೋಸ್ಟ್ ಅನ್ನು ಸಂಪಾದಿಸಿ',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

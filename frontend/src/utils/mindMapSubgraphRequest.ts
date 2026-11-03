@@ -14,8 +14,9 @@ export function buildMindMapSubgraphGenerateBody(options: {
   language: string
   llm: string
   diagramId?: string | null
+  knowledgePackageId?: number | null
 }): Record<string, unknown> {
-  const { context, language, llm, diagramId } = options
+  const { context, language, llm, diagramId, knowledgePackageId } = options
   const body: Record<string, unknown> = {
     prompt: formatMindMapSubgraphPrompt(context, language),
     diagram_type: 'mindmap',
@@ -38,6 +39,9 @@ export function buildMindMapSubgraphGenerateBody(options: {
   }
   if (diagramId) {
     body.diagram_id = diagramId
+  }
+  if (knowledgePackageId) {
+    body.knowledge_package_id = knowledgePackageId
   }
   return withMindMapAudienceContext(body, language)
 }

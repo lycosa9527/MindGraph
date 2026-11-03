@@ -21,10 +21,8 @@ from services.knowledge.document_structure import (
     extract_document_structure,
 )
 from services.knowledge.knowledge_settings import segmentation_from_rules, server_defaults
-from services.knowledge.llm_chunking.ingest_context import ingest_attribution
-from services.knowledge.section_query import parse_section_hint
 from services.llm.embedding_cache import get_embedding_cache
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS, QDRANT_ERRORS
+from services.utils.error_types import QDRANT_ERRORS
 from utils.dashscope_error_handler import DashScopeError
 
 logger = logging.getLogger(__name__)
@@ -107,7 +105,6 @@ async def chunk_text_with_mode(
     processing_rules: Optional[dict],
     page_info: Optional[List[Dict[str, Any]]],
     document_id: int,
-    user_id: Optional[int] = None,
     structure_headings: Optional[List[StructureHeading]] = None,
 ) -> List[Any]:
     """
@@ -120,7 +117,6 @@ async def chunk_text_with_mode(
         processing_rules: Optional processing rules
         page_info: Optional page information
         document_id: Document ID for logging
-        user_id: Owner user id, for MindChunk LLM token attribution
 
     Returns:
         List of chunks
@@ -144,168 +140,48 @@ async def chunk_text_with_mode(
         chunk_size = defaults["chunk_size"]
         chunk_overlap = defaults["chunk_overlap"]
 
-    # Log chunking configuration
-    chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
-    chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
     logger.info(
-        "[RAG] → Chunking: doc_id=%s, method=%s (CHUNKING_ENGINE=%s), mode=%s, strategy=%s, chunk_size=%s, overlap=%s",
+        "[RAG] → Chunking: doc_id=%s, method=semchunk, mode=%s, strategy=%s, chunk_size=%s, overlap=%s",
         document_id,
-        chunking_method,
-        chunking_engine,
         mode,
         chunking_strategy,
         chunk_size or 500,
         chunk_overlap or 50,
     )
-    if chunking_method == "mindchunk":
-        logger.info(
-            "[RAG] 🧠 MindChunk enabled: LLM semantic chunking (qwen-turbo classification model) doc_id=%s",
-            document_id,
+
+    def _chunk(service_mode: str, include_headings: bool) -> List[Any]:
+        service = ChunkingService(
+            chunk_size=chunk_size or 500,
+            overlap=chunk_overlap or 50,
+            mode=service_mode,
+        )
+        return service.chunk_text(
+            cleaned_text,
+            metadata={"document_id": document.id},
+            separator=separator,
+            extract_structure=True,
+            page_info=page_info,
+            language=document.language,
+            structure_headings=structure_headings if include_headings else None,
         )
 
-    async def _call_chunker(service, **kwargs) -> List[Any]:
-        """Dispatch to async chunk_text_async if available, otherwise sync chunk_text."""
-        if hasattr(service, "chunk_text_async"):
-            return await service.chunk_text_async(**kwargs)
-        return service.chunk_text(**kwargs)
-
-    async def _chunk_with_fallback(**kwargs) -> List[Any]:
-        """Chunk via the configured engine; on MindChunk failure/empty, fall back to semchunk.
-
-        Keeps a single bad source from failing the whole package: MindChunk
-        (LLM-based) can raise or return nothing, so we retry once with semchunk.
-        """
-        result: Optional[List[Any]] = None
-        with ingest_attribution(user_id):
-            try:
-                result = await _call_chunker(chunking_service, **kwargs)
-            except BACKGROUND_INFRA_ERRORS as mindchunk_error:
-                if chunking_engine != "mindchunk":
-                    raise
-                logger.warning(
-                    "[RAG] MindChunk failed for doc_id=%s (%s); falling back to semchunk",
-                    document_id,
-                    mindchunk_error,
-                )
-        if not result and chunking_engine == "mindchunk":
-            if result is not None:
-                logger.warning(
-                    "[RAG] MindChunk returned no chunks for doc_id=%s; falling back to semchunk",
-                    document_id,
-                )
-            fallback_service = ChunkingService(
-                chunk_size=chunk_size or 500,
-                overlap=chunk_overlap or 50,
-                mode="automatic",
-            )
-            result = fallback_service.chunk_text(**kwargs)
-        return result or []
-
-    # Use appropriate chunking service based on mode
     try:
         if mode == "hierarchical":
-            if chunking_engine == "semchunk":
-                hierarchical_chunking = ChunkingService(
-                    chunk_size=chunk_size or 500,
-                    overlap=chunk_overlap or 50,
-                    mode="hierarchical",
-                )
-                chunks = hierarchical_chunking.chunk_text(
-                    cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                    structure_headings=structure_headings,
-                )
-            else:
-                logger.warning(
-                    "[RAG] Hierarchical mode not supported with mindchunk, "
-                    "falling back to default automatic chunking for doc_id=%s",
-                    document_id,
-                )
-                chunks = await _chunk_with_fallback(
-                    text=cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                    structure_headings=structure_headings,
-                )
+            chunks = _chunk("hierarchical", True)
         elif mode == "custom" and (chunk_size or chunk_overlap or separator):
-            if chunking_engine == "semchunk":
-                custom_chunking = ChunkingService(
-                    chunk_size=chunk_size or 500,
-                    overlap=chunk_overlap or 50,
-                    mode="custom",
-                )
-                chunks = custom_chunking.chunk_text(
-                    cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                    structure_headings=structure_headings,
-                )
-            else:
-                logger.warning(
-                    "[RAG] Custom mode not supported with mindchunk, "
-                    "falling back to default automatic chunking for doc_id=%s",
-                    document_id,
-                )
-                chunks = await _chunk_with_fallback(
-                    text=cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                    structure_headings=structure_headings,
-                )
+            chunks = _chunk("custom", True)
+        elif chunking_strategy != "recursive":
+            chunks = _chunk("automatic", False)
         else:
-            # Automatic mode (default) - respects CHUNKING_ENGINE via chunking_service
-            if chunking_strategy != "recursive" and chunking_engine == "semchunk":
-                strategy_chunking = ChunkingService(
-                    chunk_size=chunk_size or 500,
-                    overlap=chunk_overlap or 50,
-                    mode="automatic",
-                )
-                chunks = strategy_chunking.chunk_text(
-                    cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                )
-            else:
-                # Default chunking (respects CHUNKING_ENGINE)
-                chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
-                logger.info(
-                    "[RAG] Calling chunk_text: doc_id=%s, text_length=%s, chunking_engine=%s, chunking_type=%s",
-                    document_id,
-                    len(cleaned_text),
-                    chunking_engine,
-                    type(chunking_service).__name__,
-                )
-                chunks = await _chunk_with_fallback(
-                    text=cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                    structure_headings=structure_headings,
-                )
-                logger.info(
-                    "[RAG] chunk_text returned: doc_id=%s, chunks_count=%s, chunks_type=%s",
-                    document_id,
-                    len(chunks) if chunks else 0,
-                    type(chunks).__name__ if chunks else "None",
-                )
+            chunks = chunking_service.chunk_text(
+                text=cleaned_text,
+                metadata={"document_id": document.id},
+                separator=separator,
+                extract_structure=True,
+                page_info=page_info,
+                language=document.language,
+                structure_headings=structure_headings,
+            )
     except QDRANT_ERRORS as chunk_error:
         error_msg = f"文本分块失败: {str(chunk_error)}"
         logger.error(
@@ -412,54 +288,3 @@ async def generate_embeddings_with_cache(
             raise ValueError(error_msg) from e
 
     return embeddings
-
-
-def prepare_qdrant_metadata(chunks: List[Any], document: KnowledgeDocument) -> List[dict]:
-    """
-    Prepare metadata for Qdrant payload.
-
-    Args:
-        chunks: List of chunks
-        document: KnowledgeDocument instance
-
-    Returns:
-        List of metadata dictionaries
-    """
-    qdrant_metadata = []
-    for chunk in chunks:
-        chunk_meta = {}
-
-        # Document-level metadata
-        if document.category:
-            chunk_meta["category"] = document.category
-        if document.tags:
-            chunk_meta["tags"] = document.tags
-        if document.file_type:
-            chunk_meta["document_type"] = document.file_type
-
-        # Chunk-level structure metadata
-        if chunk and chunk.metadata:
-            chunk_data = chunk.metadata
-            if "page_number" in chunk_data:
-                chunk_meta["page_number"] = chunk_data["page_number"]
-            if "section_title" in chunk_data:
-                chunk_meta["section_title"] = chunk_data["section_title"]
-            if "section_level" in chunk_data:
-                chunk_meta["section_level"] = chunk_data["section_level"]
-            if "section_key" in chunk_data:
-                chunk_meta["section_key"] = chunk_data["section_key"]
-            if "section_number" in chunk_data:
-                chunk_meta["section_number"] = chunk_data["section_number"]
-            if "section_key" not in chunk_meta and "section_title" in chunk_data:
-                title_hint = parse_section_hint(str(chunk_data["section_title"]))
-                if title_hint is not None:
-                    chunk_meta["section_key"] = title_hint.section_key
-                    chunk_meta.setdefault("section_number", title_hint.section_number)
-            if "has_table" in chunk_data:
-                chunk_meta["has_table"] = chunk_data["has_table"]
-            if "has_code" in chunk_data:
-                chunk_meta["has_code"] = chunk_data["has_code"]
-
-        qdrant_metadata.append(chunk_meta)
-
-    return qdrant_metadata

@@ -6,8 +6,6 @@ file type. The plan for File Center (文件中心) is:
 * PDF / DOCX / PPTX (textbooks, reports) → hierarchical semchunk so that
   ``section_title`` metadata is emitted for "Chapter 5"-style branch retrieval.
 * Web snapshots and pasted notes (short, no table of contents) → flat semchunk.
-* MindChunk (LLM-based) stays opt-in via ``CHUNKING_ENGINE=mindchunk`` until the
-  hardening sweep lands; v1 never defaults File Center to MindChunk.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -17,7 +15,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -43,12 +40,12 @@ class ChunkingPolicy:
     """Resolved chunking decision for one source."""
 
     mode: str  # "hierarchical" | "automatic" | "custom"
-    engine: str  # "semchunk" | "mindchunk"
+    engine: str
 
 
 def resolve_chunking_engine() -> str:
-    """Return the configured chunking engine (``semchunk`` unless opted in)."""
-    return "mindchunk" if os.getenv("CHUNKING_ENGINE", "semchunk").lower() == "mindchunk" else "semchunk"
+    """Return the chunking engine. Upload always uses semchunk."""
+    return "semchunk"
 
 
 def resolve_chunking_policy(

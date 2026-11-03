@@ -47,6 +47,13 @@ describe('floating account menu', () => {
     expect(tabs).toContain("'settings.tabs.security'")
     expect(tabs).toContain("'settings.tabs.language'")
     expect(tabs).toContain("'settings.tabs.plugins'")
+    expect(tabs).toContain("'settings.tabs.knowledge'")
+
+    const knowledge = readSrc('src/components/settings/SettingsKnowledgePanel.vue')
+    expect(knowledge).toContain('settings.knowledge.defaultPackage')
+    expect(knowledge).toContain('settings.knowledge.defaultBadge')
+    expect(knowledge).toContain('settings.knowledge.imaButton')
+    expect(knowledge).toContain("source: 'knowledge_space'")
     expect(readSrc('src/components/settings/UserSettingsModal.vue')).toContain(
       'USER_SETTINGS_TAB_KEYS'
     )

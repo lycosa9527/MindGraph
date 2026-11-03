@@ -8,7 +8,6 @@ const LIVE_PAGES: Partial<Record<TrainingPageKey, Component>> = {
   mindmate: defineAsyncComponent(() => import('@/pages/MindMatePage.vue')),
   zhihui: defineAsyncComponent(() => import('@/pages/ZhiHuiPage.vue')),
   library: defineAsyncComponent(() => import('@/pages/LibraryPage.vue')),
-  knowledge: defineAsyncComponent(() => import('@/pages/KnowledgeSpacePage.vue')),
   showcase: defineAsyncComponent(() => import('@/pages/ShowcasePage.vue')),
   'voice-notes': defineAsyncComponent(() => import('@/pages/VoiceNotesPage.vue')),
   'thinking-coins': defineAsyncComponent(() => import('@/pages/ThinkingCoinsUpgradePage.vue')),

@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': '제목과 카테고리를 입력하고 썸네일을 생성한 후 게시하세요.',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': '커뮤니티 게시물 수정',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

@@ -66,6 +66,10 @@ class GenerateRequest(BaseModel):
         None,
         description="Current saved diagram id (for collaboration / owner checks on autocomplete)",
     )
+    knowledge_package_id: Optional[int] = Field(
+        None,
+        description="Personal knowledge folder for this generation when the diagram is not saved yet.",
+    )
     use_rag: Optional[bool] = Field(
         False,
         description=("Whether to use RAG (Knowledge Space) context for enhanced diagram generation"),
@@ -508,6 +512,15 @@ class DiagramCreateRequest(BaseModel):
                 "language": "zh",
             }
         }
+    )
+
+
+class DiagramKnowledgePackageRequest(BaseModel):
+    """Link or clear the personal-knowledge folder for one diagram."""
+
+    package_id: Optional[int] = Field(
+        None,
+        description="Owned knowledge_space folder with a completed file, or null to clear.",
     )
 
 

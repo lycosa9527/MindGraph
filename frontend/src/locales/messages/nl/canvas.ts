@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'Vul de titel en categorie in, genereer een thumbnail en publiceer deze',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'Communitypost bewerken',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

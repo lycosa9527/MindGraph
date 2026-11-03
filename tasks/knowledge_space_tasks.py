@@ -1,7 +1,7 @@
 """Knowledge Space Background Tasks.
 
 Celery tasks for async document processing.
-Requires Qdrant server mode (QDRANT_HOST) for multi-process support.
+Personal folders are published as markdown objects. No local vector server.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -24,6 +24,7 @@ from config.settings import config
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge.chat_handoff_service import finalize_handoff_for_document
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.knowledge.package_rag_scope import PERSONAL_KNOWLEDGE_SOURCES
 from services.knowledge.package_wiki_compiler import compile_package_wiki
 from services.monitoring.error_reporting import record_exception_from_celery
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
@@ -83,7 +84,7 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
 
         if chunk_count > 0 and doc and doc.batch_id and doc.status == "completed" and config.FILE_CENTER_WIKI_COMPILE:
             batch = await db.get(DocumentBatch, doc.batch_id)
-            if batch and batch.name:
+            if batch and batch.name and batch.source not in PERSONAL_KNOWLEDGE_SOURCES:
                 compile_package_wiki_task.delay(user_id, doc.batch_id, document_id)
 
 

@@ -3,7 +3,7 @@ User Cleanup Service for Knowledge Space
 Author: lycosa9527
 Made by: MindSpring Team
 
-Cleanup function for user deletion (deletes documents, chunks, Qdrant collection, files).
+Cleanup function for user deletion (deletes documents, chunks, and local files).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -19,11 +19,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import KnowledgeSpace
-from services.llm.qdrant_service import get_qdrant_service
 from services.utils.error_types import (
     DATABASE_ERRORS,
     FILE_IO_ERRORS,
-    QDRANT_ERRORS,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +34,6 @@ async def cleanup_user_knowledge_space(db: AsyncSession, user_id: int) -> None:
     Deletes:
     - All documents from database
     - All chunks from database
-    - Qdrant collection
     - File storage directory
 
     Args:
@@ -50,17 +47,6 @@ async def cleanup_user_knowledge_space(db: AsyncSession, user_id: int) -> None:
         if not space:
             logger.debug("[UserCleanup] No knowledge space found for user %s", user_id)
             return
-
-        try:
-            qdrant = get_qdrant_service()
-            await qdrant.delete_user_collection(user_id)
-            logger.info("[UserCleanup] Deleted Qdrant collection for user %s", user_id)
-        except QDRANT_ERRORS as exc:
-            logger.error(
-                "[UserCleanup] Failed to delete Qdrant collection for user %s: %s",
-                user_id,
-                exc,
-            )
 
         storage_dir = Path(os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents"))
         user_dir = storage_dir / str(user_id)

@@ -81,7 +81,6 @@ from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
 from services.knowledge.doc_summary_temp import start_doc_summary_tmp_cleanup_scheduler
 from services.llm import llm_service
-from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
 from services.monitoring.error_retention_scheduler import start_error_retention_scheduler
 from services.redis.cache.redis_api_key_usage_flush import start_api_key_usage_flush_scheduler
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -219,34 +218,7 @@ async def lifespan(fastapi_app: FastAPI):
                 jwt_warm_exc,
             )
 
-    # Initialize Qdrant (REQUIRED only if Knowledge Space feature is enabled)
     knowledge_space_enabled = config.FEATURE_KNOWLEDGE_SPACE
-    if knowledge_space_enabled:
-        if is_main_worker:
-            logger.debug("[LIFESPAN] Initializing Qdrant...")
-        try:
-            init_qdrant_sync()
-            if is_main_worker:
-                logger.debug("Qdrant initialized successfully")
-        except QdrantStartupError as e:
-            # Error message already logged by init_qdrant_sync with instructions
-            # Send critical alert before exiting
-            try:
-                CriticalAlertService.send_startup_failure_alert_sync(
-                    component="Qdrant",
-                    error_message=f"Qdrant startup failed: {e!s}",
-                    details=(
-                        "Application cannot start without Qdrant when Knowledge Space is enabled. "
-                        "Check Qdrant connection and configuration."
-                    ),
-                )
-            except BACKGROUND_INFRA_ERRORS as alert_error:
-                logger.error("Failed to record startup failure: %s", alert_error)
-            logger.error("Application startup failed. Exiting.")
-            fatal_startup_exit(1)
-    else:
-        if is_main_worker:
-            logger.debug("[LIFESPAN] Skipping Qdrant initialization (Knowledge Space feature is disabled)")
 
     # Check Celery worker availability (REQUIRED only if Knowledge Space feature is enabled)
     if knowledge_space_enabled:

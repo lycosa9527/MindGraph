@@ -22,8 +22,6 @@ from services.infrastructure.process._celery_manager import start_celery_worker 
 from services.infrastructure.process._celery_manager import stop_celery_worker as _stop_celery_worker
 from services.infrastructure.process._postgresql_manager import start_postgresql_server as _start_postgresql_server
 from services.infrastructure.process._postgresql_manager import stop_postgresql_server as _stop_postgresql_server
-from services.infrastructure.process._qdrant_manager import start_qdrant_server as _start_qdrant_server
-from services.infrastructure.process._qdrant_manager import stop_qdrant_server as _stop_qdrant_server
 from services.infrastructure.process._redis_manager import start_redis_server as _start_redis_server
 
 
@@ -34,8 +32,6 @@ class ServerState:
     celery_stdout_file: Optional[Any] = None
     celery_stderr_file: Optional[Any] = None
     celery_resource_stack: Optional[Any] = None
-    qdrant_process: Optional[Any] = None
-    qdrant_resource_stack: Optional[Any] = None
     postgresql_process: Optional[Any] = None
     postgresql_resource_stack: Optional[Any] = None
     postgresql_stdout_file: Optional[Any] = None
@@ -72,24 +68,6 @@ def start_celery_worker() -> Optional[Any]:
 def stop_celery_worker() -> None:
     """Stop the Celery worker subprocess"""
     _stop_celery_worker(ServerState)
-
-
-def start_qdrant_server() -> Optional[Any]:
-    """
-    Start Qdrant server as a subprocess if not already running (REQUIRED).
-
-    Assumes Qdrant installation has been verified. Checks if Qdrant is running,
-    and if not, attempts to start it. Application will exit if Qdrant cannot be started.
-
-    Returns:
-        Optional[subprocess.Popen[bytes]]: Qdrant process or None if using existing
-    """
-    return _start_qdrant_server(ServerState)
-
-
-def stop_qdrant_server() -> None:
-    """Stop the Qdrant server subprocess"""
-    _stop_qdrant_server(ServerState)
 
 
 def start_postgresql_server() -> Optional[Any]:
@@ -132,7 +110,6 @@ def setup_signal_handlers() -> None:
             pass
 
         stop_celery_worker()
-        stop_qdrant_server()
         stop_postgresql_server()
 
         try:
@@ -162,16 +139,6 @@ def setup_signal_handlers() -> None:
     signal.signal(signal.SIGINT, signal_handler)
 
 
-def get_qdrant_process() -> Optional[Any]:
-    """
-    Get Qdrant process object for monitoring.
-
-    Returns:
-        Qdrant process object or None if not managed by app
-    """
-    return ServerState.qdrant_process
-
-
 def get_celery_process() -> Optional[Any]:
     """
     Get Celery worker process object for monitoring.
@@ -190,16 +157,6 @@ def get_postgresql_process() -> Optional[Any]:
         PostgreSQL process object or None if not managed by app
     """
     return ServerState.postgresql_process
-
-
-def is_qdrant_managed() -> bool:
-    """
-    Check if Qdrant is managed by the application (subprocess).
-
-    Returns:
-        True if Qdrant is managed as subprocess, False if external/systemd
-    """
-    return ServerState.qdrant_process is not None
 
 
 def is_celery_managed() -> bool:

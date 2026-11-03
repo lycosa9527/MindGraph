@@ -10,7 +10,7 @@ Features:
 - Rotation: keeps only N most recent backups (default: 2)
 - PostgreSQL: Uses pg_dump for consistent database snapshots
 - Can run while application is serving requests
-- Optional online backup to Tencent Cloud Object Storage (COS)
+- Optional online backup to Tencent COS and Aliyun OSS at the same time
 
 Usage:
     This module is automatically started by main.py lifespan.
@@ -21,6 +21,8 @@ Usage:
     - BACKUP_DIR=backup (default: backup/)
     - COS_BACKUP_ENABLED=false (default: false)
     - COS_SECRET_ID, COS_SECRET_KEY, COS_BUCKET, COS_REGION (required if COS enabled)
+    - OSS_BACKUP_ENABLED=false (default: false)
+    - OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET, OSS_BUCKET, OSS_REGION (required if OSS enabled)
 
 Author: MindSpring Team
 
@@ -57,6 +59,7 @@ from services.utils.pg_client_binaries import (
     pg_tools_libpq_url,
 )
 from services.utils import tencent_cos_client
+from services.utils.oss_backup_store import oss_backup_summary, upload_oss_backup_if_enabled
 
 try:
     from config.database import DATABASE_URL
@@ -891,6 +894,12 @@ def _upload_to_cos_if_enabled(
         logger.info("[Backup] Cleaned up %s old backup(s) from COS", deleted)
 
 
+def publish_backup_copies(backup_path: Path, manifest_path: Optional[Path]) -> None:
+    """Upload the dump to COS and OSS. Each store runs even if the other fails."""
+    _upload_to_cos_if_enabled(backup_path, manifest_path)
+    upload_oss_backup_if_enabled(backup_path, manifest_path)
+
+
 def create_backup() -> bool:
     """
     Create a timestamped backup of the PostgreSQL database.
@@ -930,7 +939,7 @@ def create_backup() -> bool:
     if deleted > 0:
         logger.info("[Backup] Cleaned up %s old backup(s)", deleted)
 
-    _upload_to_cos_if_enabled(backup_path, manifest_path)
+    publish_backup_copies(backup_path, manifest_path)
 
     return True
 
@@ -1019,6 +1028,15 @@ async def start_backup_scheduler():
         )
     else:
         logger.info("[Backup] COS backup disabled")
+    oss_summary = oss_backup_summary()
+    if oss_summary["enabled"]:
+        logger.info(
+            "[Backup] OSS backup enabled: bucket=%s, prefix=%s",
+            oss_summary.get("bucket"),
+            oss_summary.get("prefix"),
+        )
+    else:
+        logger.info("[Backup] OSS backup disabled")
 
     while True:
         try:
@@ -1187,4 +1205,5 @@ def get_backup_status() -> dict:
         "next_backup": get_next_backup_time().isoformat() if BACKUP_ENABLED else None,
         "backups": backups,
         "cos": cos_summary,
+        "oss": oss_backup_summary(),
     }

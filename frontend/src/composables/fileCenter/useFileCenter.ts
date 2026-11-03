@@ -41,6 +41,8 @@ export interface KnowledgePackage {
   status: string
   document_count: number
   completed_count: number
+  processing_count?: number
+  failed_count?: number
   rag_status: string
   wiki_page_count: number
   wiki_status: 'disabled' | 'none' | 'pending' | 'ready'
@@ -117,7 +119,7 @@ function hasProcessingDocuments(
   documents: KnowledgeDocument[],
   packageSource?: string | null
 ): boolean {
-  if (packageSource === 'doc_summary') {
+  if (packageSource === 'doc_summary' || packageSource === 'knowledge_space') {
     return documents.some((doc) => doc.status === 'processing' || doc.status === 'pending')
   }
   return documentNeedsPipelinePoll(documents)
@@ -130,8 +132,8 @@ function hasProcessingDocuments(
 /** Poll while sources index or wiki pages are still compiling. */
 function shouldPollPackages(packages: KnowledgePackage[]): boolean {
   return packages.some((pkg) => {
-    if (pkg.source === 'doc_summary') {
-      return pkg.status === 'processing'
+    if (pkg.source === 'doc_summary' || pkg.source === 'knowledge_space') {
+      return (pkg.processing_count ?? 0) > 0 || pkg.status === 'processing'
     }
     return (
       pkg.status === 'processing' ||

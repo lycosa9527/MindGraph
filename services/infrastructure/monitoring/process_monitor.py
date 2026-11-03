@@ -23,7 +23,6 @@ import asyncio
 import logging
 import os
 import time
-import urllib.request
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Dict, Optional, cast
@@ -45,10 +44,8 @@ from services.infrastructure.process.process_manager import (
     ServerState,
     start_celery_worker,
     start_postgresql_server,
-    start_qdrant_server,
     stop_celery_worker,
     stop_postgresql_server,
-    stop_qdrant_server,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -249,7 +246,7 @@ class ProcessMonitor:
     Monitors health of critical services and automatically restarts failed subprocesses.
 
     Features:
-    - Periodic health checks (Qdrant, Celery, Redis)
+    - Periodic health checks (Celery, Redis, PostgreSQL)
     - Auto-restart with circuit breaker protection
     - Critical failure records for service outages
     - Multi-worker coordination via Redis distributed lock
@@ -258,7 +255,6 @@ class ProcessMonitor:
     def __init__(self):
         """Initialize ProcessMonitor"""
         self.metrics: Dict[str, ServiceMetrics] = {
-            "qdrant": ServiceMetrics(service_name="qdrant"),
             "celery": ServiceMetrics(service_name="celery"),
             "redis": ServiceMetrics(service_name="redis"),
             "postgresql": ServiceMetrics(service_name="postgresql"),
@@ -364,51 +360,6 @@ class ProcessMonitor:
             return ServiceStatus.UNHEALTHY
         except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Redis health check failed: %s", e)
-            return ServiceStatus.UNHEALTHY
-
-    async def _check_qdrant_health(self) -> ServiceStatus:
-        """
-        Check Qdrant health.
-
-        Returns:
-            ServiceStatus (HEALTHY or UNHEALTHY)
-        """
-        # Skip Qdrant check if RAG is disabled
-        if _CONFIG_AVAILABLE and config is not None:
-            if not config.FEATURE_KNOWLEDGE_SPACE:
-                return ServiceStatus.HEALTHY
-
-        try:
-            # HTTP check (run in thread pool to avoid blocking)
-            def check_http():
-                try:
-                    with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
-                        return True
-                except BACKGROUND_INFRA_ERRORS:
-                    return False
-
-            http_ok = await asyncio.wait_for(asyncio.to_thread(check_http), timeout=2.5)
-
-            if not http_ok:
-                return ServiceStatus.UNHEALTHY
-
-            # Process check if subprocess managed
-            if ServerState.qdrant_process is not None:
-                return_code = ServerState.qdrant_process.poll()
-                if return_code is not None:
-                    # Process has terminated
-                    logger.warning(
-                        "[ProcessMonitor] Qdrant process terminated (return code: %s)",
-                        return_code,
-                    )
-                    return ServiceStatus.UNHEALTHY
-
-            return ServiceStatus.HEALTHY
-        except asyncio.TimeoutError:
-            logger.warning("[ProcessMonitor] Qdrant health check timed out")
-            return ServiceStatus.UNHEALTHY
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.warning("[ProcessMonitor] Qdrant health check failed: %s", e)
             return ServiceStatus.UNHEALTHY
 
     async def _check_celery_health(self) -> ServiceStatus:
@@ -549,7 +500,7 @@ class ProcessMonitor:
         Restart a failed service.
 
         Args:
-            service_name: Name of service to restart ('qdrant' or 'celery')
+            service_name: Name of service to restart ('celery' or 'postgresql')
 
         Returns:
             True if restart successful, False otherwise
@@ -557,23 +508,6 @@ class ProcessMonitor:
         logger.info("[ProcessMonitor] Attempting to restart %s...", service_name)
 
         try:
-            if service_name == "qdrant":
-                # Stop existing process if any (run in thread pool to avoid blocking)
-                if ServerState.qdrant_process is not None:
-                    await asyncio.to_thread(stop_qdrant_server)
-
-                # Start new process (run in thread pool)
-                process = await asyncio.to_thread(start_qdrant_server)
-                if process is not None:
-                    logger.info(
-                        "[ProcessMonitor] Qdrant restarted successfully (PID: %s)",
-                        process.pid,
-                    )
-                    return True
-                # Process already running externally
-                logger.info("[ProcessMonitor] Qdrant is running externally")
-                return True
-
             if service_name == "celery":  # Stop existing process if any (run in thread pool)
                 if ServerState.celery_worker_process is not None:
                     await asyncio.to_thread(stop_celery_worker)
@@ -618,7 +552,7 @@ class ProcessMonitor:
         Check service status and restart if needed.
 
         Args:
-            service_name: Name of service ('qdrant', 'celery', 'redis', or 'postgresql')
+            service_name: Name of service ('celery', 'redis', or 'postgresql')
             status: Current health status
         """
         metrics = self.metrics[service_name]
@@ -682,14 +616,11 @@ class ProcessMonitor:
                 await self._increment_restart_count(service_name)
             return
 
-        # Handle restart logic (only for Qdrant, Celery, and PostgreSQL, not Redis)
-        if service_name in ("qdrant", "celery", "postgresql") and status == ServiceStatus.UNHEALTHY:
-            # Check if process is actually dead
-            if service_name == "qdrant":
-                process = ServerState.qdrant_process
-            elif service_name == "celery":
+        # Handle restart logic for Celery and PostgreSQL. Redis stays external.
+        if service_name in ("celery", "postgresql") and status == ServiceStatus.UNHEALTHY:
+            if service_name == "celery":
                 process = ServerState.celery_worker_process
-            else:  # postgresql
+            else:
                 process = ServerState.postgresql_process
 
             if process is None:
@@ -782,25 +713,10 @@ class ProcessMonitor:
                 db_url = os.getenv("DATABASE_URL", "")
                 using_postgresql = "postgresql" in db_url.lower()
 
-                # Knowledge Space needs Qdrant+Celery; Showcase covers need Celery only
-                rag_enabled = _CONFIG_AVAILABLE and config is not None and config.FEATURE_KNOWLEDGE_SPACE
                 celery_needed = celery_worker_needed_for_app() if _CONFIG_AVAILABLE else False
 
                 if using_postgresql:
-                    if rag_enabled:
-                        (
-                            redis_status,
-                            qdrant_status,
-                            celery_status,
-                            postgresql_status,
-                        ) = await asyncio.gather(
-                            self._check_redis_health(),
-                            self._check_qdrant_health(),
-                            self._check_celery_health(),
-                            self._check_postgresql_health(),
-                            return_exceptions=False,
-                        )
-                    elif celery_needed:
+                    if celery_needed:
                         (
                             redis_status,
                             celery_status,
@@ -811,53 +727,32 @@ class ProcessMonitor:
                             self._check_postgresql_health(),
                             return_exceptions=False,
                         )
-                        qdrant_status = ServiceStatus.HEALTHY
                     else:
                         redis_status, postgresql_status = await asyncio.gather(
                             self._check_redis_health(),
                             self._check_postgresql_health(),
                             return_exceptions=False,
                         )
-                        qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
-                        celery_status = ServiceStatus.HEALTHY  # Celery not needed
+                        celery_status = ServiceStatus.HEALTHY
                 else:
-                    if rag_enabled:
-                        (
-                            redis_status,
-                            qdrant_status,
-                            celery_status,
-                        ) = await asyncio.gather(
-                            self._check_redis_health(),
-                            self._check_qdrant_health(),
-                            self._check_celery_health(),
-                            return_exceptions=False,
-                        )
-                    elif celery_needed:
+                    if celery_needed:
                         redis_status, celery_status = await asyncio.gather(
                             self._check_redis_health(),
                             self._check_celery_health(),
                             return_exceptions=False,
                         )
-                        qdrant_status = ServiceStatus.HEALTHY
                     else:
                         redis_status = await self._check_redis_health()
-                        qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
-                        celery_status = ServiceStatus.HEALTHY  # Celery not needed
-                    postgresql_status = ServiceStatus.HEALTHY  # Not using PostgreSQL
+                        celery_status = ServiceStatus.HEALTHY
+                    postgresql_status = ServiceStatus.HEALTHY
 
-                # Check and restart services if needed
                 await self.apply_service_status("redis", redis_status)
-                if rag_enabled:
-                    await self.apply_service_status("qdrant", qdrant_status)
                 if celery_needed:
                     await self.apply_service_status("celery", celery_status)
                 if using_postgresql:
                     await self.apply_service_status("postgresql", postgresql_status)
 
-                # Check for multiple services down
                 statuses = [redis_status]
-                if rag_enabled:
-                    statuses.append(qdrant_status)
                 if celery_needed:
                     statuses.append(celery_status)
                 if using_postgresql:

@@ -44,7 +44,6 @@ const initializeMethodStates = (docId: number) => {
       spacy: { chunk: 'pending', embed: 'pending', index: 'pending' },
       chonkie: { chunk: 'pending', embed: 'pending', index: 'pending' },
       langchain: { chunk: 'pending', embed: 'pending', index: 'pending' },
-      mindchunk: { chunk: 'pending', embed: 'pending', index: 'pending' },
     }
   }
 }

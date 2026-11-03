@@ -12,7 +12,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 
@@ -68,9 +67,7 @@ def server_defaults() -> Dict[str, Any]:
         "keyword_weight": config.HYBRID_KEYWORD_WEIGHT,
         "reranking_mode": config.RERANKING_MODE,
         "wiki_compile_enabled": config.FILE_CENTER_WIKI_COMPILE,
-        "chunking_engine": (
-            "mindchunk" if os.getenv("CHUNKING_ENGINE", "semchunk").lower() == "mindchunk" else "semchunk"
-        ),
+        "chunking_engine": "semchunk",
     }
 
 

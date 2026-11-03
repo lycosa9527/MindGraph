@@ -69,7 +69,7 @@ const completedMethods = computed(
   () => progress.value?.completed_methods || result.value?.completed_methods || []
 )
 
-const allMethods = ['spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk']
+const allMethods = ['spacy', 'semchunk', 'chonkie', 'langchain']
 
 const stageLabels = computed((): Record<string, string> => ({
   pending: t('chunkTest.stage.pending'),

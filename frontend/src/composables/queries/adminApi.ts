@@ -998,18 +998,6 @@ export async function triggerAdminCosCrowdsecSync(): Promise<Record<string, unkn
   return adminFetchJson('/api/auth/admin/cos/crowdsec/sync', { method: 'POST' })
 }
 
-export async function fetchAdminCosQdrantStatus(): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/cos/qdrant/status')
-}
-
-export async function publishAdminCosQdrant(): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/cos/qdrant/publish', { method: 'POST' })
-}
-
-export async function installAdminCosQdrant(): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/cos/qdrant/install', { method: 'POST' })
-}
-
 // ============================================================================
 // Performance
 // ============================================================================

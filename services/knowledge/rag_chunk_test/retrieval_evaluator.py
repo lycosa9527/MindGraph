@@ -13,19 +13,10 @@ Proprietary License
 """
 
 import logging
-import time
-import uuid
 from typing import Any, Callable, Dict, List, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from clients.dashscope_embedding import get_embedding_client
-from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import Chunk
-from services.knowledge.document_processing import generate_embeddings_with_cache
 from services.knowledge.retrieval_test_service import RetrievalTestService
-from services.llm.qdrant_service import get_qdrant_service
-from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +26,6 @@ class RetrievalEvaluator:
 
     def __init__(self):
         """Initialize retrieval evaluator."""
-        self.qdrant = get_qdrant_service()
-        self.embedding_client = get_embedding_client()
-        self.rate_limiter = get_kb_rate_limiter()
         self.retrieval_test_service = RetrievalTestService()
 
     async def test_retrieval(
@@ -50,7 +38,7 @@ class RetrievalEvaluator:
         collection_name: Optional[str] = None,
         progress_callback: Optional[Callable[[str, Optional[str], str, int], None]] = None,
         method_name: Optional[str] = None,
-        db: Optional[AsyncSession] = None,
+        db: Optional[object] = None,
         user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
@@ -71,142 +59,32 @@ class RetrievalEvaluator:
         Returns:
             Retrieval results with metrics
         """
-        if not chunks:
-            return {
-                "results": [],
-                "metrics": {
-                    "precision": 0.0,
-                    "recall": 0.0,
-                    "mrr": 0.0,
-                    "ndcg": 0.0,
-                    "hit_rate": 0.0,
-                },
-                "timing": {},
-            }
-
-        # Generate collection name if not provided
-        if not collection_name:
-            collection_name = f"test_{uuid.uuid4().hex[:8]}"
-
-        start_time = time.time()
-        timing = {}
-
-        try:
-            # Step 1: Generate embeddings for chunks
-            if progress_callback:
-                progress_callback("processing", method_name, "embedding", 0)
-            embedding_start = time.time()
-            texts = [chunk.text for chunk in chunks]
-
-            # Use cached embedding generation if db and user_id provided, otherwise direct embedding
-            if db is not None:
-                cache_user_id = user_id if user_id is not None else test_user_id
-                embeddings = await generate_embeddings_with_cache(
-                    self.embedding_client, self.rate_limiter, texts, cache_user_id, db
-                )
-            else:
-                # Fallback to direct embedding for backward compatibility
-                embeddings = await self.embedding_client.embed_texts(texts)
-
-            timing["embedding_ms"] = (time.time() - embedding_start) * 1000
-            if progress_callback:
-                progress_callback("processing", method_name, "embedding", 50)
-
-            if len(embeddings) != len(chunks):
-                raise ValueError(f"Embedding count ({len(embeddings)}) != chunk count ({len(chunks)})")
-
-            # Step 2: Store in temporary Qdrant collection
-            if progress_callback:
-                progress_callback("processing", method_name, "indexing", 50)
-            store_start = time.time()
-            # Generate unique chunk IDs (Qdrant requires positive integers)
-            # Use hash of chunk text + index to create unique IDs
-            chunk_ids = []
-            seen_ids = set()
-            for idx, chunk in enumerate(chunks):
-                chunk_id = hash(f"{chunk.text}_{idx}") % (2**31 - 1)  # Ensure positive int
-                while chunk_id in seen_ids or chunk_id <= 0:
-                    chunk_id = (chunk_id + 1) % (2**31 - 1)
-                seen_ids.add(chunk_id)
-                chunk_ids.append(chunk_id)
-
-            document_ids = [chunk.metadata.get("document_id", 0) for chunk in chunks]
-
-            # Prepare metadata
-            qdrant_metadata = []
-            for chunk in chunks:
-                meta = {
-                    "chunk_id": chunk.chunk_index,
-                    "start_char": chunk.start_char,
-                    "end_char": chunk.end_char,
-                    **(chunk.metadata or {}),
-                }
-                qdrant_metadata.append(meta)
-
-            # Store in Qdrant (using test user_id)
-            # Note: Using test_user_id to create isolated test collection
-            await self.qdrant.add_documents(
-                user_id=test_user_id,
-                chunk_ids=chunk_ids,
-                embeddings=embeddings,
-                document_ids=document_ids,
-                metadata=qdrant_metadata,
-            )
-            timing["store_ms"] = (time.time() - store_start) * 1000
-            if progress_callback:
-                progress_callback("processing", method_name, "indexing", 100)
-
-            # Step 3: Perform retrieval
-            if progress_callback:
-                progress_callback("processing", method_name, "retrieval", 0)
-            retrieval_start = time.time()
-            query_embedding = await self.embedding_client.embed_query(query)
-
-            # Use Qdrant to search
-            search_results = await self.qdrant.search(
-                user_id=test_user_id, query_embedding=query_embedding, top_k=top_k
-            )
-            timing["retrieval_ms"] = (time.time() - retrieval_start) * 1000
-            if progress_callback:
-                progress_callback("processing", method_name, "retrieval", 100)
-
-            # Step 4: Format results
-            # Create mapping from chunk_id to chunk index
-            chunk_id_to_index = {chunk_ids[i]: i for i in range(len(chunks))}
-
-            results = []
-            for result in search_results:
-                chunk_id = result.get("id", 0)
-                chunk_idx = chunk_id_to_index.get(chunk_id)
-                if chunk_idx is not None and chunk_idx < len(chunks):
-                    chunk = chunks[chunk_idx]
-                    results.append(
-                        {
-                            "chunk_id": chunk_id,
-                            "chunk_index": chunk_idx,
-                            "text": chunk.text,
-                            "score": result.get("score", 0.0),
-                            "start_char": chunk.start_char,
-                            "end_char": chunk.end_char,
-                            "metadata": chunk.metadata or {},
-                        }
-                    )
-
-            timing["total_ms"] = (time.time() - start_time) * 1000
-
-            return {
-                "results": results,
-                "metrics": {
-                    "retrieved_count": len(results),
-                    "total_chunks": len(chunks),
-                },
-                "timing": timing,
-                "collection_name": collection_name,
-            }
-
-        except QDRANT_ERRORS as e:
-            logger.error("[RetrievalEvaluator] Retrieval test failed: %s", e, exc_info=True)
-            raise
+        logger.debug(
+            "[RetrievalEvaluator] No local index query=%s method=%s top_k=%s chunks=%s",
+            query[:80],
+            method_name or _method,
+            top_k,
+            len(chunks),
+        )
+        logger.debug(
+            "[RetrievalEvaluator] user=%s collection=%s db=%s",
+            user_id if user_id is not None else test_user_id,
+            collection_name,
+            db is not None,
+        )
+        if progress_callback:
+            progress_callback("processing", method_name, "done", 100)
+        return {
+            "results": [],
+            "metrics": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "mrr": 0.0,
+                "ndcg": 0.0,
+                "hit_rate": 0.0,
+            },
+            "timing": {},
+        }
 
     def compare_retrieval_results(
         self,
@@ -215,7 +93,7 @@ class RetrievalEvaluator:
         expected_chunk_ids: Optional[List[int]] = None,
         relevance_scores: Optional[Dict[int, float]] = None,
         mode_a: str = "semchunk",
-        mode_b: str = "mindchunk",
+        mode_b: str = "langchain",
     ) -> Dict[str, Any]:
         """
         Compare retrieval results between two chunking methods.
@@ -226,7 +104,7 @@ class RetrievalEvaluator:
             expected_chunk_ids: Expected relevant chunk IDs (for metrics)
             relevance_scores: Relevance scores for chunks (for NDCG)
             mode_a: Name of first method (default: "semchunk")
-            mode_b: Name of second method (default: "mindchunk")
+            mode_b: Name of second method (default: "langchain")
 
         Returns:
             Comparison metrics
@@ -292,7 +170,7 @@ class RetrievalEvaluator:
         metrics_a: Dict[str, float],
         metrics_b: Dict[str, float],
         mode_a: str = "semchunk",
-        mode_b: str = "mindchunk",
+        mode_b: str = "langchain",
     ) -> str:
         """
         Determine which method performed better.
@@ -301,7 +179,7 @@ class RetrievalEvaluator:
             metrics_a: Metrics for first method
             metrics_b: Metrics for second method
             mode_a: Name of first method (default: "semchunk")
-            mode_b: Name of second method (default: "mindchunk")
+            mode_b: Name of second method (default: "langchain")
 
         Returns:
             mode_a, mode_b, or 'tie'
@@ -321,39 +199,9 @@ class RetrievalEvaluator:
         return "tie"
 
     async def cleanup_test_collection(self, test_user_id: int = 0, collection_name: Optional[str] = None):
-        """
-        Clean up temporary test collection.
-
-        Args:
-            test_user_id: User ID for test collection
-            collection_name: Optional specific collection name to delete.
-                           If None, deletes all collections for test_user_id.
-        """
-        try:
-            if collection_name:
-                try:
-                    await self.qdrant.client.delete_collection(collection_name=collection_name)
-                    logger.debug(
-                        "[RetrievalEvaluator] Cleaned up test collection: %s (user_id=%s)",
-                        collection_name,
-                        test_user_id,
-                    )
-                except QDRANT_ERRORS as exc:
-                    logger.debug(
-                        "[RetrievalEvaluator] Collection %s not found or already deleted: %s",
-                        collection_name,
-                        exc,
-                    )
-            else:
-                await self.qdrant.delete_user_collection(test_user_id)
-                logger.debug(
-                    "[RetrievalEvaluator] Cleaned up all test collections for user %s",
-                    test_user_id,
-                )
-        except QDRANT_ERRORS as exc:
-            logger.warning(
-                "[RetrievalEvaluator] Failed to cleanup test collection (user_id=%s, collection=%s): %s",
-                test_user_id,
-                collection_name,
-                exc,
-            )
+        """Personal knowledge does not keep a temporary local index."""
+        logger.debug(
+            "[RetrievalEvaluator] No local index to clean user=%s collection=%s",
+            test_user_id,
+            collection_name,
+        )

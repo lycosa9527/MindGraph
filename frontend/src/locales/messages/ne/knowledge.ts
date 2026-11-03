@@ -251,7 +251,7 @@ export default {
   'knowledge.upload.drag': 'or drag file here',
   'knowledge.upload.fileTooLarge': 'File size cannot exceed 10MB',
   'knowledge.upload.hintFormats': 'Supports PDF, DOCX, TXT, MD, Images (max 10MB)',
-  'knowledge.upload.maxDocs': 'Maximum document limit reached (5)',
+  'knowledge.upload.maxDocs': 'Maximum document limit reached (10)',
   'knowledge.upload.title': 'Upload Document',
   'knowledge.upload.unsupportedType': 'Unsupported file type',
   'knowledgeSpace.confirmDeleteBody': 'Are you sure you want to delete this document? This action cannot be undone.',

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { currentPersonalKnowledgePackageId } from '@/composables/canvas/useDiagramKnowledgeSelection'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -449,6 +450,7 @@ async function runMindMapSubgraphGeneration(
       language: promptLanguage,
       llm: llmModel,
       diagramId,
+      knowledgePackageId: currentPersonalKnowledgePackageId(),
     })
     const subgraphPrompt = String(requestBody.prompt ?? '')
 

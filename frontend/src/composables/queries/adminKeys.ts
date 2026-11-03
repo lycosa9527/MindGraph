@@ -112,7 +112,6 @@ export const adminKeys = {
     status: () => [...adminKeys.all, 'cos', 'status'] as const,
     backups: () => [...adminKeys.all, 'cos', 'backups'] as const,
     crowdsec: () => [...adminKeys.all, 'cos', 'crowdsec'] as const,
-    qdrant: () => [...adminKeys.all, 'cos', 'qdrant'] as const,
   },
 
   performance: {

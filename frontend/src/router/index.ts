@@ -261,12 +261,6 @@ const routes: RouteRecordRaw[] = [
     }),
   },
   {
-    path: '/knowledge-space',
-    name: 'KnowledgeSpace',
-    component: () => import('@/pages/KnowledgeSpacePage.vue'),
-    meta: { requiresAuth: true, layout: 'main', ...pageTitle('knowledgeSpace') },
-  },
-  {
     path: '/learning-space',
     name: 'LearningSpace',
     component: () => import('@/pages/LearningSpacePage.vue'),
@@ -579,12 +573,6 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
   if (to.name === 'ZhiHui' && !featureFlagsStore.getFeatureZhihui()) {
-    return { name: 'MindMate' }
-  }
-  if (
-    to.name === 'KnowledgeSpace' &&
-    (!featureFlagsStore.getFeatureKnowledgeSpace() || HIDE_KNOWLEDGE_SPACE_NAV)
-  ) {
     return { name: 'MindMate' }
   }
   if (

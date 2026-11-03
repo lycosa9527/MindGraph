@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'මාතෘකාව සහ ප්‍රවර්ගය පුරවන්න, සිඟිති රූපයක් ජනනය කර එය ප්‍රකාශ කරන්න',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'ප්‍රජා පළ කිරීම සංස්කරණය කරන්න',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

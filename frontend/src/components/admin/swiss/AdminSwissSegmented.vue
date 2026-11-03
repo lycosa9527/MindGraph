@@ -13,6 +13,8 @@ export type AdminSwissSegmentOption<T extends string | number = string | number>
   value: T
   /** Optional count badge (e.g. moderation queue totals). */
   count?: number
+  /** Optional text badge, for example a testing label. */
+  badgeKey?: string
 }
 
 withDefaults(
@@ -83,7 +85,13 @@ function onSegmentClick(value: T): void {
         <template v-else>{{ opt.label }}</template>
       </span>
       <span
-        v-if="opt.count != null && opt.count > 0"
+        v-if="opt.badgeKey"
+        class="admin-swiss-segment-badge admin-swiss-segment-badge--text"
+      >
+        <I18nText :k="opt.badgeKey" />
+      </span>
+      <span
+        v-else-if="opt.count != null && opt.count > 0"
         class="admin-swiss-segment-badge"
       >
         {{ opt.count }}

@@ -24,7 +24,6 @@ from models.domain.knowledge_space import (
     KnowledgeDocument,
     KnowledgeSpace,
 )
-from services.llm.qdrant_service import get_qdrant_service
 from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -40,9 +39,8 @@ class StorageManager:
     def __init__(self):
         """Initialize storage manager."""
         self.storage_dir = Path(os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents"))
-        self.max_storage_per_user = int(os.getenv("MAX_STORAGE_PER_USER", "52428800"))  # 50MB
+        self.max_storage_per_user = int(os.getenv("MAX_STORAGE_PER_USER", "1572864000"))
         self.monitor_threshold = float(os.getenv("STORAGE_MONITOR_THRESHOLD", "0.8"))  # 80%
-        self.qdrant = get_qdrant_service()
 
     async def get_user_storage_usage(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
         """
@@ -88,11 +86,7 @@ class StorageManager:
         )
         chunk_count = chunk_result.scalar_one()
 
-        qdrant_chunks = await self.qdrant.get_collection_size(user_id)
-
-        qdrant_storage_bytes = qdrant_chunks * 1638
-
-        total_bytes = file_storage_bytes + qdrant_storage_bytes
+        total_bytes = file_storage_bytes
         total_mb = total_bytes / (1024 * 1024)
         usage_percent = (total_bytes / self.max_storage_per_user) * 100 if self.max_storage_per_user > 0 else 0
 
@@ -102,9 +96,9 @@ class StorageManager:
             "file_storage_mb": file_storage_bytes / (1024 * 1024),
             "document_count": document_count,
             "chunk_count": chunk_count,
-            "qdrant_chunks": qdrant_chunks,
-            "qdrant_storage_bytes": qdrant_storage_bytes,
-            "qdrant_storage_mb": qdrant_storage_bytes / (1024 * 1024),
+            "qdrant_chunks": 0,
+            "qdrant_storage_bytes": 0,
+            "qdrant_storage_mb": 0.0,
             "total_bytes": total_bytes,
             "total_mb": total_mb,
             "usage_percent": usage_percent,
@@ -125,7 +119,6 @@ class StorageManager:
 
         total_file_storage = 0
         total_documents = 0
-        total_qdrant_chunks = 0
 
         for space in spaces:
             user_dir = self.storage_dir / str(space.user_id)
@@ -140,22 +133,18 @@ class StorageManager:
             doc_count = doc_result.scalar_one()
             total_documents += doc_count
 
-            qdrant_chunks = await self.qdrant.get_collection_size(space.user_id)
-            total_qdrant_chunks += qdrant_chunks
-
         chunk_result = await db.execute(select(func.count(DocumentChunk.id)))
         total_chunks = chunk_result.scalar_one()
 
-        total_qdrant_storage = total_qdrant_chunks * 1638
-        total_bytes = total_file_storage + total_qdrant_storage
+        total_bytes = total_file_storage
 
         return {
             "total_file_storage_mb": total_file_storage / (1024 * 1024),
-            "total_qdrant_storage_mb": total_qdrant_storage / (1024 * 1024),
+            "total_qdrant_storage_mb": 0.0,
             "total_storage_mb": total_bytes / (1024 * 1024),
             "total_documents": total_documents,
             "total_chunks": total_chunks,
-            "total_qdrant_chunks": total_qdrant_chunks,
+            "total_qdrant_chunks": 0,
             "user_count": len(spaces),
         }
 

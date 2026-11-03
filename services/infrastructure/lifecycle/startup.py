@@ -220,28 +220,7 @@ def setup_early_configuration():
     ensure_utf8_env_file()
 
     # Load environment variables
-    env_file_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        ".env",
-    )
-    env_file_exists = os.path.exists(env_file_path)
     load_dotenv()
-
-    # Diagnostic: Log CHUNKING_ENGINE value at startup (DEBUG level only)
-    # Use print because logging is not configured yet (setup_logging runs after this)
-    _log_debug = os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG" or os.getenv("DEBUG", "").lower() in (
-        "1",
-        "true",
-        "yes",
-    )
-    if should_log_startup and _log_debug:
-        chunking_engine_startup = os.getenv("CHUNKING_ENGINE", "not set (default: semchunk)")
-        print(f"[Startup] .env file exists: {env_file_exists} at {env_file_path}")
-        print(f"[Startup] CHUNKING_ENGINE environment variable: {chunking_engine_startup}")
-        if chunking_engine_startup.lower() == "mindchunk":
-            print("[Startup] ✓ MindChunk is ENABLED - LLM-based chunking will be used")
-        else:
-            print(f"[Startup] Using chunking engine: {chunking_engine_startup}")
 
     # Create logs directory
     os.makedirs("logs", exist_ok=True)

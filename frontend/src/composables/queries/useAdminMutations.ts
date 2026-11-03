@@ -11,8 +11,6 @@ import {
   addAdminOrganizationManager,
   analyzeAdminDatabaseDump,
   cleanupAdminDatabaseOrphans,
-  installAdminCosQdrant,
-  publishAdminCosQdrant,
   triggerAdminCosBackup,
   triggerAdminCosCrowdsecSync,
   createAdminApiKey,
@@ -559,26 +557,6 @@ export function useTriggerAdminCosCrowdsecSync() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: triggerAdminCosCrowdsecSync,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.cos.all() })
-    },
-  })
-}
-
-export function usePublishAdminCosQdrant() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: publishAdminCosQdrant,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.cos.all() })
-    },
-  })
-}
-
-export function useInstallAdminCosQdrant() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: installAdminCosQdrant,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.cos.all() })
     },

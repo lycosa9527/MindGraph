@@ -205,10 +205,8 @@ good-names = [
     "HAS_SPACY",
     "HAS_CHONKIE",
     "HAS_LANGCHAIN",
-    "HAS_LLM_CHUNKING",
     "TokenChunker",
     "RecursiveCharacterTextSplitter",
-    "LLMSemanticChunker",
     "registration_metrics",
     # db_sessions module-level engine holders (mutated at startup)
     "engine",

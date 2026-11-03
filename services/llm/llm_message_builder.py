@@ -13,9 +13,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from services.llm.rag_context_state import is_implicit_rag_suppressed
-from services.llm.rag_service import get_rag_service
-from services.utils.error_types import LLM_PIPELINE_ERRORS
-from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -109,59 +106,8 @@ class LLMMessageBuilder:
         Returns:
             Modified messages list with RAG context injected
         """
-        if not use_knowledge_base or not user_id or not query:
-            return messages
-
-        # The diagram workflow may have already injected package-scoped context;
-        # skip implicit whole-library RAG to avoid a double-dip / scope leak.
-        if is_implicit_rag_suppressed():
-            return messages
-
-        try:
-            rag_service = get_rag_service()
-            async with user_rls_session(int(user_id)) as db:
-                if not await rag_service.has_knowledge_base(db, user_id):
-                    return messages
-
-                context_chunks = await rag_service.retrieve_context(
-                    db=db,
-                    user_id=user_id,
-                    query=query,
-                    method="hybrid",
-                    top_k=None,
-                    score_threshold=None,
-                )
-
-                if not context_chunks:
-                    return messages
-
-                enhanced_prompt = rag_service.enhance_prompt(
-                    _user_id=user_id,
-                    prompt=query,
-                    context_chunks=context_chunks,
-                    max_context_length=2000,
-                )
-
-                for msg in reversed(messages):
-                    if msg.get("role") == "user":
-                        content = msg.get("content")
-                        if isinstance(content, str):
-                            msg["content"] = enhanced_prompt
-                        elif isinstance(content, list):
-                            for item in content:
-                                if item.get("type") == "text":
-                                    item["text"] = enhanced_prompt
-                                    break
-                        break
-
-                logger.debug(
-                    "[LLMMessageBuilder] Injected RAG context: %s chunks",
-                    len(context_chunks),
-                )
-
-        except LLM_PIPELINE_ERRORS as e:
-            logger.warning("[LLMMessageBuilder] RAG failed, using original prompt: %s", e)
-
+        if use_knowledge_base and user_id and query and not is_implicit_rag_suppressed():
+            logger.debug("[LLMMessageBuilder] Personal knowledge is attached by the diagram workflow")
         return messages
 
     @staticmethod
@@ -219,42 +165,6 @@ class LLMMessageBuilder:
         Returns:
             Enhanced prompt string with RAG context (if enabled)
         """
-        if not use_knowledge_base or not user_id or not prompt:
-            return prompt
-
-        if is_implicit_rag_suppressed():
-            return prompt
-
-        try:
-            rag_service = get_rag_service()
-            async with user_rls_session(int(user_id)) as db:
-                if not await rag_service.has_knowledge_base(db, user_id):
-                    return prompt
-
-                context_chunks = await rag_service.retrieve_context(
-                    db=db, user_id=user_id, query=prompt, top_k=5, method="hybrid"
-                )
-
-                if not context_chunks:
-                    return prompt
-
-                enhanced_prompt = rag_service.enhance_prompt(
-                    _user_id=user_id,
-                    prompt=prompt,
-                    context_chunks=context_chunks,
-                    max_context_length=2000,
-                )
-
-                logger.debug(
-                    "[LLMMessageBuilder] Injected RAG context for streaming: %s chunks",
-                    len(context_chunks),
-                )
-
-                return enhanced_prompt
-
-        except LLM_PIPELINE_ERRORS as e:
-            logger.warning(
-                "[LLMMessageBuilder] RAG failed for streaming, using original prompt: %s",
-                e,
-            )
-            return prompt
+        if use_knowledge_base and user_id and prompt and not is_implicit_rag_suppressed():
+            logger.debug("[LLMMessageBuilder] Personal knowledge is attached by the diagram workflow")
+        return prompt

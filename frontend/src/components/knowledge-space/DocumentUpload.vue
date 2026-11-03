@@ -11,6 +11,7 @@ import { Upload } from '@element-plus/icons-vue'
 
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { MAX_KNOWLEDGE_FILE_BYTES } from '@/utils/knowledgePackageLimit'
 
 defineProps<{
   visible: boolean
@@ -29,8 +30,7 @@ const uploadRef = ref()
 
 const handleFileChange = (file: UploadFile) => {
   if (file.raw) {
-    // Validate file size (10MB)
-    const maxSize = 10 * 1024 * 1024
+    const maxSize = MAX_KNOWLEDGE_FILE_BYTES
     if (file.raw.size > maxSize) {
       notify.errorKey('knowledge.upload.fileTooLarge')
       uploadRef.value?.clearFiles()

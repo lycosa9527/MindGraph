@@ -79,8 +79,10 @@ MAX_REQUEST_BODY_SIZE = 5 * 1024 * 1024  # 5MB
 SHOWCASE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
 # Learning-sheet DOCX: up to 20MB diagram PNG + multipart meta overhead
 WORKSHEET_DOCX_MAX_BODY_SIZE = 22 * 1024 * 1024
-# Document Summary / Knowledge Space file upload: 20MB file + multipart overhead
+# Document Summary file upload: 20MB file + multipart overhead
 DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE = 22 * 1024 * 1024
+# Personal knowledge file upload: 50MB file + multipart overhead
+KNOWLEDGE_UPLOAD_MAX_BODY_SIZE = 52 * 1024 * 1024
 # Course Builder assets: video/media 100MB + multipart overhead (bytes go API → COS)
 TRAINING_ASSET_MAX_BODY_SIZE = 105 * 1024 * 1024
 # MindMate / Dify chat upload: Dify video cap 100MB + multipart overhead
@@ -92,10 +94,8 @@ SEMINAR_BACKGROUND_UPLOAD_PATH = "/api/mindmate/seminar/background-files"
 
 
 def _is_document_upload_path(path: str) -> bool:
-    """True for package document upload endpoints (doc-summary + knowledge-space)."""
-    if not path.endswith("/documents/upload"):
-        return False
-    return path.startswith("/api/doc-summary/packages/") or path.startswith("/api/knowledge-space/packages/")
+    """True for Document Summary package uploads. Personal knowledge has its own cap."""
+    return path.endswith("/documents/upload") and path.startswith("/api/doc-summary/packages/")
 
 
 def cos_auth_login_csp_enabled() -> bool:
@@ -154,6 +154,8 @@ def max_request_body_size_for_path(path: str) -> int:
         return DIFY_FILES_UPLOAD_MAX_BODY_SIZE
     if path == SEMINAR_BACKGROUND_UPLOAD_PATH:
         return SEMINAR_BACKGROUND_UPLOAD_MAX_BODY_SIZE
+    if path.startswith("/api/knowledge-space/packages/") and path.endswith("/documents/upload"):
+        return KNOWLEDGE_UPLOAD_MAX_BODY_SIZE
     if _is_document_upload_path(path):
         return DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE
     showcase_paths = (

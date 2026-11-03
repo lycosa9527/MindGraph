@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'Punan ang pamagat at kategorya, bumuo ng thumbnail at i-publish ito',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'I-edit ang post ng komunidad',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

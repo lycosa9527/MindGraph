@@ -12,21 +12,12 @@ Proprietary License
 
 import logging
 import math
-import time
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.knowledge_space import (
-    DocumentChunk,
-    EvaluationDataset,
-    EvaluationResult,
-    KnowledgeDocument,
-    KnowledgeQuery,
-    KnowledgeSpace,
-)
-from services.llm.rag_service import RerankMode, get_rag_service
+from models.domain.knowledge_space import EvaluationDataset, EvaluationResult
 from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -39,10 +30,6 @@ class RetrievalTestService:
     Allows users to test if their knowledge base works correctly.
     """
 
-    def __init__(self):
-        """Initialize retrieval test service."""
-        self.rag_service = get_rag_service()
-
     async def test_retrieval(
         self,
         db: AsyncSession,
@@ -52,227 +39,19 @@ class RetrievalTestService:
         top_k: int = 5,
         score_threshold: float = 0.0,
     ) -> Dict[str, Any]:
-        """
-        Test retrieval for user's knowledge base.
-
-        Args:
-            db: Async database session
-            user_id: User ID
-            query: Test query
-            method: 'semantic', 'keyword', or 'hybrid'
-            top_k: Number of results
-            score_threshold: Minimum score threshold
-
-        Returns:
-            Dict with results, timing, and stats
-        """
+        """Personal knowledge is retrieved by the diagram, not this lab search."""
         if not query or not query.strip():
             raise ValueError("Query cannot be empty")
-
-        if not await self.rag_service.has_knowledge_base(db, user_id):
-            raise ValueError("No completed documents found. Please upload and process documents first.")
-
-        start_time = time.time()
-        timing = {}
-
-        try:
-            embedding_start = time.time()
-            try:
-                query_embedding = await self.rag_service.embedding_client.embed_query(query)
-                timing["embedding_ms"] = (time.time() - embedding_start) * 1000
-                logger.info(
-                    "[RAG] ✓ Embedding: query='%s...', dims=%d, time=%.0fms",
-                    query[:30],
-                    len(query_embedding),
-                    timing["embedding_ms"],
-                )
-            except DATABASE_ERRORS as emb_error:
-                timing["embedding_ms"] = (time.time() - embedding_start) * 1000
-                logger.error("[RAG] ✗ Embedding FAILED: %s", emb_error)
-                raise
-
-            search_start = time.time()
-            try:
-                if method == "semantic":
-                    chunk_ids = await self.rag_service.vector_search(db, user_id, query, top_k * 2)
-                elif method == "keyword":
-                    chunk_ids = await self.rag_service.keyword_search_func(db, user_id, query, top_k * 2)
-                else:
-                    chunk_ids = await self.rag_service.hybrid_search(db, user_id, query, top_k * 2)
-                timing["search_ms"] = (time.time() - search_start) * 1000
-                logger.info(
-                    "[RAG] ✓ Search (%s): found %d chunks, time=%.0fms",
-                    method,
-                    len(chunk_ids),
-                    timing["search_ms"],
-                )
-            except DATABASE_ERRORS as search_error:
-                timing["search_ms"] = (time.time() - search_start) * 1000
-                logger.error("[RAG] ✗ Search FAILED: %s", search_error)
-                raise
-
-            result = await db.execute(select(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids)))
-            chunks = list(result.scalars().all())
-
-            logger.debug(
-                "[RAG] database lookup: %d chunks from %d IDs",
-                len(chunks),
-                len(chunk_ids),
-            )
-
-            document_ids = list(set(chunk.document_id for chunk in chunks))
-            doc_result = await db.execute(select(KnowledgeDocument).where(KnowledgeDocument.id.in_(document_ids)))
-            documents = {doc.id: doc for doc in doc_result.scalars().all()}
-
-            # Prepare results
-            results = []
-            rerank_start = time.time()
-
-            texts = [chunk.text for chunk in chunks]
-
-            # Apply reranking based on mode (Dify's approach)
-            if self.rag_service.reranking_mode == RerankMode.RERANKING_MODEL and len(texts) > 1:
-                # Step 3: Rerank
-                try:
-                    reranked = await self.rag_service.rerank_client.rerank(
-                        query=query,
-                        documents=texts,
-                        top_n=top_k,
-                        score_threshold=score_threshold,
-                    )
-                    timing["rerank_ms"] = (time.time() - rerank_start) * 1000
-                    logger.info(
-                        "[RAG] ✓ Rerank: %d docs → %d results, time=%.0fms",
-                        len(texts),
-                        len(reranked),
-                        timing["rerank_ms"],
-                    )
-                except DATABASE_ERRORS as rerank_error:
-                    timing["rerank_ms"] = (time.time() - rerank_start) * 1000
-                    logger.error("[RAG] ✗ Rerank FAILED: %s", rerank_error)
-                    raise
-
-                # Map reranked results back to chunks
-                for item in reranked:
-                    idx = item["index"]
-                    if idx < len(chunks):
-                        chunk = chunks[idx]
-                        doc = documents.get(chunk.document_id)
-                        results.append(
-                            {
-                                "chunk_id": chunk.id,
-                                "text": chunk.text,
-                                "score": item["score"],
-                                "document_id": chunk.document_id,
-                                "document_name": doc.file_name if doc else "Unknown",
-                                "chunk_index": chunk.chunk_index,
-                                "start_char": chunk.start_char,
-                                "end_char": chunk.end_char,
-                                "metadata": {},
-                            }
-                        )
-            else:
-                timing["rerank_ms"] = 0
-                # Use original order (weighted_score or none mode)
-                # Scores already calculated in hybrid_search for weighted_score mode
-                for chunk in chunks[:top_k]:
-                    doc = documents.get(chunk.document_id)
-                    # Try to get score from chunk metadata if available
-                    score = getattr(chunk, "score", 0.5) if hasattr(chunk, "score") else 0.5
-                    results.append(
-                        {
-                            "chunk_id": chunk.id,
-                            "text": chunk.text,
-                            "score": score,
-                            "document_id": chunk.document_id,
-                            "document_name": doc.file_name if doc else "Unknown",
-                            "chunk_index": chunk.chunk_index,
-                            "start_char": chunk.start_char,
-                            "end_char": chunk.end_char,
-                            "metadata": chunk.metadata or {},
-                        }
-                    )
-
-            timing["total_ms"] = (time.time() - start_time) * 1000
-
-            # Log final summary
-            logger.info(
-                "[RAG] ✓ Complete: query='%s...', results=%d, "
-                "total=%.0fms (embed=%.0fms, search=%.0fms, rerank=%.0fms)",
-                query[:30],
-                len(results),
-                timing["total_ms"],
-                timing.get("embedding_ms", 0),
-                timing.get("search_ms", 0),
-                timing.get("rerank_ms", 0),
-            )
-
-            # Stats
-            stats = {
-                "total_chunks_searched": len(chunk_ids),
-                "chunks_before_rerank": len(chunks),
-                "chunks_after_rerank": len(results),
-                "chunks_filtered_by_threshold": len(chunks) - len(results),
-            }
-
-            try:
-                space_result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
-                space = space_result.scalars().first()
-                if space:
-                    query_record = KnowledgeQuery(
-                        user_id=user_id,
-                        space_id=space.id,
-                        query=query,
-                        method=method,
-                        top_k=top_k,
-                        score_threshold=score_threshold,
-                        result_count=len(results),
-                        embedding_ms=timing.get("embedding_ms"),
-                        search_ms=timing.get("search_ms"),
-                        rerank_ms=timing.get("rerank_ms"),
-                        total_ms=timing.get("total_ms"),
-                        source="retrieval_test",
-                        source_context={"test": True},
-                    )
-                    db.add(query_record)
-                    await db.flush()
-
-                    old_result = await db.execute(
-                        select(KnowledgeQuery)
-                        .where(
-                            KnowledgeQuery.space_id == space.id,
-                            KnowledgeQuery.source == "retrieval_test",
-                            KnowledgeQuery.id != query_record.id,
-                        )
-                        .order_by(KnowledgeQuery.created_at.desc())
-                    )
-                    all_old_queries = list(old_result.scalars().all())
-
-                    if len(all_old_queries) > 9:
-                        queries_to_delete = all_old_queries[9:]
-                        for old_query in queries_to_delete:
-                            await db.delete(old_query)
-
-                    await db.commit()
-                    logger.debug(
-                        "[RetrievalTest] Recorded query and cleaned up old queries. Total retrieval test queries: %d",
-                        10,
-                    )
-            except DATABASE_ERRORS as e:
-                await db.rollback()
-                logger.warning("[RetrievalTest] Failed to record query: %s", e)
-
-            return {
-                "query": query,
-                "method": method,
-                "results": results,
-                "timing": timing,
-                "stats": stats,
-            }
-
-        except DATABASE_ERRORS as e:
-            logger.error("[RetrievalTest] Test failed for user %d: %s", user_id, e)
-            raise
+        if db is None:
+            raise ValueError("Database session is required")
+        logger.info(
+            "[RetrievalTest] Folder retrieval is used instead user=%s method=%s top_k=%s threshold=%s",
+            user_id,
+            method,
+            top_k,
+            score_threshold,
+        )
+        return {"query": query, "method": method, "results": [], "timing": {}, "stats": {}}
 
     def calculate_precision(self, retrieved_chunk_ids: List[int], relevant_chunk_ids: List[int]) -> float:
         """
@@ -579,18 +358,14 @@ class RetrievalTestService:
                 continue
 
             try:
-                chunk_ids = []
-                if method == "semantic":
-                    chunk_ids = await self.rag_service.vector_search(db, user_id, query, len(expected_chunk_ids) * 2)
-                elif method == "keyword":
-                    chunk_ids = await self.rag_service.keyword_search_func(
-                        db, user_id, query, len(expected_chunk_ids) * 2
-                    )
-                else:
-                    chunk_ids = await self.rag_service.hybrid_search(db, user_id, query, len(expected_chunk_ids) * 2)
-
+                logger.debug(
+                    "[RetrievalTest] Personal folder is the source user=%s method=%s query=%s",
+                    user_id,
+                    method,
+                    query[:80],
+                )
                 metrics = self.calculate_quality_metrics(
-                    retrieved_chunk_ids=chunk_ids,
+                    retrieved_chunk_ids=[],
                     expected_chunk_ids=expected_chunk_ids,
                     relevance_scores=relevance_scores if relevance_scores else None,
                 )

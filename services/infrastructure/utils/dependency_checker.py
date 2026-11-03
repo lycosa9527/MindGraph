@@ -175,32 +175,6 @@ def check_celery_installed() -> tuple[bool, str]:
             "Start Redis: sudo systemctl start redis-server"
         )
 
-    # Check if Qdrant is configured (required for Celery in this app)
-    qdrant_host = os.getenv("QDRANT_HOST", "")
-    qdrant_url = os.getenv("QDRANT_URL", "")
-
-    if not qdrant_host and not qdrant_url:
-        return False, (
-            "Celery requires Qdrant server but QDRANT_HOST is not configured.\n"
-            "Install Qdrant (Linux): conda activate mindgraph && "
-            'sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py\n'
-            "(see docs/QDRANT_SETUP.md)\n"
-            "Then add QDRANT_HOST=localhost:6333 to .env"
-        )
-
-    # Verify Qdrant is actually running
-    try:
-        with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
-            pass
-    except BACKGROUND_INFRA_ERRORS:
-        return False, (
-            "Celery requires Qdrant server but Qdrant is not running on port 6333.\n"
-            "Start Qdrant: sudo systemctl start qdrant\n"
-            "If not installed: conda activate mindgraph && "
-            'sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py '
-            "(see docs/QDRANT_SETUP.md)"
-        )
-
     return True, "Celery is installed and dependencies are available"
 
 

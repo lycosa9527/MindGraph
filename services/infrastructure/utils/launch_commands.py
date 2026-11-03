@@ -224,7 +224,6 @@ def lines_core_python_clients() -> list[str]:
         "Core Python packages (if something is missing in isolation):",
         "  pip install redis>=5.0.0",
         "  pip install celery",
-        "  pip install qdrant-client",
         '  pip install "psycopg[binary]"',
         "  pip install uvicorn[standard]>=0.24.0",
     ]
@@ -235,7 +234,7 @@ def lines_optional_feature_packages() -> list[str]:
     Copy-paste for packages, data files, and scripts whose hints live in individual modules.
 
     Sweep: dependency_checker, ip_geolocation, geoip_country, bayi_mode, backup_scheduler,
-    chunk_comparator, rag_service, download_datasets, prompt_output_languages,
+    chunk_comparator, download_datasets, prompt_output_languages,
     prompt_output_languages, etc.
     """
     return [

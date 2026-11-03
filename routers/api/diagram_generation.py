@@ -108,6 +108,7 @@ def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> di
         "use_rag": req.use_rag if req.use_rag else False,
         "rag_top_k": req.rag_top_k if req.rag_top_k else 5,
         "diagram_id": req.diagram_id,
+        "knowledge_package_id": req.knowledge_package_id,
         "rag_document_ids": req.rag_document_ids,
         "locked_topic": req.locked_topic if hasattr(req, "locked_topic") else None,
         "mind_map_topic": req.mind_map_topic if hasattr(req, "mind_map_topic") else None,

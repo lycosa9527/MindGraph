@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'शीर्षक और श्रेणी भरें, एक थंबनेल बनाएं और उसे प्रकाशित करें',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'सामुदायिक पोस्ट संपादित करें',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

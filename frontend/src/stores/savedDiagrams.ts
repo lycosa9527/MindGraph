@@ -40,10 +40,7 @@ import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
-import {
-  attachLlmResultsWithinSizeLimit,
-  diagramSpecExceedsSaveLimit,
-} from './llmResultsPersist'
+import { attachLlmResultsWithinSizeLimit, diagramSpecExceedsSaveLimit } from './llmResultsPersist'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 import { useUIStore } from './ui'
@@ -210,6 +207,7 @@ export interface SavedDiagramFull extends SavedDiagram {
   spec: Record<string, unknown>
   language: string
   created_at: string
+  knowledge_package_id?: number | null
 }
 
 export interface DiagramListResponse {

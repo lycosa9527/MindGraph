@@ -208,8 +208,8 @@ class ChunkTestBenchmarkRequest(BaseModel):
     dataset_name: str = Field(..., pattern="^(FinanceBench|KG-RAG|FRAMES|PubMedQA)$")
     queries: Optional[List[str]] = None  # Optional custom queries
     modes: Optional[List[str]] = Field(
-        default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
-        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'",
+        default=["spacy", "semchunk", "chonkie", "langchain"],
+        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'qa'",
     )
 
 
@@ -219,8 +219,8 @@ class ChunkTestUserDocumentsRequest(BaseModel):
     document_ids: List[int] = Field(..., min_length=1)
     queries: List[str] = Field(..., min_length=1)
     modes: Optional[List[str]] = Field(
-        default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
-        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'",
+        default=["spacy", "semchunk", "chonkie", "langchain"],
+        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'qa'",
     )
 
 

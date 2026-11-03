@@ -19,12 +19,9 @@ from typing import List, Optional
 from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from clients.dashscope_embedding import get_embedding_client
 from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
-from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_cleaner import get_document_cleaner
-from services.knowledge.document_processing import generate_embeddings_with_cache
 from services.knowledge.document_processor import get_document_processor
 from services.knowledge.progress_tracking import (
     ensure_completion_progress,
@@ -33,8 +30,7 @@ from services.knowledge.progress_tracking import (
     validate_progress,
 )
 from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
-from services.llm.qdrant_service import get_qdrant_service
-from services.utils.error_types import QDRANT_ERRORS
+from services.utils.error_types import FILE_IO_ERRORS
 from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
 
 logger = logging.getLogger(__name__)
@@ -61,9 +57,6 @@ class ChunkTestDocumentService:
         self.processor = get_document_processor()
         self.chunking = get_chunking_service()
         self.cleaner = get_document_cleaner()
-        self.qdrant = get_qdrant_service()
-        self.embedding_client = get_embedding_client()
-        self.kb_rate_limiter = get_kb_rate_limiter()
         self.chunk_comparator = ChunkComparator()
 
         # Default chunking methods for testing (5 methods)
@@ -72,12 +65,11 @@ class ChunkTestDocumentService:
             "semchunk",
             "chonkie",
             "langchain",
-            "mindchunk",
         ]
 
         # Configuration
         self.max_documents = int(os.getenv("MAX_CHUNK_TEST_DOCUMENTS_PER_USER", "5"))
-        self.max_file_size = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
+        self.max_file_size = int(os.getenv("MAX_FILE_SIZE", "52428800"))  # 50MB
         self.storage_dir = Path(os.getenv("CHUNK_TEST_STORAGE_DIR", "./storage/chunk_test_documents"))
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
@@ -213,7 +205,7 @@ class ChunkTestDocumentService:
 
     def _chunk_text(self, text: str, document_id: int) -> List:
         """
-        Chunk text using mindchunk (default for testing).
+        Chunk text with semchunk.
 
         Args:
             text: Cleaned text to chunk
@@ -237,9 +229,9 @@ class ChunkTestDocumentService:
         Process document: extract text, chunk with all 5 methods, embed, store.
 
         For RAG chunk testing, processes each document with 5 chunking methods:
-        - spacy, semchunk, chonkie, langchain, mindchunk
+        - spacy, semchunk, chonkie, langchain
 
-        Stores chunks, embeddings, and indexing separately for each method.
+        Stores chunks for each method.
 
         Args:
             document_id: Document ID
@@ -349,50 +341,6 @@ class ChunkTestDocumentService:
                     await self.db.commit()
                     await self.db.refresh(document)
 
-                    texts = [chunk.text for chunk in chunks]
-                    embeddings = await generate_embeddings_with_cache(
-                        self.embedding_client,
-                        self.kb_rate_limiter,
-                        texts,
-                        self.user_id,
-                        self.db,
-                    )
-
-                    qdrant_metadata = []
-                    for idx, chunk in enumerate(chunks):
-                        metadata = {
-                            "document_id": document_id,
-                            "chunk_index": chunk.chunk_index if hasattr(chunk, "chunk_index") else idx,
-                            "file_name": document.file_name,
-                            "file_type": document.file_type,
-                            "chunking_method": method_name,
-                            "is_chunk_test": True,
-                        }
-                        if chunk.metadata:
-                            metadata.update(chunk.metadata)
-                        qdrant_metadata.append(metadata)
-
-                    document.processing_progress = format_progress_string("indexing", method_name)
-                    new_progress = get_progress_percent(
-                        "indexing", method_index=method_idx, total_methods=total_methods
-                    )
-                    validated_progress, _ = validate_progress(
-                        new_progress, previous_progress, f"indexing ({method_name})"
-                    )
-                    document.processing_progress_percent = validated_progress
-                    previous_progress = validated_progress
-                    await self.db.commit()
-                    await self.db.refresh(document)
-
-                    await self.qdrant.add_documents(
-                        user_id=self.user_id,
-                        chunk_ids=chunk_ids,
-                        embeddings=embeddings,
-                        document_ids=[document_id] * len(chunk_ids),
-                        metadata=qdrant_metadata,
-                        chunking_method=method_name,
-                    )
-
                     total_chunks += len(chunks)
                     method_metadata[method_name] = {
                         "chunk_count": len(chunks),
@@ -406,7 +354,7 @@ class ChunkTestDocumentService:
                         len(chunks),
                     )
 
-                except QDRANT_ERRORS as method_error:
+                except (OSError, RuntimeError, ValueError) as method_error:
                     error_msg = str(method_error)
                     failed_methods.append({"method": method_name, "error": error_msg})
                     logger.error(
@@ -479,7 +427,7 @@ class ChunkTestDocumentService:
                 self.user_id,
             )
 
-        except QDRANT_ERRORS as e:
+        except (OSError, RuntimeError, ValueError) as e:
             logger.error(
                 "[ChunkTestDocument] ✗ Processing failed: doc_id=%s, error=%s",
                 document_id,
@@ -503,37 +451,10 @@ class ChunkTestDocumentService:
         if not document:
             raise ValueError("Document not found or access denied")
 
-        result = await self.db.execute(
-            select(ChunkTestDocumentChunk).where(ChunkTestDocumentChunk.document_id == document_id)
-        )
-        chunks = list(result.scalars().all())
-
-        if chunks:
-            chunks_by_method = {}
-            for chunk in chunks:
-                method = chunk.chunking_method or "unknown"
-                if method not in chunks_by_method:
-                    chunks_by_method[method] = []
-                chunks_by_method[method].append(chunk.id)
-
-            for method, chunk_ids in chunks_by_method.items():
-                try:
-                    await self.qdrant.delete_chunks(
-                        self.user_id,
-                        chunk_ids,
-                        chunking_method=method if method != "unknown" else None,
-                    )
-                except QDRANT_ERRORS as e:
-                    logger.warning(
-                        "[ChunkTestDocument] Failed to delete Qdrant points for method %s: %s",
-                        method,
-                        e,
-                    )
-
         try:
             if os.path.exists(document.file_path):
                 os.remove(document.file_path)
-        except QDRANT_ERRORS as e:
+        except FILE_IO_ERRORS as e:
             logger.warning("[ChunkTestDocument] Failed to delete file: %s", e)
 
         await self.db.delete(document)
@@ -551,8 +472,7 @@ class ChunkTestDocumentService:
 
         This method:
         1. Deletes any partial chunks from database
-        2. Deletes any partial Qdrant data for all chunking methods
-        3. Resets document status to 'pending' so it can be retried
+        2. Resets document status to 'pending' so it can be retried
 
         Args:
             document_id: Document ID
@@ -578,33 +498,6 @@ class ChunkTestDocumentService:
             select(ChunkTestDocumentChunk).where(ChunkTestDocumentChunk.document_id == document_id)
         )
         chunks = list(result.scalars().all())
-
-        if chunks:
-            chunks_by_method = {}
-            for chunk in chunks:
-                method = chunk.chunking_method or "unknown"
-                if method not in chunks_by_method:
-                    chunks_by_method[method] = []
-                chunks_by_method[method].append(chunk.id)
-
-            for method, chunk_ids in chunks_by_method.items():
-                try:
-                    await self.qdrant.delete_chunks(
-                        self.user_id,
-                        chunk_ids,
-                        chunking_method=method if method != "unknown" else None,
-                    )
-                    logger.debug(
-                        "[ChunkTestDocument] Deleted %d Qdrant points for method %s",
-                        len(chunk_ids),
-                        method,
-                    )
-                except QDRANT_ERRORS as e:
-                    logger.warning(
-                        "[ChunkTestDocument] Failed to delete Qdrant points for method %s: %s",
-                        method,
-                        e,
-                    )
 
         if chunks:
             await self.db.execute(

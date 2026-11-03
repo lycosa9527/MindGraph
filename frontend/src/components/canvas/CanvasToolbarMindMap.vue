@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Download,
   FileText,
+  Folder,
   GitBranch,
   Keyboard,
   LayoutGrid,
@@ -44,6 +45,7 @@ import {
 import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
+import CanvasKnowledgeModal from '@/components/canvas/CanvasKnowledgeModal.vue'
 import CanvasShareToSeminarDialog from '@/components/canvas/CanvasShareToSeminarDialog.vue'
 import CanvasToolbarMindMapFormat from '@/components/canvas/CanvasToolbarMindMapFormat.vue'
 import CanvasToolbarMindMapHistoryVersions from '@/components/canvas/CanvasToolbarMindMapHistoryVersions.vue'
@@ -58,6 +60,7 @@ import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
+import { useDiagramKnowledgeSelection } from '@/composables/canvas/useDiagramKnowledgeSelection'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
@@ -117,6 +120,8 @@ const diagramStore = useDiagramSession()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const shareSeminarOpen = ref(false)
+const knowledgeOpen = ref(false)
+const { buttonOn: knowledgeButtonOn } = useDiagramKnowledgeSelection()
 const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
 const ribbon = useMindMapRibbonActions()
@@ -1293,6 +1298,26 @@ watch(
               />
             </button>
           </I18nTooltip>
+          <I18nTooltip
+            k="canvas.toolbar.personalKnowledgeTooltip"
+            placement="bottom"
+            :disabled="shortLabels"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              :class="{ 'is-active': knowledgeButtonOn }"
+              :aria-pressed="knowledgeButtonOn"
+              :aria-label="t('canvas.toolbar.personalKnowledge')"
+              @click="knowledgeOpen = true"
+            >
+              <Folder class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.toolbar.personalKnowledge"
+              />
+            </button>
+          </I18nTooltip>
         </div>
       </template>
 
@@ -1354,6 +1379,7 @@ watch(
       />
     </button>
     <CanvasShareToSeminarDialog v-model="shareSeminarOpen" />
+    <CanvasKnowledgeModal v-model:open="knowledgeOpen" />
   </div>
 </template>
 

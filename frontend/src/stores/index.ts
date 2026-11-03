@@ -50,7 +50,7 @@ export {
 } from './llmResults'
 export { useLiveSubtitlesStore } from './liveSubtitles'
 export { useVoiceNotesStore } from './voiceNotes'
-export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace'
+export type { KnowledgeDocument } from './knowledgeSpace'
 export { useLearningSpaceStore } from './learningSpace'
 export { useFeatureFlagsStore } from './featureFlags'
 export { useAdminPanelStore, type AdminPollKey } from './adminPanel'

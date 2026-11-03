@@ -20,7 +20,7 @@
 #
 # LAST UPDATED: 2026-11-01 - PyPI floor sweep. websockets 17.x (langgraph-sdk 0.4.11
 # dropped the <16 cap). Stay on openai 2.x, dashscope 1.x, Pillow 12.x, PyMuPDF 1.x,
-# pycryptodome 3.x, SQLAlchemy 2.0.x, pydantic <3, qdrant-client <1.19 (server 1.18.3).
+# pycryptodome 3.x, SQLAlchemy 2.0.x, pydantic <3.
 
 # ============================================================================
 # WEB FRAMEWORK
@@ -108,7 +108,6 @@ pycryptodome>=3.24.1,<4  # AES decryption for bayi mode. 4.x is a new major
 # PERSONAL KNOWLEDGE SPACE (RAG) DEPENDENCIES - REQUIRED
 # ============================================================================
 numpy>=2.5.4  # Numerical operations for embedding normalization and validation
-qdrant-client>=1.18.0,<1.19  # Match server 1.18.x; upgrade server via scripts/setup/update_qdrant_server.py
 jieba3>=1.0.2  # Chinese text segmentation for FTS5 full-text search (modern Python 3 rewrite, no pkg_resources)
 pypinyin>=0.55.0  # Student Learning Space initial password from Chinese name initials
 langdetect>=1.0.9  # Language detection for documents
@@ -129,11 +128,8 @@ celery>=5.6.3  # Background task processing for document uploads (REQUIRED - app
 #   - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
 #   - macOS: brew install tesseract
 #   - Linux: apt-get install tesseract-ocr tesseract-ocr-chi-sim (for Chinese support)
-# Note: Qdrant server is REQUIRED. On Linux: conda activate mindgraph &&
-#       sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py (docs/QDRANT_SETUP.md)
-#       Then set QDRANT_HOST=localhost:6333 in .env
 # Note: Celery is REQUIRED and requires Redis as broker (already included above).
-#       Application will exit if Celery cannot start or Qdrant is not available.
+#       Application will exit if Celery cannot start.
 
 # ============================================================================
 # CACHING (Redis - REQUIRED)
@@ -155,6 +151,7 @@ py-ip2region>=3.0.6  # Local IP geolocation database (xdb format, loads into mem
 # CLOUD STORAGE (Optional)
 # ============================================================================
 cos-python-sdk-v5>=1.9.44  # Tencent Cloud Object Storage (COS) SDK for online backups
+oss2>=2.19.0  # Aliyun OSS SDK; daily backups upload here and to COS together
 
 # ============================================================================
 # PRODUCTION DEPLOYMENT (Optional but Recommended)

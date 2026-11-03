@@ -188,7 +188,7 @@ class RAGChunkTestService:
             Test results
         """
         if modes is None:
-            modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+            modes = ["spacy", "semchunk", "chonkie", "langchain"]
 
         logger.info(
             "[RAGChunkTest] Starting user documents test: documents=%s, queries=%s, user=%s, modes=%s",
@@ -244,7 +244,7 @@ class RAGChunkTestService:
         """
         # Default modes if not specified
         if modes is None:
-            modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+            modes = ["spacy", "semchunk", "chonkie", "langchain"]
 
         logger.info(
             "[RAGChunkTest] Comparing chunking methods: documents=%s, queries=%s, modes=%s",
@@ -600,7 +600,7 @@ class RAGChunkTestService:
             db: Async database session
             user_id: User ID (for verification)
             test_result: ChunkTestResult instance
-            method: Chunking method name ('spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk')
+            method: Chunking method name ('spacy', 'semchunk', 'chonkie', 'langchain')
 
         Returns:
             List of chunks with text, metadata, and position info

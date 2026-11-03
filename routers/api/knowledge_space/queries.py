@@ -12,6 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -21,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import (
+    DocumentBatch,
     KnowledgeQuery,
     KnowledgeSpace,
     QueryFeedback,
@@ -39,8 +41,12 @@ from models.responses import (
 )
 from services.knowledge.knowledge_settings import resolve_retrieval_params
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
-from services.knowledge.retrieval_test_service import get_retrieval_test_service
-from services.llm.rag_service import get_rag_service
+from services.knowledge.package_rag_scope import (
+    PERSONAL_KNOWLEDGE_SOURCES,
+    personal_package_id_for_scope,
+    resolve_package_rag_scope_by_id,
+)
+from services.knowledge.vibeflow_context import personal_context_block
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
@@ -62,8 +68,6 @@ async def test_retrieval(
 
     Requires authentication. Only tests user's own knowledge base.
     """
-    service = get_retrieval_test_service()
-
     method, top_k, score_threshold = await resolve_retrieval_params(
         db,
         current_user.id,
@@ -86,15 +90,27 @@ async def test_retrieval(
     )
 
     try:
-        result = await service.test_retrieval(
-            db=db,
-            user_id=current_user.id,
-            query=request.query,
-            method=method,
-            top_k=top_k,
-            score_threshold=score_threshold,
+        batch_rows = await db.execute(
+            select(DocumentBatch.id).where(
+                DocumentBatch.user_id == current_user.id,
+                DocumentBatch.source.in_(PERSONAL_KNOWLEDGE_SOURCES),
+            )
         )
-        return result
+        results = []
+        for (batch_id,) in batch_rows.all():
+            scope = await resolve_package_rag_scope_by_id(db, current_user.id, batch_id)
+            if personal_package_id_for_scope(scope) is None:
+                continue
+            block = await asyncio.to_thread(personal_context_block, current_user.id, batch_id, request.query)
+            if block:
+                results.append({"text": block, "score": 1.0, "package_id": batch_id})
+        return {
+            "query": request.query,
+            "method": method,
+            "results": results[:top_k],
+            "timing": {},
+            "stats": {"score_threshold": score_threshold},
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except BACKGROUND_INFRA_ERRORS as e:
@@ -180,9 +196,14 @@ async def get_query_analytics(
     Requires authentication.
     """
     try:
-        rag_service = get_rag_service()
-        analytics = await rag_service.analyze_query_performance(db, current_user.id, days)
-        return QueryAnalyticsResponse(**analytics)
+        await db.execute(select(KnowledgeSpace.id).where(KnowledgeSpace.user_id == current_user.id).limit(1))
+        logger.debug("[KnowledgeSpaceAPI] Query analytics unused for user %s days=%s", current_user.id, days)
+        return QueryAnalyticsResponse(
+            common_queries=[],
+            low_performing_queries=[],
+            average_scores={},
+            suggestions=[],
+        )
     except DATABASE_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get query analytics for user %s: %s",

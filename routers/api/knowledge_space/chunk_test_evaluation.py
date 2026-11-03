@@ -45,7 +45,7 @@ async def get_chunk_test_chunks(
 
     Args:
         test_id: Test result ID
-        method: Chunking method ('spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk')
+        method: Chunking method ('spacy', 'semchunk', 'chonkie', 'langchain')
 
     Returns:
         List of chunks with text, metadata, and position info
@@ -62,7 +62,7 @@ async def get_chunk_test_chunks(
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
 
-    valid_methods = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+    valid_methods = ["spacy", "semchunk", "chonkie", "langchain"]
     if method not in valid_methods:
         raise HTTPException(
             status_code=400,
@@ -136,7 +136,7 @@ async def manual_evaluate_chunks(
     answer = request.answer
     model = request.model
 
-    valid_methods = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+    valid_methods = ["spacy", "semchunk", "chonkie", "langchain"]
     if method not in valid_methods:
         raise HTTPException(
             status_code=400,

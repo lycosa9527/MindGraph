@@ -2,7 +2,8 @@
  * Settings dialog — light Swiss stone shell (user settings, not admin phosphor).
  */
 
-.language-settings-swiss.el-dialog {
+.language-settings-swiss.el-dialog,
+.canvas-knowledge-body {
   --lang-settings-ink: #1c1917;
   --lang-settings-body: #44403c;
   --lang-settings-muted: #78716c;
@@ -23,7 +24,8 @@
   --el-color-primary-dark-2: #0c0a09;
 }
 
-.dark .language-settings-swiss.el-dialog {
+.dark .language-settings-swiss.el-dialog,
+.dark .canvas-knowledge-body {
   --lang-settings-ink: #f9fafb;
   --lang-settings-body: #d6d3d1;
   --lang-settings-muted: #a8a29e;
@@ -411,4 +413,416 @@
   border-color: rgb(255 255 255 / 0.28);
   background: rgb(255 255 255 / 0.1);
   color: #f8fafc;
+}
+
+
+/* Personal knowledge folder panel inside Settings. */
+.knowledge-settings__panel {
+  padding: 0.9rem 0.85rem 0.75rem;
+  border: 1px solid var(--lang-settings-border);
+  border-radius: 0.9rem;
+  background: var(--lang-settings-inset);
+}
+
+.knowledge-settings__panel.is-off {
+  opacity: 0.45;
+}
+
+.knowledge-settings__panel.is-dropping {
+  outline: 2px dashed var(--lang-settings-border-strong);
+  outline-offset: -6px;
+  background: var(--lang-settings-hover);
+}
+
+.knowledge-settings.user-settings-tab-pad {
+  padding-bottom: 0;
+}
+
+.knowledge-settings__opened {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.6rem;
+}
+
+.knowledge-settings__crumb,
+.knowledge-settings__crumb-sep,
+.knowledge-settings__opened-name {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.knowledge-settings__crumb {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--lang-settings-muted);
+  cursor: pointer;
+}
+
+.knowledge-settings__crumb-sep {
+  color: var(--lang-settings-subtle);
+}
+
+.knowledge-settings__opened-name {
+  min-width: 0;
+  color: var(--lang-settings-ink);
+}
+
+.knowledge-settings__room {
+  min-height: 9.5rem;
+  margin-top: 0.7rem;
+}
+
+.knowledge-settings__dock {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.knowledge-settings__dock-btn {
+  min-height: 1.65rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--lang-settings-border-strong);
+  border-radius: 0.45rem;
+  background: var(--lang-settings-surface);
+  color: var(--lang-settings-ink);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.knowledge-settings__dock-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.knowledge-settings__file-icon.is-picked {
+  background: var(--lang-settings-hover);
+}
+
+.knowledge-settings__opened .knowledge-settings__rename {
+  flex: 1;
+  width: auto;
+  text-align: start;
+}
+
+.knowledge-settings__file {
+  display: none;
+}
+
+.knowledge-settings__folders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.1rem;
+}
+
+.knowledge-settings__folder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 5.5rem;
+  padding: 0.15rem;
+  border: 0;
+  background: transparent;
+  color: var(--lang-settings-ink);
+  cursor: pointer;
+}
+
+.knowledge-settings__glyph {
+  position: relative;
+  color: #d97706;
+  cursor: context-menu;
+}
+
+.knowledge-settings__folder.is-working .knowledge-settings__glyph,
+.knowledge-settings__file-icon.is-working .knowledge-settings__sheet {
+  color: #2563eb;
+  border-color: #2563eb;
+}
+
+.knowledge-settings__folder.is-ready .knowledge-settings__glyph,
+.knowledge-settings__file-icon.is-ready .knowledge-settings__sheet {
+  color: #16a34a;
+  border-color: #16a34a;
+}
+
+.knowledge-settings__folder.is-failed .knowledge-settings__glyph,
+.knowledge-settings__file-icon.is-failed .knowledge-settings__sheet {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.knowledge-settings__file-icon.is-working .knowledge-settings__name {
+  color: #2563eb;
+}
+
+.knowledge-settings__file-icon.is-ready .knowledge-settings__name {
+  color: #16a34a;
+}
+
+.knowledge-settings__file-icon.is-failed .knowledge-settings__name {
+  color: #dc2626;
+}
+
+.knowledge-settings__fault {
+  position: absolute;
+  top: -0.15rem;
+  left: -0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+}
+
+.knowledge-settings__sheet .knowledge-settings__fault {
+  top: -0.35rem;
+  left: -0.35rem;
+}
+
+.knowledge-settings__check {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: var(--lang-settings-ink);
+  color: var(--lang-settings-surface);
+}
+
+.knowledge-settings__caption,
+.knowledge-settings__rename {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--lang-settings-ink);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-settings__rename {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--lang-settings-border-strong);
+  background: transparent;
+  font: inherit;
+  outline: none;
+}
+
+.knowledge-settings__badge {
+  padding: 0.02rem 0.35rem;
+  border-radius: 999px;
+  background: var(--lang-settings-hover);
+  color: var(--lang-settings-muted);
+  font-size: 0.625rem;
+}
+
+.knowledge-settings__menu {
+  --lang-settings-ink: #1c1917;
+  --lang-settings-muted: #78716c;
+  --lang-settings-border: #e7e5e4;
+  --lang-settings-surface: #ffffff;
+  --lang-settings-hover: #f5f5f4;
+
+  position: fixed;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  min-width: 8.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--lang-settings-border);
+  border-radius: 0.55rem;
+  background: var(--lang-settings-surface);
+  box-shadow: 0 8px 24px rgb(28 25 23 / 0.08);
+}
+
+.dark .knowledge-settings__menu {
+  --lang-settings-ink: #f9fafb;
+  --lang-settings-muted: #a8a29e;
+  --lang-settings-border: #374151;
+  --lang-settings-surface: #1f2937;
+  --lang-settings-hover: #374151;
+}
+
+.knowledge-settings__menu-item {
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--lang-settings-ink);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.knowledge-settings__menu-item:hover:not(:disabled) {
+  background: var(--lang-settings-hover);
+}
+
+.knowledge-settings__menu-item:disabled {
+  color: var(--lang-settings-muted);
+  cursor: not-allowed;
+}
+
+.knowledge-settings__icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.35rem 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.knowledge-settings__file-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  width: 4.75rem;
+  padding: 0.35rem 0.2rem 0.3rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.knowledge-settings__sheet {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 2.55rem;
+  height: 3.15rem;
+  border: 1px solid var(--lang-settings-border-strong);
+  border-radius: 0.2rem 0.55rem 0.2rem 0.2rem;
+  background: var(--lang-settings-surface);
+}
+
+.knowledge-settings__sheet::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-style: solid;
+  border-width: 0 0.7rem 0.7rem 0;
+  border-color: transparent var(--lang-settings-border) transparent transparent;
+}
+
+.knowledge-settings__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 0.95rem;
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.knowledge-settings__sheet.is-pdf .knowledge-settings__mark {
+  background: #dc2626;
+}
+
+.knowledge-settings__sheet.is-doc .knowledge-settings__mark {
+  background: #2563eb;
+}
+
+.knowledge-settings__sheet.is-txt .knowledge-settings__mark {
+  background: #57534e;
+}
+
+.knowledge-settings__sheet.is-md .knowledge-settings__mark {
+  background: #7c3aed;
+}
+
+.knowledge-settings__sheet.is-img .knowledge-settings__mark {
+  background: #d97706;
+}
+
+.knowledge-settings__sheet.is-file .knowledge-settings__mark {
+  background: #78716c;
+}
+
+.knowledge-settings__file-icon .knowledge-settings__name {
+  width: 100%;
+  overflow: hidden;
+  color: var(--lang-settings-ink);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-settings__ima {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 1.15rem;
+}
+
+.knowledge-settings__ima-toggle {
+  width: auto;
+  min-height: 2.5rem;
+  padding: 0 1.1rem;
+  border: 1px solid var(--lang-settings-border-strong);
+  border-radius: 0.75rem;
+  background: var(--lang-settings-surface);
+  color: var(--lang-settings-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.knowledge-settings__ima-body {
+  align-self: stretch;
+  margin-top: 0.55rem;
+  padding: 0.85rem;
+  border: 1px solid var(--lang-settings-border);
+  border-radius: 0.75rem;
+  background: var(--lang-settings-inset);
+}
+
+.knowledge-settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.7rem;
+  color: var(--lang-settings-muted);
+  font-size: 0.75rem;
+}
+
+.knowledge-settings__field input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--lang-settings-border-strong);
+  border-radius: 0.5rem;
+  background: var(--lang-settings-surface);
+  color: var(--lang-settings-ink);
+  font-size: 0.8125rem;
+}
+
+.knowledge-settings__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.knowledge-settings__actions .mind-map-side-rail-btn {
+  width: auto;
+  flex: 1 1 7rem;
 }

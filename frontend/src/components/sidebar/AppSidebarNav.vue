@@ -9,7 +9,6 @@ import {
   BookOpen,
   ChevronDown,
   ClipboardList,
-  FileText,
   GraduationCap,
   LayoutGrid,
   MessageSquare,
@@ -29,7 +28,6 @@ import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 const ChatHistory = defineAsyncComponent(() => import('./ChatHistory.vue'))
 const ChunkTestHistory = defineAsyncComponent(() => import('./ChunkTestHistory.vue'))
 const DiagramHistory = defineAsyncComponent(() => import('./DiagramHistory.vue'))
-const KnowledgeSpaceHistory = defineAsyncComponent(() => import('./KnowledgeSpaceHistory.vue'))
 const LibraryCommentsHistory = defineAsyncComponent(() => import('./LibraryCommentsHistory.vue'))
 const WorkshopChatHistory = defineAsyncComponent(() => import('./WorkshopChatHistory.vue'))
 const ZhiHuiHistory = defineAsyncComponent(() => import('./ZhiHuiHistory.vue'))
@@ -246,49 +244,6 @@ const mindmateUnreadLabel = computed(() => {
             /></span>
           </div>
         </I18nTooltip>
-        <!-- Knowledge Space -->
-        <I18nTooltip
-          v-if="
-            !s.isLearningSpaceStudent &&
-            s.isAuthenticated &&
-            s.featureKnowledgeSpace &&
-            !s.hideKnowledgeSpaceNav
-          "
-          k="sidebar.knowledgeSpace"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('knowledge-space')"
-            @click="s.setMode('knowledge-space')"
-          >
-            <FileText
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.knowledgeSpace"
-            /></span>
-          </div>
-        </I18nTooltip>
-        <transition name="panel-slide">
-          <div
-            v-if="
-              !s.isLearningSpaceStudent &&
-              s.isAuthenticated &&
-              s.featureKnowledgeSpace &&
-              !s.hideKnowledgeSpaceNav &&
-              s.showPanel('knowledge-space')
-            "
-            class="sidebar-panel"
-          >
-            <KnowledgeSpaceHistory />
-          </div>
-        </transition>
-
         <!-- Chunk Test -->
         <I18nTooltip
           v-if="

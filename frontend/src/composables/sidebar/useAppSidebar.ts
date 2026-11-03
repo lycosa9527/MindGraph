@@ -74,7 +74,6 @@ export function useAppSidebar() {
     featureRagChunkTest,
     featureShowcase,
     featureZhihui,
-    featureKnowledgeSpace,
     featureLibrary,
     featureSmartResponse,
     featureTeacherUsage,
@@ -102,7 +101,6 @@ export function useAppSidebar() {
     ) {
       return 'mindgraph'
     }
-    if (path.startsWith('/knowledge-space')) return 'knowledge-space'
     if (path.startsWith('/learning-space') || path.startsWith('/m/learning-space')) {
       return 'learning-space'
     }
@@ -338,7 +336,6 @@ export function useAppSidebar() {
   const routeMap: Record<string, string> = {
     mindmate: '/mindmate',
     mindgraph: '/mindgraph',
-    'knowledge-space': '/knowledge-space',
     'learning-space': '/learning-space',
     'chunk-test': '/chunk-test',
     showcase: '/showcase',
@@ -840,7 +837,6 @@ export function useAppSidebar() {
     featureShowcase,
     featureZhihui,
     showZhihuiNav,
-    featureKnowledgeSpace,
     hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,
     featureLibrary,
     featureSmartResponse,

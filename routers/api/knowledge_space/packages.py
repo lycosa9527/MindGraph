@@ -136,6 +136,21 @@ def _package_document_response(
     return _document_to_response(document, wiki_status=wiki_status)
 
 
+def _live_document_counts(documents: List[KnowledgeDocument]) -> tuple[int, int, int, int]:
+    """Return total, completed, still-working, and failed counts."""
+    completed = 0
+    processing = 0
+    failed = 0
+    for document in documents:
+        if document.status == "completed":
+            completed += 1
+        elif document.status == "failed":
+            failed += 1
+        elif document.status in ("pending", "processing"):
+            processing += 1
+    return len(documents), completed, processing, failed
+
+
 def _derive_status(total: int, completed: int, processing_count: int = 0) -> str:
     """Derive a package status from its live source counts."""
     if total == 0:
@@ -153,6 +168,7 @@ def _package_to_response(
     document_count: int,
     completed_count: int,
     processing_count: int = 0,
+    failed_count: int = 0,
 ) -> PackageResponse:
     rag_status = _derive_status(document_count, completed_count, processing_count)
     pages = count_wiki_pages(user_id, package.id)
@@ -168,6 +184,8 @@ def _package_to_response(
         status=rag_status,
         document_count=document_count,
         completed_count=completed_count,
+        processing_count=processing_count,
+        failed_count=failed_count,
         rag_status=rag_status,
         wiki_page_count=pages,
         wiki_status=wiki_status,
@@ -208,15 +226,19 @@ async def list_packages(
     packages = await service.list_packages()
 
     stats = await service.get_package_stats([package.id for package in packages])
-    items: List[PackageResponse] = [
-        _package_to_response(
-            package,
-            current_user.id,
-            document_count=stats.get(package.id, {}).get("total", 0),
-            completed_count=stats.get(package.id, {}).get("completed", 0),
+    items: List[PackageResponse] = []
+    for package in packages:
+        row = stats.get(package.id, {})
+        items.append(
+            _package_to_response(
+                package,
+                current_user.id,
+                document_count=row.get("total", 0),
+                completed_count=row.get("completed", 0),
+                processing_count=row.get("processing", 0),
+                failed_count=row.get("failed", 0),
+            )
         )
-        for package in packages
-    ]
 
     return PackageListResponse(
         packages=items,
@@ -238,15 +260,15 @@ async def get_package(
         raise HTTPException(status_code=404, detail="Package not found")
 
     documents = await service.get_package_documents(package_id)
-    completed = sum(1 for doc in documents if doc.status == "completed")
-    processing = sum(1 for doc in documents if doc.status == "processing")
+    total, completed, processing, failed = _live_document_counts(documents)
     return PackageDetailResponse(
         package=_package_to_response(
             package,
             current_user.id,
-            document_count=len(documents),
+            document_count=total,
             completed_count=completed,
             processing_count=processing,
+            failed_count=failed,
         ),
         documents=_documents_to_responses(
             current_user.id,
@@ -273,14 +295,14 @@ async def update_package(
             diagram_id=request.diagram_id,
         )
         documents = await service.get_package_documents(package_id)
-        completed = sum(1 for doc in documents if doc.status == "completed")
-        processing = sum(1 for doc in documents if doc.status == "processing")
+        total, completed, processing, failed = _live_document_counts(documents)
         return _package_to_response(
             package,
             current_user.id,
-            document_count=len(documents),
+            document_count=total,
             completed_count=completed,
             processing_count=processing,
+            failed_count=failed,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

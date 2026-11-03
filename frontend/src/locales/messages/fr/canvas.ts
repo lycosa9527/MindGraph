@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': 'Remplissez le titre et la catégorie, générez une vignette et publiez-la',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'Modifier le message de la communauté',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const

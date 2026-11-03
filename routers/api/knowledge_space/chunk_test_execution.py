@@ -117,7 +117,6 @@ async def test_benchmark_dataset_async(
             "semchunk",
             "chonkie",
             "langchain",
-            "mindchunk",
         ]
 
         test_result = ChunkTestResult(
@@ -210,7 +209,6 @@ async def test_user_documents(
             "semchunk",
             "chonkie",
             "langchain",
-            "mindchunk",
         ]
 
         test_result = ChunkTestResult(

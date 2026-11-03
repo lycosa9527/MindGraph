@@ -393,7 +393,6 @@ def run_test_in_background(
                 "semchunk",
                 "chonkie",
                 "langchain",
-                "mindchunk",
             ]
             sync_db.commit()
 
@@ -646,7 +645,6 @@ def run_benchmark_in_background(
                 "semchunk",
                 "chonkie",
                 "langchain",
-                "mindchunk",
             ]
             sync_db.commit()
 

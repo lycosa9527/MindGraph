@@ -33,6 +33,10 @@
   margin-top: 12vh !important;
 }
 
+.user-settings-dialog.mm-canvas-upper-dialog.el-dialog {
+  margin-top: 4vh !important;
+}
+
 .mm-canvas-center-modal {
   position: fixed;
   inset: 0;

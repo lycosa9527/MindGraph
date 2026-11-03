@@ -99,13 +99,16 @@ def get_cos_overview_status() -> Dict[str, Any]:
         "retention": {
             "local_count": BACKUP_RETENTION_COUNT,
             "cos_days": 2,
+            "oss_days": 2,
         },
         "artifacts": {
             "database_backups": {
                 "local_count": len(local_backup.get("backups") or []),
                 "cos_count": len(cos_backups),
+                "oss_count": int(local_backup.get("oss", {}).get("count") or 0),
                 "health": _artifact_health(len(cos_backups) > 0 or not local_backup.get("cos", {}).get("enabled")),
                 "latest_cos": pg_latest,
+                "latest_oss": local_backup.get("oss", {}).get("latest"),
             },
             "crowdsec": {
                 "health": _artifact_health(crowdsec_meta is not None),

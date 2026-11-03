@@ -1,23 +1,21 @@
 <script setup lang="ts">
 /**
- * Admin COS tab — mirror sync overview, backups, CrowdSec, Qdrant.
+ * Admin COS tab — mirror sync overview, backups, and CrowdSec.
  */
 import { computed, ref, watch } from 'vue'
 
 import AdminCosBackupsPanel from '@/components/admin/AdminCosBackupsPanel.vue'
 import AdminCosCrowdsecPanel from '@/components/admin/AdminCosCrowdsecPanel.vue'
 import AdminCosOverviewPanel from '@/components/admin/AdminCosOverviewPanel.vue'
-import AdminCosQdrantPanel from '@/components/admin/AdminCosQdrantPanel.vue'
 import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import { useLanguage } from '@/composables'
 import {
   useAdminCosBackups,
   useAdminCosCrowdsecStatus,
-  useAdminCosQdrantStatus,
   useAdminCosStatus,
 } from '@/composables/queries'
 
-type CosSection = 'overview' | 'backups' | 'crowdsec' | 'qdrant'
+type CosSection = 'overview' | 'backups' | 'crowdsec'
 
 const { t } = useLanguage()
 const section = ref<CosSection>('overview')
@@ -27,7 +25,6 @@ const backupsQuery = useAdminCosBackups({ enabled: computed(() => section.value 
 const crowdsecQuery = useAdminCosCrowdsecStatus({
   enabled: computed(() => section.value === 'crowdsec'),
 })
-const qdrantQuery = useAdminCosQdrantStatus({ enabled: computed(() => section.value === 'qdrant') })
 
 const sectionOptions = computed(() => [
   {
@@ -45,24 +42,17 @@ const sectionOptions = computed(() => [
     labelKey: 'admin.cos.sectionCrowdsec',
     value: 'crowdsec' as const,
   },
-  {
-    label: t('admin.cos.sectionQdrant'),
-    labelKey: 'admin.cos.sectionQdrant',
-    value: 'qdrant' as const,
-  },
 ])
 
 watch(section, (value) => {
   if (value === 'backups') backupsQuery.refetch()
   if (value === 'crowdsec') crowdsecQuery.refetch()
-  if (value === 'qdrant') qdrantQuery.refetch()
 })
 
 async function refreshAll() {
   await statusQuery.refetch()
   if (section.value === 'backups') await backupsQuery.refetch()
   if (section.value === 'crowdsec') await crowdsecQuery.refetch()
-  if (section.value === 'qdrant') await qdrantQuery.refetch()
 }
 </script>
 
@@ -97,12 +87,6 @@ async function refreshAll() {
       v-else-if="section === 'crowdsec'"
       :data="crowdsecQuery.data.value"
       :loading="crowdsecQuery.isFetching.value"
-      :sync-role="(statusQuery.data.value?.sync_role as string) ?? 'off'"
-    />
-    <AdminCosQdrantPanel
-      v-else-if="section === 'qdrant'"
-      :data="qdrantQuery.data.value"
-      :loading="qdrantQuery.isFetching.value"
       :sync-role="(statusQuery.data.value?.sync_role as string) ?? 'off'"
     />
   </div>

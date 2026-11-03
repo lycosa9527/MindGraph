@@ -70,7 +70,7 @@ class MetricsCalculator:
             return {}
 
         if modes is None:
-            modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+            modes = ["spacy", "semchunk", "chonkie", "langchain"]
 
         metrics_by_mode = {mode: [] for mode in modes}
 

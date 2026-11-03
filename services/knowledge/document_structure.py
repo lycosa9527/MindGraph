@@ -178,7 +178,7 @@ def _page_char_offset(page_info: List[Dict[str, Any]], page: int) -> int:
     for entry in page_info:
         if int(entry.get("page", 0)) == page:
             return int(entry.get("start", 0))
-    return 0
+    return -1
 
 
 def find_title_position(text: str, title: str, search_from: int = 0, window: int = 4000) -> int:
@@ -225,19 +225,24 @@ def resolve_structure_headings(
 
     for heading in headings:
         position = heading.char_position
+        title_in_text = position is not None
         if position is None and heading.page and page_info:
-            position = find_title_position(
-                text,
-                heading.title,
-                search_from=_page_char_offset(page_info, heading.page),
-            )
+            page_start = _page_char_offset(page_info, heading.page)
+            if page_start >= 0:
+                found = find_title_position(text, heading.title, search_from=page_start)
+                if found >= 0:
+                    position = found
+                    title_in_text = True
+                else:
+                    position = page_start
         if position is None or position < 0:
             position = find_title_position(text, heading.title, search_from=search_cursor)
+            title_in_text = position >= 0
         if position < 0:
             continue
 
         section_key, section_number, level = _infer_section_fields(heading.title)
-        line_end = position + len(heading.title)
+        line_end = position + len(heading.title) if title_in_text else position
         resolved.append(
             {
                 "title": heading.title,

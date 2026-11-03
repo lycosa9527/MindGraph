@@ -1,13 +1,7 @@
 /**
- * Knowledge Space Store - UI state for Knowledge Space / File Center.
- *
- * Server data is managed by Vue Query composables; this store holds selection
- * and legacy polling no-ops for backward compatibility.
+ * Knowledge document shape shared by File Center and personal knowledge.
+ * Package lists and document rows come from Vue Query.
  */
-import { ref } from 'vue'
-
-import { defineStore } from 'pinia'
-
 export interface KnowledgeDocument {
   id: number
   file_name: string
@@ -29,54 +23,3 @@ export interface KnowledgeDocument {
   created_at: string
   updated_at: string
 }
-
-const ACTIVE_PACKAGE_KEY = 'mindgraph.knowledgeSpace.activePackageId'
-
-function readActivePackageId(): number | null {
-  const raw = sessionStorage.getItem(ACTIVE_PACKAGE_KEY)
-  if (!raw) return null
-  const parsed = Number(raw)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function writeActivePackageId(packageId: number | null): void {
-  if (packageId === null) {
-    sessionStorage.removeItem(ACTIVE_PACKAGE_KEY)
-  } else {
-    sessionStorage.setItem(ACTIVE_PACKAGE_KEY, String(packageId))
-  }
-}
-
-export const useKnowledgeSpaceStore = defineStore('knowledgeSpace', () => {
-  const activePackageId = ref<number | null>(readActivePackageId())
-
-  function selectPackage(packageId: number | null): void {
-    activePackageId.value = packageId
-    writeActivePackageId(packageId)
-  }
-
-  function startPolling(_documentId: number) {
-    // No-op: Vue Query handles polling via refetchInterval
-  }
-
-  function stopPolling(_documentId: number) {
-    // No-op: Vue Query handles polling via refetchInterval
-  }
-
-  function stopAllPolling() {
-    // No-op: Vue Query handles polling via refetchInterval
-  }
-
-  function resumePolling() {
-    // No-op: Vue Query handles polling via refetchInterval
-  }
-
-  return {
-    activePackageId,
-    selectPackage,
-    startPolling,
-    stopPolling,
-    stopAllPolling,
-    resumePolling,
-  }
-})

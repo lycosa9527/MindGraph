@@ -1579,4 +1579,7 @@ export default {
   'canvas.hero.communityExport.line1': '填寫標題與分類，生成縮略圖後發佈',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': '編輯社區帖',
+  'canvas.toolbar.personalKnowledge': 'Personal knowledge',
+  'canvas.toolbar.personalKnowledgeTooltip': 'Choose one personal knowledge folder for this diagram. A new diagram starts with none.',
+  'canvas.knowledge.emptyIgnored': 'An empty folder, or a folder whose files are not finished, is not used for generation.',
 } as const
