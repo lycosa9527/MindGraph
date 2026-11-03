@@ -18,7 +18,10 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
-import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
+import {
+  FLOW_STEP_NODE_MAX_WIDTH,
+  MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
+} from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
@@ -29,6 +32,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
+import { flowPillContentMaxPx } from '@/utils/flowPillBox'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
@@ -144,7 +148,7 @@ const nodeStyle = computed(() => {
     shapedStyle.padding = '0'
   }
 
-  // Add dynamic width when editing (multi-flow map only; flow_map uses fixed pill size)
+  // Add dynamic width when editing (multi-flow map only)
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
     return {
       ...shapedStyle,
@@ -170,7 +174,7 @@ const nodeStyle = computed(() => {
       minWidth: '120px',
       minHeight:
         props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
-      maxWidth: '300px',
+      maxWidth: `${FLOW_STEP_NODE_MAX_WIDTH}px`,
     }
   }
 
@@ -217,6 +221,7 @@ const flowMaxWidth = computed(() => {
     {
       fontWeight,
       fontFamily,
+      ...(isFlowMap.value ? { columnCeiling: flowPillContentMaxPx(FLOW_STEP_NODE_MAX_WIDTH) } : {}),
     }
   )}px`
 })
@@ -450,10 +455,25 @@ function handleBranchMovePointerUp(): void {
       :position="Position.Left"
       class="bg-blue-500!"
     />
+    <!-- Return rows of a wrapped flow leave from the left and enter on the right. -->
+    <Handle
+      v-if="isFlowMap"
+      id="left-source"
+      type="source"
+      :position="Position.Left"
+      class="bg-blue-500!"
+    />
     <Handle
       v-if="!isMultiFlowMap || isCause"
       id="right"
       type="source"
+      :position="Position.Right"
+      class="bg-blue-500!"
+    />
+    <Handle
+      v-if="isFlowMap"
+      id="right-target"
+      type="target"
       :position="Position.Right"
       class="bg-blue-500!"
     />
@@ -498,12 +518,6 @@ function handleBranchMovePointerUp(): void {
 .flow-node:active {
   cursor: grabbing;
   transform: translateY(0);
-}
-
-/* Multi-flow map pill shape adjustments */
-.flow-node.pill-shape {
-  padding-left: 20px;
-  padding-right: 20px;
 }
 
 /* Hide handle dots visually while keeping them functional */

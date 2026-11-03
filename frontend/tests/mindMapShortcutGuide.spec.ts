@@ -11,6 +11,7 @@ import {
   MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS,
   resolveDiagramShortcutGuideRows,
   resolveMindMapShortcutGuideRows,
+  shortcutGuideRowsForBilingual,
 } from '@/config/mindMapShortcutGuide'
 
 describe('canvasPageEditorShortcutRouting', () => {
@@ -176,6 +177,19 @@ describe('mindMapShortcutGuide parity', () => {
         expect(rows[1].labelKey).toBe(tabLabel)
       }
     }
+  })
+
+  it('lists Ctrl+double-click for the second line only while a diagram is bilingual', () => {
+    const row = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((item) => item.id === 'editSecondary')
+    expect(row?.kind).toBe('hint')
+    if (row?.kind === 'hint') {
+      expect(row.labelKey).toBe('canvas.shortcutGuide.editSecondary')
+      expect(row.hintKey).toBe('canvas.shortcutGuide.editSecondaryHint')
+    }
+    const visible = shortcutGuideRowsForBilingual(MIND_MAP_SHORTCUT_GUIDE_ROWS, true)
+    const hidden = shortcutGuideRowsForBilingual(MIND_MAP_SHORTCUT_GUIDE_ROWS, false)
+    expect(visible.some((item) => item.id === 'editSecondary')).toBe(true)
+    expect(hidden.some((item) => item.id === 'editSecondary')).toBe(false)
   })
 
   it('pins learning sheet answers shortcut at top while learning sheet mode is active', () => {

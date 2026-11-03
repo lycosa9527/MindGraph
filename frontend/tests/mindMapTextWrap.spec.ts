@@ -115,12 +115,61 @@ describe('mindMapTextWrap', () => {
     expect(lines.join('')).toBe(text)
   })
 
+  it('keeps a Latin prefix on the same line as the following CJK', () => {
+    const fontSize = 16
+    const text = 'AI承担代码、计算和建议，专家负责测量、解释和下一步'
+    const lines = wrapMindMapTextLines(text, 200, { fontSize })
+    expect(lines.join('')).toBe(text)
+    expect(lines[0]?.startsWith('AI')).toBe(true)
+    expect((lines[0]?.length ?? 0) > 2).toBe(true)
+    expect(lines.length).toBeLessThan(3)
+  })
+
+  it('keeps a percent or number with the CJK that follows it', () => {
+    const fontSize = 16
+    const percent = '77%的分析师在解释中重复智能体论点，有时逐字'
+    const percentLines = wrapMindMapTextLines(percent, 200, { fontSize })
+    expect(percentLines.join('')).toBe(percent)
+    expect(percentLines[0]?.startsWith('77%')).toBe(true)
+    expect(percentLines[0]).not.toBe('77%')
+
+    const numbered = '招募61名因果推断专业分析师，50人使用AI智能体'
+    const numberedLines = wrapMindMapTextLines(numbered, 200, { fontSize })
+    expect(numberedLines.join('')).toBe(numbered)
+    expect(numberedLines[0]?.startsWith('招募61')).toBe(true)
+    expect(numberedLines[0]).not.toBe('招募61')
+  })
+
+  it('keeps a Latin prefix on the same line as the following kana', () => {
+    const text = 'AIこんにちは世界の説明ですよ'
+    const lines = wrapMindMapTextLines(text, 120, { fontSize: 16 })
+    expect(lines.join('')).toBe(text)
+    expect(lines[0]?.startsWith('AI')).toBe(true)
+    expect(lines[0]).not.toBe('AI')
+    expect(lines.length).toBeGreaterThan(1)
+  })
+
   it('prefers word boundaries for Latin text', () => {
     const lines = wrapMindMapTextLines('hello world', 40, { fontSize: 14 })
     expect(lines.some((line) => line.includes('hello') || line.includes('world'))).toBe(true)
     for (const line of lines) {
       expect(line === 'hel' || line === 'lo').toBe(false)
     }
+  })
+
+  it('export wrap follows the canvas column and keeps Latin with the following CJK', () => {
+    const text = 'AI承担代码、计算和建议，专家负责测量、解释和下一步'
+    const lines = wrapMindMapExportLabelLines({
+      role: 'branch',
+      text,
+      fontSize: 16,
+      boxWidth: 224,
+      paddingX: 12,
+      borderWidth: 0,
+    })
+    expect(lines.join('')).toBe(text)
+    expect(lines[0]?.startsWith('AI')).toBe(true)
+    expect(lines[0]).not.toBe('AI')
   })
 
   it('keeps host-fitting labels single-line even in a tight minWidth box', () => {

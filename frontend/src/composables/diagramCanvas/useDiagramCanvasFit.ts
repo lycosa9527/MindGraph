@@ -25,6 +25,7 @@ import {
 import {
   type DiagramExportFlowNode,
   measureDiagramExportFlowBounds,
+  serpentineFitInkBounds,
 } from '@/utils/diagramExportContentBounds'
 import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
 import {
@@ -267,12 +268,7 @@ export function useDiagramCanvasFit(options: {
     return { ...insets, right: insets.right + Math.round(dock.getBoundingClientRect().width) }
   }
 
-  function fitPaddingFromInsets(insets: DiagramFitChromeInsets): {
-    top: string
-    right: string
-    bottom: string
-    left: string
-  } {
+  function fitPaddingFromInsets(insets: DiagramFitChromeInsets): Padding {
     return {
       top: formatFitPaddingPx(insets.top),
       right: formatFitPaddingPx(insets.right),
@@ -281,14 +277,21 @@ export function useDiagramCanvasFit(options: {
     }
   }
 
-  function runChromeFitView(
-    padding: { top: string; right: string | number; bottom: string; left: string | number },
-    animate: boolean
-  ): void {
-    fitView({
+  function runChromeFitView(padding: Padding, animate: boolean): void {
+    const duration = animate ? ANIMATION.DURATION_NORMAL : 0
+    const ink = serpentineFitInkBounds(
+      diagramStore.type,
+      canvasContainer.value,
+      getNodes() as DiagramExportFlowNode[]
+    )
+    if (ink) {
+      void fitBounds(ink, { padding, duration })
+      return
+    }
+    void fitView({
       padding,
-      duration: animate ? ANIMATION.DURATION_NORMAL : 0,
-    } as Parameters<FitViewFn>[0])
+      duration,
+    })
   }
 
   function fitToFullCanvas(animate = true): void {

@@ -83,12 +83,17 @@ export function useAutoComplete() {
     id?: string
     type?: string
     text?: string
+    textSecondary?: string
     data?: Record<string, unknown>
   }
 
   function getNodeText(n: NodeWithText | undefined): string {
     if (!n) return ''
     return (n.text ?? (n.data as { label?: string })?.label ?? '').trim()
+  }
+
+  function getNodeGloss(n: NodeWithText | undefined): string {
+    return (n?.textSecondary ?? '').trim()
   }
 
   /** Real user text: not empty, not a blank insert, and not this node's locale template. */
@@ -182,7 +187,13 @@ export function useAutoComplete() {
    * Extract existing bridge map analogies from nodes.
    * spec.analogies is filtered out on load; pair sides live in pairIndex + position.
    */
-  function extractBridgeMapAnalogies(): Array<{ left: string; right: string }> {
+  function extractBridgeMapAnalogies(): Array<{
+    left: string
+    right: string
+    left_secondary?: string
+    right_secondary?: string
+    dimension_secondary?: string
+  }> {
     const spec = diagramStore.data as Record<string, unknown> | null
     if (!spec || diagramStore.type !== 'bridge_map') return []
 
@@ -196,7 +207,13 @@ export function useAutoComplete() {
         .filter((i) => i >= 0)
     )
 
-    const result: Array<{ left: string; right: string }> = []
+    const result: Array<{
+      left: string
+      right: string
+      left_secondary?: string
+      right_secondary?: string
+      dimension_secondary?: string
+    }> = []
     for (const idx of [...pairIndices].sort((a, b) => a - b)) {
       const leftNode = nodes.find(
         (n) =>
@@ -213,8 +230,20 @@ export function useAutoComplete() {
       const left = getNodeText(leftNode)
       const right = getNodeText(rightNode)
       if (isUserLabel(leftNode?.id, left) && isUserLabel(rightNode?.id, right)) {
-        result.push({ left, right })
+        const leftSecondary = getNodeGloss(leftNode)
+        const rightSecondary = getNodeGloss(rightNode)
+        result.push({
+          left,
+          right,
+          ...(leftSecondary ? { left_secondary: leftSecondary } : {}),
+          ...(rightSecondary ? { right_secondary: rightSecondary } : {}),
+        })
       }
+    }
+    const dimensionNode = nodes.find((node) => node.id === 'dimension-label')
+    const dimensionSecondary = getNodeGloss(dimensionNode)
+    if (dimensionSecondary && result[0]) {
+      result[0].dimension_secondary = dimensionSecondary
     }
     return result
   }

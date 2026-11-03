@@ -15,6 +15,10 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
+import {
+  BRACE_NODE_CONTENT_MAX_WIDTH,
+  BRACE_NODE_MAX_WIDTH,
+} from '@/composables/diagrams/layoutConfig'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
@@ -56,8 +60,6 @@ useThinkingMapNodeBoxTypographyRemeasure({
 const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
-
-const BRACE_NODE_MAX_TEXT_WIDTH = 350
 
 const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
 const _isPart = computed(() => !isWholeNode.value && !props.data.parentId)
@@ -130,7 +132,7 @@ const nodeStyle = computed(() => {
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
-    maxWidth: '400px',
+    maxWidth: `${BRACE_NODE_MAX_WIDTH}px`,
   }
   const painted = paintNodeShape(
     base,
@@ -143,6 +145,8 @@ const nodeStyle = computed(() => {
   }
   return painted
 })
+
+const BRACE_NODE_MAX_TEXT_WIDTH = 350
 
 const braceNodeMaxWidth = computed(() => {
   const label = labelWithNodeIcon(
@@ -157,6 +161,7 @@ const braceNodeMaxWidth = computed(() => {
   return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, BRACE_NODE_MAX_TEXT_WIDTH, {
     fontWeight,
     fontFamily,
+    columnCeiling: BRACE_NODE_CONTENT_MAX_WIDTH,
   })}px`
 })
 

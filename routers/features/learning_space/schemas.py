@@ -11,7 +11,7 @@ import re
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 _CLASS_CODE_RE = re.compile(r"^[A-Za-z0-9]{4,16}$")
 
@@ -148,25 +148,3 @@ class StudentChangePasswordRequest(BaseModel):
     """Student forced password change."""
 
     new_password: str = Field(..., min_length=6, max_length=128)
-
-
-class StudentLoginRequest(BaseModel):
-    """Class-code student login."""
-
-    class_code: str = Field(..., min_length=4, max_length=16)
-    name: str = Field(..., min_length=1, max_length=100)
-    password: str = Field(..., min_length=1, max_length=128)
-    captcha: str = Field(..., min_length=4, max_length=4)
-    captcha_id: str
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "class_code": "AB12CD",
-                "name": "张三",
-                "password": "zs123",
-                "captcha": "AB12",
-                "captcha_id": "uuid",
-            }
-        }
-    )

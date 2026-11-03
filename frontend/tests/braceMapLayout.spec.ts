@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { BRACE_MAP_LEVEL_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { loadSpecForDiagramType } from '@/stores/specLoader'
 import { recalculateBraceMapLayout } from '@/stores/specLoader/braceMap'
 import type { Connection, DiagramNode } from '@/types'
@@ -179,5 +180,24 @@ describe('recalculateBraceMapLayout', () => {
     expect(Math.abs(whole.y - mid)).toBeLessThan(40)
     expect(whole.y).toBeGreaterThan(first.y)
     expect(whole.y).toBeLessThan(last.y)
+  })
+
+  it('places the next column from the measured pill, not the wider estimate', () => {
+    const nodes: DiagramNode[] = [
+      node('brace-whole', '服务机制与组织形态以及社区参与和资源调配方式', 'topic'),
+      node('part-a', '部分', 'brace'),
+    ]
+    const connections = [edge('brace-whole', 'part-a')]
+    const painted = 220
+    const estimated = recalculateBraceMapLayout(nodes, connections)
+    const laidOut = recalculateBraceMapLayout(nodes, connections, {
+      'brace-whole': { width: painted, height: 48 },
+      'part-a': { width: 120, height: 40 },
+    })
+    const estimatedGap = positionOf(estimated, 'part-a').x - positionOf(estimated, 'brace-whole').x
+    const whole = positionOf(laidOut, 'brace-whole')
+    const part = positionOf(laidOut, 'part-a')
+    expect(estimatedGap).toBeGreaterThan(painted + BRACE_MAP_LEVEL_WIDTH + 16)
+    expect(part.x - whole.x).toBeCloseTo(painted + BRACE_MAP_LEVEL_WIDTH, 0)
   })
 })

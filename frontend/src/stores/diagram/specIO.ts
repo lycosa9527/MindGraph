@@ -43,8 +43,8 @@ import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
+  defaultTemplateForUi,
   estimateMultiFlowTopicWidth,
-  getDefaultTemplate,
   loadSpecForDiagramType,
   recalculateBraceMapLayout,
   recalculateBridgeMapLayout,
@@ -525,6 +525,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         spec.alternative_dimensions = dataRecord.alternative_dimensions
       if (Array.isArray(dataRecord.alternativeDimensions))
         spec.alternative_dimensions = dataRecord.alternativeDimensions
+      if (Array.isArray(dataRecord.alternative_dimensions_secondary))
+        spec.alternative_dimensions_secondary = dataRecord.alternative_dimensions_secondary
     }
     const hiddenAnswers = (ctx.data.value as { hiddenAnswers?: string[] }).hiddenAnswers
     const d = ctx.data.value as {
@@ -634,7 +636,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   }
 
   function loadDefaultTemplate(diagramTypeValue: DiagramType): boolean {
-    const template = getDefaultTemplate(diagramTypeValue, useUIStore().language)
+    const template = defaultTemplateForUi(diagramTypeValue, useUIStore())
     if (!template) return false
     return loadFromSpec(template, diagramTypeValue)
   }

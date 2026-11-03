@@ -131,6 +131,7 @@ export function useDiagramCanvasEventBus(): {
     const sessionReadonly = () => toValue(diagramStore.isReadonly)
 
     function applyZoomAboutCenter(nextZoom: number): void {
+      if (canvasExportStore.exportSessionActive) return
       const vp = getViewport()
       const el = getExportContainer()
       const zoom = Math.min(ZOOM.MAX, Math.max(ZOOM.MIN, nextZoom))
@@ -142,7 +143,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       viewBus.on('node:edit_requested', ({ nodeId }) => {
-        if (sessionReadonly()) return
+        if (canvasExportStore.exportSessionActive || sessionReadonly()) return
         const node = getNodes().find((n) => n.id === nodeId)
         if (node) {
           emit('nodeDoubleClick', node as unknown as MindGraphNode)
@@ -162,6 +163,7 @@ export function useDiagramCanvasEventBus(): {
     function allowViewportFitEvent(
       data: { userInitiated?: boolean; forExport?: boolean } | undefined
     ): boolean {
+      if (canvasExportStore.exportSessionActive) return false
       // Readonly preview sessions must accept auto fit-on-init / reset.
       if (sessionReadonly()) return true
       if (!isManualViewportMode(diagramStore, uiStore)) return true
@@ -201,7 +203,7 @@ export function useDiagramCanvasEventBus(): {
     // Pan-only keep-in-view after child add — always allowed (does not zoom-fit).
     unsubscribers.push(
       viewBus.on('view:ensure_node_visible_requested', (data) => {
-        if (!data?.nodeId) return
+        if (canvasExportStore.exportSessionActive || !data?.nodeId) return
         fitApi.ensureNodeVisibleInSafeFraction(data.nodeId, {
           safeFraction: data.safeFraction,
           animate: data.animate !== false,
@@ -221,6 +223,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       viewBus.on('view:fit_diagram_requested', () => {
+        if (canvasExportStore.exportSessionActive) return
         if (isManualViewportMode(diagramStore, uiStore) && !sessionReadonly()) return
         fitApi.fitDiagram(true)
       })
@@ -272,41 +275,39 @@ export function useDiagramCanvasEventBus(): {
           asShown = false
         ): Promise<T> {
           const savedViewport = getViewport()
-          const conceptMap = diagramStore.type === 'concept_map'
           const restoreAnswers = await prepareLearningSheetAnswersForFit(
             diagramStore,
             mergedOptions,
             asShown
           )
+          let restoreViewportHere = false
           try {
-            if (conceptMap) {
-              // Fit-to-window paints concept-map text at a tiny zoom, then the PNG
-              // upscales that bitmap. Frame the capture at the map's own size.
-              await prepareDiagramCanvasForRasterCapture(undefined, {
-                promptLanguage: uiStore.promptLanguage,
-              })
-              const container = getExportContainer()
-              if (!container) {
-                return await runWithExportVisualMode(uiStore, container, mergedOptions, run)
-              }
-              return await withDiagramExportContentFrame(
-                {
-                  container,
-                  nodes: getNodes() as unknown as DiagramExportFlowNode[],
-                  setViewport,
-                  setMinZoom,
-                  savedViewport,
-                },
-                () => runWithExportVisualMode(uiStore, container, mergedOptions, run)
-              )
-            }
-            await prepareDiagramCanvasForRasterCapture(() => fitApi.fitForExport(), {
+            // Fit-to-window paints a large diagram at a tiny zoom, then the PNG
+            // upscales that bitmap. Frame the capture at the diagram's own size
+            // so the output pixels grow with the map. The frame puts the camera back.
+            await prepareDiagramCanvasForRasterCapture(undefined, {
               promptLanguage: uiStore.promptLanguage,
             })
-            return await runWithExportVisualMode(uiStore, getExportContainer(), mergedOptions, run)
+            const container = getExportContainer()
+            if (!container) {
+              restoreViewportHere = true
+              await fitApi.fitForExport()
+              return await runWithExportVisualMode(uiStore, container, mergedOptions, run)
+            }
+            return await withDiagramExportContentFrame(
+              {
+                container,
+                nodes: getNodes() as unknown as DiagramExportFlowNode[],
+                setViewport,
+                setMinZoom,
+                savedViewport,
+                whenUnmeasured: () => fitApi.fitForExport(),
+              },
+              () => runWithExportVisualMode(uiStore, container, mergedOptions, run)
+            )
           } finally {
             restoreAnswers()
-            if (!conceptMap) {
+            if (restoreViewportHere) {
               setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
             }
           }

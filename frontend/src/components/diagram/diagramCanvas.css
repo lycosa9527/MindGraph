@@ -196,6 +196,25 @@
   transition: none;
 }
 
+/* Body-teleported node chrome sits above the in-canvas freeze overlay. */
+html.mg-export-capturing .node-floating-toolbar,
+html.mg-export-capturing .nft-dropdown-menu,
+html.mg-export-capturing .nft-color-panel,
+html.mg-export-capturing .mind-map-add-overlay,
+html.mg-export-capturing .mind-map-collapse-overlay,
+html.mg-export-capturing .mm-summary-toolbar,
+html.mg-export-capturing .context-menu,
+html.mg-export-capturing .ls-session-bar {
+  pointer-events: none !important;
+}
+
+.diagram-canvas__export-freeze {
+  position: absolute;
+  inset: 0;
+  z-index: 4800;
+  cursor: wait;
+}
+
 /* Mind map: allow four-directional + handles to extend outside node bounds */
 .vue-flow__node-branch:has(.mind-map-node),
 .vue-flow__node-branch:has(.mind-map-legacy-node),

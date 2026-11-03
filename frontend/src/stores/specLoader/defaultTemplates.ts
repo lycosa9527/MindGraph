@@ -4,7 +4,9 @@
  */
 import { DEFAULT_MIND_MAP_DIAGRAM_STYLE_ID } from '@/config/mindMapDiagramStyles'
 import { DEFAULT_MIND_MAP_THEME_ID } from '@/config/mindMapThemes'
+import { isLocaleLoaded } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { matchedPromptLanguageForUiLocale } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { getConceptMapFocusQuestionDefault } from '@/stores/diagram/diagramDefaultLabels'
 import type { DiagramType } from '@/types'
@@ -107,18 +109,67 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
 
 const CACHE = new Map<string, Record<string, Record<string, unknown>>>()
 
+function cloneTemplate(spec: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(spec)) as Record<string, unknown>
+}
+
+function templateTable(language: LocaleCode): Record<string, Record<string, unknown>> {
+  // An unloaded catalog falls back to English. Caching that would pin the
+  // wrong labels after the real locale chunk arrives.
+  if (!isLocaleLoaded(language)) {
+    return templatesForLocale(language)
+  }
+  const cached = CACHE.get(language)
+  if (cached) return cached
+  const built = templatesForLocale(language)
+  CACHE.set(language, built)
+  return built
+}
+
 export function getDefaultTemplate(
   diagramType: DiagramType,
   language: LocaleCode
 ): Record<string, unknown> | null {
   const normalized: DiagramType = diagramType === 'mind_map' ? 'mindmap' : diagramType
-  if (!CACHE.has(language)) {
-    CACHE.set(language, templatesForLocale(language))
+  const spec = templateTable(language)[normalized]
+  return spec ? cloneTemplate(spec) : null
+}
+
+/** Blank canvas for the current interface language, plus the presenter line when dual-language mode is on. */
+export function defaultTemplateForUi(
+  diagramType: DiagramType,
+  ui: {
+    language: LocaleCode
+    bilingualUiEnabled: boolean
+    presenterUiLocale: LocaleCode
   }
-  const table = CACHE.get(language)
-  if (table === undefined) {
-    return null
+): Record<string, unknown> | null {
+  const presenter = ui.bilingualUiEnabled ? ui.presenterUiLocale : null
+  return getBilingualDefaultTemplate(diagramType, ui.language, presenter)
+}
+
+/**
+ * Blank-canvas spec. In dual-language mode the presenter locale is the smaller
+ * second line, in the same `secondary` shape a generated diagram uses.
+ */
+export function getBilingualDefaultTemplate(
+  diagramType: DiagramType,
+  primaryLocale: LocaleCode,
+  presenterLocale: LocaleCode | null
+): Record<string, unknown> | null {
+  const spec = getDefaultTemplate(diagramType, primaryLocale)
+  if (!spec) return null
+  if (!presenterLocale || presenterLocale === primaryLocale) return spec
+  if (!isLocaleLoaded(presenterLocale)) return spec
+  const primaryCode = matchedPromptLanguageForUiLocale(primaryLocale) ?? primaryLocale
+  const secondaryCode = matchedPromptLanguageForUiLocale(presenterLocale) ?? presenterLocale
+  if (primaryCode === secondaryCode) return spec
+  const presenter = getDefaultTemplate(diagramType, presenterLocale)
+  if (!presenter) return spec
+  for (const key of Object.keys(presenter)) {
+    if (key.startsWith('_')) delete presenter[key]
   }
-  const spec = table[normalized]
-  return spec ? { ...spec } : null
+  spec.secondary = presenter
+  spec.languages = { primary: primaryCode, secondary: secondaryCode }
+  return spec
 }

@@ -3,7 +3,7 @@
  * Teacher Learning Space: dashboard, assignments, class roster.
  * Data and loads live on the Learning Space store.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -12,7 +12,7 @@ import { AlertTriangle, ArrowLeft, Clock3, FileText, Users } from '@lucide/vue'
 import LearningSpaceCreditLine from '@/components/learningSpace/LearningSpaceCreditLine.vue'
 import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import LearningSpaceWorkGrader from '@/components/learningSpace/LearningSpaceWorkGrader.vue'
-import { swissGlassConfirm, useLanguage } from '@/composables'
+import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
 import {
   assignmentIsClosed,
   assignmentProgress,
@@ -24,10 +24,13 @@ import {
 } from '@/composables/learningSpace/lsHelpers'
 import { useAuthStore } from '@/stores'
 import { useLearningSpaceStore } from '@/stores/learningSpace'
-import type { LearningAssignment } from '@/utils/learningSpaceApi'
+import type { LearningAssignment, LearningStudentRow } from '@/utils/learningSpaceApi'
+import { teacherResetPassword } from '@/utils/learningSpaceApi'
 
 const { t } = useLanguage()
+const notify = useNotifications()
 const authStore = useAuthStore()
+const resettingStudentId = ref<number | null>(null)
 const ls = useLearningSpaceStore()
 const {
   teacherTab,
@@ -70,6 +73,42 @@ function assignmentStatusBadge(assignment: LearningAssignment): { text: string; 
   if (assignmentIsClosed(assignment))
     return { text: t('learningSpace.statusClosed'), tone: 'closed' }
   return { text: t('learningSpace.statusActive'), tone: 'active' }
+}
+
+const canResetStudentPassword = computed(
+  () => selectedClass.value?.is_owner === true && selectedClass.value?.can_publish === true
+)
+
+function rosterUsesOwnAccount(row: LearningStudentRow): boolean {
+  return row.member_kind === 'enrolled'
+}
+
+async function onResetStudentPassword(row: LearningStudentRow): Promise<void> {
+  if (!canResetStudentPassword.value || rosterUsesOwnAccount(row)) return
+  try {
+    await swissGlassConfirm(
+      t('learningSpace.resetStudentPasswordConfirm', { name: row.name }),
+      t('learningSpace.resetStudentPassword'),
+      {
+        confirmButtonText: t('learningSpace.resetStudentPassword'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+  resettingStudentId.value = row.id
+  try {
+    const res = await teacherResetPassword(row.id)
+    notify.successKey('learningSpace.passwordResetDone', { name: res.name })
+    const classId = selectedClassId.value
+    if (classId != null) await ls.selectClass(classId)
+  } catch {
+    notify.errorKey('learningSpace.saveFailed')
+  } finally {
+    resettingStudentId.value = null
+  }
 }
 
 function classNameForAssignment(assignment: LearningAssignment): string {
@@ -623,6 +662,7 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
               <th><I18nText k="learningSpace.rosterColName" /></th>
               <th><I18nText k="learningSpace.rosterColClassCode" /></th>
               <th><I18nText k="learningSpace.rosterColPassword" /></th>
+              <th v-if="canResetStudentPassword" />
             </tr>
           </thead>
           <tbody>
@@ -635,13 +675,37 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
                 <code class="ls-roster-code">{{ selectedClass.class_code }}</code>
               </td>
               <td>
-                <code class="ls-roster-code">
-                  <template v-if="s.initial_password">{{ s.initial_password }}</template
-                  ><I18nText
-                    v-else
-                    k="learningSpace.passwordHidden"
-                  />
-                </code>
+                <I18nText
+                  v-if="rosterUsesOwnAccount(s)"
+                  k="learningSpace.passwordOwnAccount"
+                />
+                <code
+                  v-else-if="s.initial_password"
+                  class="ls-roster-code"
+                  >{{ s.initial_password }}</code
+                >
+                <I18nText
+                  v-else-if="canResetStudentPassword"
+                  k="learningSpace.passwordHidden"
+                />
+                <I18nText
+                  v-else
+                  k="learningSpace.passwordAlreadySet"
+                />
+              </td>
+              <td
+                v-if="canResetStudentPassword"
+                class="ls-roster-table__actions"
+              >
+                <button
+                  v-if="!rosterUsesOwnAccount(s)"
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  :disabled="resettingStudentId === s.id"
+                  @click="onResetStudentPassword(s)"
+                >
+                  <I18nText k="learningSpace.resetStudentPassword" />
+                </button>
               </td>
             </tr>
           </tbody>

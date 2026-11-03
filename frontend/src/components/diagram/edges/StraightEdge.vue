@@ -9,6 +9,7 @@ import { EdgeLabelRenderer, type EdgeProps, getStraightPath } from '@vue-flow/co
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
+import { flowTurnEdgePath } from '@/utils/flowTurnEdge'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
 
@@ -28,16 +29,33 @@ const isMultiFlowMapEdge = computed(() => {
   )
 })
 
+function turnSide(): 'left' | 'right' | null {
+  if (props.sourcePosition !== props.targetPosition) return null
+  if (props.sourcePosition === 'right' || props.sourcePosition === 'left') {
+    return props.sourcePosition
+  }
+  return null
+}
+
 // Calculate straight path with offset to prevent line from sticking through arrowhead
 const path = computed(() => {
+  const turn = turnSide()
+  const arrowOffset = isMultiFlowMapEdge.value ? 7 : 10
+  if (turn) {
+    return flowTurnEdgePath(
+      props.sourceX,
+      props.sourceY,
+      props.targetX,
+      props.targetY,
+      turn,
+      arrowOffset
+    )
+  }
+
   // Calculate distance and angle from source to target
   const dx = props.targetX - props.sourceX
   const dy = props.targetY - props.sourceY
   const distance = Math.sqrt(dx * dx + dy * dy)
-
-  // For multi-flow maps, use smaller offset to minimize gap while preventing overlap
-  // For other diagrams, use standard offset
-  const arrowOffset = isMultiFlowMapEdge.value ? 7 : 10
 
   // Only apply offset if the path is long enough
   if (distance > arrowOffset) {

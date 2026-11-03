@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.base_agent import BaseAgent
+from agents.diagram_bilingual.bridge_mirror import stamp_bridge_bilingual
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
@@ -568,6 +569,7 @@ class BridgeMapAgent(BaseAgent):
                 "analogies": combined_analogies,
                 "alternative_dimensions": result.get("alternative_dimensions", []),
             }
+            stamp_bridge_bilingual(spec, result if isinstance(result, dict) else None, existing_analogies)
 
             if fixed_dimension:
                 logger.debug("BridgeMapAgent: Using FIXED dimension: %s", final_dimension)
@@ -582,7 +584,7 @@ class BridgeMapAgent(BaseAgent):
         except LLM_PIPELINE_ERRORS as e:
             logger.error("BridgeMapAgent: Error in auto-complete: %s", e)
             # Return spec with just the existing pairs, preserving fixed_dimension if provided
-            return {
+            fallback = {
                 "relating_factor": "as",
                 "dimension": fixed_dimension if fixed_dimension else "",
                 "analogies": [
@@ -595,6 +597,8 @@ class BridgeMapAgent(BaseAgent):
                 ],
                 "alternative_dimensions": [],
             }
+            stamp_bridge_bilingual(fallback, None, existing_analogies)
+            return fallback
 
     async def _generate_from_relationship_only(
         self,
@@ -694,6 +698,7 @@ class BridgeMapAgent(BaseAgent):
                 "analogies": analogies,
                 "alternative_dimensions": result.get("alternative_dimensions", []),
             }
+            stamp_bridge_bilingual(spec, result if isinstance(result, dict) else None, None)
 
             logger.debug(
                 "BridgeMapAgent: Relationship-only complete - dimension: '%s', pairs: %s",

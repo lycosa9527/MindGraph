@@ -47,6 +47,7 @@ import {
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { recalculateDoubleBubbleMapLayout } from '../specLoader/doubleBubbleMapMeasuredLayout'
+import { withFlowSerpentineHandles } from '../specLoader/flowMapSerpentine'
 import { getEdgeTypeForDiagram } from './events'
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import {
@@ -483,6 +484,9 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         const isAssoc = isMindMapAssociationConnection(conn)
         let effectiveConn =
           diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
+        if (diagramType === 'flow_map') {
+          effectiveConn = withFlowSerpentineHandles(effectiveConn, nodes)
+        }
 
         if (isAssoc) {
           effectiveConn = withMindMapAssociationHandles(conn, nodes, connections)

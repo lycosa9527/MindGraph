@@ -13,6 +13,7 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import {
   measureThinkingMapLabelBlockPx,
   resolveThinkingMapDisplayMaxWidthPx,
+  resolveThinkingMapTextColumnPx,
 } from '@/utils/mindMapTextWrap'
 import { safeI18nTranslate } from '@/utils/safeI18nTranslate'
 
@@ -126,25 +127,34 @@ export function measureBridgeDimensionLabel(
     BRIDGE_DIMENSION_LABEL_MAX_TEXT_PX,
     font
   )
-  const valueMaxPx = resolveThinkingMapDisplayMaxWidthPx(
+  const valueColumnPx = resolveThinkingMapDisplayMaxWidthPx(
     paint.value,
     fontSize,
     BRIDGE_DIMENSION_LABEL_MAX_TEXT_PX,
     font
   )
+  const gloss = (secondary ?? '').trim()
+  const glossFont = { fontWeight: 'normal' as const, fontFamily }
+  const glossSize = secondaryFontSize(fontSize)
+  const glossColumn = gloss
+    ? resolveThinkingMapTextColumnPx(
+        gloss,
+        glossSize,
+        BRIDGE_DIMENSION_LABEL_MAX_TEXT_PX,
+        glossFont
+      )
+    : 0
+  // The gloss is painted in the value column, so that column has to clear the translation.
+  const valueMaxPx = Math.max(valueColumnPx, glossColumn)
   const column = Math.max(prefixMaxPx, valueMaxPx)
   let textHeight = prefixBlock.height + LABEL_LINE_GAP + valueBlock.height
-  const gloss = (secondary ?? '').trim()
+  let glossWidth = 0
   if (gloss) {
-    const glossBlock = measureThinkingMapLabelBlockPx(
-      gloss,
-      secondaryFontSize(fontSize),
-      BRIDGE_DIMENSION_LABEL_MAX_TEXT_PX,
-      { fontWeight: 'normal', fontFamily }
-    )
+    const glossBlock = measureThinkingMapLabelBlockPx(gloss, glossSize, column, glossFont)
     textHeight += glossBlock.height
+    glossWidth = glossBlock.width
   }
-  const textWidth = Math.max(prefixBlock.width, valueBlock.width)
+  const textWidth = Math.max(prefixBlock.width, valueBlock.width, glossWidth)
   const width = Math.max(
     NODE_MIN_DIMENSIONS.label.minWidth,
     Math.min(Math.ceil(textWidth), Math.ceil(column)) + LABEL_PAD_X
@@ -157,6 +167,30 @@ export function measureBridgeDimensionLabel(
     width,
     height,
   }
+}
+
+/** Drop the brackets painted around the relationship. The stored value stays raw. */
+export function bridgeDimensionValueForStorage(painted: string): string {
+  const text = painted.trim()
+  if (text.startsWith('[') && text.endsWith(']')) {
+    return text.slice(1, -1).trim()
+  }
+  return text
+}
+
+/**
+ * Bridge Y is the midpoint of the gap between the upper word and the lower word.
+ * Averaging node centers drifts into the taller side once a second line is showing.
+ */
+export function bridgeGapCenterY(
+  pairs: Array<{ upperBottom: number; lowerTop: number }>
+): number | null {
+  if (pairs.length === 0) return null
+  let total = 0
+  for (const pair of pairs) {
+    total += (pair.upperBottom + pair.lowerTop) / 2
+  }
+  return total / pairs.length
 }
 
 export function measureBridgeDimensionLabelBox(

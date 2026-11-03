@@ -1,7 +1,9 @@
 /**
  * Raster export frame for diagrams that are larger than the window.
  * Fit-to-window paints text at the fitted zoom; the PNG is that shrunken bitmap.
- * Size the capture to the diagram instead, capped so the canvas stays drawable.
+ * Size the capture to the diagram instead. Zoom stays at 1 until a 1× bitmap
+ * would pass the shared raster budget (edge or area). The pixel ratio then
+ * raises that capture, usually to 2×, while the budget still has room.
  */
 import { nextTick } from 'vue'
 
@@ -11,13 +13,16 @@ import {
   type DiagramExportFlowRect,
   measureDiagramExportFlowBounds,
 } from '@/utils/diagramExportContentBounds'
+import {
+  DIAGRAM_RASTER_BUDGET_DESKTOP,
+  type DiagramRasterBudget,
+  diagramRasterExportBudget,
+  resolveDiagramExportZoom,
+} from '@/utils/diagramExportRasterScale'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
 /** Room for relationship labels and pill shadows outside node boxes. */
 export const DIAGRAM_EXPORT_CONTENT_FRAME_PAD = 48
-
-/** CSS edge before html-to-image applies its pixel ratio. */
-const MAX_CAPTURE_EDGE = 4096
 
 const MIN_CAPTURE_ZOOM = 0.02
 
@@ -39,12 +44,12 @@ export type DiagramExportViewport = {
 
 export function resolveDiagramExportContentFrame(
   bounds: DiagramExportFlowRect,
-  pad = DIAGRAM_EXPORT_CONTENT_FRAME_PAD
+  pad = DIAGRAM_EXPORT_CONTENT_FRAME_PAD,
+  budget: DiagramRasterBudget = DIAGRAM_RASTER_BUDGET_DESKTOP
 ): DiagramExportContentFrame {
   const contentW = Math.max(1, bounds.width)
   const contentH = Math.max(1, bounds.height)
-  const innerEdge = Math.max(1, MAX_CAPTURE_EDGE - pad * 2)
-  const zoom = Math.max(MIN_CAPTURE_ZOOM, Math.min(1, innerEdge / contentW, innerEdge / contentH))
+  const zoom = Math.max(MIN_CAPTURE_ZOOM, resolveDiagramExportZoom(contentW, contentH, pad, budget))
   return {
     zoom,
     width: Math.ceil(contentW * zoom + pad * 2),
@@ -85,15 +90,27 @@ export async function withDiagramExportContentFrame<T>(
     ) => void | Promise<unknown>
     setMinZoom?: (zoom: number) => void
     savedViewport: DiagramExportViewport
+    /** Used when the diagram has no measurable ink (empty canvas). */
+    whenUnmeasured?: () => void | Promise<unknown>
   },
   run: () => Promise<T>
 ): Promise<T> {
   const bounds = measureDiagramExportFlowBounds(options.container, options.nodes)
   if (!bounds) {
-    return run()
+    if (!options.whenUnmeasured) return run()
+    try {
+      await options.whenUnmeasured()
+      return await run()
+    } finally {
+      await options.setViewport(options.savedViewport, { duration: 0 })
+    }
   }
 
-  const frame = resolveDiagramExportContentFrame(bounds)
+  const frame = resolveDiagramExportContentFrame(
+    bounds,
+    DIAGRAM_EXPORT_CONTENT_FRAME_PAD,
+    diagramRasterExportBudget()
+  )
   const previousStyles = readFrameStyles(options.container)
   const previousMinZoom = ZOOM.MIN
   options.setMinZoom?.(Math.min(previousMinZoom, frame.zoom))

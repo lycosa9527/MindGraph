@@ -45,7 +45,13 @@ import {
   useMindMapV2Chrome,
   useMindMapV2FamilyVisual,
 } from '@/composables/mindMap/useMindMapV2Chrome'
-import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
+import {
+  useAuthStore,
+  useCanvasExportStore,
+  useDiagramStore,
+  useLLMResultsStore,
+  usePanelsStore,
+} from '@/stores'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 
 type ActiveEditorEntry = { user_id: number }
@@ -63,6 +69,7 @@ export function useCanvasPageEditorShortcuts(options: {
   const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave, isCollabGuest } =
     options
   const diagramStore = useDiagramStore()
+  const canvasExportStore = useCanvasExportStore()
   const authStore = useAuthStore()
   const llmResultsStore = useLLMResultsStore()
   const previewStore = useMindMapSubgraphPreviewStore()
@@ -101,6 +108,19 @@ export function useCanvasPageEditorShortcuts(options: {
       if (!sameSelection) diagramStore.selectNodes(ids)
     }
     eventBus.emit('diagram:delete_selected_requested', {})
+  }
+
+  function onExportCaptureKeydown(event: KeyboardEvent): void {
+    if (!canvasExportStore.exportSessionActive) return
+    const active = document.activeElement
+    const canvasField =
+      active instanceof Element &&
+      Boolean(
+        active.closest('.diagram-canvas, .vue-flow, .inline-edit-input, .inline-edit-wrapper')
+      )
+    if (isTypingInInput() && !canvasField) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
   }
 
   function onDeleteKeyCapture(event: KeyboardEvent): void {
@@ -347,10 +367,12 @@ export function useCanvasPageEditorShortcuts(options: {
   })
 
   onMounted(() => {
+    window.addEventListener('keydown', onExportCaptureKeydown, true)
     window.addEventListener('keydown', onDeleteKeyCapture, true)
   })
 
   onUnmounted(() => {
+    window.removeEventListener('keydown', onExportCaptureKeydown, true)
     window.removeEventListener('keydown', onDeleteKeyCapture, true)
   })
 

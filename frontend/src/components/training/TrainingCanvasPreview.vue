@@ -42,9 +42,8 @@ import { readFocusNodeId, readInteract } from '@/composables/training/trainingIn
 import { alignInteractWithDiagram } from '@/composables/training/trainingInteractAlign'
 import { applyTrainingTopicToDiagram } from '@/composables/training/trainingTopicApply'
 import { TRAINING_LOCK_SCOPE, registerTrainingUiLock } from '@/composables/training/trainingUiLock'
-import type { LocaleCode } from '@/i18n/locales'
 import type { DiagramSession } from '@/stores/diagram'
-import { getDefaultTemplate } from '@/stores/specLoader/defaultTemplates'
+import { defaultTemplateForUi } from '@/stores/specLoader/defaultTemplates'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 import { useUIStore } from '@/stores/ui'
 import type { MindMapCanvasMode } from '@/stores/ui'
@@ -98,7 +97,7 @@ const sessionKey = computed(
 function hydrateSpec(): Record<string, unknown> | null {
   const stored = readStepDiagramSpec(props.step)
   if (stored) return cloneShowcaseDiagramSpec(preferMindMapTreeIfRicher(stored))
-  return getDefaultTemplate(normalizedType.value, uiStore.language as LocaleCode)
+  return defaultTemplateForUi(normalizedType.value, uiStore)
 }
 
 const collabOpen = ref(false)

@@ -43,6 +43,7 @@ from services.learning_space.access import (
     get_class_for_staff,
     require_homework_publisher,
     require_pilot_teacher,
+    student_must_change_password,
 )
 from services.learning_space.attribution import (
     assignment_grader_labels,
@@ -83,7 +84,7 @@ from services.learning_space.synthetic_email import (
     is_learning_space_synthetic_email,
     student_synthetic_email,
 )
-from services.learning_space.students import import_students, preview_student_names
+from services.learning_space.students import import_students, preview_student_names, reset_student_password
 from tests.typing_helpers import as_type, as_user
 from utils.auth.admin_panel_permissions import can_manage_learning_space_classes
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
@@ -183,6 +184,70 @@ def test_staff_visible_password_only_while_change_required() -> None:
         )
         == "zs123"
     )
+
+
+class _FlagSession:
+    """Returns one must_change_password value from scalar()."""
+
+    def __init__(self, flag: bool | None) -> None:
+        self.flag = flag
+
+    async def scalar(self, _stmt: object) -> bool | None:
+        """Ignore the statement and return the prepared flag."""
+        return self.flag
+
+
+@pytest.mark.asyncio
+async def test_student_must_change_password_prefers_database() -> None:
+    """A teacher reset stored in the database wins over a stale cached user."""
+    user = SimpleNamespace(id=4, must_change_password=False)
+    changed = await student_must_change_password(cast(AsyncSession, _FlagSession(True)), as_user(user))
+    assert changed is True
+    assert user.must_change_password is True
+    kept = SimpleNamespace(id=4, must_change_password=True)
+    still = await student_must_change_password(cast(AsyncSession, _FlagSession(None)), as_user(kept))
+    assert still is True
+    assert kept.must_change_password is True
+
+
+class _ResetSession:
+    """Commits the in-memory student without a database."""
+
+    async def commit(self) -> None:
+        """No persistence."""
+
+    async def refresh(self, _user: object) -> None:
+        """The test object is already current."""
+
+
+@pytest.mark.asyncio
+async def test_reset_student_password_unlocks_and_forces_change(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reset restores the name password, forces a change, and clears a lockout."""
+    student = SimpleNamespace(
+        id=9,
+        name="张三",
+        password_hash="old",
+        must_change_password=False,
+        failed_login_attempts=5,
+        locked_until=datetime.now(UTC),
+        learning_space_login_password=None,
+    )
+    monkeypatch.setattr("services.learning_space.students.hash_password", lambda plain: f"hash:{plain}")
+    monkeypatch.setattr(
+        "services.learning_space.students.invalidate_user_cache_after_password_write",
+        AsyncMock(),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.students.revoke_refresh_tokens_and_sessions",
+        AsyncMock(),
+    )
+    plain = await reset_student_password(cast(AsyncSession, _ResetSession()), as_user(student))
+    assert plain == "zs123"
+    assert student.must_change_password is True
+    assert student.password_hash == "hash:zs123"
+    assert student.learning_space_login_password == "zs123"
+    assert student.failed_login_attempts == 0
+    assert student.locked_until is None
 
 
 def test_apply_learner_due_uses_personal_override() -> None:

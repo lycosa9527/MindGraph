@@ -13,8 +13,11 @@ import {
   openCanvasGuide,
   toggleCanvasGuide,
 } from '@/composables/canvas/canvasGuideExclusive'
-import { resolveDiagramShortcutGuideRows } from '@/config/mindMapShortcutGuide'
-import { useDiagramStore } from '@/stores'
+import {
+  resolveDiagramShortcutGuideRows,
+  shortcutGuideRowsForBilingual,
+} from '@/config/mindMapShortcutGuide'
+import { useDiagramStore, useUIStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 
 const props = withDefaults(
@@ -29,14 +32,17 @@ const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
 
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
+const uiStore = useUIStore()
 const lsCanvas = useLearningAssignmentCanvasStore()
 
 const expanded = computed(() => activeCanvasGuideId.value === 'shortcut')
 
 const rows = computed(() => {
   const resolved = resolveDiagramShortcutGuideRows(diagramStore.type, diagramStore.isLearningSheet)
-  if (lsCanvas.showLearningSheet) return resolved
-  return resolved.filter((row) => row.id !== 'learningSheetAnswers')
+  const bilingual = uiStore.bilingualUiEnabled || Boolean(diagramStore.data?.languages?.secondary)
+  const visible = shortcutGuideRowsForBilingual(resolved, bilingual)
+  if (lsCanvas.showLearningSheet) return visible
+  return visible.filter((row) => row.id !== 'learningSheetAnswers')
 })
 
 function persistExpanded(next: boolean): void {

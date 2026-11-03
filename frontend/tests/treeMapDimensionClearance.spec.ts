@@ -107,4 +107,22 @@ describe('tree map dimension label clearance', () => {
     const leaf = nodeByText(nodes, '下一行')
     expect(leaf.position?.y ?? 0).toBeGreaterThanOrEqual(bottom(category) - 0.5)
   })
+
+  it('keeps a painted category box that is narrower than the text estimate', () => {
+    const text = '突发公共事件街头募捐以及连续多日的社区值守和物资分发安排说明'
+    const loaded = loadTreeMapSpec({
+      topic: '活动',
+      dimension: '类型',
+      children: [{ text, children: [{ text: '下一行' }] }],
+    })
+    const category = loaded.nodes.find((node) => node.text === text)
+    expect(category?.id).toBeTruthy()
+    if (!category?.id) return
+    const laid = recalculateTreeMapLayout(loaded.nodes, {
+      [category.id]: { width: 160, height: 72 },
+    })
+    const painted = nodeByText(laid, text)
+    expect(painted.style?.width).toBe(160)
+    expect(painted.style?.height).toBe(72)
+  })
 })

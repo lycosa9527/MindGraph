@@ -126,6 +126,26 @@ describe('attachRemainingSecondary', () => {
     expect(nodes[3].textSecondary).toBe('Cat')
   })
 
+  it('keeps the copied bridge word off the relationship label', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'dimension-label', text: '首都', type: 'label', position: { x: 0, y: 0 } },
+      { id: 'left', text: '北京', type: 'branch', position: { x: 0, y: 0 } },
+      { id: 'right', text: '中国', type: 'branch', position: { x: 0, y: 0 } },
+    ]
+    attachRemainingSecondary('bridge_map', nodes, {
+      dimension: '首都',
+      relating_factor: 'as',
+      analogies: [{ left: '北京', right: '中国' }],
+      secondary: {
+        relating_factor: 'as',
+        analogies: [{ left: 'Beijing', right: 'China' }],
+      },
+    })
+    expect(nodes[0].textSecondary ?? '').toBe('')
+    expect(nodes[1].textSecondary).toBe('Beijing')
+    expect(nodes[2].textSecondary).toBe('China')
+  })
+
   it('stamps concept-map topic and concepts from the sibling mirror', () => {
     const nodes: DiagramNode[] = [
       { id: 'topic', text: '光合作用', type: 'topic', position: { x: 0, y: 0 } },

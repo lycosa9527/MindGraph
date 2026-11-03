@@ -3,7 +3,7 @@
  * InlineEditableText - Inline text editing component for diagram nodes
  *
  * Features:
- * - Double-click to enter edit mode
+ * - Double-click edits the main line. Ctrl or Command + double-click edits the second line.
  * - Text is highlighted/selected on edit start
  * - Enter to save / confirm edit (does not add nodes)
  * - Escape to cancel
@@ -34,6 +34,7 @@ import {
   trainingDragFilledIds,
   trainingDragMarks,
 } from '@/composables/training/trainingDragKnock'
+import { type NodeTextEditLine, nodeTextEditLine } from '@/diagramBilingual/nodeTextEditLine'
 import {
   isNodeDisplayPlaceholderLabel,
   shouldReplaceLabelWithMathInsert,
@@ -111,6 +112,11 @@ const props = withDefaults(
      * JS-based shouldPreferSingleLineNoWrap heuristic.
      */
     autoWrap?: boolean
+    /**
+     * Cap for the gloss under the primary line. Bridge sections pass the
+     * wrapped gloss width so a longer translation widens the section, then wraps.
+     */
+    secondaryMaxWidth?: string
   }>(),
   {
     isEditing: false,
@@ -132,6 +138,7 @@ const props = withDefaults(
     focusQuestionEditableSplit: null,
     renderMarkdown: false,
     autoWrap: false,
+    secondaryMaxWidth: undefined,
   }
 )
 
@@ -200,6 +207,8 @@ const rootRef = ref<HTMLElement | null>(null)
 const editText = ref(props.text)
 const editSecondary = ref('')
 const originalSecondary = ref('')
+/** Main line, or the smaller second line opened with Ctrl/Command+double-click. */
+const editLine = ref<NodeTextEditLine>('primary')
 const secondaryInputRef = ref<HTMLInputElement | null>(null)
 const originalText = ref(props.text)
 /** Concept map focus-question: editable segment only; full snapshot at edit start is originalComposed */
@@ -247,16 +256,22 @@ function syncFontMetrics(): void {
 // Defer so the menu closes and DOM settles before focus/select (ensures selection animation shows).
 const CONTEXT_MENU_EDIT_DELAY_MS = 50
 
+function activeEditControl(): HTMLInputElement | HTMLTextAreaElement | null {
+  if (editLine.value === 'secondary') return secondaryInputRef.value
+  return inputRef.value
+}
+
 function refocusInlineEditInput(source: string): boolean {
-  const focused = focusHtmlControl(inputRef.value)
+  const control = activeEditControl()
+  const focused = focusHtmlControl(control)
   if (focused) {
-    selectHtmlControl(inputRef.value)
+    selectHtmlControl(control)
   }
   markMindMapInlineEditStage('edit:requested-handled', {
     nodeId: props.nodeId,
     source,
     focused,
-    hasInput: !!inputRef.value,
+    hasInput: !!activeEditControl(),
     pendingId: mindMapPendingEditNodeId.value,
     editingId: mindMapEditingNodeId.value,
   })
@@ -316,7 +331,6 @@ watch(
     if (localIsEditing.value) return
     editText.value = props.text
     originalText.value = props.text
-    editSecondary.value = bilingualSecondary.value
     if (props.focusQuestionEditableSplit) {
       editBody.value = props.focusQuestionEditableSplit.body
     }
@@ -638,28 +652,19 @@ const wrapperStyle = computed(() => {
   return baseStyle
 })
 
-function learningSheetBlankSeed(): { text: string; secondary: string } | null {
+function learningSheetBlankSeed(): string | null {
   if (!diagramStore.isLearningSheet) return null
   if (!diagramStore.isNodeBlankedForLearningSheet(props.nodeId)) return null
   const node = diagramStore.data?.nodes?.find((item) => item.id === props.nodeId)
-  const nodeData = node?.data as
-    | {
-        hiddenAnswer?: string
-        hiddenAnswerSecondary?: string
-      }
-    | undefined
+  const nodeData = node?.data as { hiddenAnswer?: string } | undefined
   const text = nodeData?.hiddenAnswer?.trim() ?? ''
-  if (!text) return null
-  return {
-    text,
-    secondary: nodeData?.hiddenAnswerSecondary?.trim() ?? '',
-  }
+  return text || null
 }
 
 /**
  * Start editing mode
  */
-function startEditing(options?: { replaceContent?: boolean }): void {
+function startEditing(options?: { replaceContent?: boolean; line?: NodeTextEditLine }): void {
   cancelScheduledLearningSheetPick()
   if (localIsEditing.value || props.readonly) {
     markMindMapInlineEditStage('edit:start-blocked', {
@@ -687,6 +692,11 @@ function startEditing(options?: { replaceContent?: boolean }): void {
     editingId: mindMapEditingNodeId.value,
     propsIsEditing: props.isEditing === true,
   })
+
+  // A blanked worksheet node edits the hidden answer on the main line.
+  const secondaryRequested =
+    options?.line === 'secondary' && bilingualEdit.value && !learningSheetBlanked.value
+  editLine.value = secondaryRequested ? 'secondary' : 'primary'
 
   // Measure width before switching to edit mode
   if (displayRef.value) {
@@ -716,24 +726,23 @@ function startEditing(options?: { replaceContent?: boolean }): void {
       (props.focusQuestionEditableSplit ? editBody.value : editText.value) || 'M'
   }
 
-  if (props.focusQuestionEditableSplit) {
+  if (editLine.value === 'secondary') {
+    originalText.value = props.text
+    editText.value = props.text
+    originalSecondary.value = bilingualSecondary.value
+    editSecondary.value = bilingualSecondary.value
+  } else if (props.focusQuestionEditableSplit) {
     originalComposed.value = props.text
     editBody.value = options?.replaceContent ? '' : props.focusQuestionEditableSplit.body
   } else {
     originalText.value = editText.value
-    originalSecondary.value = bilingualSecondary.value
-    editSecondary.value = options?.replaceContent ? '' : bilingualSecondary.value
     if (options?.replaceContent) {
       editText.value = ''
     } else {
       const seed = learningSheetBlankSeed()
       if (seed) {
-        editText.value = seed.text
-        originalText.value = seed.text
-        if (bilingualEdit.value) {
-          editSecondary.value = seed.secondary
-          originalSecondary.value = seed.secondary
-        }
+        editText.value = seed
+        originalText.value = seed
       }
     }
   }
@@ -761,15 +770,16 @@ function startEditing(options?: { replaceContent?: boolean }): void {
   // Focus and select text after DOM update. Once focused, drop open-phase
   // pending so tryFocus stops; remount/focus-theft recovery uses the session.
   nextTick(() => {
-    const focused = focusHtmlControl(inputRef.value)
+    const control = activeEditControl()
+    const focused = focusHtmlControl(control)
     if (focused) {
-      selectHtmlControl(inputRef.value)
+      selectHtmlControl(control)
     }
     markMindMapInlineEditStage('edit:opening', {
       nodeId: props.nodeId,
       source: 'focus-tick',
       focused,
-      hasInput: !!inputRef.value,
+      hasInput: !!activeEditControl(),
       editingId: mindMapEditingNodeId.value,
     })
     if (focused && mindMapPendingEditNodeId.value === props.nodeId) {
@@ -830,6 +840,29 @@ function isMindMapStickyEditOwner(): boolean {
  */
 function saveEdit(source = 'saveEdit'): void {
   if (!localIsEditing.value) return
+
+  if (editLine.value === 'secondary') {
+    const nextSecondary = editSecondary.value.trim()
+    const secondaryChanged = nextSecondary !== originalSecondary.value.trim()
+    releaseMindMapPendingEditIfMine()
+    if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
+      setMindMapPostEditSiblingAnchor(props.nodeId)
+      const selectedId = diagramStore.selectedNodes[0]
+      if (!selectedId || selectedId === props.nodeId || selectedId === 'topic') {
+        diagramStore.selectNodes(props.nodeId)
+      }
+    }
+    localIsEditing.value = false
+    clearEditLock()
+    eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+    markMindMapInlineEditStage('edit:closed', { nodeId: props.nodeId, source })
+    if (secondaryChanged) {
+      emit('save', originalText.value, nextSecondary)
+    } else {
+      emit('close')
+    }
+    return
+  }
 
   if (props.focusQuestionEditableSplit) {
     const { prefix, defaultSuffix } = props.focusQuestionEditableSplit
@@ -899,12 +932,9 @@ function saveEdit(source = 'saveEdit'): void {
     source,
   })
 
-  // Only emit save if text actually changed
-  const nextSecondary = bilingualEdit.value ? editSecondary.value.trim() : undefined
-  const secondaryChanged =
-    nextSecondary !== undefined && nextSecondary !== originalSecondary.value.trim()
-  if (finalText !== originalText.value || secondaryChanged) {
-    emit('save', finalText, nextSecondary)
+  // The main line does not write the second line. Ctrl+double-click owns that field.
+  if (finalText !== originalText.value) {
+    emit('save', finalText)
   } else {
     emit('close')
   }
@@ -972,9 +1002,6 @@ function handleKeydown(event: KeyboardEvent): void {
     event.stopPropagation()
     insertLineBreakAtCaret()
   } else if (event.key === 'Tab') {
-    if (bilingualEdit.value && event.target === inputRef.value && secondaryInputRef.value) {
-      return
-    }
     event.preventDefault()
     event.stopPropagation()
     if (tabAddsNestedNode(diagramStore.type)) {
@@ -1028,12 +1055,12 @@ function handleBlur(): void {
     if (secondaryInputRef.value && document.activeElement === secondaryInputRef.value) return
     // Explain stays disabled until confirm. Refocus instead of saving on that click.
     if (isNodeExplainTriggerTarget(document.activeElement)) {
-      focusHtmlControl(inputRef.value)
+      focusHtmlControl(activeEditControl())
       return
     }
     if (isVirtualKeyboardChromeElement(document.activeElement)) return
     if (isVirtualKeyboardPanelOpen()) {
-      focusHtmlControl(inputRef.value)
+      focusHtmlControl(activeEditControl())
       return
     }
     // Post-add / remount: layout write-back steals focus — refocus, don't commit.
@@ -1046,8 +1073,9 @@ function handleBlur(): void {
           ageMs,
         })
       }
-      if (focusHtmlControl(inputRef.value)) {
-        selectHtmlControl(inputRef.value)
+      const stickyControl = activeEditControl()
+      if (focusHtmlControl(stickyControl)) {
+        selectHtmlControl(stickyControl)
       }
       return
     }
@@ -1062,8 +1090,9 @@ function handleBlur(): void {
         source: 'open-grace',
         ageMs: Date.now() - mindMapEditOpenedAtMs,
       })
-      if (focusHtmlControl(inputRef.value)) {
-        selectHtmlControl(inputRef.value)
+      const graceControl = activeEditControl()
+      if (focusHtmlControl(graceControl)) {
+        selectHtmlControl(graceControl)
       }
       return
     }
@@ -1175,7 +1204,7 @@ function handleDoubleClick(event: MouseEvent): void {
   if (props.readonly) return
   event.preventDefault()
   event.stopPropagation()
-  startEditing()
+  startEditing({ line: nodeTextEditLine(event, bilingualEdit.value) })
 }
 
 let lastTapTime = 0
@@ -1406,7 +1435,8 @@ onUnmounted(() => {
       {
         'inline-editable-text--full-width': fullWidth,
         'inline-editable-text--image': hasNodeImage,
-        'inline-editable-text--bilingual': bilingualSecondary || (localIsEditing && bilingualEdit),
+        'inline-editable-text--bilingual':
+          bilingualSecondary || (localIsEditing && editLine === 'secondary'),
         'learning-sheet-blanked': learningSheetBlanked,
         'training-drag-blanked': trainingDragBlanked,
       },
@@ -1463,7 +1493,13 @@ onUnmounted(() => {
       :style="wrapperStyle"
     >
       <div
-        v-if="focusQuestionEditableSplit"
+        v-if="editLine === 'secondary'"
+        class="inline-edit-container"
+      >
+        <span class="inline-edit-plain">{{ text }}</span>
+      </div>
+      <div
+        v-else-if="focusQuestionEditableSplit"
         class="inline-edit-container inline-edit-container--focus-question"
       >
         <span
@@ -1548,17 +1584,25 @@ onUnmounted(() => {
         </template>
       </div>
       <input
-        v-if="bilingualEdit"
+        v-if="editLine === 'secondary'"
         ref="secondaryInputRef"
         v-model="editSecondary"
         dir="auto"
         type="text"
         class="bilingual-node-secondary-input"
+        :style="secondaryMaxWidth ? { maxWidth: secondaryMaxWidth } : undefined"
         @keydown.escape.stop.prevent="cancelEdit"
         @blur="handleBlur"
         @mousedown.stop
         @click.stop
       />
+      <div
+        v-else-if="bilingualSecondary"
+        class="bilingual-node-secondary"
+        :style="secondaryMaxWidth ? { maxWidth: secondaryMaxWidth } : undefined"
+      >
+        {{ bilingualSecondary }}
+      </div>
     </div>
 
     <!-- Display mode: use div so markdown `<p>` + KaTeX stay inside `.diagram-node-md` (invalid inside span). -->
@@ -1624,6 +1668,7 @@ onUnmounted(() => {
       <div
         v-if="bilingualSecondary"
         class="bilingual-node-secondary"
+        :style="secondaryMaxWidth ? { maxWidth: secondaryMaxWidth } : undefined"
       >
         {{ bilingualSecondary }}
       </div>
@@ -1637,6 +1682,25 @@ onUnmounted(() => {
   align-items: center;
 }
 
+.inline-editable-text--bilingual .inline-edit-display,
+.inline-editable-text--bilingual .inline-edit-wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+}
+
+.inline-editable-text--align-right.inline-editable-text--bilingual .inline-edit-display,
+.inline-editable-text--align-right.inline-editable-text--bilingual .inline-edit-wrapper {
+  align-items: flex-end;
+}
+
+.inline-editable-text--align-left.inline-editable-text--bilingual .inline-edit-display,
+.inline-editable-text--align-left.inline-editable-text--bilingual .inline-edit-wrapper {
+  align-items: flex-start;
+}
+
 .bilingual-node-secondary,
 .bilingual-node-secondary-input {
   font-size: 0.75em;
@@ -1645,6 +1709,16 @@ onUnmounted(() => {
   opacity: 0.7;
   max-width: 100%;
   text-align: center;
+}
+
+.inline-editable-text--align-right .bilingual-node-secondary,
+.inline-editable-text--align-right .bilingual-node-secondary-input {
+  text-align: right;
+}
+
+.inline-editable-text--align-left .bilingual-node-secondary,
+.inline-editable-text--align-left .bilingual-node-secondary-input {
+  text-align: left;
 }
 
 .bilingual-node-secondary-input {

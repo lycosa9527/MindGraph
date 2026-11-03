@@ -183,6 +183,8 @@ async def reset_student_password(db: AsyncSession, student: User) -> str:
     plain = initial_password_from_name(name)
     student.password_hash = hash_password(plain)
     student.must_change_password = True
+    student.failed_login_attempts = 0
+    student.locked_until = None
     assign_learning_space_login_password(student, plain)
     await db.commit()
     await db.refresh(student)

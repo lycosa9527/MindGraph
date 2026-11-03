@@ -15,7 +15,7 @@ export type DiagramFitChromeInsetsInput = {
   presentationRailVisible: boolean
 }
 
-export function formatFitPaddingPx(value: number): string {
+export function formatFitPaddingPx(value: number): `${number}px` {
   return `${value}px`
 }
 

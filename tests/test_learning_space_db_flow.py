@@ -15,6 +15,7 @@ from fastapi import HTTPException
 from sqlalchemy import bindparam, select, text
 from sqlalchemy.exc import IntegrityError
 
+import config.database as _database_bootstrap
 from models.domain.auth import User
 from models.domain.learning_space import (
     ASSIGNMENT_STATUS_ACTIVE,
@@ -37,6 +38,7 @@ from services.learning_space.access import (
     require_class_learner,
     require_pilot_teacher,
     resolve_assignment_viewer,
+    student_must_change_password,
 )
 from services.learning_space.assignments import (
     get_or_create_submission,
@@ -50,11 +52,15 @@ from services.learning_space.memberships import (
     import_existing_accounts,
     replace_class_assistants,
 )
-from services.learning_space.students import import_students
+from services.learning_space.passwords import assign_learning_space_login_password
+from services.learning_space.students import import_students, reset_student_password
 from tests.smoke.mindmap_smoke_helpers import mindmap_smoke_helpers_load_dotenv
-from utils.auth.password import hash_password
-from utils.auth.role_constants import ROLE_TEACHER
+from tests.typing_helpers import as_user
+from utils.auth.password import hash_password, verify_password
+from utils.auth.role_constants import ROLE_STUDENT, ROLE_TEACHER
 from utils.db.rls_context import RlsContext, rls_async_session
+
+assert _database_bootstrap.AsyncSessionLocal is not None
 
 mindmap_smoke_helpers_load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -647,3 +653,111 @@ async def _test_imported_account_cannot_be_class_teacher(world: SimpleNamespace)
             )
         ).scalar_one()
         assert role == MEMBERSHIP_ROLE_ASSISTANT
+
+
+def _stale_student(student_id: int, class_id: int, organization_id: int) -> User:
+    """Signed-in copy that still says the password was already changed."""
+    return as_user(
+        SimpleNamespace(
+            id=student_id,
+            role=ROLE_STUDENT,
+            learning_class_id=class_id,
+            organization_id=organization_id,
+            name="赵六测",
+            must_change_password=False,
+        )
+    )
+
+
+async def test_student_password_gate_then_homework(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stale session cannot open homework until the database flag is cleared."""
+    async with _learning_space_world(monkeypatch) as world:
+        await _run_student_password_gate_then_homework(world)
+
+
+async def _run_student_password_gate_then_homework(world: SimpleNamespace) -> None:
+    async with rls_async_session(_sys()) as session:
+        teacher = await session.get(User, world.teacher_id)
+        assert teacher is not None
+        cls = await create_class_with_unique_code(
+            session,
+            name=f"{_MARK} password",
+            teacher_user_id=int(teacher.id),
+            organization_id=world.org_a,
+            class_status=CLASS_STATUS_ACTIVE,
+            max_students=20,
+        )
+        imported = await import_students(session, cls, ["赵六测"])
+        assert len(imported.created) == 1
+        student_id = int(imported.created[0]["id"])
+        class_id = int(cls.id)
+
+    stale = _stale_student(student_id, class_id, world.org_a)
+    async with rls_async_session(_auth(student_id, world.org_a)) as session:
+        assert await student_must_change_password(session, stale) is True
+        with pytest.raises(HTTPException) as locked:
+            await require_class_learner(session, stale, class_id)
+        assert locked.value.status_code == 403
+
+    new_password = "NewPass9"
+    async with rls_async_session(_sys()) as session:
+        student = await session.get(User, student_id)
+        assert student is not None
+        assert student.must_change_password is True
+        assert student.learning_space_login_password
+        student.password_hash = hash_password(new_password)
+        student.must_change_password = False
+        assign_learning_space_login_password(student, "")
+        student.failed_login_attempts = 0
+        student.locked_until = None
+        await session.commit()
+        await session.refresh(student)
+        assert verify_password(new_password, student.password_hash)
+        assert student.learning_space_login_password is None
+
+    async with rls_async_session(_auth(world.teacher_id, world.org_a)) as session:
+        assignment = LearningAssignment(
+            class_id=class_id,
+            title=f"{_MARK} password homework",
+            instructions="",
+            template_diagram_id="template-zzls",
+            ai_permissions={"template_role": "none", "diagram_type": "mind_map"},
+            instruction_images=[],
+            organization_id=world.org_a,
+            created_by=world.teacher_id,
+            status=ASSIGNMENT_STATUS_ACTIVE,
+        )
+        session.add(assignment)
+        await session.commit()
+        await session.refresh(assignment)
+        assignment_id = int(assignment.id)
+
+    async with rls_async_session(_auth(student_id, world.org_a)) as session:
+        student = await session.get(User, student_id)
+        assignment = await session.get(LearningAssignment, assignment_id)
+        assert student is not None and assignment is not None
+        await require_class_learner(session, student, class_id)
+        submission = await get_or_create_submission(
+            session,
+            assignment,
+            student,
+            organization_id=world.org_a,
+        )
+        submitted = await submit_assignment(session, assignment, student)
+        assert submission.diagram_id
+        assert submitted.status == SUBMISSION_STATUS_SUBMITTED
+
+    async with rls_async_session(_sys()) as session:
+        student = await session.get(User, student_id)
+        assert student is not None
+        plain = await reset_student_password(session, student)
+        assert plain
+        assert student.must_change_password is True
+        assert student.learning_space_login_password == plain
+
+    stale_after_reset = _stale_student(student_id, class_id, world.org_a)
+    async with rls_async_session(_auth(student_id, world.org_a)) as session:
+        assert await student_must_change_password(session, stale_after_reset) is True
+        with pytest.raises(HTTPException) as locked_again:
+            await require_class_learner(session, stale_after_reset, class_id)
+        assert locked_again.value.status_code == 403

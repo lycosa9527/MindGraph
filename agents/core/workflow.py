@@ -25,6 +25,7 @@ from agents.core.generate_events import (
     phase_emitter_from_event_emitter,
 )
 from agents.core.agent_result import artifact_metadata, artifact_to_spec_or_error, normalize_agent_generation_result
+from agents.diagram_bilingual.bridge_mirror import bridge_has_inline_gloss
 from agents.diagram_bilingual.split import peel_bilingual_spec, tighten_secondary
 from agents.core.agent_routing import AgentGenerateRoute, resolve_agent_generate_route
 from agents.core.autocomplete_topic_lock import apply_locked_topic_to_spec, resolve_locked_topic
@@ -256,7 +257,12 @@ async def _generate_spec_with_agent(
         spec = artifact.get("spec")
         if secondary_language and isinstance(spec, dict):
             tighten_secondary(spec)
-            peel_bilingual_spec(spec, language, secondary_language)
+            kept = peel_bilingual_spec(spec, language, secondary_language)
+            if not kept and bridge_has_inline_gloss(spec):
+                spec["languages"] = {
+                    "primary": language,
+                    "secondary": secondary_language,
+                }
         logger.debug("Agent artifact keys: %s", list(artifact.keys()))
         return artifact
 

@@ -10,5 +10,8 @@ describe('renderPdfPreview', () => {
     const src = readFileSync(srcPath, 'utf8')
     expect(src).not.toMatch(/import\s+\{[^}]*\}\s+from\s+['"]pdfjs-dist['"]/)
     expect(src).toMatch(/import\(\s*['"]pdfjs-dist['"]\s*\)/)
+    expect(src).toMatch(/pdf\.worker\.min\.mjs/)
+    expect(src).not.toMatch(/pdf\.worker\.min\.js/)
+    expect(src).not.toMatch(/\/pdfjs\//)
   })
 })

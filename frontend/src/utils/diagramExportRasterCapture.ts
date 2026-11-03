@@ -1,6 +1,6 @@
 import { cropExportedDiagramCanvas } from '@/utils/diagramExportContentBounds'
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
-import { scaleExportSvgDataUrl } from '@/utils/diagramExportRasterScale'
+import { diagramRasterExportBudget, scaleExportSvgDataUrl } from '@/utils/diagramExportRasterScale'
 import type { HtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 import { loadImageElement } from '@/utils/diagramPdfExport'
 
@@ -16,7 +16,7 @@ export async function rasterizeExportSvgDataUrl(
   requestedPixelRatio: number,
   backgroundColor?: string
 ): Promise<HTMLCanvasElement> {
-  const scaled = scaleExportSvgDataUrl(svgDataUrl, requestedPixelRatio)
+  const scaled = scaleExportSvgDataUrl(svgDataUrl, requestedPixelRatio, diagramRasterExportBudget())
   const image = await loadImageElement(scaled.dataUrl)
   const canvas = document.createElement('canvas')
   canvas.width = scaled.width

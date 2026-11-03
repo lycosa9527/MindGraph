@@ -1698,6 +1698,11 @@
   font-weight: 650;
 }
 
+.ls-roster-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .ls-roster-code {
   display: inline-block;
   padding: 0.15rem 0.45rem;

@@ -31,6 +31,7 @@ import {
 } from '@/config/canvasExportMenu'
 import { useDiagramStore } from '@/stores'
 import { useCanvasExportStore } from '@/stores/canvasExport'
+import '@/styles/canvasExportCaptureRing.css'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
 
 const props = defineProps<{
@@ -43,7 +44,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const canvasExportStore = useCanvasExportStore()
-const { exportOptions, mergedExportOptions } = storeToRefs(canvasExportStore)
+const { exportOptions, mergedExportOptions, exportSessionActive } = storeToRefs(canvasExportStore)
 
 const formatItems = computed(() =>
   props.mindMapExport ? CANVAS_MINDMAP_EXPORT_MENU_ITEMS : CANVAS_STANDARD_EXPORT_MENU_ITEMS
@@ -84,8 +85,11 @@ function handleMakeLearningSheet(): void {
 <template>
   <button
     type="button"
-    class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
+    class="bottom-btn canvas-export-capture mobile-export-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
+    :class="{ 'is-capturing': exportSessionActive }"
+    :aria-busy="exportSessionActive"
     :aria-label="t('canvas.toolbar.export')"
+    :disabled="exportSessionActive"
     @click="open = true"
   >
     <Download
@@ -210,5 +214,13 @@ function handleMakeLearningSheet(): void {
   margin-top: 4px;
   border-top: 1px solid #e7e5e4;
   border-radius: 0 0 12px 12px;
+}
+
+.mobile-export-trigger {
+  --canvas-export-ring-radius: 10px;
+}
+
+.mobile-export-trigger:disabled {
+  opacity: 1;
 }
 </style>

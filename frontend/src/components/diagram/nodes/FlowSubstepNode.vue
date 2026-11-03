@@ -2,7 +2,7 @@
 /**
  * FlowSubstepNode - Substep node for flow maps
  * Represents detailed sub-steps attached to main flow steps
- * Flow map: pill shape, mindmapColors (same as parent step), fixed size
+ * Flow map: pill shape, mindmapColors (same as parent step)
  * Supports inline text editing on double-click
  */
 import { computed, inject, ref } from 'vue'
@@ -14,6 +14,7 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
+import { FLOW_SUBSTEP_NODE_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
@@ -23,6 +24,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import { flowPillContentMaxPx } from '@/utils/flowPillBox'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
@@ -121,7 +123,7 @@ const nodeStyle = computed(() => {
       minWidth: '120px',
       minHeight:
         props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
-      maxWidth: '230px',
+      maxWidth: `${FLOW_SUBSTEP_NODE_MAX_WIDTH}px`,
     }
   }
   return shapedStyle
@@ -144,6 +146,7 @@ const substepMaxWidth = computed(() => {
   return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, SUBSTEP_MAX_TEXT_WIDTH, {
     fontWeight,
     fontFamily: fontFamily || undefined,
+    columnCeiling: flowPillContentMaxPx(FLOW_SUBSTEP_NODE_MAX_WIDTH),
   })}px`
 })
 
@@ -210,8 +213,7 @@ function handleBranchMovePointerUp(): void {
 <template>
   <div
     ref="flowSubstepNodeRef"
-    class="flow-substep-node relative flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
-    :class="{ 'pill-shape': isFlowMap }"
+    class="flow-substep-node relative flex items-center justify-center border-solid cursor-grab select-none"
     :style="[fitBox(nodeStyle), blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
@@ -296,13 +298,6 @@ function handleBranchMovePointerUp(): void {
   transition:
     box-shadow 0.2s ease,
     transform 0.15s ease;
-}
-
-.flow-substep-node.pill-shape {
-  width: 120px;
-  min-height: 48px;
-  padding-left: 20px;
-  padding-right: 20px;
 }
 
 .flow-substep-node:hover {

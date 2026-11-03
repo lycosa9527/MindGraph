@@ -19,10 +19,12 @@ import { diagramPresentationReadOnlyRef } from '@/composables/presentation/prese
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { secondaryFontSize } from '@/diagramBilingual/measure'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
+import { BRIDGE_PAIR_TEXT_CAP } from '@/utils/bridgeMapPairBox'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
@@ -220,6 +222,32 @@ const nodeStyle = computed((): CSSProperties => {
   return result
 })
 
+const isBridgePair = computed(
+  () => isBridgeMap.value && isBridgeMapPairNode({ id: props.id, data: props.data })
+)
+
+const bridgeGloss = computed(() => {
+  const node = diagramStore.data?.nodes?.find((item) => item.id === props.id)
+  return (node?.textSecondary ?? '').trim()
+})
+
+const bridgeFontPx = computed(
+  () => parseFloat(String(nodeStyle.value.fontSize ?? '')) || MIND_MAP_GEOMETRY.branchFontSize
+)
+
+function bridgePaintCapPx(): number {
+  const viewport = typeof window === 'undefined' ? BRIDGE_PAIR_TEXT_CAP : window.innerWidth * 0.88
+  return Math.min(BRIDGE_PAIR_TEXT_CAP, viewport)
+}
+
+function bridgeLineMaxWidth(text: string, fontSize: number): string {
+  const px = resolveThinkingMapDisplayMaxWidthPx(text, fontSize, bridgePaintCapPx(), {
+    fontWeight: String(nodeStyle.value.fontWeight || 'normal'),
+    fontFamily: String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK),
+  })
+  return `${px}px`
+}
+
 const textMaxWidth = computed(() => {
   const label = labelWithNodeIcon(
     diagramStore.data,
@@ -227,8 +255,8 @@ const textMaxWidth = computed(() => {
     ((props.data.label as string) || '').trim(),
     diagramStore.data?.connections
   )
-  if (isBridgeMap.value) {
-    return 'min(420px, 88vw)'
+  if (isBridgePair.value) {
+    return bridgeLineMaxWidth(label, bridgeFontPx.value)
   }
 
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
@@ -244,6 +272,12 @@ const textMaxWidth = computed(() => {
     fontWeight,
     fontFamily,
   })}px`
+})
+
+const bridgeGlossMaxWidth = computed(() => {
+  const gloss = bridgeGloss.value
+  if (!isBridgePair.value || !gloss) return undefined
+  return bridgeLineMaxWidth(gloss, secondaryFontSize(bridgeFontPx.value))
 })
 
 const useAutoWrap = computed(() => !isBridgeMap.value)
@@ -346,6 +380,7 @@ function handleBranchNodeClick(): void {
     class="branch-node flex select-none border-solid relative items-center justify-center px-4 py-2"
     :class="{
       'tree-map-node': isTreeMap,
+      'bridge-pair-node': isBridgePair,
       'border-none': isBridgeMap && !bridgeHasBody,
       'cursor-grab': true,
     }"
@@ -366,6 +401,7 @@ function handleBranchNodeClick(): void {
       :is-editing="isEditing"
       :readonly="isTextReadonly"
       :max-width="textMaxWidth"
+      :secondary-max-width="bridgeGlossMaxWidth"
       :text-align="resolvedStyle.textAlign || 'center'"
       :text-decoration="resolvedStyle.textDecoration || 'none'"
       :auto-wrap="useAutoWrap"
@@ -419,6 +455,10 @@ function handleBranchNodeClick(): void {
 
 .branch-node.tree-map-node {
   min-width: 80px;
+}
+
+.branch-node.bridge-pair-node {
+  min-width: 0;
 }
 
 .branch-node.border-none {

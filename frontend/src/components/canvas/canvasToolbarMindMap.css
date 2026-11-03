@@ -425,6 +425,15 @@
   border: none;
 }
 
+.mm-btn--export.is-capturing {
+  z-index: 1;
+  background: #f5f5f4;
+}
+
+:global(.dark) .mm-btn--export.is-capturing {
+  background: #292524;
+}
+
 .mm-btn__label--truncate {
   overflow: hidden;
   text-overflow: ellipsis;

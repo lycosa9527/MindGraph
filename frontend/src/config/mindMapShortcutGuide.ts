@@ -33,6 +33,13 @@ export const MIND_MAP_SHORTCUT_GUIDE_ROWS: MindMapShortcutGuideRow[] = [
   { id: 'enter', labelKey: 'canvas.shortcutGuide.addSibling', kind: 'keys', keys: ['Enter'] },
   { id: 'edit', labelKey: 'canvas.shortcutGuide.editText', kind: 'edit' },
   {
+    id: 'editSecondary',
+    labelKey: 'canvas.shortcutGuide.editSecondary',
+    kind: 'hint',
+    hintKey: 'canvas.shortcutGuide.editSecondaryHint',
+    icon: 'mouse',
+  },
+  {
     id: 'delete',
     labelKey: 'canvas.shortcutGuide.deleteNode',
     kind: 'keys',
@@ -94,6 +101,16 @@ export const MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS = [
 ] as const
 
 const LEARNING_SHEET_SHORTCUT_ROW_ID = 'learningSheetAnswers'
+const EDIT_SECONDARY_SHORTCUT_ROW_ID = 'editSecondary'
+
+/** The second-line gesture is only listed while a diagram can show that line. */
+export function shortcutGuideRowsForBilingual(
+  rows: MindMapShortcutGuideRow[],
+  bilingual: boolean
+): MindMapShortcutGuideRow[] {
+  if (bilingual) return rows
+  return rows.filter((row) => row.id !== EDIT_SECONDARY_SHORTCUT_ROW_ID)
+}
 
 const MIND_MAP_ONLY_SHORTCUT_ROW_IDS = new Set(['tab', 'enter', 'arrows'])
 

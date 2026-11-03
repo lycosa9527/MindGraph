@@ -20,6 +20,10 @@ export interface UseDiagramCanvasVueFlowUiOptions {
   presentationTool: Ref<PresentationToolId>
   presentationHighlighterColor: Ref<string>
   presentationPenColor: Ref<string>
+  /** Snapshot in progress: pan, zoom, drag, and selection stay off. */
+  interactionFrozen?: Ref<boolean>
+  /** Grab-pan: the wheel pans instead of zooming. */
+  handToolPan?: Ref<boolean>
 }
 
 export interface UseDiagramCanvasVueFlowUiResult {
@@ -36,6 +40,9 @@ export interface UseDiagramCanvasVueFlowUiResult {
    * Written onto the Vue Flow store. The 1.48 prop only accepts boolean | null.
    */
   selectionKeyCode: ComputedRef<CanvasGroupSelectKey | null>
+  panOnScroll: ComputedRef<boolean>
+  zoomOnScroll: ComputedRef<boolean>
+  zoomOnPinch: ComputedRef<boolean>
   vueFlowBackgroundClasses: ComputedRef<string[]>
 }
 
@@ -59,7 +66,13 @@ export function useDiagramCanvasVueFlowUi(
     presentationTool,
     presentationHighlighterColor,
     presentationPenColor,
+    interactionFrozen,
+    handToolPan,
   } = options
+
+  function interactionHeld(): boolean {
+    return Boolean(interactionFrozen?.value)
+  }
 
   const presentationStrokeToolActive = computed(
     () =>
@@ -95,6 +108,7 @@ export function useDiagramCanvasVueFlowUi(
   )
 
   const effectivePanOnDrag = computed((): number[] | boolean => {
+    if (interactionHeld()) return false
     if (browseMode.value) {
       return [0, 1, 2]
     }
@@ -122,6 +136,7 @@ export function useDiagramCanvasVueFlowUi(
 
   const nodesDraggable = computed(
     () =>
+      !interactionHeld() &&
       !browseMode.value &&
       !presentationDiagramEditLocked.value &&
       !handToolActive.value &&
@@ -133,6 +148,7 @@ export function useDiagramCanvasVueFlowUi(
   )
 
   const elementsSelectable = computed(() => {
+    if (interactionHeld()) return false
     if (isMindgraphHeadlessExportSession()) return false
     if (learningSheetPickActive.value) return false
     if (browseMode.value) return true
@@ -144,6 +160,7 @@ export function useDiagramCanvasVueFlowUi(
   })
 
   const selectNodesOnDrag = computed(() => {
+    if (interactionHeld()) return false
     if (browseMode.value) return false
     if (learningSheetPickActive.value) return false
     // A finger drag must not also select the node under it.
@@ -161,6 +178,7 @@ export function useDiagramCanvasVueFlowUi(
    * The phone page pans on the primary button, so box select stays off there.
    */
   const selectionKeyCode = computed<CanvasGroupSelectKey | null>(() => {
+    if (interactionHeld()) return null
     if (browseMode.value) return null
     if (learningSheetPickActive.value) return null
     if (mobilePageTouchGesturesActive.value) return null
@@ -170,6 +188,10 @@ export function useDiagramCanvasVueFlowUi(
     if (handToolActive.value || presentationHandPanMode.value) return null
     return CANVAS_GROUP_SELECT_KEY
   })
+
+  const panOnScroll = computed(() => !interactionHeld() && Boolean(handToolPan?.value))
+  const zoomOnScroll = computed(() => !interactionHeld() && !handToolPan?.value)
+  const zoomOnPinch = computed(() => !interactionHeld())
 
   const vueFlowBackgroundClasses = computed(() => {
     const classes = ['bg-gray-50', 'dark:bg-gray-900']
@@ -193,6 +215,9 @@ export function useDiagramCanvasVueFlowUi(
     elementsSelectable,
     selectNodesOnDrag,
     selectionKeyCode,
+    panOnScroll,
+    zoomOnScroll,
+    zoomOnPinch,
     vueFlowBackgroundClasses,
   }
 }

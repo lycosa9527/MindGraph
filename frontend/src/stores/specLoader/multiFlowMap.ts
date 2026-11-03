@@ -15,7 +15,7 @@ import {
   MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
   MULTI_FLOW_TOPIC_PADDING_X,
 } from '@/composables/diagrams/layoutConfig'
-import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
+import { heightWithSecondaryLine, secondaryFontSize } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { textWithIconAdornment } from '@/utils/mindMapAdornments'
@@ -86,16 +86,27 @@ function computeFlowNodeWidth(node: DiagramNode, adornments: MindMapAdornmentsBy
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
+  const measureOpts = {
+    fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
+    fontFamily,
+  } as const
   const innerForLayout = measureThinkingMapLabelBlockPx(
     textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id]),
     fs,
     MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
-    {
-      fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
-      fontFamily,
-    }
+    measureOpts
   ).width
-  return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(innerForLayout + FLOW_NODE_PADDING_X))
+  const gloss = learningSheetLayoutSecondary(node).trim()
+  const glossWidth = gloss
+    ? measureThinkingMapLabelBlockPx(
+        gloss,
+        secondaryFontSize(fs),
+        MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
+        measureOpts
+      ).width
+    : 0
+  const inner = Math.max(innerForLayout, glossWidth)
+  return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(inner + FLOW_NODE_PADDING_X))
 }
 
 /**
@@ -133,6 +144,7 @@ export function recalculateMultiFlowMapLayout(
   const event = eventNode
     ? textWithIconAdornment(learningSheetLayoutText(eventNode), adornments[eventNode.id])
     : ''
+  const eventSecondary = eventNode ? learningSheetLayoutSecondary(eventNode).trim() : ''
 
   // Layout constants
   const centerX = DEFAULT_CENTER_X
@@ -161,8 +173,26 @@ export function recalculateMultiFlowMapLayout(
     nodeDimensions,
     imageNodeIds
   )
+  const topicFontSize =
+    typeof eventNode?.style?.fontSize === 'number'
+      ? eventNode.style.fontSize
+      : MULTI_FLOW_TOPIC_FONT_SIZE
+  const glossTopicWidth = eventSecondary
+    ? Math.ceil(
+        measureThinkingMapLabelBlockPx(
+          eventSecondary,
+          secondaryFontSize(topicFontSize),
+          MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
+          {
+            fontWeight: 'normal',
+            fontFamily: eventNode?.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK,
+          }
+        ).width + MULTI_FLOW_TOPIC_PADDING_X
+      )
+    : 0
   const actualTopicWidth = Math.max(
     topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style),
+    glossTopicWidth,
     topicImageWidth
   )
 
@@ -226,6 +256,7 @@ export function recalculateMultiFlowMapLayout(
   result.push({
     id: MULTI_FLOW_EVENT_NODE_ID,
     text: event,
+    ...(eventSecondary ? { textSecondary: eventSecondary } : {}),
     type: 'topic',
     position: { x: topicLeftEdge, y: centerY - getH(MULTI_FLOW_EVENT_NODE_ID) / 2 },
     ...(eventStyle && { style: eventStyle }),

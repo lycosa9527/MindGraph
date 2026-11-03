@@ -70,6 +70,7 @@ const {
   showLoginAudienceTabs,
   loginForm,
   studentLoginForm,
+  studentReloginNotice,
   registerForm,
   smsLoginForm,
   forgotForm,
@@ -681,6 +682,12 @@ defineExpose({ openLogin, openRegister })
         :class="authPageInline ? 'auth-page-teacher' : 'p-6'"
         @submit.prevent="handleLogin"
       >
+        <p
+          v-if="studentReloginNotice"
+          class="text-sm leading-relaxed text-stone-600"
+        >
+          <I18nText k="learningSpace.passwordSavedRelogin" />
+        </p>
         <div
           v-if="authPageInline"
           class="auth-page-student__beta"

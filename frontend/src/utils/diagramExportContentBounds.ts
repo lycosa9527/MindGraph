@@ -141,6 +141,21 @@ export function measureDiagramExportFlowBounds(
   return unionFlowRects(rects, pad)
 }
 
+const SERPENTINE_FIT_TYPES = new Set(['flow_map', 'bridge_map'])
+
+/**
+ * Flow arrows and the bridge stroke step out past the nodes on a U-turn.
+ * Node-only fitView clips that rail once the nodes fill the padded viewport.
+ */
+export function serpentineFitInkBounds(
+  diagramType: string | null | undefined,
+  container: HTMLElement | null,
+  nodes: readonly DiagramExportFlowNode[]
+): DiagramExportFlowRect | null {
+  if (!diagramType || !SERPENTINE_FIT_TYPES.has(diagramType) || !container) return null
+  return measureDiagramExportFlowBounds(container, nodes)
+}
+
 export function measureDiagramExportContentBounds(
   container: HTMLElement,
   paddingPx = 24

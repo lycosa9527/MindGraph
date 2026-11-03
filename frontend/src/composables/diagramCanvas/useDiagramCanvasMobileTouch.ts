@@ -155,6 +155,8 @@ export function useDiagramCanvasMobileTouch(options: {
   canFitOnDoubleTap?: () => boolean
   /** Left-button slash. Off while the primary button pans (hand tool, phone). */
   allowMouseSlash?: () => boolean
+  /** Snapshot in progress: ignore pan, pinch, and slash until the capture ends. */
+  canvasFrozen?: () => boolean
 }): {
   setupMobileTouchZoom: () => void
   mobileTouchCleanup: Ref<(() => void) | null>
@@ -171,6 +173,7 @@ export function useDiagramCanvasMobileTouch(options: {
     allowMouseSlash,
     boardGestures,
     slashGestures,
+    canvasFrozen,
   } = options
   const mobileTouchCleanup = ref<(() => void) | null>(null)
 
@@ -459,6 +462,7 @@ export function useDiagramCanvasMobileTouch(options: {
     }
 
     function onTouchStart(e: TouchEvent): void {
+      if (canvasFrozen?.()) return
       if (conceptMapLinkChaseActive.value) {
         return
       }
@@ -749,6 +753,7 @@ export function useDiagramCanvasMobileTouch(options: {
     }
 
     function onPointerDown(event: PointerEvent): void {
+      if (canvasFrozen?.()) return
       if (event.pointerType !== 'mouse' || event.button !== 0) return
       // Ctrl-drag is rubber-band select; a plain left-drag stays the slash.
       if (event.ctrlKey) return

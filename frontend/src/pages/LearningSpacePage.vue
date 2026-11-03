@@ -69,7 +69,6 @@ async function onChangePassword(): Promise<void> {
   if (message === null) {
     newPassword.value = ''
     confirmPassword.value = ''
-    notify.successKey('learningSpace.savePassword')
     return
   }
   notify.error(message || t('learningSpace.saveFailed'))

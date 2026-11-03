@@ -3,6 +3,7 @@
 import pytest
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
+from agents.diagram_bilingual.bridge_mirror import bridge_has_inline_gloss, stamp_bridge_bilingual
 from agents.diagram_bilingual.split import mirror_matches, peel_bilingual_spec, transplant_secondary
 from utils.bilingual_prompt import bilingual_max_tokens, bilingual_prompt_scope
 
@@ -81,6 +82,63 @@ async def test_concept_map_enhance_keeps_secondary_mirror() -> None:
     assert enhanced["secondary"]["topic"] == "Photosynthesis"
     assert enhanced["secondary"]["concepts"] == ["Chloroplast", "Sunlight"]
     assert peel_bilingual_spec(enhanced, "zh", "en") is True
+
+
+def test_bridge_rebuild_keeps_a_complete_second_language() -> None:
+    """Existing pair glosses plus the model's new pairs stay one mirror."""
+    spec = {
+        "relating_factor": "as",
+        "dimension": "首都到国家",
+        "analogies": [
+            {"left": "北京", "right": "中国"},
+            {"left": "东京", "right": "日本"},
+        ],
+        "alternative_dimensions": ["货币到国家"],
+    }
+    stamp_bridge_bilingual(
+        spec,
+        {
+            "secondary": {
+                "dimension": "Capital to country",
+                "analogies": [{"left": "Tokyo", "right": "Japan"}],
+                "alternative_dimensions": ["Currency to country"],
+            }
+        },
+        [{"left": "北京", "right": "中国", "left_secondary": "Beijing", "right_secondary": "China"}],
+    )
+    assert "left_secondary" not in spec["analogies"][0]
+    assert peel_bilingual_spec(spec, "zh", "en") is True
+    mirror = spec["secondary"]["analogies"]
+    assert mirror[0] == {"left": "Beijing", "right": "China"}
+    assert mirror[1] == {"left": "Tokyo", "right": "Japan"}
+
+
+def test_bridge_rebuild_keeps_partial_glosses_inline() -> None:
+    """One missing line stays off the mirror and does not erase the lines we have."""
+    spec = {
+        "relating_factor": "as",
+        "dimension": "首都到国家",
+        "analogies": [
+            {"left": "北京", "right": "中国"},
+            {"left": "东京", "right": "日本"},
+        ],
+        "alternative_dimensions": ["货币到国家"],
+    }
+    stamp_bridge_bilingual(
+        spec,
+        {"secondary": {"analogies": [{"left": "Tokyo", "right": "Japan"}]}},
+        [{"left": "北京", "right": "中国", "left_secondary": "Beijing", "dimension_secondary": "Capital"}],
+    )
+    assert "secondary" not in spec
+    assert bridge_has_inline_gloss(spec) is True
+    assert spec["analogies"][0]["left_secondary"] == "Beijing"
+    assert spec["analogies"][1] == {
+        "left": "东京",
+        "right": "日本",
+        "left_secondary": "Tokyo",
+        "right_secondary": "Japan",
+    }
+    assert spec["dimension_secondary"] == "Capital"
 
 
 def test_bilingual_max_tokens_stays_put_for_a_single_language() -> None:

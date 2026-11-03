@@ -203,9 +203,22 @@ async def resolve_assignment_viewer(
     return "learner"
 
 
+async def student_must_change_password(db: AsyncSession, user: User) -> bool:
+    """Read the forced-change flag from the database and copy it onto ``user``.
+
+    The request user can still be the Redis copy from before a teacher or admin reset.
+    """
+    flag = await db.scalar(select(User.must_change_password).where(User.id == int(user.id)))
+    if flag is None:
+        return bool(getattr(user, "must_change_password", False))
+    user.must_change_password = bool(flag)
+    return bool(flag)
+
+
 async def require_class_learner(db: AsyncSession, user: User, class_id: int) -> None:
     """Allow classroom students (after password change) or enrolled learners."""
     if is_student(user):
+        await student_must_change_password(db, user)
         require_student_password_ok(user)
         if int(user.learning_class_id or 0) != int(class_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your class")
@@ -225,20 +238,6 @@ def assert_assignment_visible_to_learner(assignment: LearningAssignment) -> None
     """Draft homework must not be openable even when the id is guessed."""
     if assignment.status == ASSIGNMENT_STATUS_DRAFT:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
-
-
-async def get_active_class_by_code(db: AsyncSession, class_code: str) -> LearningClass | None:
-    """Lookup active class by join code."""
-    code = (class_code or "").strip().upper()
-    if not code:
-        return None
-    result = await db.execute(
-        select(LearningClass).where(
-            LearningClass.class_code == code,
-            LearningClass.status == CLASS_STATUS_ACTIVE,
-        )
-    )
-    return result.scalar_one_or_none()
 
 
 def require_student(user: User) -> None:

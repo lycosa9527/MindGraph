@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,6 +31,7 @@ from routers.auth.dependencies import (
     get_current_user,
     require_panel_capability,
 )
+from routers.auth.helpers import clear_auth_cookies
 from routers.features.learning_space.schemas import (
     AccountImportRequest,
     AssignmentCreate,
@@ -44,7 +45,10 @@ from routers.features.learning_space.schemas import (
     SubmissionReviewRequest,
 )
 from routers.features.learning_space.deps import get_learning_space_db
-from services.auth.password_security import invalidate_user_cache_after_password_write
+from services.auth.password_security import (
+    invalidate_user_cache_after_password_write,
+    revoke_refresh_tokens_and_sessions,
+)
 from services.learning_space.access import (
     assert_assignment_deletable,
     classes_visible_to_staff,
@@ -57,6 +61,7 @@ from services.learning_space.access import (
     require_student,
     require_student_password_ok,
     resolve_assignment_viewer,
+    student_must_change_password,
 )
 from services.learning_space.admin_teachers import (
     assert_teacher_eligible_for_pilot,
@@ -968,6 +973,7 @@ async def student_list_assignments(
     """Assignments for classroom students and enrolled learners."""
     class_ids = await learner_class_ids(db, current_user)
     if is_student(current_user):
+        await student_must_change_password(db, current_user)
         require_student_password_ok(current_user)
     elif not class_ids:
         raise HTTPException(status_code=403, detail="Students only")
@@ -1011,6 +1017,7 @@ async def student_class_wall(
     """Class work wall: all submitted classmate works (with teacher reviews)."""
     class_ids = await learner_class_ids(db, current_user)
     if is_student(current_user):
+        await student_must_change_password(db, current_user)
         require_student_password_ok(current_user)
     elif not class_ids:
         raise HTTPException(status_code=403, detail="Students only")
@@ -1114,9 +1121,11 @@ async def student_submit_assignment(
 @router.post("/student/change-password")
 async def student_change_password(
     body: StudentChangePasswordRequest,
+    http_request: Request,
+    response: Response,
     current_user: User = Depends(get_current_user),
 ):
-    """Clear must_change_password after setting a new password."""
+    """Set the student's own password and end the initial-password session."""
     require_student(current_user)
     async with system_rls_session() as db:
         user = await db.get(User, current_user.id)
@@ -1137,6 +1146,8 @@ async def student_change_password(
             logger.error("[LearningSpace] Student password change failed user=%s: %s", current_user.id, exc)
             raise HTTPException(status_code=500, detail="Failed to change password") from exc
         await invalidate_user_cache_after_password_write(user, "Learning Space student password")
+    await revoke_refresh_tokens_and_sessions(current_user.id, "learning_space_student_password")
+    clear_auth_cookies(response, http_request)
     logger.info("[LearningSpace] Student password changed user=%s", current_user.id)
     return {"ok": True}
 
@@ -1154,12 +1165,13 @@ async def learning_space_context(
         if current_user.learning_class_id:
             cls = await db.get(LearningClass, current_user.learning_class_id)
         class_active = cls is not None and cls.status == CLASS_STATUS_ACTIVE
+        must_change = await student_must_change_password(db, current_user)
         return {
             "role": "student",
             "can_learn": class_active,
             "can_review": False,
             "can_publish": False,
-            "must_change_password": bool(getattr(current_user, "must_change_password", False)),
+            "must_change_password": must_change,
             "class": ({"id": cls.id, "name": cls.name, "class_code": cls.class_code} if class_active and cls else None),
         }
     pilot = await get_enabled_pilot(db, int(current_user.id))

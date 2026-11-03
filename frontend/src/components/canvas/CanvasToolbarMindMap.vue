@@ -93,6 +93,7 @@ import {
   useVoiceNotesStore,
 } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import '@/styles/canvasExportCaptureRing.css'
 import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 import {
   type LabelCollapseSnapshot,
@@ -158,10 +159,10 @@ const { formatBrushActive, formatBrushLocked, handleFormatBrush } = useCanvasToo
 const { followEnabled, setFollowEnabled } = useFollowNodeStyleToolbar()
 
 const canvasExportStore = useCanvasExportStore()
-const { exportOptions, mergedExportOptions } = storeToRefs(canvasExportStore)
+const { exportOptions, mergedExportOptions, exportSessionActive } = storeToRefs(canvasExportStore)
 
 const structureDropdownOpen = ref(false)
-const exportDropdownOpen = ref(false)
+const exportDropdownRef = ref<{ handleClose?: () => void } | null>(null)
 const trackRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
@@ -247,8 +248,12 @@ function handleStructurePick(mode: 'balanced' | 'right') {
   }
 }
 
+function closeExportMenu(): void {
+  exportDropdownRef.value?.handleClose?.()
+}
+
 function handleExportCommand(format: string) {
-  exportDropdownOpen.value = false
+  closeExportMenu()
   eventBus.emit('toolbar:export_requested', {
     format,
     options: { ...mergedExportOptions.value },
@@ -256,12 +261,12 @@ function handleExportCommand(format: string) {
 }
 
 function handleZhihuiDiagramMenuClick() {
-  exportDropdownOpen.value = false
+  closeExportMenu()
   eventBus.emit('toolbar:zhihui_diagram_requested', {})
 }
 
 function handleWorksheetTextMenuClick() {
-  exportDropdownOpen.value = false
+  closeExportMenu()
   eventBus.emit('toolbar:worksheet_text_requested', {})
 }
 
@@ -784,16 +789,19 @@ watch(
             >
               <span class="inline-flex">
                 <ElDropdown
-                  v-model:visible="exportDropdownOpen"
+                  ref="exportDropdownRef"
                   trigger="click"
                   placement="bottom-end"
+                  :disabled="exportSessionActive"
                   popper-class="mm-toolbar-popper mm-toolbar-popper--export"
                 >
                   <button
                     type="button"
-                    class="mm-btn mm-btn--export"
+                    class="mm-btn mm-btn--export canvas-export-capture"
+                    :class="{ 'is-capturing': exportSessionActive }"
                     data-learning-sheet-export-anchor
                     data-canvas-export-anchor
+                    :aria-busy="exportSessionActive"
                     :aria-label="t('canvas.toolbar.export')"
                   >
                     <Download class="w-4 h-4" />

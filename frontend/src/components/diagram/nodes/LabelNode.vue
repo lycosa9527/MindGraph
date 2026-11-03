@@ -8,16 +8,19 @@ import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
+import { translateDimension } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
+import { type LocaleCode, UI_LOCALE_CODES } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import {
   BRIDGE_DIMENSION_LABEL_FONT_PX,
   bridgeDimensionLabelText,
+  bridgeDimensionValueForStorage,
   measureBridgeDimensionLabel,
 } from '@/utils/bridgeMapLabelLayout'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -38,7 +41,6 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 const { hasImage, fitBox } = useThinkingMapImageFit(() => props.id)
 
-const { t } = useLanguage()
 const uiStore = useUIStore()
 const isPlaceholder = computed(() => props.data.isPlaceholder || !props.data.label)
 const isBridgeDimension = computed(
@@ -54,8 +56,17 @@ useThinkingMapNodeBoxTypographyRemeasure({
 })
 const diagramStore = useDiagramSession()
 
+/** Prefix and empty hint follow the diagram's primary language, then the value's script. */
+const bridgeLocale = computed((): LocaleCode => {
+  const primary = diagramStore.data?.languages?.primary?.trim().toLowerCase() ?? ''
+  if (primary === 'zh' || primary === 'zh-cn') return 'zh'
+  if (UI_LOCALE_CODES.includes(primary as LocaleCode)) return primary as LocaleCode
+  if (/[\u4e00-\u9fa5]/.test(props.data.label || '')) return 'zh'
+  return uiStore.language
+})
+
 function bridgeTranslate(key: string): string {
-  return String(t(key))
+  return translateForUiLocale(key, bridgeLocale.value)
 }
 
 const bridgeMapDisplay = computed(() => {
@@ -137,9 +148,18 @@ const isEditing = ref(false)
 
 function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
+  let text = newText
+  if (isBridgeDimension.value) {
+    const painted = bridgeMapDisplay.value
+    if (painted?.isPlaceholder && newText.trim() === painted.value.trim()) {
+      text = props.data.label || ''
+    } else {
+      text = bridgeDimensionValueForStorage(newText)
+    }
+  }
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
-    text: newText,
+    text,
     ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }

@@ -9,9 +9,8 @@ import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
 import { DEMO_TEMPLATE_MS, type DemoPhase } from '@/composables/demo/demoPlayback'
 import { type DemoTourSession, useDemoTour } from '@/composables/demo/useDemoTour'
-import type { LocaleCode } from '@/i18n/locales'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { getDefaultTemplate } from '@/stores/specLoader/defaultTemplates'
+import { defaultTemplateForUi } from '@/stores/specLoader/defaultTemplates'
 import { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 import { readShowcaseMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
@@ -44,9 +43,7 @@ const canvasMode = readShowcaseMindMapCanvasMode()
 
 const normalizedType = computed(() => resolveShowcaseDiagramType(null, props.diagramType))
 
-const templateSpec = computed(() =>
-  getDefaultTemplate(normalizedType.value, uiStore.language as LocaleCode)
-)
+const templateSpec = computed(() => defaultTemplateForUi(normalizedType.value, uiStore))
 
 const shownSpec = computed(() => {
   if (props.phase === 'revealed' && liveSpec.value) return liveSpec.value

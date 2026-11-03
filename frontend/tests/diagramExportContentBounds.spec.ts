@@ -7,6 +7,7 @@ import {
   measureDiagramExportContentBounds,
   measureDiagramExportFlowBounds,
   nodeToExportFlowRect,
+  serpentineFitInkBounds,
 } from '@/utils/diagramExportContentBounds'
 
 function mockClientRect(
@@ -100,6 +101,70 @@ describe('diagramExportContentBounds', () => {
     ])
 
     expect(bounds).toEqual({ x: -12, y: -2, width: 134, height: 294 })
+    container.remove()
+  })
+
+  it('fits a flow map to the turn arrow past the outer step', () => {
+    const container = document.createElement('div')
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('class', 'vue-flow__edge-path')
+    path.getBBox = () =>
+      ({
+        x: 500,
+        y: 40,
+        width: 45,
+        height: 160,
+      }) as DOMRect
+    svg.appendChild(path)
+    container.append(svg)
+    document.body.appendChild(container)
+    const nodes = [
+      {
+        computedPosition: { x: 10, y: 10 },
+        dimensions: { width: 490, height: 48 },
+      },
+    ]
+
+    expect(serpentineFitInkBounds('flow_map', container, nodes)).toEqual({
+      x: -2,
+      y: -2,
+      width: 559,
+      height: 214,
+    })
+    expect(serpentineFitInkBounds('mind_map', container, nodes)).toBeNull()
+    expect(serpentineFitInkBounds('flow_map', null, nodes)).toBeNull()
+    container.remove()
+  })
+
+  it('fits a bridge map to the turn stroke past the outer pair', () => {
+    const container = document.createElement('div')
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('class', 'bridge-overlay')
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+    line.getBBox = () =>
+      ({
+        x: 500,
+        y: 40,
+        width: 45,
+        height: 160,
+      }) as DOMRect
+    svg.appendChild(line)
+    container.append(svg)
+    document.body.appendChild(container)
+    const nodes = [
+      {
+        computedPosition: { x: 10, y: 10 },
+        dimensions: { width: 490, height: 48 },
+      },
+    ]
+
+    expect(serpentineFitInkBounds('bridge_map', container, nodes)).toEqual({
+      x: -2,
+      y: -2,
+      width: 559,
+      height: 214,
+    })
     container.remove()
   })
 

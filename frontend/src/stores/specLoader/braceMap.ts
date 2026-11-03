@@ -12,6 +12,8 @@
 import {
   BRACE_MAP_LEVEL_WIDTH,
   BRACE_MAP_NODE_SPACING,
+  BRACE_NODE_CONTENT_MAX_WIDTH,
+  BRACE_NODE_MAX_WIDTH,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
@@ -25,6 +27,7 @@ import {
   isLeftoverBraceMapId,
   takeBraceMapStableId,
 } from '@/utils/braceMapIdentity'
+import { measuredBoxExtent } from '@/utils/measuredBoxExtent'
 import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
@@ -48,7 +51,6 @@ const BRACE_PART_FONT_SIZE = 16
 const BRACE_SUBPART_FONT_SIZE = 14
 const BRACE_TOPIC_PADDING_X = 36 + 3 // 18px each side + 1.5px border
 const BRACE_PILL_PADDING_X = 36 + 3 // 18px each side + 1.5px border
-const BRACE_MAX_NODE_WIDTH = 400
 const BRACE_NODE_BASE_MAX_TEXT_WIDTH = 350
 const BRACE_TOPIC_BASE_MAX_TEXT_WIDTH = 300
 
@@ -84,17 +86,15 @@ function estimateBraceNodeWidth(text: string, depth: number, typo?: BraceTypogra
   const fontFamily = typo?.fontFamily
   const paddingX = depth === 0 ? BRACE_TOPIC_PADDING_X : BRACE_PILL_PADDING_X
   const maxTextW = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
-
   const block = measureThinkingMapLabelBlockPx(trimmed || ' ', fontSize, maxTextW, {
     fontWeight,
     fontFamily,
+    columnCeiling: BRACE_NODE_CONTENT_MAX_WIDTH,
   })
-  const effectiveTextWidth = block.width
-
-  const width = Math.ceil(effectiveTextWidth + paddingX)
+  const width = Math.ceil(block.width + paddingX)
   return Math.max(
     NODE_MIN_DIMENSIONS.brace.minWidth,
-    Math.min(BRACE_MAX_NODE_WIDTH, width || DEFAULT_NODE_WIDTH)
+    Math.min(BRACE_NODE_MAX_WIDTH, width || DEFAULT_NODE_WIDTH)
   )
 }
 
@@ -117,16 +117,22 @@ function estimateBraceNodeHeight(text: string, depth: number, typo?: BraceTypogr
   const paddingY = 18
 
   if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
-    const contentH = measureRenderedDiagramLabelHeight(trimmed, fontSize, maxTextWidth, {
-      fontWeight,
-      fontFamily,
-    })
+    const contentH = measureRenderedDiagramLabelHeight(
+      trimmed,
+      fontSize,
+      Math.min(maxTextWidth, BRACE_NODE_CONTENT_MAX_WIDTH),
+      {
+        fontWeight,
+        fontFamily,
+      }
+    )
     return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(contentH + paddingY))
   }
 
   const block = measureThinkingMapLabelBlockPx(trimmed, fontSize, maxTextWidth, {
     fontWeight,
     fontFamily,
+    columnCeiling: BRACE_NODE_CONTENT_MAX_WIDTH,
   })
   if (block.lineCount <= 1) return DEFAULT_NODE_HEIGHT
   return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(block.height + paddingY))
@@ -252,16 +258,18 @@ function computeColumnLayout(
     else childrenMap.set(e.source, [e.target])
   }
 
-  const getW = (id: string): number => {
-    const measured = nodeDimensions[id]?.width
-    const estimated = nodeMap.get(id)?.width ?? DEFAULT_NODE_WIDTH
-    return measured !== undefined ? Math.max(measured, estimated) : estimated
-  }
-  const getH = (id: string): number => {
-    const measured = nodeDimensions[id]?.height
-    const estimated = nodeMap.get(id)?.height ?? DEFAULT_NODE_HEIGHT
-    return measured !== undefined ? Math.max(measured, estimated) : estimated
-  }
+  const getW = (id: string): number =>
+    measuredBoxExtent(
+      nodeDimensions[id]?.width,
+      nodeMap.get(id)?.width ?? DEFAULT_NODE_WIDTH,
+      NODE_MIN_DIMENSIONS.brace.minWidth
+    )
+  const getH = (id: string): number =>
+    measuredBoxExtent(
+      nodeDimensions[id]?.height,
+      nodeMap.get(id)?.height ?? DEFAULT_NODE_HEIGHT,
+      NODE_MIN_DIMENSIONS.brace.minHeight
+    )
 
   // --- X: column positions (left-aligned per depth) ---
   const maxDepth = flatNodes.reduce((m, n) => Math.max(m, n.depth), 0)
@@ -598,8 +606,16 @@ export function recalculateBraceMapLayout(
   if (labelNode) {
     const rootFlatNode = flatNodes.find((n) => n.depth === 0)
     const rootPos = rootFlatNode ? layout.positions.get(rootFlatNode.id) : undefined
-    const rootW = nodeDimensions[rootId]?.width ?? rootFlatNode?.width ?? DEFAULT_NODE_WIDTH
-    const rootH = nodeDimensions[rootId]?.height ?? rootFlatNode?.height ?? DEFAULT_NODE_HEIGHT
+    const rootW = measuredBoxExtent(
+      nodeDimensions[rootId]?.width,
+      rootFlatNode?.width ?? DEFAULT_NODE_WIDTH,
+      NODE_MIN_DIMENSIONS.brace.minWidth
+    )
+    const rootH = measuredBoxExtent(
+      nodeDimensions[rootId]?.height,
+      rootFlatNode?.height ?? DEFAULT_NODE_HEIGHT,
+      NODE_MIN_DIMENSIONS.brace.minHeight
+    )
     const topicCenterX = (rootPos?.x ?? DEFAULT_PADDING) + rootW / 2
     const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
     result = [

@@ -69,12 +69,18 @@ export const MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH = 300
  */
 export const MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH = 250
 
-/** Flow map main topic node width */
-export const FLOW_MAP_TOPIC_WIDTH = 120
-
-/** Flow map unified pill dimensions (topic, steps, substeps - all same size) */
+/** Flow map minimum pill. The painted box grows with the label up to the caps below. */
 export const FLOW_MAP_PILL_WIDTH = 120
 export const FLOW_MAP_PILL_HEIGHT = 48
+
+/**
+ * Painted border-box caps. The stand-in width is clamped here so a pill is
+ * not centered on a box wider than CSS allows. The browser's border box
+ * replaces that stand-in. Keep in sync with the flow node `maxWidth` styles.
+ */
+export const FLOW_TOPIC_NODE_MAX_WIDTH = 400
+export const FLOW_STEP_NODE_MAX_WIDTH = 300
+export const FLOW_SUBSTEP_NODE_MAX_WIDTH = 230
 
 /** Gap between flow map topic and first step */
 export const FLOW_TOPIC_TO_STEP_GAP = 60
@@ -89,25 +95,6 @@ export const TOPIC_NODE_HEIGHT = 52
 /** BraceNode height */
 export const BRACE_NODE_HEIGHT = 40
 
-/**
- * Flow Map Layout Constants
- * These are DEFAULT values for initial positioning.
- * Actual layout uses runtime measurement after nodes are rendered.
- * Actual layout uses runtime measurement after nodes are rendered.
- */
-
-/** Default FlowNode height (used for initial layout, actual height measured at runtime) */
-export const FLOW_NODE_HEIGHT = 50
-
-/** FlowNode width */
-export const FLOW_NODE_WIDTH = DEFAULT_NODE_WIDTH + 20 // 140
-
-/** Default FlowSubstepNode height (used for initial layout, actual height measured at runtime) */
-export const FLOW_SUBSTEP_NODE_HEIGHT = 50
-
-/** FlowSubstepNode width (fixed for center alignment calculations) */
-export const FLOW_SUBSTEP_NODE_WIDTH = 100
-
 /** Spacing between substep nodes (within a group) */
 export const FLOW_SUBSTEP_SPACING = 12
 
@@ -119,6 +106,15 @@ export const FLOW_GROUP_GAP = 10
 
 /** Minimum spacing between steps without substeps */
 export const FLOW_MIN_STEP_SPACING = 40
+
+/** Horizontal flow wraps onto the next row after this many steps. */
+export const FLOW_MAP_STEPS_PER_ROW = 5
+
+/** Clearance between a wrapped flow row and the row beneath it. */
+export const FLOW_MAP_ROW_GAP = 72
+
+/** How far a flow U-turn steps out past the node before it drops. */
+export const FLOW_TURN_OUTSET_PX = 45
 
 /** BranchNode height (mind-map default min-height baseline) */
 export const BRANCH_NODE_HEIGHT = 34
@@ -206,6 +202,15 @@ export const BRACE_MAP_LEVEL_WIDTH = 60
 
 /** Brace map: tighter vertical spacing between sibling parts */
 export const BRACE_MAP_NODE_SPACING = 16
+
+/** Brace pill CSS max-width. */
+export const BRACE_NODE_MAX_WIDTH = 400
+
+/**
+ * Brace text column. 400 minus 18px padding each side and the 1.5px border
+ * each side, so a line wraps inside the pill instead of past it.
+ */
+export const BRACE_NODE_CONTENT_MAX_WIDTH = BRACE_NODE_MAX_WIDTH - 18 * 2 - 3
 
 /** Default column spacing for double bubble maps (topic-to-similarity, similarity-to-topic) */
 export const DEFAULT_COLUMN_SPACING = 50

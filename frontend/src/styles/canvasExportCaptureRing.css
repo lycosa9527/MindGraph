@@ -1,0 +1,59 @@
+/**
+ * Traveling ring for the canvas export button while a snapshot is in progress.
+ * Shared by the desktop toolbar and the mobile export button.
+ */
+
+@property --canvas-export-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.canvas-export-capture {
+  position: relative;
+}
+
+.canvas-export-capture.is-capturing {
+  cursor: wait;
+  overflow: visible;
+}
+
+.canvas-export-capture.is-capturing::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--canvas-export-ring-radius, 8px);
+  padding: 2px;
+  --canvas-export-ring-angle: 0deg;
+  background: conic-gradient(
+    from var(--canvas-export-ring-angle) at 50% 50%,
+    #e7e5e4 0deg,
+    #a8a29e 70deg,
+    #44403c 140deg,
+    #fafaf9 200deg,
+    #e7e5e4 360deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: canvas-export-ring-travel 1.1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes canvas-export-ring-travel {
+  to {
+    --canvas-export-ring-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-export-capture.is-capturing::before {
+    animation: none;
+    background: #57534e;
+  }
+}

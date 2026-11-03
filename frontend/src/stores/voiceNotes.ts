@@ -39,7 +39,7 @@ import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { getDefaultTemplate } from '@/stores/specLoader'
+import { defaultTemplateForUi } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
 import { beijingWallClock } from '@/utils/beijingClock'
@@ -466,7 +466,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         }
         const lang =
           String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
-        const template = getDefaultTemplate('mindmap', uiStore.language)
+        const template = defaultTemplateForUi('mindmap', uiStore)
         if (!template) {
           notify.warningKey('auth.voiceNotes.bootstrapFailed')
           return false

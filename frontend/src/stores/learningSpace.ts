@@ -28,6 +28,7 @@ import {
   submissionIsReviewed,
   unsubmittedTopicRows,
 } from '@/composables/learningSpace/lsHelpers'
+import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import {
@@ -35,6 +36,7 @@ import {
   type LearningClassRow,
   type LearningReviewPayload,
   type LearningSpaceContext,
+  LearningSpaceSessionError,
   type LearningStudentRow,
   type LearningSubmission,
   deleteTeacherAssignment,
@@ -52,6 +54,7 @@ import {
   saveTeacherReview,
   studentChangePassword,
 } from '@/utils/learningSpaceApi'
+import { stashStudentRelogin } from '@/utils/studentRelogin'
 
 let busBound = false
 let pageOpen = false
@@ -593,19 +596,35 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     showReview.value = true
   }
 
+  function studentLoginPrefill(): { classCode: string; name: string } {
+    return {
+      classCode: context.value?.class?.class_code?.trim() ?? '',
+      name: authStore.user?.username?.trim() ?? '',
+    }
+  }
+
+  function openStudentLoginAfterSave(prefill: { classCode: string; name: string }): void {
+    stashStudentRelogin({ ...prefill, passwordSaved: true })
+    const returnPath = router.currentRoute.value.path.startsWith('/m/')
+      ? '/m/learning-space'
+      : '/learning-space'
+    const message = i18n.global.t('learningSpace.passwordSavedRelogin') as string
+    authStore.handleTokenExpired(message, returnPath, { skipRecovery: true })
+  }
+
   async function changePassword(password: string): Promise<string | null> {
     changingPassword.value = true
+    const prefill = studentLoginPrefill()
     try {
       await studentChangePassword(password)
-      if (authStore.user) {
-        authStore.setUser({ ...authStore.user, mustChangePassword: false })
-      }
-      if (context.value) {
-        context.value = { ...context.value, must_change_password: false }
-      }
-      await loadStudentAssignmentsIfReady()
+      openStudentLoginAfterSave(prefill)
       return null
     } catch (error) {
+      if (error instanceof LearningSpaceSessionError) {
+        // Refresh already failed, and the API client is opening the login card.
+        stashStudentRelogin({ ...prefill, passwordSaved: false })
+        return null
+      }
       const message = error instanceof Error ? error.message.trim() : ''
       return message
     } finally {

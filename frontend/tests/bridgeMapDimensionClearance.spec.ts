@@ -11,8 +11,16 @@ import {
   BRIDGE_DIMENSION_LABEL_MAX_TEXT_PX,
   BRIDGE_LABEL_TO_PAIR_GAP,
   bridgeDimensionLabelText,
+  bridgeDimensionValueForStorage,
+  bridgeGapCenterY,
   measureBridgeDimensionLabel,
 } from '@/utils/bridgeMapLabelLayout'
+import {
+  BRIDGE_PAIR_FONT,
+  BRIDGE_PAIR_TEXT_CAP,
+  bridgePairContentBox,
+  bridgeSectionRight,
+} from '@/utils/bridgeMapPairBox'
 import { measureMindMapLabelWidthPx } from '@/utils/mindMapTextWrap'
 
 const LONG_DIMENSION = '中国古典文学名著中的男性与女性代表人物对照'
@@ -83,5 +91,147 @@ describe('bridge map dimension label clearance', () => {
     expect(wideX).toBeGreaterThan(estimatedX)
     expect(wideX).toBeGreaterThanOrEqual(DEFAULT_PADDING + 420 + BRIDGE_LABEL_TO_PAIR_GAP - 0.5)
     expect((wideLabel?.position?.y ?? 0) + 96 / 2).toBeCloseTo(DEFAULT_CENTER_Y, 5)
+  })
+
+  it('clears a long second line beside the relationship', () => {
+    const translate = (key: string) => (key.endsWith('analogyRelationship') ? 'As:' : '[set]')
+    const gloss = 'Capital city of the country'
+    const withGloss = measureBridgeDimensionLabel('都', gloss, { translate })
+    const bare = measureBridgeDimensionLabel('都', undefined, { translate })
+
+    expect(withGloss.width).toBeGreaterThan(bare.width)
+    expect(withGloss.height).toBeGreaterThan(bare.height)
+  })
+
+  it('keeps the bridge in the gap when the two words have different heights', () => {
+    const oldCenter = (40 + 100) / 2
+    const gapCenter = bridgeGapCenterY([{ upperBottom: 80, lowerTop: 90 }])
+
+    expect(oldCenter).toBeLessThan(80)
+    expect(gapCenter).toBe(85)
+  })
+
+  it('stores the relationship without the painted brackets', () => {
+    expect(bridgeDimensionValueForStorage('[首都到国家]')).toBe('首都到国家')
+    expect(bridgeDimensionValueForStorage('首都到国家')).toBe('首都到国家')
+  })
+
+  it('spaces a long gloss before the browser reports a width', () => {
+    const gloss = 'trigonometric functions of any angle'
+    const loaded = loadBridgeMapSpec({
+      dimension: '前置知识',
+      analogies: [
+        {
+          left: '锐角三角比',
+          right: '任意角',
+          left_secondary: 'acute ratios',
+          right_secondary: gloss,
+        },
+        { left: '下一对', right: '下一对右' },
+      ],
+    })
+    const laid = recalculateBridgeMapLayout(loaded.nodes, {})
+    const upper = nodeByText(laid, '锐角三角比')
+    const next = nodeByText(laid, '下一对')
+    const upperX = upper.position?.x
+    const nextX = next.position?.x
+    if (upperX == null || nextX == null) throw new Error('missing pair position')
+    const section = Math.max(
+      bridgePairContentBox('锐角三角比', 'acute ratios').width,
+      bridgePairContentBox('任意角', gloss).width
+    )
+
+    expect(nextX - upperX).toBeCloseTo(section + 50, 4)
+  })
+
+  it('keeps a short section as wide as its text', () => {
+    const laid = recalculateBridgeMapLayout(
+      loadBridgeMapSpec({
+        dimension: '关系',
+        analogies: [
+          { left: '猫', right: '铅笔' },
+          { left: '狗', right: '钢笔' },
+        ],
+      }).nodes,
+      {}
+    )
+    const first = nodeByText(laid, '猫')
+    const next = nodeByText(laid, '狗')
+    const firstX = first.position?.x
+    const nextX = next.position?.x
+    if (firstX == null || nextX == null) throw new Error('missing pair position')
+    const section = Math.max(bridgePairContentBox('猫').width, bridgePairContentBox('铅笔').width)
+
+    expect(section).toBeLessThan(120)
+    expect(nextX - firstX).toBeCloseTo(section + 50, 4)
+  })
+
+  it('uses the wrapped line width and the extra line height', () => {
+    const long = `${'unit circle definition '.repeat(20)}end`
+    const wrapped = bridgePairContentBox(long)
+    const bare = bridgePairContentBox('圆')
+    const laid = recalculateBridgeMapLayout(
+      loadBridgeMapSpec({
+        dimension: '关系',
+        analogies: [
+          { left: long, right: '圆' },
+          { left: '下一对', right: '右' },
+        ],
+      }).nodes,
+      {}
+    )
+    const upper = nodeByText(laid, long)
+    const next = nodeByText(laid, '下一对')
+    const upperX = upper.position?.x
+    const nextX = next.position?.x
+    const upperY = upper.position?.y
+    if (upperX == null || nextX == null || upperY == null) throw new Error('missing pair position')
+
+    expect(wrapped.width).toBeLessThanOrEqual(BRIDGE_PAIR_TEXT_CAP)
+    expect(wrapped.width).toBeLessThan(measureMindMapLabelWidthPx(long, BRIDGE_PAIR_FONT))
+    expect(wrapped.height).toBeGreaterThan(bare.height)
+    expect(nextX - upperX).toBeCloseTo(wrapped.width + 50, 4)
+    expect(upperY).toBeLessThan(nodeByText(laid, '下一对').position?.y ?? upperY)
+  })
+
+  it('places the separator after the wider word', () => {
+    expect(bridgeSectionRight(10, 240, 10, 80)).toBe(250)
+    expect(bridgeSectionRight(10, 80, 10, 240)).toBe(250)
+  })
+
+  it('does not use the bridge word as the relationship gloss', () => {
+    const loaded = loadBridgeMapSpec({
+      dimension: '首都',
+      relating_factor: 'as',
+      analogies: [{ left: '北京', right: '中国' }],
+      secondary: {
+        relating_factor: 'as',
+        analogies: [{ left: 'Beijing', right: 'China' }],
+      },
+    })
+    const label = loaded.nodes.find((node) => node.id === 'dimension-label')
+
+    expect(label?.text).toBe('首都')
+    expect(label?.textSecondary ?? '').toBe('')
+  })
+
+  it('stamps pair and relationship glosses onto the loaded nodes', () => {
+    const loaded = loadBridgeMapSpec({
+      dimension: '首都',
+      dimension_secondary: 'Capital of',
+      analogies: [
+        { left: '北京', right: '中国', left_secondary: 'Beijing', right_secondary: 'China' },
+      ],
+      alternative_dimensions: ['货币'],
+      alternative_dimensions_secondary: ['Currency'],
+    })
+    const upper = nodeByText(loaded.nodes, '北京')
+    const lower = nodeByText(loaded.nodes, '中国')
+    const label = loaded.nodes.find((node) => node.id === 'dimension-label')
+
+    expect(upper.textSecondary).toBe('Beijing')
+    expect(lower.textSecondary).toBe('China')
+    expect(label?.textSecondary).toBe('Capital of')
+    expect(loaded.metadata?.alternative_dimensions_secondary).toEqual(['Currency'])
   })
 })

@@ -32,7 +32,7 @@ function resolveCacheDir(projectRoot: string): string {
 
 /**
  * Vite's prepare-out-dir uses `rmSync` without retries. On WSL `/mnt/*` (drvfs), deleting
- * large public asset trees (e.g. pdf.js `cmaps/` with 160+ files) often fails with ENOTEMPTY.
+ * large public asset trees often fails with ENOTEMPTY.
  * Empty child-by-child with Node maxRetries instead, and skip Vite's emptyOutDir on those mounts.
  */
 function emptyDirWithRetry(dir: string): void {
@@ -483,7 +483,7 @@ export default defineConfig({
     // WeChat Android WebView rejects #RGBA; Vite documents chrome61 for CSS.
     cssTarget: 'chrome61',
     outDir: buildOutDir,
-    // On WSL `/mnt/*`, Vite's emptyOutDir hits ENOTEMPTY on large trees (pdf.js cmaps).
+    // On WSL `/mnt/*`, Vite's emptyOutDir hits ENOTEMPTY on large public trees.
     // mindgraph-wsl-safe-empty-out-dir handles cleanup with retries instead.
     emptyOutDir: !onWslWindowsMount,
     sourcemap: process.env.SOURCEMAP === '1' ? true : false,

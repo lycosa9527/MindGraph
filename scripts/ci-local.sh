@@ -341,6 +341,16 @@ run_frontend() {
     tests/doubleBubbleMapLayout.spec.ts \
     tests/flowMapIdentity.spec.ts \
     tests/flowMapSubsteps.spec.ts \
+    tests/flowMapSerpentine.spec.ts \
+    tests/flowMapOverlap.spec.ts \
+    tests/bridgeMapSerpentine.spec.ts \
+    tests/bridgeMapOverlap.spec.ts \
+    tests/bridgeMapDimensionClearance.spec.ts \
+    tests/bilingualDefaultTemplate.spec.ts \
+    tests/bilingualNodePaint.spec.ts \
+    tests/diagramBilingualMeasure.spec.ts \
+    tests/multiFlowMapLayout.spec.ts \
+    tests/resolveBilingual.spec.ts \
     tests/orgGenerationCache.spec.ts \
     tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts \
     tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts \
@@ -362,7 +372,7 @@ run_frontend() {
     tests/trainingCourses.spec.ts tests/trainingCourseTitle.spec.ts \
     tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
-    tests/trainingUiLock.spec.ts tests/deliverExportFile.spec.ts tests/schoolDiagramCard.spec.ts \
+    tests/trainingUiLock.spec.ts tests/trainingDeckNav.spec.ts tests/deliverExportFile.spec.ts tests/schoolDiagramCard.spec.ts \
     tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \
     tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts \
     tests/trainingPlayControls.spec.ts tests/requiredTrainingGate.spec.ts tests/trainingFriendLine.spec.ts \

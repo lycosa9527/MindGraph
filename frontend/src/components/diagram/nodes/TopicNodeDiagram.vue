@@ -14,7 +14,12 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
-import { MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
+import {
+  BRACE_NODE_CONTENT_MAX_WIDTH,
+  BRACE_NODE_MAX_WIDTH,
+  FLOW_TOPIC_NODE_MAX_WIDTH,
+  MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
+} from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
@@ -24,6 +29,7 @@ import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { flowPillContentMaxPx } from '@/utils/flowPillBox'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { buildMultiFlowTopicHandles } from '@/utils/multiFlowTopicHandles'
@@ -211,7 +217,7 @@ const nodeStyle = computed(() => {
       minWidth: '120px',
       minHeight:
         props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
-      maxWidth: '400px',
+      maxWidth: `${FLOW_TOPIC_NODE_MAX_WIDTH}px`,
     }
   }
 
@@ -234,7 +240,7 @@ const nodeStyle = computed(() => {
     return {
       ...shapedStyle,
       width: 'fit-content',
-      maxWidth: '400px',
+      maxWidth: `${BRACE_NODE_MAX_WIDTH}px`,
     }
   }
 
@@ -265,9 +271,15 @@ const topicMaxWidth = computed(() => {
       : MIND_MAP_GEOMETRY.topicFontSize
   const fontWeight = String(props.data.style?.fontWeight || 'bold')
   const fontFamily = props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK
+  const columnCeiling = isFlowMap.value
+    ? flowPillContentMaxPx(FLOW_TOPIC_NODE_MAX_WIDTH)
+    : isBraceMap.value
+      ? BRACE_NODE_CONTENT_MAX_WIDTH
+      : undefined
   return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH, {
     fontWeight,
     fontFamily,
+    ...(columnCeiling != null ? { columnCeiling } : {}),
   })}px`
 })
 

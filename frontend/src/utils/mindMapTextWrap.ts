@@ -3,7 +3,9 @@
  *
  * Width comes from the browser when that measurement sits near the fallback
  * estimate. A label that fits the script-aware column stays one line. A longer
- * label wraps at the map's own cap with word boundaries and ``text-wrap: balance``.
+ * label wraps at the map's own cap. Han, kana, hangul, and fullwidth characters
+ * are break points, matching canvas ``word-break: normal``, so a Latin word
+ * such as ``AI`` or ``77%`` stays on the same line as the text that follows.
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -29,6 +31,12 @@ export type MindMapTextWrapRole = 'topic' | 'branch'
 export type MindMapTextMeasureOptions = {
   fontWeight?: 'normal' | 'bold' | string
   fontFamily?: string
+  /**
+   * Hard cap on the wrap column, in px. A node whose CSS max is tighter than
+   * the script-aware column passes its content-box width here so the browser
+   * and the stand-in wrap at the same edge.
+   */
+  columnCeiling?: number
 }
 
 function normalizeWeight(fontWeight?: string): 'normal' | 'bold' {
@@ -72,11 +80,16 @@ export function resolveThinkingMapTextColumnPx(
   options: MindMapTextMeasureOptions = {}
 ): number {
   const label = (text || '').trim()
-  if (!label) return baseCapPx
+  if (!label) return capColumn(baseCapPx, options.columnCeiling)
   const wrapThreshold = computeScriptAwareMaxWidth(label, baseCapPx)
   const textWidth = measureMindMapLabelWidthPx(label, fontSize, options)
-  if (textWidth <= wrapThreshold) return wrapThreshold
-  return baseCapPx
+  const column = textWidth <= wrapThreshold ? wrapThreshold : baseCapPx
+  return capColumn(column, options.columnCeiling)
+}
+
+function capColumn(column: number, ceiling: number | undefined): number {
+  if (ceiling == null || !Number.isFinite(ceiling) || ceiling <= 0) return column
+  return Math.min(column, ceiling)
 }
 
 export type ThinkingMapLabelBlock = {
@@ -317,14 +330,48 @@ export type MindMapWrapLinesOptions = MindMapTextMeasureOptions & {
   fontSize: number
 }
 
+/**
+ * CSS ``word-break: normal`` may break after these (Han, kana, hangul, fullwidth).
+ * Latin words and numbers stay one token so ``AI`` and ``77%`` are not split.
+ */
+function isWrapBreakChar(codePoint: number): boolean {
+  if (codePoint >= 0x1100 && codePoint <= 0x11ff) return true
+  if (codePoint >= 0x3000 && codePoint <= 0x303f) return true
+  if (codePoint >= 0x3040 && codePoint <= 0x30ff) return true
+  if (codePoint >= 0x3130 && codePoint <= 0x318f) return true
+  if (codePoint >= 0x31f0 && codePoint <= 0x31ff) return true
+  if (codePoint >= 0x3400 && codePoint <= 0x9fff) return true
+  if (codePoint >= 0xac00 && codePoint <= 0xd7af) return true
+  if (codePoint >= 0xf900 && codePoint <= 0xfaff) return true
+  if (codePoint >= 0xff00 && codePoint <= 0xffef) return true
+  return false
+}
+
 function tokenizeForWrap(text: string): string[] {
   const tokens: string[] = []
-  const re =
-    /(\s+)|([\u3400-\u9FFF\uF900-\uFAFF\u3000-\u303F\uFF00-\uFFEF]+)|([^\s\u3400-\u9FFF\uF900-\uFAFF\u3000-\u303F\uFF00-\uFFEF]+)/g
-  let match: RegExpExecArray | null
-  while ((match = re.exec(text)) !== null) {
-    tokens.push(match[0])
+  let word = ''
+  const flushWord = () => {
+    if (!word) return
+    tokens.push(word)
+    word = ''
   }
+  for (const ch of text) {
+    const cp = ch.codePointAt(0) ?? 0
+    if (/\s/u.test(ch)) {
+      flushWord()
+      const prev = tokens[tokens.length - 1]
+      if (prev && /^\s+$/u.test(prev)) tokens[tokens.length - 1] = prev + ch
+      else tokens.push(ch)
+      continue
+    }
+    if (isWrapBreakChar(cp)) {
+      flushWord()
+      tokens.push(ch)
+      continue
+    }
+    word += ch
+  }
+  flushWord()
   return tokens
 }
 
@@ -348,6 +395,19 @@ function wrapLongToken(
   return lines.length > 0 ? lines : ['']
 }
 
+function placeToken(
+  token: string,
+  maxWidth: number,
+  measure: (text: string) => number,
+  lines: string[]
+): string {
+  if (!token) return ''
+  if (measure(token) <= maxWidth) return token
+  const broken = wrapLongToken(token, maxWidth, measure)
+  lines.push(...broken.slice(0, -1))
+  return broken[broken.length - 1] ?? ''
+}
+
 function wrapParagraph(
   paragraph: string,
   maxWidth: number,
@@ -367,7 +427,7 @@ function wrapParagraph(
     }
   }
   for (const token of tokens) {
-    if (/^\s+$/.test(token)) {
+    if (/^\s+$/u.test(token)) {
       if (!current) continue
       const next = current + token
       if (measure(next) <= maxWidth) {
@@ -378,13 +438,7 @@ function wrapParagraph(
       continue
     }
     if (!current) {
-      if (measure(token) <= maxWidth) {
-        current = token
-      } else {
-        const broken = wrapLongToken(token, maxWidth, measure)
-        lines.push(...broken.slice(0, -1))
-        current = broken[broken.length - 1] ?? ''
-      }
+      current = placeToken(token, maxWidth, measure, lines)
       continue
     }
     const candidate = current + token
@@ -393,13 +447,7 @@ function wrapParagraph(
       continue
     }
     flush()
-    if (measure(token) <= maxWidth) {
-      current = token
-    } else {
-      const broken = wrapLongToken(token, maxWidth, measure)
-      lines.push(...broken.slice(0, -1))
-      current = broken[broken.length - 1] ?? ''
-    }
+    current = placeToken(token, maxWidth, measure, lines)
   }
   flush()
   return lines.length > 0 ? lines : ['']

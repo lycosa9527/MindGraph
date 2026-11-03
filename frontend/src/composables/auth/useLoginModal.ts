@@ -25,6 +25,7 @@ import {
   saveLoginIdentifier,
 } from '@/utils/savedLoginCredentials'
 import { SCHOOL_EXPIRED_CODE, emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
+import { takeStudentRelogin } from '@/utils/studentRelogin'
 
 export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-password'
 
@@ -73,6 +74,19 @@ export function useLoginModal(
     password: '',
     captcha: '',
   })
+  /** Shown on the student form after the initial password was replaced. */
+  const studentReloginNotice = ref(false)
+
+  function applyStudentReloginPrefill(): void {
+    const prefill = takeStudentRelogin()
+    if (!prefill) return
+    studentReloginNotice.value = prefill.passwordSaved
+    loginAudience.value = 'student'
+    currentView.value = 'login'
+    activeTab.value = 'login'
+    if (prefill.classCode) studentLoginForm.value.classCode = prefill.classCode
+    if (prefill.name) studentLoginForm.value.name = prefill.name
+  }
 
   /** Prefill login identifier from localStorage (记住账号; on by default). */
   const rememberAccount = ref(true)
@@ -247,6 +261,7 @@ export function useLoginModal(
 
   function closeModal() {
     isVisible.value = false
+    studentReloginNotice.value = false
     resetAllForms()
     currentView.value = 'login'
     activeTab.value = 'login'
@@ -1070,9 +1085,11 @@ export function useLoginModal(
     () => props.visible,
     (visible) => {
       if (visible) {
+        applyStudentReloginPrefill()
         void authStore.detectMode()
       }
-    }
+    },
+    { immediate: true }
   )
 
   watch(
@@ -1099,6 +1116,7 @@ export function useLoginModal(
     showLoginAudienceTabs,
     loginForm,
     studentLoginForm,
+    studentReloginNotice,
     registerForm,
     smsLoginForm,
     forgotForm,

@@ -224,6 +224,26 @@ const layoutMeasureSettling = diagramSessionRef(diagramStore, 'layoutMeasureSett
 const savedDiagramsStore = useSavedDiagramsStore()
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
+const canvasExportStore = useCanvasExportStore()
+const exportCapturing = computed(() => canvasExportStore.exportSessionActive)
+
+watch(
+  exportCapturing,
+  (frozen) => {
+    document.documentElement.classList.toggle('mg-export-capturing', frozen)
+    if (!frozen) return
+    const active = document.activeElement
+    if (!(active instanceof HTMLElement)) return
+    if (
+      active.closest(
+        '.diagram-canvas, .vue-flow, .inline-edit-input, .inline-edit-wrapper, .node-floating-toolbar'
+      )
+    ) {
+      active.blur()
+    }
+  },
+  { immediate: true }
+)
 
 const { generateRelationship, generatingConnectionIds, regenerateForNodeIfNeeded } =
   useConceptMapRelationship()
@@ -257,8 +277,9 @@ function getVueFlowNodesForOverlays(): GraphNode[] {
 
 const branchMove = useBranchMoveDrag({
   allowNodeMove: () =>
-    (!props.presentationRailOpen && !props.handToolActive) ||
-    (props.presentationRailOpen && props.presentationPointerEditMode),
+    !exportCapturing.value &&
+    ((!props.presentationRailOpen && !props.handToolActive) ||
+      (props.presentationRailOpen && props.presentationPointerEditMode)),
 })
 provide('branchMove', branchMove)
 
@@ -287,6 +308,11 @@ const enableTouchPanPinch = computed(() =>
   )
 )
 
+/** Zoom-bar hand or presentation hand: grab-pan the canvas. */
+const useHandToolPanClass = computed(
+  () => props.presentationHandPanMode || (props.handToolActive && !props.presentationRailOpen)
+)
+
 const {
   presentationStrokeToolActive,
   presentationStrokeColor,
@@ -296,6 +322,9 @@ const {
   elementsSelectable,
   selectNodesOnDrag,
   selectionKeyCode,
+  panOnScroll,
+  zoomOnScroll,
+  zoomOnPinch,
   vueFlowBackgroundClasses,
 } = useDiagramCanvasVueFlowUi({
   diagramStore,
@@ -309,6 +338,8 @@ const {
   presentationTool,
   presentationHighlighterColor,
   presentationPenColor,
+  interactionFrozen: exportCapturing,
+  handToolPan: useHandToolPanClass,
 })
 
 // Vue Flow 1.48's prop only accepts boolean | null, and null would clear this.
@@ -335,11 +366,6 @@ const presentationStrokeOverlayMode = computed((): 'pen' | 'highlighter' | 'eras
   if (presentationStrokeEraserActive.value) return 'eraser'
   return presentationTool.value === 'pen' ? 'pen' : 'highlighter'
 })
-
-/** Zoom-bar hand or presentation hand: grab-pan the canvas. */
-const useHandToolPanClass = computed(
-  () => props.presentationHandPanMode || (props.handToolActive && !props.presentationRailOpen)
-)
 
 const presentationTeleportTarget = computed(() => resolvePresentationTeleportTarget())
 
@@ -588,7 +614,6 @@ const {
   setViewport,
 })
 
-const canvasExportStore = useCanvasExportStore()
 const {
   exportOptions,
   worksheetTextOptions,
@@ -733,6 +758,7 @@ const { setupMobileTouchZoom, mobileTouchCleanup, setupMouseSlash } = useDiagram
     !props.presentationHandPanMode &&
     !presentationStrokeToolActive.value &&
     !(Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.includes(0)),
+  canvasFrozen: () => exportCapturing.value,
 })
 let cleanupMouseSlash: (() => void) | null = null
 
@@ -838,6 +864,7 @@ onUnmounted(() => {
   canvasContainer.value?.removeEventListener('dragover', onTrainingDragOver)
   canvasContainer.value?.removeEventListener('drop', onTrainingDrop)
   document.documentElement.classList.remove('mg-learning-sheet-pick')
+  document.documentElement.classList.remove('mg-export-capturing')
   document.documentElement.style.removeProperty('--mg-hammer-cursor')
   unregisterLayoutRecalcSession?.()
   unregisterLayoutRecalcSession = null
@@ -906,10 +933,10 @@ defineExpose({
         :elements-selectable="elementsSelectable"
         :select-nodes-on-drag="selectNodesOnDrag"
         :selection-mode="SelectionMode.Partial"
-        :pan-on-scroll="useHandToolPanClass"
+        :pan-on-scroll="panOnScroll"
         :pan-on-scroll-speed="1"
-        :zoom-on-scroll="!useHandToolPanClass"
-        :zoom-on-pinch="true"
+        :zoom-on-scroll="zoomOnScroll"
+        :zoom-on-pinch="zoomOnPinch"
         :zoom-on-double-click="false"
         :delete-key-code="null"
         :pan-on-drag="effectivePanOnDrag"
@@ -1034,6 +1061,14 @@ defineExpose({
       :canvas-container="canvasContainer"
       :loading="nodeExplainLoading"
       @close="closeNodeExplain"
+    />
+
+    <div
+      v-if="exportCapturing"
+      class="diagram-canvas__export-freeze"
+      @pointerdown.stop
+      @contextmenu.prevent.stop
+      @wheel.stop.prevent
     />
 
     <CanvasWorksheetTextModal

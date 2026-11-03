@@ -105,6 +105,32 @@ describe('useDiagramCanvasVueFlowUi', () => {
     sessionStorage.removeItem(MINDGRAPH_HEADLESS_EXPORT_KEY)
   })
 
+  it('freezes pan, zoom, drag, and selection while a snapshot is running', () => {
+    learningSheetPickActive.value = false
+    const frozen = ref(true)
+    const ui = useDiagramCanvasVueFlowUi(
+      buildUiOptions({
+        diagramStore: { type: 'bubble_map' } as ReturnType<
+          typeof import('@/stores').useDiagramStore
+        >,
+        interactionFrozen: frozen,
+        handToolPan: ref(false),
+      })
+    )
+    expect(ui.effectivePanOnDrag.value).toBe(false)
+    expect(ui.nodesDraggable.value).toBe(false)
+    expect(ui.elementsSelectable.value).toBe(false)
+    expect(ui.selectNodesOnDrag.value).toBe(false)
+    expect(ui.selectionKeyCode.value).toBe(null)
+    expect(ui.zoomOnScroll.value).toBe(false)
+    expect(ui.zoomOnPinch.value).toBe(false)
+    expect(ui.panOnScroll.value).toBe(false)
+    frozen.value = false
+    expect(ui.elementsSelectable.value).toBe(true)
+    expect(ui.zoomOnScroll.value).toBe(true)
+    expect(ui.selectionKeyCode.value).toBe('Control')
+  })
+
   it('disables node selection during headless export screenshots', () => {
     learningSheetPickActive.value = false
     sessionStorage.setItem(MINDGRAPH_HEADLESS_EXPORT_KEY, '1')

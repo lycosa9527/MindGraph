@@ -18,6 +18,7 @@ import {
   TREE_MAP_LEAF_SPACING,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
+import { measuredBoxExtent } from '@/utils/measuredBoxExtent'
 import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import {
@@ -264,8 +265,8 @@ function resolveTreeMapBox(
     return measured
   }
   return {
-    width: Math.max(measured.width, pinia.width),
-    height: Math.max(measured.height, pinia.height),
+    width: measuredBoxExtent(pinia.width, measured.width, NODE_MIN_DIMENSIONS.branch.minWidth),
+    height: measuredBoxExtent(pinia.height, measured.height, NODE_MIN_DIMENSIONS.branch.minHeight),
   }
 }
 

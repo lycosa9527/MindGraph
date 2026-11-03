@@ -1,7 +1,7 @@
 /**
  * Learning Space API helpers (admin / teacher / student).
  */
-import { apiRequestJson, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
+import { apiRequest, apiRequestJson, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
 
 const BASE = '/api/learning-space'
 
@@ -235,8 +235,27 @@ export async function fetchLearningSpaceContext(): Promise<LearningSpaceContext>
   return apiRequestJson<LearningSpaceContext>(`${BASE}/me/context`)
 }
 
+/** Password save hit a dead session. The API client already opens the login card. */
+export class LearningSpaceSessionError extends Error {
+  constructor() {
+    super('session')
+    this.name = 'LearningSpaceSessionError'
+  }
+}
+
 export async function studentChangePassword(newPassword: string): Promise<{ ok: boolean }> {
-  return postJson(`${BASE}/student/change-password`, { new_password: newPassword })
+  const response = await apiRequest(`${BASE}/student/change-password`, {
+    method: 'POST',
+    body: JSON.stringify({ new_password: newPassword }),
+  })
+  if (response.status === 401) {
+    throw new LearningSpaceSessionError()
+  }
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, response.statusText || 'Request failed'))
+  }
+  return response.json() as Promise<{ ok: boolean }>
 }
 
 export async function listStudentAssignments(): Promise<{ items: LearningAssignment[] }> {

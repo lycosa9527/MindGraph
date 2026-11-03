@@ -76,7 +76,7 @@ function attachLabeledTree(
   )
   setGloss(
     nodes.find((node) => node.id === 'dimension-label'),
-    mirrorString(mirror, 'dimension') ?? mirrorString(mirror, 'relating_factor')
+    mirrorString(mirror, 'dimension')
   )
   const glosses: string[] = []
   preorderTexts(mirror[childKey], glosses)
@@ -97,7 +97,7 @@ function attachConcept(nodes: DiagramNode[], mirror: Record<string, unknown>): v
 function attachBridge(nodes: DiagramNode[], mirror: Record<string, unknown>): void {
   setGloss(
     nodes.find((node) => node.id === 'dimension-label' || node.type === 'label'),
-    mirrorString(mirror, 'dimension') ?? mirrorString(mirror, 'relating_factor')
+    mirrorString(mirror, 'dimension')
   )
   const pairs = mirrorRecordList(mirror, 'analogies')
   const branches = nodes.filter((node) => node.type === 'branch')

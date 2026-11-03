@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  FLOW_MAP_PILL_HEIGHT,
+  FLOW_SUBSTEP_NODE_MAX_WIDTH,
+  FLOW_SUBSTEP_SPACING,
+} from '@/composables/diagrams/layoutConfig'
 import { loadFlowMapSpec, recalculateFlowMapLayout } from '@/stores/specLoader/flowMap'
 import {
   collectFlowMapSpecFromNodes,
@@ -9,6 +14,13 @@ import {
   resolveFlowSubstepsForSteps,
   swapFlowMapCollectedSteps,
 } from '@/stores/specLoader/flowMapSubsteps'
+import {
+  FLOW_SUBSTEP_FONT_SIZE,
+  flowPillContentMaxPx,
+  flowPillTextCap,
+  measureFlowRolePill,
+} from '@/utils/flowPillBox'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
 describe('flowMapSubsteps', () => {
   it('collects substeps per step index when labels collide', () => {
@@ -245,6 +257,113 @@ describe('recalculateFlowMapLayout', () => {
     expect(step0X).toBeLessThan(step1X)
     expect(Math.abs(sub0X - step0X)).toBeLessThan(Math.abs(sub0X - step1X))
     expect(Math.abs(sub1X - step1X)).toBeLessThan(Math.abs(sub1X - step0X))
+  })
+
+  it('wraps a label that fits the script column but not the pill', () => {
+    const full = '选择基础模型并完成对比评估说明文字'
+    const ceiling = flowPillContentMaxPx(FLOW_SUBSTEP_NODE_MAX_WIDTH)
+    let text = ''
+    for (const glyph of full) {
+      text += glyph
+      const open = measureThinkingMapLabelBlockPx(
+        text,
+        FLOW_SUBSTEP_FONT_SIZE,
+        flowPillTextCap('substep')
+      )
+      if (open.lineCount !== 1 || open.width <= ceiling) continue
+      const box = measureFlowRolePill(text, 'substep')
+      expect(box.boxWidth).toBeLessThanOrEqual(FLOW_SUBSTEP_NODE_MAX_WIDTH)
+      expect(box.boxHeight).toBeGreaterThan(FLOW_MAP_PILL_HEIGHT)
+      return
+    }
+    expect(text.length).toBeGreaterThan(0)
+  })
+
+  it('centers a substep whose text is wider than the painted pill', () => {
+    const loaded = loadFlowMapSpec({
+      title: '流程',
+      orientation: 'horizontal',
+      steps: ['模型选型与提示工程'],
+      substeps: [
+        {
+          step: '模型选型与提示工程',
+          substeps: ['A', '设计输出结构（JSON / 工具参数）', 'B'],
+        },
+      ],
+    })
+    const step = loaded.nodes.find((node) => node.type === 'flow')
+    const shortSub = loaded.nodes.find((node) => node.text === 'A')
+    const longSub = loaded.nodes.find((node) => node.text?.includes('设计输出结构'))
+    const afterSub = loaded.nodes.find((node) => node.text === 'B')
+    expect(step?.id).toBeTruthy()
+    expect(shortSub?.position?.x).toEqual(expect.any(Number))
+    expect(longSub?.position?.x).toEqual(expect.any(Number))
+    expect(afterSub?.position?.y).toEqual(expect.any(Number))
+    if (!step || !shortSub?.position || !longSub?.position || !afterSub?.position) return
+
+    const longBox = measureFlowRolePill('设计输出结构（JSON / 工具参数）', 'substep')
+    expect(longBox.boxWidth).toBeLessThanOrEqual(FLOW_SUBSTEP_NODE_MAX_WIDTH)
+    const shortCenter = shortSub.position.x + 60
+    const impliedLongWidth = 2 * (shortCenter - longSub.position.x)
+    expect(impliedLongWidth).toBeCloseTo(longBox.boxWidth, 0)
+    expect(afterSub.position.y).toBeGreaterThanOrEqual(
+      longSub.position.y + longBox.boxHeight + FLOW_SUBSTEP_SPACING - 1
+    )
+
+    const stepPainted = 180
+    const paintedLong = 200
+    const laidOut = recalculateFlowMapLayout(loaded.nodes, {
+      'flow-topic': { width: 160, height: 48 },
+      [step.id]: { width: stepPainted, height: 48 },
+      [shortSub.id]: { width: 120, height: 48 },
+      [longSub.id]: { width: paintedLong, height: 72 },
+      [afterSub.id]: { width: 120, height: 48 },
+    })
+    const stepLaid = laidOut.find((node) => node.id === step.id)
+    const longLaid = laidOut.find((node) => node.id === longSub.id)
+    const stepCenterX = (stepLaid?.position?.x ?? 0) + stepPainted / 2
+    const longCenterX = (longLaid?.position?.x ?? 0) + paintedLong / 2
+    expect(Math.abs(longCenterX - stepCenterX)).toBeLessThan(1)
+
+    const beforeFonts = recalculateFlowMapLayout(loaded.nodes, {
+      'flow-topic': { width: 160, height: 48 },
+      [step.id]: { width: stepPainted, height: 48 },
+      [shortSub.id]: { width: 120, height: 48 },
+      [longSub.id]: { width: 120, height: 48 },
+      [afterSub.id]: { width: 120, height: 48 },
+    })
+    const stepBefore = beforeFonts.find((node) => node.id === step.id)
+    const longBefore = beforeFonts.find((node) => node.id === longSub.id)
+    const heldCenter = (longBefore?.position?.x ?? 0) + longBox.boxWidth / 2
+    const stepHeldCenter = (stepBefore?.position?.x ?? 0) + stepPainted / 2
+    expect(Math.abs(heldCenter - stepHeldCenter)).toBeLessThan(1)
+  })
+
+  it('trusts a minimum pill when the estimate is only slightly wider', () => {
+    const loaded = loadFlowMapSpec({
+      title: 'Trip',
+      orientation: 'horizontal',
+      steps: ['Pack'],
+      substeps: [{ step: 'Pack', substeps: ['Electronics'] }],
+    })
+    const step = loaded.nodes.find((node) => node.type === 'flow')
+    const sub = loaded.nodes.find((node) => node.text === 'Electronics')
+    expect(step?.id).toBeTruthy()
+    expect(sub?.id).toBeTruthy()
+    if (!step || !sub) return
+    const estimate = measureFlowRolePill('Electronics', 'substep')
+    expect(estimate.boxWidth).toBeGreaterThan(120)
+    expect(estimate.boxWidth).toBeLessThan(136)
+    const laidOut = recalculateFlowMapLayout(loaded.nodes, {
+      'flow-topic': { width: 160, height: 48 },
+      [step.id]: { width: 160, height: 48 },
+      [sub.id]: { width: 120, height: 48 },
+    })
+    const stepLaid = laidOut.find((node) => node.id === step.id)
+    const subLaid = laidOut.find((node) => node.id === sub.id)
+    const stepCenter = (stepLaid?.position?.x ?? 0) + 80
+    const subCenter = (subLaid?.position?.x ?? 0) + 60
+    expect(Math.abs(subCenter - stepCenter)).toBeLessThan(1)
   })
 
   it('infers vertical orientation from step positions when topic data is missing', () => {

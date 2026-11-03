@@ -29,7 +29,11 @@ import { ensureTreeMapTopicLayout } from './treeMapTopicLayout'
 import type { SpecLoaderResult } from './types'
 import { applyLearningSheetHiddenNodes } from './utils'
 
-export { getDefaultTemplate } from './defaultTemplates'
+export {
+  defaultTemplateForUi,
+  getBilingualDefaultTemplate,
+  getDefaultTemplate,
+} from './defaultTemplates'
 
 function applyThinkingMapIdentityMigrate(
   spec: Record<string, unknown>,

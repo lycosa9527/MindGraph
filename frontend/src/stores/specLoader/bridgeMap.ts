@@ -1,13 +1,15 @@
 /**
  * Bridge Map Loader
+ * Pairs run left to right. After five pairs the next one sits under the
+ * last and the row runs back, so the bridge can U-turn.
  */
+import { DEFAULT_CENTER_Y, DEFAULT_PADDING } from '@/composables/diagrams/layoutConfig'
 import {
-  BRANCH_NODE_HEIGHT,
-  DEFAULT_CENTER_Y,
-  DEFAULT_NODE_WIDTH,
-  DEFAULT_PADDING,
-} from '@/composables/diagrams/layoutConfig'
-import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
+  mirrorRecordList,
+  mirrorString,
+  mirrorStringList,
+  readSecondaryMirror,
+} from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode } from '@/types'
 import {
   BRIDGE_DIMENSION_LABEL_ID,
@@ -23,6 +25,8 @@ import {
   measureBridgeDimensionLabelBox,
   resolveBridgePairOrigin,
 } from '@/utils/bridgeMapLabelLayout'
+import { BRIDGE_PAIR_FONT, bridgePairContentBox } from '@/utils/bridgeMapPairBox'
+import { placeBridgeSerpentine } from '@/utils/bridgeMapSerpentine'
 
 import { learningSheetLayoutSecondary } from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
@@ -30,6 +34,85 @@ import type { SpecLoaderResult } from './types'
 const BRIDGE_VERTICAL_GAP = 5
 const BRIDGE_SHAPED_VERTICAL_GAP = 16
 const BRIDGE_GAP_BETWEEN_PAIRS = 50
+
+function pairFontSize(node: DiagramNode | undefined): number {
+  const stored = node?.style?.fontSize
+  const parsed = typeof stored === 'number' ? stored : Number.parseFloat(String(stored ?? ''))
+  if (Number.isFinite(parsed) && parsed > 0) return parsed
+  return BRIDGE_PAIR_FONT
+}
+
+/** Section box. A measured browser box wins. Otherwise the wrapped text box. */
+function pairBox(
+  node: DiagramNode | undefined,
+  measured: { width: number; height: number } | undefined
+): { width: number; height: number } {
+  const gloss = node ? learningSheetLayoutSecondary(node) : ''
+  const estimated = bridgePairContentBox(node?.text ?? '', gloss, pairFontSize(node))
+  return {
+    width: measured?.width != null && measured.width > 0 ? measured.width : estimated.width,
+    height: measured?.height != null && measured.height > 0 ? measured.height : estimated.height,
+  }
+}
+
+type BridgeAnalogy = {
+  left: string
+  right: string
+  leftSecondary: string
+  rightSecondary: string
+}
+
+function glossText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function pairSideGloss(
+  pair: Record<string, unknown>,
+  mirrorPair: Record<string, unknown> | undefined,
+  side: 'left' | 'right'
+): string {
+  return (
+    glossText(pair[`${side}_secondary`]) ||
+    glossText(pair[`${side}Secondary`]) ||
+    glossText(mirrorPair?.[side])
+  )
+}
+
+function readBridgeAnalogies(spec: Record<string, unknown>): BridgeAnalogy[] {
+  const raw = Array.isArray(spec.analogies)
+    ? spec.analogies
+    : Array.isArray(spec.pairs)
+      ? spec.pairs
+      : []
+  const mirrorPairs = mirrorRecordList(readSecondaryMirror(spec), 'analogies')
+  return raw.map((item, index) => {
+    const pair = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
+    const mirrorPair = mirrorPairs[index]
+    return {
+      left: glossText(pair.left) || glossText(pair.top),
+      right: glossText(pair.right) || glossText(pair.bottom),
+      leftSecondary: pairSideGloss(pair, mirrorPair, 'left'),
+      rightSecondary: pairSideGloss(pair, mirrorPair, 'right'),
+    }
+  })
+}
+
+function readDimensionSecondary(spec: Record<string, unknown>): string {
+  const mirror = readSecondaryMirror(spec)
+  const relationship =
+    glossText(spec.dimension_secondary) || mirrorString(mirror, 'dimension') || ''
+  if (glossText(spec.dimension)) return relationship
+  // The label shows the bridge word only when the relationship is blank.
+  return relationship || mirrorString(mirror, 'relating_factor') || ''
+}
+
+function readAlternativeSecondary(spec: Record<string, unknown>): string[] {
+  if (Array.isArray(spec.alternative_dimensions_secondary)) {
+    const direct = spec.alternative_dimensions_secondary.map((item) => glossText(item))
+    if (direct.some((item) => item.length > 0)) return direct
+  }
+  return mirrorStringList(readSecondaryMirror(spec), 'alternative_dimensions')
+}
 
 /** 5px while pair words stay bare text. A chosen shape opens the gap around the bridge line. */
 export function bridgePairVerticalGap(nodes: DiagramNode[]): number {
@@ -50,18 +133,11 @@ export function recalculateBridgeMapLayout(
 
   const centerY = DEFAULT_CENTER_Y
 
-  const getH = (id: string): number => {
-    const pinia = nodeDimensions[id]?.height
-    if (pinia != null && pinia > 0) return pinia
-    const node = nodes.find((item) => item.id === id)
-    return heightWithSecondaryLine(
-      BRANCH_NODE_HEIGHT,
-      node ? learningSheetLayoutSecondary(node) : undefined,
-      14
+  const boxFor = (id: string): { width: number; height: number } =>
+    pairBox(
+      nodes.find((item) => item.id === id),
+      nodeDimensions[id]
     )
-  }
-
-  const getW = (id: string): number => nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH
 
   const pairNodes = nodes.filter((n) => isBridgeMapPairNode(n))
   const otherNodes = nodes.filter((n) => !isBridgeMapPairNode(n))
@@ -81,30 +157,48 @@ export function recalculateBridgeMapLayout(
     return { ...n }
   })
 
-  let currentX = origin.pairStartX
   const verticalGap = bridgePairVerticalGap(pairNodes)
-
-  for (let i = 0; i <= maxPairIndex; i++) {
+  const sequence: Array<{
+    left: DiagramNode
+    right: DiagramNode
+    upperWidth: number
+    upperHeight: number
+    lowerWidth: number
+    lowerHeight: number
+  }> = []
+  for (let i = 0; i <= maxPairIndex; i += 1) {
     const leftNode = findBridgePairSide(pairNodes, i, 'left')
     const rightNode = findBridgePairSide(pairNodes, i, 'right')
     if (!leftNode || !rightNode) continue
-
-    const leftH = getH(leftNode.id)
-    const pairWidth = Math.max(getW(leftNode.id), getW(rightNode.id))
-
-    const leftY = centerY - verticalGap - leftH
-    const rightY = centerY + verticalGap
-    result.push({
-      ...leftNode,
-      position: { x: currentX, y: leftY },
+    const leftBox = boxFor(leftNode.id)
+    const rightBox = boxFor(rightNode.id)
+    sequence.push({
+      left: leftNode,
+      right: rightNode,
+      upperWidth: leftBox.width,
+      upperHeight: leftBox.height,
+      lowerWidth: rightBox.width,
+      lowerHeight: rightBox.height,
     })
-    result.push({
-      ...rightNode,
-      position: { x: currentX, y: rightY },
-    })
-
-    currentX += pairWidth + BRIDGE_GAP_BETWEEN_PAIRS
   }
+  const placed = placeBridgeSerpentine(
+    sequence,
+    origin.pairStartX,
+    centerY,
+    verticalGap,
+    BRIDGE_GAP_BETWEEN_PAIRS
+  )
+  sequence.forEach((pair, index) => {
+    const place = placed[index]
+    result.push({
+      ...pair.left,
+      position: { x: place.x, y: place.upperY },
+    })
+    result.push({
+      ...pair.right,
+      position: { x: place.x, y: place.lowerY },
+    })
+  })
 
   return result
 }
@@ -116,37 +210,12 @@ export function recalculateBridgeMapLayout(
  * @returns SpecLoaderResult with nodes and connections
  */
 export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
-  // Bridge maps use analogies array with left/right properties
-  // Support both old format (pairs with top/bottom) and new format (analogies with left/right)
-  let analogies: Array<{ left: string; right: string }> = []
+  // Bridge maps use analogies array with left/right properties.
+  // Old specs used pairs with top/bottom. Glosses come from the pair or the secondary mirror.
+  const analogies = readBridgeAnalogies(spec)
 
-  if (spec.analogies && Array.isArray(spec.analogies)) {
-    // New format: analogies with left/right
-    analogies = spec.analogies.map(
-      (a: { left?: string; right?: string; top?: string; bottom?: string }) => ({
-        left: a.left || a.top || '',
-        right: a.right || a.bottom || '',
-      })
-    )
-  } else if (spec.pairs && Array.isArray(spec.pairs)) {
-    // Old format: pairs with top/bottom
-    analogies = spec.pairs.map(
-      (p: { top?: string; bottom?: string; left?: string; right?: string }) => ({
-        left: p.left || p.top || '',
-        right: p.right || p.bottom || '',
-      })
-    )
-  }
-
-  // Layout constants from layoutConfig
   const centerY = DEFAULT_CENTER_Y
-  const gapBetweenPairs = 50 // Actual gap between node edges (right edge to left edge)
-  // Bridge map nodes should be close to the bridge line (smaller gap than default)
   const verticalGap = bridgePairVerticalGap([])
-  const nodeWidth = DEFAULT_NODE_WIDTH
-  // Use consistent height for both nodes to ensure symmetry
-  // Use BRANCH_NODE_HEIGHT (36px) which matches BranchNode's min-height
-  const nodeHeight = BRANCH_NODE_HEIGHT
 
   // Use dimension if available, otherwise fall back to relating_factor.
   // Always create the label — LabelNode shows placeholder text when empty.
@@ -154,54 +223,54 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     (spec.dimension as string | undefined)?.trim() ||
     (spec.relating_factor as string | undefined)?.trim() ||
     ''
+  const dimensionSecondary = readDimensionSecondary(spec)
   // Pairs start after the wrapped dimension label so a long value cannot cover the first pair.
-  const labelBox = measureBridgeDimensionLabelBox(dimension)
+  const labelBox = measureBridgeDimensionLabelBox(dimension, dimensionSecondary)
   const startX = DEFAULT_PADDING + labelBox.width + BRIDGE_LABEL_TO_PAIR_GAP
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
   const claimedIds = new Set<string>([BRIDGE_DIMENSION_LABEL_ID])
 
-  // Calculate positions based on actual node edges (not centers)
-  let currentX = startX
+  const placed = placeBridgeSerpentine(
+    analogies.map((analogy) => {
+      const leftBox = bridgePairContentBox(analogy.left, analogy.leftSecondary)
+      const rightBox = bridgePairContentBox(analogy.right, analogy.rightSecondary)
+      return {
+        upperWidth: leftBox.width,
+        upperHeight: leftBox.height,
+        lowerWidth: rightBox.width,
+        lowerHeight: rightBox.height,
+      }
+    }),
+    startX,
+    centerY,
+    verticalGap,
+    BRIDGE_GAP_BETWEEN_PAIRS
+  )
 
   analogies.forEach((analogy, index) => {
-    // Position nodes at currentX (left edge)
-    const nodeX = currentX
-
-    // Left node (top position, close to bridge line)
-    // Align all left nodes by their centers so they're visually aligned regardless of height
-    // Center Y = centerY - verticalGap - nodeHeight/2
-    // Top-left Y = centerY - verticalGap - nodeHeight/2 - nodeHeight/2 = centerY - verticalGap - nodeHeight
-    const leftNodeY = centerY - verticalGap - nodeHeight
-
-    // Right node (bottom position, close to bridge line)
-    // Align all right nodes by their centers so they're visually aligned regardless of height
-    // Center Y = centerY + verticalGap + nodeHeight/2
-    // Top-left Y = centerY + verticalGap + nodeHeight/2 - nodeHeight/2 = centerY + verticalGap
-    const rightNodeY = centerY + verticalGap
-
+    const place = placed[index]
     const leftId = takeBridgeMapStableId(claimedIds)
     const rightId = takeBridgeMapStableId(claimedIds)
 
     nodes.push({
       id: leftId,
       text: analogy.left,
+      ...(analogy.leftSecondary ? { textSecondary: analogy.leftSecondary } : {}),
       type: 'branch',
-      position: { x: nodeX, y: leftNodeY },
+      position: { x: place.x, y: place.upperY },
       data: stampBridgePairData(index, 'left', { [BRIDGE_MAP_UID_DATA_KEY]: leftId }),
     })
 
     nodes.push({
       id: rightId,
       text: analogy.right,
+      ...(analogy.rightSecondary ? { textSecondary: analogy.rightSecondary } : {}),
       type: 'branch',
-      position: { x: nodeX, y: rightNodeY },
+      position: { x: place.x, y: place.lowerY },
       data: stampBridgePairData(index, 'right', { [BRIDGE_MAP_UID_DATA_KEY]: rightId }),
     })
-
-    // Move to next position: right edge of current node + gap
-    currentX = nodeX + nodeWidth + gapBetweenPairs
   })
 
   // Add dimension label node on the left side
@@ -211,6 +280,7 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   nodes.push({
     id: BRIDGE_DIMENSION_LABEL_ID,
     text: dimension,
+    ...(dimensionSecondary ? { textSecondary: dimensionSecondary } : {}),
     type: 'label',
     position: { x: labelX, y: labelY },
     data: {
@@ -229,6 +299,10 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   }
   if (spec.alternative_dimensions) {
     metadata.alternative_dimensions = spec.alternative_dimensions
+  }
+  const alternativeSecondary = readAlternativeSecondary(spec)
+  if (alternativeSecondary.some((item) => item.length > 0)) {
+    metadata.alternative_dimensions_secondary = alternativeSecondary
   }
 
   return { nodes, connections, metadata }

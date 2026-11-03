@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.205] - 2026-11-03
+
+> **A class owner can reset a student's password, a snapshot holds the canvas still, and a long flow or bridge map turns back after five boxes.**
+
+### Added
+
+- **Student password reset** — The class owner who can publish resets a classroom student to the initial password. That session ends and any lock clears. The student signs in with the new password and must change it again. A learner who already uses their own account is left alone. After a student saves a new password, the login card opens on the student tab with the class code and name filled in.
+
+### Changed
+
+- **Canvas export** — While a snapshot is running, pan, zoom, drag, selection, and canvas typing stay off. The export button shows a traveling ring. Image export frames every diagram at its own size, so the picture grows with the map and stays near 2× until the raster budget is full.
+- **Dual-language diagrams** — A blank canvas in dual-language mode carries the presenter language as the smaller second line. Ctrl or Command with a double-click edits that line. A plain double-click edits only the main line. The shortcut card lists the second-line gesture while a second language is showing. Completing a bridge map keeps a partial second line on the pair or the relationship.
+- **Flow and bridge rows** — A flow map and a bridge map run left to right for five boxes, then the next box sits under the last and the row runs back. The arrow or bridge line steps out, drops, and comes back in. Pair and step boxes follow the painted text, including a second-language line.
+- **Flow and brace pills** — A flow pill grows with its label up to the topic, step, and substep caps, and layout centers on the painted box. Brace text wraps inside the pill. A multi-flow node widens for the gloss line.
+- **PDF preview** — Showcase preview loads `public/pdf.worker.min.mjs`. The classic worker, the `pdfjs` folder, and the Adobe CMap tree are no longer shipped. The version check fails when those retired files remain or the worker hash does not match the installed `pdfjs-dist`.
+
+### Fixed
+
+- **Forced password change** — Learning Space reads `must_change_password` from the database, so a teacher reset still applies when the signed-in user is a Redis copy from before the reset.
+- **Flow substeps** — Steps that share a label keep their own substep lists. Layout matches a substep group by step id.
+- **Tree map boxes** — A measured box at the CSS minimum is kept when the estimate is only slightly wider. A reading that collapsed before the font loaded yields to the estimate.
+- **Label wrap** — Chinese, Japanese, and Korean characters can break a line. A Latin word such as `AI` or `77%` stays with the text that follows.
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_learning_space_db_flow.py`](tests/test_learning_space_db_flow.py), [`tests/test_diagram_bilingual_split.py`](tests/test_diagram_bilingual_split.py)
+- [`frontend/tests/studentRelogin.spec.ts`](frontend/tests/studentRelogin.spec.ts), [`frontend/tests/nodeTextEditLine.spec.ts`](frontend/tests/nodeTextEditLine.spec.ts), [`frontend/tests/bilingualDefaultTemplate.spec.ts`](frontend/tests/bilingualDefaultTemplate.spec.ts), [`frontend/tests/flowMapSubsteps.spec.ts`](frontend/tests/flowMapSubsteps.spec.ts), [`frontend/tests/flowMapSerpentine.spec.ts`](frontend/tests/flowMapSerpentine.spec.ts), [`frontend/tests/bridgeMapSerpentine.spec.ts`](frontend/tests/bridgeMapSerpentine.spec.ts), [`frontend/tests/diagramExportRasterScale.spec.ts`](frontend/tests/diagramExportRasterScale.spec.ts), [`frontend/tests/useDiagramCanvasVueFlowUi.spec.ts`](frontend/tests/useDiagramCanvasVueFlowUi.spec.ts), [`frontend/tests/mindMapTextWrap.spec.ts`](frontend/tests/mindMapTextWrap.spec.ts)
+
 ## [5.180.204] - 2026-11-02
 
 > **A course slide can walk, knock, or quiz the diagram, and seminar plus canvas collaboration are on for every school.**

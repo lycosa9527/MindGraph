@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * BridgeOverlay - Draws bridge map visual elements
- * - Vertical lines connecting left and right nodes in each analogy pair
- * - Triangle separators between pairs
+ * - Bridge stroke, including the U-turn between rows
+ * - Triangle separators and "as" marks between pairs
  * - Dimension label on the left side
  * - Hover selection box with delete button for analogy pairs
  */
@@ -16,6 +16,7 @@ import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
+import { bridgeSerpentineInk, openBridgeSeparatorGaps } from '@/utils/bridgeMapSerpentine'
 import {
   DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y,
   diagramFooterChipY,
@@ -77,6 +78,16 @@ const asLabelColor = computed(() =>
 )
 const TRIANGLE_HEIGHT = 8 // Height of triangle separator (vertical distance from base to tip)
 const TRIANGLE_BASE_WIDTH = 12 // Width of triangle base (bottom edge)
+
+/** Triangle on the stroke, with a foot that continues the stroke through the gap. */
+function separatorPoints(x: number, y: number): string {
+  const half = TRIANGLE_BASE_WIDTH / 2
+  const foot = BRIDGE_LINE_WIDTH / 2
+  const peak = y - TRIANGLE_HEIGHT
+  const barTop = y - foot
+  const barBottom = y + foot
+  return `${x - half},${barBottom} ${x + half},${barBottom} ${x + half},${barTop} ${x},${peak} ${x - half},${barTop}`
+}
 const AS_LABEL_FONT_SIZE = 14
 const AS_LABEL_OFFSET_Y = 15 // Distance below triangle
 const SEPARATOR_OPACITY = 0.4
@@ -195,67 +206,30 @@ const bridgePairs = computed<BridgePair[]>(() => {
   return pairs
 })
 
-/**
- * Calculate horizontal bridge line that spans across all pairs
- */
-const horizontalBridgeLine = computed(() => {
-  if (bridgePairs.value.length === 0) return null
+/** Bridge stroke, the "as" marks between pairs, and the vertical U-turn. */
+const bridgeInk = computed(() =>
+  bridgeSerpentineInk(
+    bridgePairs.value.map((pair) => ({
+      pairIndex: pair.pairIndex,
+      upper: {
+        x: pair.leftNode.x,
+        y: pair.leftNode.y,
+        width: pair.leftNode.width,
+        height: pair.leftNode.height,
+      },
+      lower: {
+        x: pair.rightNode.x,
+        y: pair.rightNode.y,
+        width: pair.rightNode.width,
+        height: pair.rightNode.height,
+      },
+    }))
+  )
+)
 
-  const firstPair = bridgePairs.value[0]
-  const lastPair = bridgePairs.value[bridgePairs.value.length - 1]
-
-  const x1 = firstPair.leftNode.x
-  const lastPairWidth = Math.max(lastPair.leftNode.width, lastPair.rightNode.width)
-  const x2 = lastPair.leftNode.x + lastPairWidth
-
-  const centerY =
-    bridgePairs.value.reduce((sum, pair) => {
-      return (
-        sum +
-        (pair.leftNode.y + pair.leftNode.height / 2) +
-        (pair.rightNode.y + pair.rightNode.height / 2)
-      )
-    }, 0) /
-    (bridgePairs.value.length * 2)
-
-  return { x1, y1: centerY, x2, y2: centerY }
-})
-
-/**
- * Calculate triangle separator positions between pairs
- * Triangles are positioned on the horizontal bridge line
- */
-const triangleSeparators = computed(() => {
-  if (!horizontalBridgeLine.value) return []
-
-  const triangles: Array<{
-    x: number
-    y: number
-    pairIndex: number
-    asLabelY: number // Y position for "as" label below triangle
-  }> = []
-
-  const bridgeY = horizontalBridgeLine.value.y1
-
-  for (let i = 0; i < bridgePairs.value.length - 1; i++) {
-    const currentPair = bridgePairs.value[i]
-    const nextPair = bridgePairs.value[i + 1]
-
-    // Triangle positioned at the midpoint between pairs, on the bridge line
-    const currentRightX = currentPair.rightNode.x + currentPair.rightNode.width
-    const nextLeftX = nextPair.leftNode.x
-    const triangleX = (currentRightX + nextLeftX) / 2
-
-    triangles.push({
-      x: triangleX,
-      y: bridgeY,
-      pairIndex: i,
-      asLabelY: bridgeY + AS_LABEL_OFFSET_Y, // Position "as" label below triangle
-    })
-  }
-
-  return triangles
-})
+const bridgeLines = computed(() =>
+  openBridgeSeparatorGaps(bridgeInk.value.lines, bridgeInk.value.along, TRIANGLE_BASE_WIDTH)
+)
 
 /**
  * Get "as" label text (always "as" regardless of language)
@@ -302,6 +276,7 @@ const alternativeDimensionsPosition = computed(() => {
   return {
     labelY,
     chipsY,
+    glossY: chipsY + bridgeFooterFonts.chip + 4,
     centerX,
   }
 })
@@ -310,6 +285,25 @@ const alternativeDimensionsPosition = computed(() => {
 const alternativeDimensionsChipsText = computed(() => {
   const dims = alternativeDimensions.value.slice(0, 6)
   return dims.map((d) => `• ${d}`).join('  ')
+})
+
+const alternativeDimensionsSecondary = computed(() => {
+  if (!isBridgeMap.value) return []
+  const raw = (diagramStore.data as { alternative_dimensions_secondary?: unknown } | null)
+    ?.alternative_dimensions_secondary
+  if (!Array.isArray(raw)) return []
+  return raw.filter((item): item is string => typeof item === 'string')
+})
+
+/** Second line under the suggested analogies, aligned with the primary chips that have a gloss. */
+const alternativeDimensionsGlossText = computed(() => {
+  const primary = alternativeDimensions.value.slice(0, 6)
+  const parts: string[] = []
+  primary.forEach((_, index) => {
+    const line = (alternativeDimensionsSecondary.value[index] ?? '').trim()
+    if (line) parts.push(`• ${line}`)
+  })
+  return parts.join('  ')
 })
 
 /**
@@ -511,38 +505,35 @@ onUnmounted(() => {
     style="z-index: 100"
   >
     <g :transform="`translate(${viewport.x}, ${viewport.y}) scale(${viewport.zoom})`">
-      <!-- Horizontal bridge line spanning across all pairs -->
       <line
-        v-if="horizontalBridgeLine"
-        :key="`bridge-line-${bridgePairs.length}-${horizontalBridgeLine.x1}-${horizontalBridgeLine.x2}`"
-        :x1="horizontalBridgeLine.x1"
-        :y1="horizontalBridgeLine.y1"
-        :x2="horizontalBridgeLine.x2"
-        :y2="horizontalBridgeLine.y2"
+        v-for="(line, lineIndex) in bridgeLines"
+        :key="`bridge-line-${lineIndex}`"
+        :x1="line.x1"
+        :y1="line.y1"
+        :x2="line.x2"
+        :y2="line.y2"
         :stroke="bridgeLineColor"
         :stroke-width="BRIDGE_LINE_WIDTH"
         :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
-        stroke-linecap="round"
+        stroke-linecap="butt"
       />
 
-      <!-- Triangle separators between pairs (pointing up) -->
+      <!-- Triangle separators between pairs on the same row (pointing up) -->
       <polygon
-        v-for="triangle in triangleSeparators"
+        v-for="triangle in bridgeInk.along"
         :key="`triangle-${triangle.pairIndex}`"
-        :points="`${triangle.x - TRIANGLE_BASE_WIDTH / 2},${triangle.y} ${triangle.x + TRIANGLE_BASE_WIDTH / 2},${triangle.y} ${triangle.x},${triangle.y - TRIANGLE_HEIGHT}`"
+        :points="separatorPoints(triangle.x, triangle.y)"
         :fill="bridgeLineColor"
-        :stroke="bridgeLineColor"
-        stroke-width="1"
+        stroke="none"
         :fill-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
-        :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
       />
 
       <!-- "as" labels below each triangle -->
       <text
-        v-for="triangle in triangleSeparators"
+        v-for="triangle in bridgeInk.along"
         :key="`as-label-${triangle.pairIndex}`"
         :x="triangle.x"
-        :y="triangle.asLabelY"
+        :y="triangle.y + AS_LABEL_OFFSET_Y"
         :fill="asLabelColor"
         :font-size="AS_LABEL_FONT_SIZE"
         text-anchor="middle"
@@ -592,6 +583,18 @@ onUnmounted(() => {
           dominant-baseline="middle"
         >
           {{ alternativeDimensionsChipsText }}
+        </text>
+        <text
+          v-if="alternativeDimensionsGlossText"
+          :x="alternativeDimensionsPosition.centerX"
+          :y="alternativeDimensionsPosition.glossY"
+          :fill="structureTextColor"
+          :font-size="bridgeFooterFonts.chip * 0.85"
+          :opacity="0.55"
+          text-anchor="middle"
+          dominant-baseline="middle"
+        >
+          {{ alternativeDimensionsGlossText }}
         </text>
         <text
           v-else

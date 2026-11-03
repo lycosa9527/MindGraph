@@ -2,26 +2,30 @@
  * First flow layout uses the pill height. A second line grows the node after
  * that pass, so shift the nodes below it before the DOM is measured.
  */
-import { FLOW_MAP_PILL_HEIGHT, FLOW_SUBSTEP_SPACING } from '@/composables/diagrams/layoutConfig'
 import {
-  FLOW_STEP_FONT_SIZE,
-  FLOW_SUBSTEP_FONT_SIZE,
-  FLOW_TOPIC_FONT_SIZE,
-} from '@/stores/specLoader/flowMap'
+  FLOW_MAP_PILL_HEIGHT,
+  FLOW_MAP_STEPS_PER_ROW,
+  FLOW_SUBSTEP_SPACING,
+} from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode } from '@/types'
 import {
   isFlowMapStepNode,
   isFlowMapSubstepNode,
   readFlowParentStepId,
+  readFlowStepIndex,
   readFlowSubstepIndex,
 } from '@/utils/flowMapIdentity'
+import { type FlowPillRole, flowSecondaryExtraHeight } from '@/utils/flowPillBox'
 
-import { secondaryLineBoxHeight } from './measure'
+function glossHeight(node: DiagramNode | undefined, role: FlowPillRole): number {
+  if (!node) return 0
+  return flowSecondaryExtraHeight(node.text ?? '', node.textSecondary, role)
+}
 
-function glossHeight(node: DiagramNode | undefined, fontSize: number): number {
-  const gloss = (node?.textSecondary ?? '').trim()
-  if (!gloss) return 0
-  return secondaryLineBoxHeight(fontSize)
+function flowRow(step: DiagramNode): number {
+  const index = readFlowStepIndex(step)
+  if (index < 0) return 0
+  return Math.floor(index / FLOW_MAP_STEPS_PER_ROW)
 }
 
 function substepsOf(nodes: readonly DiagramNode[], stepId: string): DiagramNode[] {
@@ -51,15 +55,36 @@ export function offsetFlowLayoutForSecondary(nodes: DiagramNode[]): DiagramNode[
   const shift = new Map<string, number>()
 
   if (!vertical) {
+    const rowExtra = new Map<number, number>()
+    const withinStack = new Map<string, number>()
     for (const step of steps) {
-      let accumulated = glossHeight(step, FLOW_STEP_FONT_SIZE)
+      let accumulated = glossHeight(step, 'step')
+      let stack = accumulated
       for (const child of substepsOf(nodes, step.id)) {
-        if (accumulated > 0) shift.set(child.id, accumulated)
-        accumulated += glossHeight(child, FLOW_SUBSTEP_FONT_SIZE)
+        if (accumulated > 0) withinStack.set(child.id, accumulated)
+        const childExtra = glossHeight(child, 'substep')
+        accumulated += childExtra
+        stack += childExtra
+      }
+      const row = flowRow(step)
+      rowExtra.set(row, Math.max(rowExtra.get(row) ?? 0, stack))
+    }
+    let carried = 0
+    const rowShift = new Map<number, number>()
+    for (const row of [...rowExtra.keys()].sort((left, right) => left - right)) {
+      rowShift.set(row, carried)
+      carried += rowExtra.get(row) ?? 0
+    }
+    for (const step of steps) {
+      const down = rowShift.get(flowRow(step)) ?? 0
+      if (down > 0) shift.set(step.id, down)
+      for (const child of substepsOf(nodes, step.id)) {
+        const total = (withinStack.get(child.id) ?? 0) + down
+        if (total > 0) shift.set(child.id, total)
       }
     }
   } else {
-    let accumulated = glossHeight(topic, FLOW_TOPIC_FONT_SIZE)
+    let accumulated = glossHeight(topic, 'topic')
     const ordered = [...steps].sort(
       (left, right) => (left.position?.y ?? 0) - (right.position?.y ?? 0)
     )
@@ -70,15 +95,15 @@ export function offsetFlowLayoutForSecondary(nodes: DiagramNode[]): DiagramNode[
       for (const child of children) {
         const moved = accumulated + inner
         if (moved > 0) shift.set(child.id, moved)
-        inner += glossHeight(child, FLOW_SUBSTEP_FONT_SIZE)
+        inner += glossHeight(child, 'substep')
       }
-      const extras = children.map((child) => glossHeight(child, FLOW_SUBSTEP_FONT_SIZE))
+      const extras = children.map((child) => glossHeight(child, 'substep'))
       const oldColumn = columnHeight(
         children.length,
         extras.map(() => 0)
       )
       const newColumn = columnHeight(children.length, extras)
-      const stepExtra = glossHeight(step, FLOW_STEP_FONT_SIZE)
+      const stepExtra = glossHeight(step, 'step')
       const oldGroup =
         children.length === 0 ? FLOW_MAP_PILL_HEIGHT : Math.max(FLOW_MAP_PILL_HEIGHT, oldColumn)
       const newGroup =
