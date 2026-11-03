@@ -26,6 +26,11 @@ from services.knowledge.chat_handoff_service import finalize_handoff_for_documen
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_rag_scope import PERSONAL_KNOWLEDGE_SOURCES
 from services.knowledge.package_wiki_compiler import compile_package_wiki
+from services.knowledge.personal_knowledge_log import (
+    bind_personal_knowledge_task,
+    log_personal_knowledge,
+    reset_personal_knowledge_task,
+)
 from services.monitoring.error_reporting import record_exception_from_celery
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.rls_context import RlsContext, rls_async_session, rls_sync_session
@@ -52,6 +57,19 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
             doc.file_name,
             doc.status,
         )
+        batch = await db.get(DocumentBatch, doc.batch_id) if doc.batch_id else None
+        personal = batch is not None and batch.source in PERSONAL_KNOWLEDGE_SOURCES
+        package_id = batch.id if batch is not None else doc.batch_id
+        source = batch.source if batch is not None else ""
+        if personal:
+            log_personal_knowledge(
+                "started",
+                user=user_id,
+                package=package_id,
+                document=document_id,
+                file=doc.file_name,
+                source=source,
+            )
 
         await service.process_document(document_id)
 
@@ -65,6 +83,15 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
             chunk_count,
             doc.status if doc else "unknown",
         )
+        if personal:
+            log_personal_knowledge(
+                "finished",
+                user=user_id,
+                package=package_id,
+                document=document_id,
+                pieces=chunk_count,
+                document_status=doc.status if doc else "unknown",
+            )
 
         if doc:
             terminal = "done" if doc.status == "completed" else "failed"
@@ -216,6 +243,7 @@ def process_document_task(self, user_id: int, document_id: int):
         document_id,
         user_id,
     )
+    task_token = bind_personal_knowledge_task(str(getattr(self.request, "id", "") or ""))
     try:
         asyncio.run(_process_document_async(user_id, document_id))
     except BACKGROUND_INFRA_ERRORS as e:
@@ -249,6 +277,7 @@ def process_document_task(self, user_id: int, document_id: int):
 
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))
     finally:
+        reset_personal_knowledge_task(task_token)
         logger.info(
             "[KnowledgeSpaceTask] ===== Finished processing document %s =====",
             document_id,

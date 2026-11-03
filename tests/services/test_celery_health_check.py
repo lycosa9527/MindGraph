@@ -138,6 +138,43 @@ async def test_celery_health_unmanaged_uses_ping_then_banner() -> None:
 
 
 @pytest.mark.asyncio
+async def test_celery_health_missing_registered_is_not_degraded() -> None:
+    """A live worker with no registered() reply must not request a replace."""
+    proc = MagicMock()
+    proc.poll.return_value = None
+    app = _app_with_banner({"worker@ok": []}, None)
+    with patch(
+        "services.infrastructure.monitoring.process_monitor.asyncio.to_thread",
+        new=AsyncMock(side_effect=lambda fn, *args: fn(*args)),
+    ):
+        status = await check_celery_worker_health(
+            app=app,
+            managed_process=proc,
+            worker_needed=True,
+        )
+    assert status == ServiceStatus.HEALTHY
+
+
+@pytest.mark.asyncio
+async def test_process_monitor_skips_replace_when_worker_is_current() -> None:
+    """Reusing a current worker is not a failed replace and does not count."""
+    monitor = ProcessMonitor()
+    with (
+        patch(
+            "services.infrastructure.monitoring.process_monitor.PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED",
+            False,
+        ),
+        patch.object(monitor, "_restart_service", new=AsyncMock(return_value="current")),
+        patch.object(monitor, "_increment_restart_count", new=AsyncMock()) as increment,
+    ):
+        await monitor.apply_service_status("celery", ServiceStatus.DEGRADED)
+    increment.assert_not_awaited()
+    assert monitor.metrics["celery"].restart_count == 0
+    assert monitor.metrics["celery"].status == ServiceStatus.HEALTHY
+    assert monitor.metrics["celery"].consecutive_failures == 0
+
+
+@pytest.mark.asyncio
 async def test_process_monitor_restarts_celery_on_stale_banner() -> None:
     """Stale banner restarts Celery even when the old PID is still alive."""
     monitor = ProcessMonitor()
@@ -149,7 +186,7 @@ async def test_process_monitor_restarts_celery_on_stale_banner() -> None:
             "services.infrastructure.monitoring.process_monitor.PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED",
             False,
         ),
-        patch.object(monitor, "_restart_service", new=AsyncMock(return_value=True)) as restart,
+        patch.object(monitor, "_restart_service", new=AsyncMock(return_value="started")) as restart,
         patch.object(monitor, "_increment_restart_count", new=AsyncMock()),
     ):
         state.celery_worker_process = proc

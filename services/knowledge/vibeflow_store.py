@@ -17,6 +17,7 @@ import os
 from typing import Any, Dict, List
 from urllib.parse import quote
 
+from services.knowledge.personal_knowledge_log import log_personal_knowledge
 from services.knowledge.vibeflow_cut import VibeflowPiece
 from services.utils.aliyun_oss_client import (
     delete_object,
@@ -96,10 +97,35 @@ def upload_pieces(
     pieces: List[VibeflowPiece],
 ) -> bool:
     """Write markdown objects and the manifest. False when any write fails."""
-    if not oss_credentials_configured() or not pieces:
+    if not oss_credentials_configured():
+        log_personal_knowledge(
+            "oss_refused",
+            reason="oss_not_configured",
+            user=user_id,
+            package=package_id,
+            document=document_id,
+        )
+        return False
+    if not pieces:
+        log_personal_knowledge(
+            "oss_refused",
+            reason="no_pieces",
+            user=user_id,
+            package=package_id,
+            document=document_id,
+        )
         return False
     prefix = document_prefix(user_id, package_id, document_id)
     server = vibe_owner_prefix()
+    log_personal_knowledge(
+        "sending_oss",
+        user=user_id,
+        package=package_id,
+        document=document_id,
+        pieces=len(pieces),
+        server=server,
+        prefix=prefix,
+    )
     manifest: List[Dict[str, Any]] = []
     for piece in pieces:
         name = f"{piece.index:04d}.md"
@@ -115,6 +141,15 @@ def upload_pieces(
             "section_number": piece.section_number,
         }
         if not _put_bytes(key, body.encode("utf-8"), "text/markdown; charset=utf-8", tags):
+            log_personal_knowledge(
+                "oss_failed",
+                user=user_id,
+                package=package_id,
+                document=document_id,
+                section=piece.section_number,
+                index=piece.index,
+                written=len(manifest),
+            )
             return False
         manifest.append(
             {
@@ -124,12 +159,37 @@ def upload_pieces(
                 "key": key,
             }
         )
+    manifest_key = toc_object_key(user_id, package_id, document_id)
     payload = json.dumps(manifest, ensure_ascii=False).encode("utf-8")
-    return _put_bytes(toc_object_key(user_id, package_id, document_id), payload, "application/json")
+    if not _put_bytes(manifest_key, payload, "application/json"):
+        log_personal_knowledge(
+            "oss_failed",
+            reason="manifest",
+            user=user_id,
+            package=package_id,
+            document=document_id,
+            objects=len(manifest),
+        )
+        return False
+    log_personal_knowledge(
+        "oss_stored",
+        user=user_id,
+        package=package_id,
+        document=document_id,
+        objects=len(manifest),
+        server=server,
+    )
+    return True
 
 
 def delete_document_objects(user_id: int, package_id: int, document_id: int) -> None:
     """Remove a document's markdown and its manifest."""
+    log_personal_knowledge(
+        "clearing_oss",
+        user=user_id,
+        package=package_id,
+        document=document_id,
+    )
     prefixes = (
         document_prefix(user_id, package_id, document_id),
         legacy_document_prefix(user_id, package_id, document_id),

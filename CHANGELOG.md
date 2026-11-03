@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.207] - 2026-11-04
+
+> **Personal knowledge processing writes each stage into the application log.**
+
+### Changed
+
+- **Personal knowledge** — The Celery worker records extract, split, table of contents, OSS upload, embedding handoff, and completion or failure in the application log, with the task id. The file status follows those stages while the worker runs. The settings tab no longer shows a testing badge. The default-folder caption uses the shared label.
+- **Celery monitor** — A live worker that does not answer the task-list query is left running. The monitor restarts it only when the task list is actually stale.
+
+### Tests
+
+- [`tests/test_personal_knowledge_log.py`](tests/test_personal_knowledge_log.py), [`tests/test_vibeflow_cut.py`](tests/test_vibeflow_cut.py)
+
 ## [5.180.206] - 2026-11-04
 
 > **Personal knowledge is the only folder index. The app no longer starts, watches, or installs a local vector server.**

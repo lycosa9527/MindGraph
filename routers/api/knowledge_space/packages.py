@@ -57,6 +57,7 @@ from services.knowledge.package_pipeline_status import (
     derive_document_wiki_statuses,
     derive_wiki_status,
 )
+from services.knowledge.package_rag_scope import PERSONAL_KNOWLEDGE_SOURCES
 from services.knowledge.url_page_fetch import fallback_title_from_url, fetch_url_page_text
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
@@ -394,9 +395,26 @@ async def upload_package_document(
             detail=content_too_long_detail(char_count=e.char_count),
         ) from e
     except ValueError as e:
+        if package.source in PERSONAL_KNOWLEDGE_SOURCES:
+            logger.warning(
+                "[PersonalKnowledge] upload rejected user=%s package=%s file=%r: %s",
+                current_user.id,
+                package_id,
+                file.filename,
+                e,
+            )
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
-        logger.error("[FileCenter] Upload to package %s failed: %s", package_id, e)
+        if package.source in PERSONAL_KNOWLEDGE_SOURCES:
+            logger.error(
+                "[PersonalKnowledge] upload failed user=%s package=%s file=%r: %s",
+                current_user.id,
+                package_id,
+                file.filename,
+                e,
+            )
+        else:
+            logger.error("[FileCenter] Upload to package %s failed: %s", package_id, e)
         raise HTTPException(status_code=500, detail="Upload failed") from e
 
 
@@ -659,6 +677,12 @@ async def start_package_processing(
     docs_to_process = [doc for doc in documents if doc.status in ("pending", "failed")]
 
     if not docs_to_process:
+        if package.source in PERSONAL_KNOWLEDGE_SOURCES:
+            logger.info(
+                "[PersonalKnowledge] queue empty user=%s package=%s",
+                current_user.id,
+                package_id,
+            )
         return {"message": "No pending documents to process", "processed_count": 0}
 
     processed_count = 0
@@ -667,6 +691,14 @@ async def start_package_processing(
             _enqueue_processing(db, doc)
             await db.commit()
             process_document_task.delay(current_user.id, doc.id)
+            if package.source in PERSONAL_KNOWLEDGE_SOURCES:
+                logger.info(
+                    "[PersonalKnowledge] queued user=%s package=%s document=%s file=%r status=queued",
+                    current_user.id,
+                    package_id,
+                    doc.id,
+                    doc.file_name,
+                )
             processed_count += 1
         except DATABASE_ERRORS as exc:
             logger.error(

@@ -55,6 +55,19 @@ def test_existing_workers_plan_flags_active_missing_from_registered() -> None:
     assert stale == ["worker@silent"]
 
 
+def test_celery_banner_is_current_none_when_registered_missing() -> None:
+    """A live worker with no registered() reply is unknown, not stale."""
+    inspect = MagicMock()
+    inspect.active.return_value = {"worker@ok": []}
+    inspect.registered.return_value = None
+    app = MagicMock()
+    app.control.inspect.return_value = inspect
+    assert celery_manager.celery_banner_is_current(app) is None
+
+    inspect.registered.return_value = {}
+    assert celery_manager.celery_banner_is_current(app) is None
+
+
 def test_celery_banner_is_current_false_when_required_task_missing() -> None:
     """Banner compare uses this process's required task names."""
     inspect = MagicMock()

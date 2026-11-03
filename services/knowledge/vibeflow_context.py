@@ -13,6 +13,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Dict, List
 
@@ -20,6 +21,8 @@ from services.knowledge.section_query import parse_section_hint
 from services.knowledge.vibeflow_rrf import reciprocal_rank_fusion
 from services.knowledge.vibeflow_store import load_package_manifest, read_object_text
 from services.knowledge.vibeflow_vectors import embed_branch_query, query_similar_keys
+
+logger = logging.getLogger(__name__)
 
 MAX_PERSONAL_CONTEXT_CHARS = 12000
 VECTOR_EXTRA = 4
@@ -188,5 +191,22 @@ def personal_context_block(user_id: int, package_id: int, query: str) -> str:
         open_texts = [_entry_text(by_key[key]) for key in fused if key in by_key]
         body = pack_texts([text for text in open_texts if text][:OPEN_HITS], MAX_PERSONAL_CONTEXT_CHARS)
     if not body:
+        logger.info(
+            "[PersonalKnowledge] vibeflow context empty user=%s package=%s outline=%s vectors=%s query=%r",
+            user_id,
+            package_id,
+            len(outline),
+            len(vector),
+            (query or "")[:80],
+        )
         return ""
+    logger.info(
+        "[PersonalKnowledge] vibeflow context user=%s package=%s outline=%s vectors=%s chars=%s query=%r",
+        user_id,
+        package_id,
+        len(outline),
+        len(vector),
+        len(body),
+        (query or "")[:80],
+    )
     return _CONTEXT_HEADER + body + _CONTEXT_FOOTER

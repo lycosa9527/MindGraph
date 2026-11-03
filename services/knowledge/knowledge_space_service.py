@@ -37,25 +37,14 @@ from services.knowledge.document_processor import get_document_processor
 from services.knowledge.doc_summary_storage import clear_package_redis, delete_extracted_content
 from services.knowledge.doc_summary_temp import remove_job_dir
 from services.knowledge.package_rag_scope import PERSONAL_KNOWLEDGE_SOURCES
+from services.knowledge.personal_knowledge_log import log_personal_knowledge
 from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
-from services.knowledge.vibeflow_cut import VibeflowPiece, build_vibeflow_pieces
-from services.knowledge.vibeflow_store import delete_document_objects, upload_pieces
+from services.knowledge.personal_knowledge_publish import publish_personal_knowledge
+from services.knowledge.vibeflow_store import delete_document_objects
 from services.knowledge.document_versioning import get_document_versions as get_document_versions_helper
 from services.knowledge.document_versioning import rollback_document as rollback_document_helper
 
 logger = logging.getLogger(__name__)
-
-
-def _replace_personal_objects(
-    user_id: int,
-    package_id: int,
-    document_id: int,
-    pieces: List[VibeflowPiece],
-) -> bool:
-    """Replace one document's markdown objects. False when a write fails."""
-    delete_document_objects(user_id, package_id, document_id)
-    return upload_pieces(user_id, package_id, document_id, pieces)
-
 
 # Three folders, ten sources each. The per-user cap is the product of those two.
 MAX_DOCUMENTS_PER_PACKAGE = 10
@@ -230,14 +219,27 @@ class KnowledgeSpaceService:
         document.file_path = str(final_path)
         await self.db.commit()
 
-        logger.info(
-            "[RAG] ✓ Upload: doc_id=%s, file='%s', type=%s, size=%s bytes, user=%s",
-            document.id,
-            file_name,
-            file_type,
-            file_size,
-            self.user_id,
-        )
+        batch = await self.db.get(DocumentBatch, batch_id) if batch_id is not None else None
+        if batch is not None and batch.source in PERSONAL_KNOWLEDGE_SOURCES:
+            logger.info(
+                "[PersonalKnowledge] upload user=%s package=%s document=%s file=%r type=%s bytes=%s source=%s",
+                self.user_id,
+                batch_id,
+                document.id,
+                file_name,
+                file_type,
+                file_size,
+                batch.source,
+            )
+        else:
+            logger.info(
+                "[RAG] ✓ Upload: doc_id=%s, file='%s', type=%s, size=%s bytes, user=%s",
+                document.id,
+                file_name,
+                file_type,
+                file_size,
+                self.user_id,
+            )
         return document
 
     async def _apply_file_center_chunking_policy(
@@ -282,50 +284,6 @@ class KnowledgeSpaceService:
         )
         return effective_rules
 
-    async def _publish_personal_knowledge(
-        self,
-        document: KnowledgeDocument,
-        cleaned_text: str,
-        structure_headings: Optional[list],
-        page_info: Optional[list] = None,
-    ) -> bool:
-        """Store a personal-knowledge file as markdown objects. False for other sources."""
-        if document.batch_id is None:
-            return False
-        batch = await self.db.get(DocumentBatch, document.batch_id)
-        if batch is None or batch.source not in PERSONAL_KNOWLEDGE_SOURCES:
-            return False
-        pieces = build_vibeflow_pieces(cleaned_text, structure_headings, page_info)
-        if not pieces:
-            raise ValueError(f"Personal knowledge cut produced no pieces for document {document.id}")
-        saved = await asyncio.to_thread(
-            _replace_personal_objects,
-            self.user_id,
-            batch.id,
-            document.id,
-            pieces,
-        )
-        if not saved:
-            raise ValueError(f"Personal knowledge upload failed for document {document.id}")
-        metadata = dict(document.doc_metadata or {})
-        metadata["vibeflow"] = True
-        metadata["local_original_removed"] = True
-        document.doc_metadata = metadata
-        document.chunk_count = len(pieces)
-        document.status = "completed"
-        document.processing_progress = None
-        document.processing_progress_percent = 100
-        if document.file_path and Path(document.file_path).exists():
-            Path(document.file_path).unlink()
-        document.file_path = ""
-        await self.db.commit()
-        logger.info(
-            "[VibeFlow] Stored %s markdown objects for document %s",
-            len(pieces),
-            document.id,
-        )
-        return True
-
     async def process_document(self, document_id: int) -> None:
         """
         Process document: extract text, chunk, embed, store.
@@ -362,6 +320,16 @@ class KnowledgeSpaceService:
             document.processing_progress = "extracting"
             document.processing_progress_percent = 10
             await self.db.commit()
+            batch = await self.db.get(DocumentBatch, document.batch_id) if document.batch_id else None
+            if batch is not None and batch.source in PERSONAL_KNOWLEDGE_SOURCES:
+                log_personal_knowledge(
+                    "extracting",
+                    user=self.user_id,
+                    package=batch.id,
+                    document=document.id,
+                    file=document.file_name,
+                    source=batch.source,
+                )
 
             result = await self.db.execute(select(KnowledgeSpace).where(KnowledgeSpace.id == document.space_id))
             space = result.scalars().first()
@@ -387,7 +355,14 @@ class KnowledgeSpaceService:
             document.processing_progress_percent = 20
             await self.db.commit()
 
-            if await self._publish_personal_knowledge(document, cleaned_text, structure_headings, page_info):
+            if await publish_personal_knowledge(
+                self.db,
+                self.user_id,
+                document,
+                cleaned_text,
+                structure_headings,
+                page_info,
+            ):
                 return
 
             batch = await self.db.get(DocumentBatch, document.batch_id) if document.batch_id else None
@@ -396,7 +371,14 @@ class KnowledgeSpaceService:
             raise ValueError("Only a personal knowledge folder is indexed")
 
         except (OSError, RuntimeError, ValueError) as e:
-            logger.error("[KnowledgeSpace] Failed to process document %s: %s", document_id, e)
+            log_personal_knowledge(
+                "failed",
+                user=self.user_id,
+                package=document.batch_id,
+                document=document_id,
+                file=document.file_name,
+                error=str(e),
+            )
             document.status = "failed"
             document.error_message = str(e)
             document.processing_progress = None
@@ -745,7 +727,9 @@ class KnowledgeSpaceService:
                 self.db,
                 None,
             )
-            published = await self._publish_personal_knowledge(
+            published = await publish_personal_knowledge(
+                self.db,
+                self.user_id,
                 document,
                 cleaned_text,
                 structure_headings,
@@ -762,10 +746,13 @@ class KnowledgeSpaceService:
             return {"added": document.chunk_count or 0, "updated": 0, "deleted": 0}
 
         except (OSError, ValueError) as e:
-            logger.error(
-                "[KnowledgeSpace] Failed to reindex chunks for document %s: %s",
-                document.id,
-                e,
+            log_personal_knowledge(
+                "failed",
+                user=self.user_id,
+                package=document.batch_id,
+                document=document.id,
+                file=document.file_name,
+                error=str(e),
             )
             document.status = "failed"
             document.error_message = str(e)

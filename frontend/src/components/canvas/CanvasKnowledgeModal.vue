@@ -288,7 +288,7 @@ function onPanelDrop(event: DragEvent): void {
               />
             </span>
             <span class="knowledge-settings__caption">
-              {{ t('settings.knowledge.defaultPackage') }}
+              <I18nText k="settings.knowledge.defaultPackage" />
             </span>
             <span class="knowledge-settings__badge">
               <I18nText k="settings.knowledge.defaultBadge" />

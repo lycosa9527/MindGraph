@@ -141,6 +141,11 @@ def reset_celery_banner_check_state() -> None:
     _CELERY_BANNER_STATE.last_ok_at = 0.0
 
 
+def note_celery_banner_current(now: Optional[float] = None) -> None:
+    """Remember a confirmed-current banner so the next ticks skip inspect."""
+    _CELERY_BANNER_STATE.last_ok_at = time.time() if now is None else now
+
+
 async def check_celery_worker_health(
     *,
     app: Any,
@@ -495,7 +500,7 @@ class ProcessMonitor:
                 exc_info=True,
             )
 
-    async def _restart_service(self, service_name: str) -> bool:
+    async def _restart_service(self, service_name: str) -> str:
         """
         Restart a failed service.
 
@@ -503,7 +508,8 @@ class ProcessMonitor:
             service_name: Name of service to restart ('celery' or 'postgresql')
 
         Returns:
-            True if restart successful, False otherwise
+            ``started`` when a new process is running, ``current`` when an
+            existing worker is already current, ``failed`` otherwise.
         """
         logger.info("[ProcessMonitor] Attempting to restart %s...", service_name)
 
@@ -519,7 +525,9 @@ class ProcessMonitor:
                         "[ProcessMonitor] Celery restarted successfully (PID: %s)",
                         process.pid,
                     )
-                    return True
+                    return "started"
+                logger.info("[ProcessMonitor] Celery worker is current; left the existing worker running")
+                return "current"
 
             if service_name == "postgresql":  # Stop existing process if any (run in thread pool)
                 if ServerState.postgresql_process is not None:
@@ -532,12 +540,12 @@ class ProcessMonitor:
                         "[ProcessMonitor] PostgreSQL restarted successfully (PID: %s)",
                         process.pid,
                     )
-                    return True
+                    return "started"
                 # Process already running externally
                 logger.info("[ProcessMonitor] PostgreSQL is running externally")
-                return True
+                return "current"
 
-            return False
+            return "failed"
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[ProcessMonitor] Failed to restart %s: %s",
@@ -545,7 +553,7 @@ class ProcessMonitor:
                 e,
                 exc_info=True,
             )
-            return False
+            return "failed"
 
     async def apply_service_status(self, service_name: str, status: ServiceStatus) -> None:
         """
@@ -602,8 +610,8 @@ class ProcessMonitor:
                             f"Circuit breaker triggered - {service_name} failed {restart_count} times",
                         )
                     return
-            restart_success = await self._restart_service(service_name)
-            if restart_success:
+            outcome = await self._restart_service(service_name)
+            if outcome == "started":
                 reset_celery_banner_check_state()
                 metrics.restart_count += 1
                 metrics.last_restart_time = time.time()
@@ -611,6 +619,12 @@ class ProcessMonitor:
                 metrics.circuit_breaker_open = False
                 await self._increment_restart_count(service_name)
                 logger.info("[ProcessMonitor] Celery replaced after stale banner")
+            elif outcome == "current":
+                note_celery_banner_current()
+                metrics.status = ServiceStatus.HEALTHY
+                metrics.consecutive_failures = 0
+                metrics.last_success_time = time.time()
+                logger.info("[ProcessMonitor] Celery worker banner is current; replace skipped")
             else:
                 logger.error("[ProcessMonitor] Failed to replace stale Celery worker")
                 await self._increment_restart_count(service_name)
@@ -661,14 +675,19 @@ class ProcessMonitor:
                     return
 
             # Attempt restart
-            restart_success = await self._restart_service(service_name)
-            if restart_success:
+            outcome = await self._restart_service(service_name)
+            if outcome == "started":
                 metrics.restart_count += 1
                 metrics.last_restart_time = time.time()
                 metrics.start_time = time.time()
                 metrics.circuit_breaker_open = False
                 await self._increment_restart_count(service_name)
                 logger.info("[ProcessMonitor] %s restarted successfully", service_name.upper())
+            elif outcome == "current":
+                metrics.status = ServiceStatus.HEALTHY
+                metrics.consecutive_failures = 0
+                metrics.last_success_time = time.time()
+                logger.info("[ProcessMonitor] %s is already running; restart skipped", service_name.upper())
             else:
                 logger.error("[ProcessMonitor] Failed to restart %s", service_name)
                 await self._increment_restart_count(service_name)

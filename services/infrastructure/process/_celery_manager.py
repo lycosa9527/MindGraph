@@ -96,8 +96,12 @@ def celery_banner_is_current(app: Any) -> Optional[bool]:
     """
     Compare live worker banners to this process's required task names.
 
-    Returns True when current, False when stale or empty, None when inspect
-    does not answer (do not restart on an unknown result).
+    Returns True when current, False when stale or when no worker is live,
+    None when inspect does not answer (do not restart on an unknown result).
+
+    A live ``active()`` with no ``registered()`` reply is unknown. Treating
+    that as stale restarts a current worker, then startup reuses it and the
+    monitor records a failed replace.
     """
     if app is None:
         return None
@@ -111,6 +115,8 @@ def celery_banner_is_current(app: Any) -> Optional[bool]:
         return None
     if not active:
         return False
+    if not registered:
+        return None
     return active_workers_are_current(active, registered)
 
 

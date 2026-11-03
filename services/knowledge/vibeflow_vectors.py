@@ -123,6 +123,7 @@ def _post_vector(operation: str, body: Dict[str, Any]) -> Dict[str, Any]:
     region = oss_region()
     vector_bucket = _vector_bucket()
     if not account or not region or not oss_access_key_id() or not oss_access_key_secret():
+        logger.warning("[PersonalKnowledge] vibeflow query skipped reason=not_configured operation=%s", operation)
         return {}
     now = datetime.datetime.now(datetime.timezone.utc)
     iso = now.strftime("%Y%m%dT%H%M%SZ")
@@ -175,6 +176,11 @@ def embed_branch_query(text: str) -> List[float]:
 def query_similar_keys(user_id: int, package_id: int, vector: List[float], top_k: int = QUERY_TOP_K) -> List[str]:
     """Return object keys nearest to ``vector`` inside this user and folder."""
     if len(vector) != VECTOR_DIMENSION:
+        logger.warning(
+            "[PersonalKnowledge] vibeflow query skipped user=%s package=%s reason=bad_vector",
+            user_id,
+            package_id,
+        )
         return []
     body = {
         "indexName": _vector_index(),
@@ -199,4 +205,10 @@ def query_similar_keys(user_id: int, package_id: int, vector: List[float], top_k
         if marker not in key:
             continue
         keys.append(key)
+    logger.info(
+        "[PersonalKnowledge] vibeflow query user=%s package=%s hits=%s",
+        user_id,
+        package_id,
+        len(keys),
+    )
     return keys

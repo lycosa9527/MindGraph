@@ -173,11 +173,12 @@ def test_start_package_processing_enqueues_pending_sources(client: TestClient) -
     pending = SimpleNamespace(
         id=9,
         status="pending",
+        file_name="notes.pdf",
         processing_progress=None,
         processing_progress_percent=0,
     )
     completed = SimpleNamespace(id=8, status="completed")
-    package = SimpleNamespace(id=3)
+    package = SimpleNamespace(id=3, source="knowledge_space")
     with (
         patch("routers.api.knowledge_space.packages.KnowledgePackageService") as service_cls,
         patch("routers.api.knowledge_space.packages.process_document_task") as task,

@@ -12,10 +12,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 from services.knowledge.chunking_service import ChunkingService
 from services.knowledge.document_structure import StructureHeading, resolve_structure_headings
+from services.knowledge.personal_knowledge_log import log_personal_knowledge
 from services.knowledge.section_parser import split_into_sections
 
 MIN_TOC_MATCHES = 3
@@ -64,37 +65,89 @@ def _split_oversized(body: str) -> List[str]:
     return [part for part in parts if part]
 
 
+def _toc_status(
+    text: str,
+    headings: Sequence[StructureHeading],
+    page_info: Optional[list] = None,
+) -> Tuple[bool, str, int]:
+    """Return whether the outline is usable, why, and how many titles matched."""
+    if not text.strip():
+        return False, "empty", 0
+    if len(headings) < MIN_TOC_MATCHES:
+        return False, "too_few_headings", 0
+    resolved = resolve_structure_headings(text, list(headings), page_info)
+    matched = len(resolved)
+    if matched < MIN_TOC_MATCHES:
+        return False, "too_few_matches", matched
+    if matched / len(headings) < MIN_TOC_RATIO:
+        return False, "low_match_ratio", matched
+    positions = [int(item["position"]) for item in resolved]
+    span = max(positions) - min(positions)
+    if span < max(500, int(len(text) * MIN_TOC_SPAN_RATIO)):
+        return False, "narrow_span", matched
+    return True, "confirmed", matched
+
+
 def toc_is_confirmed(
     text: str,
     headings: Sequence[StructureHeading],
     page_info: Optional[list] = None,
 ) -> bool:
     """True when most bookmark titles are found in order and spread through the text."""
-    if not text.strip() or len(headings) < MIN_TOC_MATCHES:
-        return False
-    resolved = resolve_structure_headings(text, list(headings), page_info)
-    if len(resolved) < MIN_TOC_MATCHES:
-        return False
-    if len(resolved) / len(headings) < MIN_TOC_RATIO:
-        return False
-    positions = [int(item["position"]) for item in resolved]
-    span = max(positions) - min(positions)
-    return span >= max(500, int(len(text) * MIN_TOC_SPAN_RATIO))
+    confirmed, _reason, _matched = _toc_status(text, headings, page_info)
+    return confirmed
 
 
 def build_vibeflow_pieces(
     text: str,
     headings: Optional[Sequence[StructureHeading]] = None,
     page_info: Optional[list] = None,
+    *,
+    user_id: Optional[int] = None,
+    package_id: Optional[int] = None,
+    document_id: Optional[int] = None,
 ) -> List[VibeflowPiece]:
     """Return ordered pieces. A confirmed outline is one piece per entry."""
     cleaned = (text or "").strip()
-    if not cleaned:
-        return []
     outline = list(headings or [])
-    if toc_is_confirmed(cleaned, outline, page_info):
-        return _pieces_from_outline(cleaned, outline, page_info)
-    return _pieces_from_windows(cleaned)
+    fields: dict[str, object] = {}
+    if user_id is not None:
+        fields["user"] = user_id
+    if package_id is not None:
+        fields["package"] = package_id
+    if document_id is not None:
+        fields["document"] = document_id
+    if not cleaned:
+        log_personal_knowledge("no_toc", reason="empty", **fields)
+        return []
+    confirmed, reason, matched = _toc_status(cleaned, outline, page_info)
+    if confirmed:
+        log_personal_knowledge(
+            "toc_found",
+            headings=len(outline),
+            matched=matched,
+            **fields,
+        )
+        pieces = _pieces_from_outline(cleaned, outline, page_info)
+        mode = "toc"
+    else:
+        log_personal_knowledge(
+            "no_toc",
+            reason=reason,
+            headings=len(outline),
+            matched=matched,
+            **fields,
+        )
+        pieces = _pieces_from_windows(cleaned)
+        mode = "windows"
+    log_personal_knowledge(
+        "split",
+        mode=mode,
+        pieces=len(pieces),
+        chars=len(cleaned),
+        **fields,
+    )
+    return pieces
 
 
 def _pieces_from_outline(

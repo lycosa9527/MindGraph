@@ -563,7 +563,7 @@ onBeforeUnmount(() => {
             v-else
             class="knowledge-settings__caption"
           >
-            {{ draftName || t('settings.knowledge.defaultPackage') }}
+            <template v-if="draftName">{{ draftName }}</template><I18nText v-else k="settings.knowledge.defaultPackage" />
           </span>
           <span class="knowledge-settings__badge">
             <I18nText k="settings.knowledge.defaultBadge" />
