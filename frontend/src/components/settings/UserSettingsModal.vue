@@ -39,7 +39,6 @@ const tabOptions = computed(() =>
   (['account', 'security', 'language', 'plugins', 'knowledge'] as const).map((value) => ({
     value,
     labelKey: USER_SETTINGS_TAB_KEYS[value],
-    badgeKey: value === 'knowledge' ? 'settings.knowledge.testing' : undefined,
   }))
 )
 
