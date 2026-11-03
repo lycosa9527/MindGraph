@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.208] - 2026-11-04
+
+> **The file panel shows which personal-knowledge step is running, and Document Summary extracts no longer fill the library cap.**
+
+### Added
+
+- **File panel status** — Opening a folder shows a light grey line under Upload and Delete. It names the furthest stage still running and the step, from (1/7) waiting through (7/7) VibeFlow handoff. One file includes its name. Several files include how many are still running.
+
+### Changed
+
+- **Document cap** — Personal-knowledge files share `MAX_DOCUMENTS_PER_USER`. Document Summary extracts, and files whose folder is gone, do not count. The rejection names how many files are already stored.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`frontend/tests/knowledgeProcessStatus.spec.ts`](frontend/tests/knowledgeProcessStatus.spec.ts), [`tests/test_document_quota.py`](tests/test_document_quota.py)
+
 ## [5.180.207] - 2026-11-04
 
 > **Personal knowledge processing writes each stage into the application log.**

@@ -497,6 +497,13 @@
   cursor: not-allowed;
 }
 
+.knowledge-settings__process {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--lang-settings-subtle);
+}
+
 .knowledge-settings__file-icon.is-picked {
   background: var(--lang-settings-hover);
 }

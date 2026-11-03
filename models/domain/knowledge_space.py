@@ -94,9 +94,10 @@ class KnowledgeSpace(Base):
 
 class KnowledgeDocument(Base):
     """
-    Uploaded document in user's knowledge space
+    Uploaded document in a user's knowledge space.
 
-    Max 5 documents per user. Documents are processed asynchronously.
+    Personal-knowledge folders share MAX_DOCUMENTS_PER_USER (default 30).
+    Document Summary extracts live in this table and do not consume that cap.
     """
 
     __tablename__ = "knowledge_documents"

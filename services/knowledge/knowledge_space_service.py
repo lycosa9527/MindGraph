@@ -36,6 +36,7 @@ from services.knowledge.document_processing import extract_and_clean_text
 from services.knowledge.document_processor import get_document_processor
 from services.knowledge.doc_summary_storage import clear_package_redis, delete_extracted_content
 from services.knowledge.doc_summary_temp import remove_job_dir
+from services.knowledge.document_quota import documents_toward_cap_stmt, over_quota_message
 from services.knowledge.package_rag_scope import PERSONAL_KNOWLEDGE_SOURCES
 from services.knowledge.personal_knowledge_log import log_personal_knowledge
 from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
@@ -129,12 +130,20 @@ class KnowledgeSpaceService:
         return await get_document_versions_helper(self.db, self.user_id, document_id)
 
     async def get_document_count(self) -> int:
-        """Get current document count for user."""
+        """Count files that consume this user's document cap.
+
+        Personal-knowledge folders share the count. Document Summary extracts
+        and rows whose folder is gone do not.
+        """
         space = await self.create_knowledge_space()
-        result = await self.db.execute(
-            select(func.count(KnowledgeDocument.id)).where(KnowledgeDocument.space_id == space.id)
-        )
-        return result.scalar_one()
+        result = await self.db.execute(documents_toward_cap_stmt(space.id))
+        return int(result.scalar_one())
+
+    async def ensure_upload_quota(self, incoming: int = 1) -> None:
+        """Reject the upload when this user's library cannot take ``incoming`` more files."""
+        count = await self.get_document_count()
+        if count + incoming > self.max_documents:
+            raise ValueError(over_quota_message(self.max_documents, count))
 
     async def count_documents_in_batch(self, batch_id: int) -> int:
         """How many sources are already stored in one folder."""
@@ -165,10 +174,7 @@ class KnowledgeSpaceService:
             KnowledgeDocument instance
         """
         file_name = safe_upload_basename(file_name)
-
-        count = await self.get_document_count()
-        if count >= self.max_documents:
-            raise ValueError(f"Maximum {self.max_documents} documents allowed. Please delete a document first.")
+        await self.ensure_upload_quota()
 
         if batch_id is not None:
             batch_count = await self.count_documents_in_batch(batch_id)
@@ -396,11 +402,7 @@ class KnowledgeSpaceService:
         Returns:
             DocumentBatch instance
         """
-        current_count = await self.get_document_count()
-        if current_count + len(files) > self.max_documents:
-            raise ValueError(
-                f"Cannot upload {len(files)} documents. Current count: {current_count}, Max: {self.max_documents}"
-            )
+        await self.ensure_upload_quota(incoming=len(files))
 
         space = await self.create_knowledge_space()
 

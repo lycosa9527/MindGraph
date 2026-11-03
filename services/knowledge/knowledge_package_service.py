@@ -483,7 +483,7 @@ class KnowledgePackageService:
         if not text:
             raise ValueError("Cannot ingest empty content")
 
-        await self._enforce_quota()
+        await self.ks.ensure_upload_quota()
         batch_count = await self.ks.count_documents_in_batch(package_id)
         if batch_count >= MAX_DOCUMENTS_PER_PACKAGE:
             raise ValueError(
@@ -587,15 +587,6 @@ class KnowledgePackageService:
         if diagram and diagram.knowledge_package_id != package_id:
             diagram.knowledge_package_id = package_id
             await self.db.commit()
-
-    async def _enforce_quota(self) -> None:
-        space = await self.ks.create_knowledge_space()
-        result = await self.db.execute(
-            select(func.count(KnowledgeDocument.id)).where(KnowledgeDocument.space_id == space.id)
-        )
-        count = result.scalar_one()
-        if count >= self.ks.max_documents:
-            raise ValueError(f"Maximum {self.ks.max_documents} documents allowed. Please delete a source first.")
 
     @staticmethod
     def _build_text_metadata(

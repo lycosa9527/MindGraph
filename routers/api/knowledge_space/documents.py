@@ -49,7 +49,7 @@ async def upload_document(
     """
     Upload a document to user's knowledge space.
 
-    Requires authentication. Max 5 documents per user.
+    Requires authentication. Personal-knowledge files share MAX_DOCUMENTS_PER_USER (default 30).
     """
     service = KnowledgeSpaceService(db, current_user.id)
 

@@ -194,7 +194,7 @@ class KnowledgeConfigMixin:
 
     @property
     def MAX_DOCUMENTS_PER_USER(self) -> int:
-        """Maximum documents per user"""
+        """Personal-knowledge files per user. Document Summary extracts are not included."""
         return int(self._get_cached_value("MAX_DOCUMENTS_PER_USER", "30"))
 
     @property

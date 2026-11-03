@@ -2,12 +2,16 @@
 /**
  * Opened knowledge folder: path, file area, upload and delete.
  */
+import { computed } from 'vue'
+
 import { X } from '@lucide/vue'
 
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+import { knowledgeProcessText } from '@/utils/knowledgeProcessStatus'
 import { type KnowledgeWorkTone, documentWorkTone } from '@/utils/knowledgeWorkTone'
 
-defineProps<{
+const props = defineProps<{
   folderName: string
   renaming: boolean
   loading: boolean
@@ -17,6 +21,13 @@ defineProps<{
   deleteDisabled: boolean
   placeholder: string
 }>()
+
+const { t } = useLanguage()
+
+const statusText = computed(() => {
+  if (props.loading && props.documents.length === 0) return ''
+  return knowledgeProcessText(props.documents, (key, named) => (named ? t(key, named) : t(key)))
+})
 
 const renameDraft = defineModel<string>('renameDraft', { required: true })
 
@@ -150,4 +161,10 @@ function fileMark(doc: KnowledgeDocument): { label: string; tone: string } {
       <I18nText k="settings.knowledge.delete" />
     </button>
   </div>
+  <p
+    v-if="statusText"
+    class="knowledge-settings__process"
+  >
+    {{ statusText }}
+  </p>
 </template>
