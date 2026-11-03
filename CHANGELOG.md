@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Document cap** — Personal-knowledge files share `MAX_DOCUMENTS_PER_USER`. Document Summary extracts, and files whose folder is gone, do not count. The rejection names how many files are already stored.
 - **CrowdSec blocklist** — The committed baseline address list is refreshed.
 
+### Fixed
+
+- **Type check** — The vector-client import is gone with that client. Celery's Redis pool uses the public Redis connection pool.
+
 ### Tests
 
 - [`frontend/tests/knowledgeProcessStatus.spec.ts`](frontend/tests/knowledgeProcessStatus.spec.ts), [`tests/test_document_quota.py`](tests/test_document_quota.py)

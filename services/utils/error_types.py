@@ -23,8 +23,8 @@ class _FallbackSQLAlchemyError(RuntimeError):
     """Stand-in when sqlalchemy is not installed."""
 
 
-class _FallbackQdrantUnexpectedResponse(RuntimeError):
-    """Stand-in when qdrant_client is not installed."""
+class QdrantUnexpectedResponse(RuntimeError):
+    """Vector-store response error. The local vector client is no longer installed."""
 
 
 try:
@@ -36,11 +36,6 @@ try:
     from sqlalchemy.exc import SQLAlchemyError
 except ImportError:
     SQLAlchemyError = _FallbackSQLAlchemyError
-
-try:
-    from qdrant_client.http.exceptions import UnexpectedResponse as QdrantUnexpectedResponse
-except ImportError:
-    QdrantUnexpectedResponse = _FallbackQdrantUnexpectedResponse
 
 # Redis sync/async clients and cache layers
 REDIS_ERRORS: Tuple[Type[Exception], ...] = (

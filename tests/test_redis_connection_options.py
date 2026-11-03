@@ -59,14 +59,13 @@ def test_kombu_pool_patch_uses_resp2(monkeypatch) -> None:
             _ = asynchronous
             return {"db": 1}
 
-    fake_module = SimpleNamespace(
-        Channel=FakeChannel,
-        redis=SimpleNamespace(
-            ConnectionPool=lambda **kwargs: calls.append(kwargs) or "pool",
-        ),
-    )
+    fake_module = SimpleNamespace(Channel=FakeChannel)
     monkeypatch.setitem(sys.modules, "kombu.transport.redis", fake_module)
     monkeypatch.setattr("config.celery_broker_redis.kombu_redis", fake_module)
+    monkeypatch.setattr(
+        "config.celery_broker_redis.redis.ConnectionPool",
+        lambda **kwargs: calls.append(kwargs) or "pool",
+    )
 
     patch_kombu_redis_connection_pool()
     pool = getattr(FakeChannel(), "_get_pool")()
@@ -94,10 +93,7 @@ def test_kombu_pool_patch_is_idempotent(monkeypatch) -> None:
             _ = asynchronous
             return "original"
 
-    fake_module = SimpleNamespace(
-        Channel=FakeChannel,
-        redis=SimpleNamespace(ConnectionPool=lambda **kwargs: "pool"),
-    )
+    fake_module = SimpleNamespace(Channel=FakeChannel)
     monkeypatch.setitem(sys.modules, "kombu.transport.redis", fake_module)
     monkeypatch.setattr("config.celery_broker_redis.kombu_redis", fake_module)
 
@@ -181,10 +177,7 @@ def test_patch_celery_redis_pools_applies_both(monkeypatch) -> None:
             _ = params
             return "original"
 
-    fake_module = SimpleNamespace(
-        Channel=FakeChannel,
-        redis=SimpleNamespace(ConnectionPool=lambda **kwargs: "pool"),
-    )
+    fake_module = SimpleNamespace(Channel=FakeChannel)
     monkeypatch.setitem(sys.modules, "kombu.transport.redis", fake_module)
     monkeypatch.setattr("config.celery_broker_redis.kombu_redis", fake_module)
     monkeypatch.setattr("config.celery_broker_redis.CeleryRedisBackend", FakeBackend)
