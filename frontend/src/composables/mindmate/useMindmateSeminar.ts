@@ -618,6 +618,14 @@ export function useMindmateSeminar(
       applyUserMessageFrame(parsed)
       return
     }
+    if (type === 'mindmate_chain_of_thought') {
+      if (authStore.user && parsed.show === true) {
+        authStore.user.showChainOfThought = true
+      } else if (authStore.user && parsed.show === false) {
+        authStore.user.showChainOfThought = false
+      }
+      return
+    }
     if (type === 'mindmate_failover') {
       turnSawBackup = true
       if (!backupNoticeShown) {

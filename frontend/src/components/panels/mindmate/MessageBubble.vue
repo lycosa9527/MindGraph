@@ -349,8 +349,10 @@ watch(
   }
 )
 
+const showChainOfThought = computed(() => authStore.user?.showChainOfThought === true)
+
 const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => mindmateDisplayContent.value, {
-  stripThinkBlocks: true,
+  stripThinkBlocks: () => !showChainOfThought.value,
 })
 
 // Local editing state

@@ -40,11 +40,16 @@ from services.features.mindmate_seminar.reply_artifacts import schedule_teaching
 from services.features.mindmate_seminar.stream_coalesce import SeminarStreamCoalescer
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
+from services.mindmate.chain_of_thought import (
+    MindmateThinkingGate,
+    organization_shows_chain_of_thought,
+)
 from services.mindmate.teaching_design_flag import (
     ensure_teaching_instruction_marker,
     is_teaching_instruction_text,
     mindmate_meta_from_workflow_chunk,
 )
+from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -173,6 +178,8 @@ async def stream_assistant_reply(
     )
     full_answer: list[str] = []
     teaching_flagged = False
+    cached_org = await org_cache.get_by_id(org_id)
+    thinking_gate = MindmateThinkingGate(organization_shows_chain_of_thought(cached_org))
     aborted = False
     outcome = "ok"
     coalescer = SeminarStreamCoalescer(
@@ -185,6 +192,10 @@ async def stream_assistant_reply(
 
     try:
         logger.info("[MindmateSeminarDify] stream started code=%s session=%s", code, session_id)
+        await broadcast_to_all(
+            code,
+            {"type": "mindmate_chain_of_thought", "show": thinking_gate.show},
+        )
         if await is_dify_stream_aborted(code):
             outcome = "aborted"
             return
@@ -270,10 +281,20 @@ async def stream_assistant_reply(
             if isinstance(chunk, dict) and not teaching_flagged:
                 if mindmate_meta_from_workflow_chunk(chunk):
                     teaching_flagged = True
+            if isinstance(chunk, dict) and event == "agent_thought":
+                thinking_gate.note_agent_thought(chunk)
+            if isinstance(chunk, dict) and event == "message_replace":
+                thinking_gate.on_message_replace()
             if answer:
-                piece = str(answer)
-                full_answer.append(piece)
-                await _broadcast_answer_delta(code, sender_user_id, coalescer.push(piece))
+                piece = thinking_gate.visible_answer(str(answer))
+                if piece:
+                    full_answer.append(piece)
+                    await _broadcast_answer_delta(code, sender_user_id, coalescer.push(piece))
+        if not aborted:
+            extra_thinking = thinking_gate.closing_thinking_delta()
+            if extra_thinking:
+                full_answer.append(extra_thinking)
+                await _broadcast_answer_delta(code, sender_user_id, coalescer.push(extra_thinking))
         if aborted:
             await _flush_held()
             partial = _answer_with_teaching_flag(full_answer, teaching_flagged)

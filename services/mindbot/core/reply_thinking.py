@@ -147,6 +147,25 @@ def native_reasoning_from_dify_blocking_response(resp: dict[str, Any]) -> str:
     return ""
 
 
+def extract_dify_agent_thought_text(ev: dict[str, Any]) -> str:
+    """
+    Best-effort text from a Dify ``agent_thought`` streaming event.
+
+    Field names vary by Dify version and app mode. Common top-level and ``data`` keys are accepted.
+    """
+    for key in ("thought", "observation", "tool_input"):
+        val = ev.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    data = ev.get("data")
+    if isinstance(data, dict):
+        for key in ("thought", "observation", "tool_input", "message"):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return ""
+
+
 def _has_incomplete_thinking_open_prefix(s: str) -> bool:
     """
     True when the buffer ends before ``>`` on a fragment that could still become

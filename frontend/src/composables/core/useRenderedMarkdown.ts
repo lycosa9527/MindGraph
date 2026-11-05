@@ -1,7 +1,7 @@
 /**
  * Reactive rich-markdown HTML for v-html. Waits for lazy KaTeX/markdown-it load and re-renders when ready.
  */
-import { type ComputedRef, computed, onMounted } from 'vue'
+import { type ComputedRef, type MaybeRefOrGetter, computed, onMounted, toValue } from 'vue'
 
 import {
   ensureMarkdownRenderer,
@@ -9,14 +9,11 @@ import {
   renderRichMarkdownHtml,
 } from '@/composables/core/lazyMarkdown'
 import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
+import { stripMindmateThinkingBlocks } from '@/utils/stripMindmateThinking'
 
 export interface UseRenderedMarkdownOptions {
   /** Strip MindMate-style thinking blocks before render (MindMate bubbles). */
-  stripThinkBlocks?: boolean
-}
-
-function stripThinkBlocksFromContent(content: string): string {
-  return content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+  stripThinkBlocks?: MaybeRefOrGetter<boolean>
 }
 
 /**
@@ -35,8 +32,8 @@ export function useRenderedMarkdown(
   const html = computed(() => {
     void markdownRendererReady.value
     let text = source() || ''
-    if (options?.stripThinkBlocks) {
-      text = stripTeachingDesignFlags(stripThinkBlocksFromContent(text))
+    if (toValue(options?.stripThinkBlocks)) {
+      text = stripTeachingDesignFlags(stripMindmateThinkingBlocks(text))
     }
     if (!text) {
       return ''

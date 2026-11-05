@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 ORG_CACHE_TTL = _keys.TTL_ORG
 # Hashes written before this field existed must miss and reload, or @-mentions
 # keep a blank alias until the 24h TTL expires.
-_ORG_HASH_SCHEMA_FIELD = "mindmate_agent_alias"
+_ORG_HASH_SCHEMA_FIELD = "show_chain_of_thought_oto"
 
 
 class OrganizationCache:
@@ -88,6 +88,13 @@ class OrganizationCache:
             "school_tier": str(getattr(org, "school_tier", None) or "trial"),
             "extra_member_seats": str(int(getattr(org, "extra_member_seats", 0) or 0)),
             "teaching_design_template_key": str(getattr(org, "teaching_design_template_key", None) or ""),
+            "show_chain_of_thought_oto": "1" if getattr(org, "show_chain_of_thought_oto", False) else "0",
+            "show_chain_of_thought_internal_group": (
+                "1" if getattr(org, "show_chain_of_thought_internal_group", False) else "0"
+            ),
+            "show_chain_of_thought_cross_org_group": (
+                "1" if getattr(org, "show_chain_of_thought_cross_org_group", False) else "0"
+            ),
         }
 
     def _hash_schema_current(self, data: Mapping[Any, Any]) -> bool:
@@ -161,6 +168,14 @@ class OrganizationCache:
                 "teaching_design_template_key",
                 normalized.get("teaching_design_template_key") or None,
             )
+
+        for flag_name in (
+            "show_chain_of_thought_oto",
+            "show_chain_of_thought_internal_group",
+            "show_chain_of_thought_cross_org_group",
+        ):
+            if hasattr(Organization, flag_name):
+                setattr(org, flag_name, normalized.get(flag_name) == "1")
 
         return org
 

@@ -169,6 +169,10 @@ export function normalizeAuthUser(source: BackendUser | User): User {
       ? raw.customLlmModel.trim()
       : ''
   const customLlmModel = customLlmEnabled && customLlmModelRaw ? customLlmModelRaw : null
+  const showChainOfThought =
+    raw.showChainOfThought === true ||
+    raw.show_chain_of_thought === true ||
+    (orgIsObject && org.show_chain_of_thought === true)
   const displayLabel = orgDisplayName || orgName || raw.schoolName || ''
 
   const allowsZh = resolveAllowsSimplifiedChinese(raw)
@@ -247,5 +251,6 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     dailyTokens: resolveDailyTokens(raw),
     customLlmEnabled,
     customLlmModel,
+    showChainOfThought,
   }
 }

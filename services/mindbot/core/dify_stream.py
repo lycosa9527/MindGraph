@@ -20,6 +20,7 @@ from services.mindbot.core.dify_sse_parse import (
     parse_tts_audio_base64_chunk,
     workflow_outputs_file_hints,
 )
+from services.mindbot.core.reply_thinking import extract_dify_agent_thought_text
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_stream_event
 from services.monitoring.error_reporting import record_failure
 from utils.env_helpers import env_bool, env_float, env_int
@@ -142,26 +143,6 @@ def _stream_error_is_hung_bound_conversation(
     if saw_answer or full_text.strip() or media_sent > 0:
         return False
     return _stream_error_is_idle_read_timeout(ev)
-
-
-def _extract_agent_thought_text(ev: dict[str, Any]) -> str:
-    """
-    Best-effort text from Dify ``agent_thought`` (and similar) streaming events.
-
-    Field names vary by Dify version and app mode; we accept common top-level and
-    ``data`` payload keys.
-    """
-    for key in ("thought", "observation", "tool_input"):
-        val = ev.get(key)
-        if isinstance(val, str) and val.strip():
-            return val.strip()
-    data = ev.get("data")
-    if isinstance(data, dict):
-        for key in ("thought", "observation", "tool_input", "message"):
-            val = data.get(key)
-            if isinstance(val, str) and val.strip():
-                return val.strip()
-    return ""
 
 
 async def mindbot_consume_dify_stream_batched(
@@ -411,7 +392,7 @@ async def mindbot_consume_dify_stream_batched(
             continue
 
         if evt == "agent_thought":
-            thought_piece = _extract_agent_thought_text(ev)
+            thought_piece = extract_dify_agent_thought_text(ev)
             if thought_piece:
                 if native_reasoning_accum:
                     native_reasoning_accum = native_reasoning_accum + "\n\n" + thought_piece

@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from services.llm.org_custom_config import session_custom_llm_fields
+from services.mindmate.chain_of_thought import organization_shows_chain_of_thought
 from utils.auth.org_subscription import (
     effective_school_tier_for_org,
     is_org_subscription_expired,
@@ -54,6 +55,7 @@ def organization_session_payload(org, custom_llm: Optional[dict[str, Any]] = Non
             "display_name": None,
             "mindmate_agent_name": None,
             "mindmate_agent_avatar_url": None,
+            "show_chain_of_thought": False,
             "school_tier": None,
             "school_tier_features": school_tier_features_for_no_org(),
             "subscription_expired": False,
@@ -69,6 +71,7 @@ def organization_session_payload(org, custom_llm: Optional[dict[str, Any]] = Non
         "display_name": display_stripped,
         "mindmate_agent_name": _org_mindmate_agent_name(org),
         "mindmate_agent_avatar_url": _org_mindmate_avatar_url(org),
+        "show_chain_of_thought": organization_shows_chain_of_thought(org),
         "school_tier": tier,
         "school_tier_features": school_tier_features_payload(tier),
         "subscription_expired": is_org_subscription_expired(org),

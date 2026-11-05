@@ -114,6 +114,7 @@ interface SSEData {
   data?: Record<string, unknown>
   reply_kind?: string
   export_word_template?: boolean
+  show?: boolean
 }
 
 interface DifyMessage extends DifyHistoryMessage {}
@@ -914,6 +915,14 @@ export function useMindMate(options: MindMateOptions = {}) {
         applyThinkingCoinMutation(
           extractThinkingCoinsFooter(data as unknown as Record<string, unknown>)
         )
+        break
+
+      case 'mindmate_chain_of_thought':
+        if (authStore.user && data.show === true) {
+          authStore.user.showChainOfThought = true
+        } else if (authStore.user && data.show === false) {
+          authStore.user.showChainOfThought = false
+        }
         break
 
       case 'mindmate_failover':

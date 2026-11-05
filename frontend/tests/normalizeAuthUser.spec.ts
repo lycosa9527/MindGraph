@@ -216,4 +216,14 @@ describe('normalizeAuthUser', () => {
     expect(user.learningClassId).toBe(12)
     expect(user.learning_class_id).toBeUndefined()
   })
+
+  it('maps the organization chain-of-thought switch and keeps it on a second pass', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      organization: { id: 7, name: 'Demo', show_chain_of_thought: true },
+    })
+    expect(user.showChainOfThought).toBe(true)
+    expect(normalizeAuthUser(user).showChainOfThought).toBe(true)
+    expect(normalizeAuthUser(loginPayload).showChainOfThought).toBe(false)
+  })
 })

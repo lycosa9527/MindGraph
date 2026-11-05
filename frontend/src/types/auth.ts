@@ -114,6 +114,8 @@ export interface User {
   customLlmEnabled?: boolean
   /** School model name shown on the canvas */
   customLlmModel?: string | null
+  /** Organization editor switch: show model thinking in MindMate */
+  showChainOfThought?: boolean
 }
 
 /**
@@ -136,6 +138,7 @@ export interface BackendUser {
         display_name?: string
         mindmate_agent_name?: string | null
         mindmate_agent_avatar_url?: string | null
+        show_chain_of_thought?: boolean
         school_tier?: string | null
         school_tier_features?: SchoolTierFeatures | null
         subscription_expired?: boolean
@@ -169,6 +172,7 @@ export interface BackendUser {
   must_change_password?: boolean
   needs_display_name?: boolean
   learning_class_id?: number | null
+  show_chain_of_thought?: boolean
   thinking_coins?: {
     balance?: number
     eligible?: boolean

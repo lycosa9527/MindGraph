@@ -52,13 +52,18 @@ from services.infrastructure.monitoring.mindmate_streaming import (
     mindmate_streaming_end,
 )
 from services.learning_space.ai_gate import assert_student_ai_capability
-from services.monitoring.module_activity import track_module_activity
-from services.redis.redis_token_buffer import get_token_tracker
+from services.mindmate.chain_of_thought import (
+    MindmateThinkingGate,
+    organization_shows_chain_of_thought,
+)
 from services.mindmate.teaching_design_flag import (
     is_teaching_instruction_text,
     mindmate_meta_from_workflow_chunk,
     mindmate_meta_payload,
 )
+from services.monitoring.module_activity import track_module_activity
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key
 from utils.auth.user_daily_token_quota import daily_token_limit_message
@@ -199,6 +204,12 @@ async def ai_assistant_stream(
         stream_inputs["mg_conversation_id"] = req.conversation_id
     await apply_persona_inputs_for_organization_id(stream_inputs, organization_id_for_dify)
 
+    show_chain_of_thought = False
+    if organization_id_for_dify is not None:
+        cached_org = await org_cache.get_by_id(organization_id_for_dify)
+        show_chain_of_thought = organization_shows_chain_of_thought(cached_org)
+    thinking_gate = MindmateThinkingGate(show_chain_of_thought)
+
     if current_user and hasattr(current_user, "id"):
         await register_generation_session(
             channel="web",
@@ -216,6 +227,16 @@ async def ai_assistant_stream(
         # Matches ai_brainstorm_streaming: avoids ASGI/middleware issues when the
         # client aborts during the first await. EventSource ignores ':' lines.
         yield ": stream_open\n\n"
+        yield (
+            "data: "
+            + json.dumps(
+                {
+                    "event": "mindmate_chain_of_thought",
+                    "show": thinking_gate.show,
+                }
+            )
+            + "\n\n"
+        )
         if using_backup:
             # One notice per request. The client shows the toast once per outage.
             yield f"data: {json.dumps({'event': 'mindmate_failover'})}\n\n"
@@ -330,17 +351,39 @@ async def ai_assistant_stream(
                             conversation_id=captured_conversation_id,
                         )
 
+                if event_type == "message_replace":
+                    thinking_gate.on_message_replace()
+
+                if event_type == "agent_thought":
+                    thinking_gate.note_agent_thought(chunk)
+
+                if event_type in ("message", "message_replace"):
+                    answer_part = chunk.get("answer")
+                    if isinstance(answer_part, str) and answer_part:
+                        visible = thinking_gate.visible_answer(answer_part)
+                        if event_type == "message_replace":
+                            reply_parts.clear()
+                        if visible:
+                            reply_parts.append(visible)
+                        if visible != answer_part:
+                            chunk = {**chunk, "answer": visible}
+
                 if event_type == "message_end":
+                    extra_thinking = thinking_gate.closing_thinking_delta()
+                    if extra_thinking:
+                        reply_parts.append(extra_thinking)
+                        preface: Dict[str, Any] = {
+                            "event": "message",
+                            "answer": extra_thinking,
+                        }
+                        if captured_conversation_id:
+                            preface["conversation_id"] = captured_conversation_id
+                        yield f"data: {json.dumps(preface, ensure_ascii=False)}\n\n"
                     metadata = chunk.get("metadata", {})
                     usage = metadata.get("usage", {})
                     if usage:
                         captured_usage = usage
                         logger.debug("[STREAM] Captured Dify usage: %s", usage)
-
-                if event_type == "message":
-                    answer_part = chunk.get("answer")
-                    if isinstance(answer_part, str) and answer_part:
-                        reply_parts.append(answer_part)
 
                 if event_type == "error" and dify_stream_chunk_is_upstream_outage(chunk):
                     outage_code = mindmate_upstream_error_code(on_backup=on_backup_server)

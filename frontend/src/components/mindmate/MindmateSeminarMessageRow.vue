@@ -251,8 +251,10 @@ onUnmounted(() => {
   })
 })
 
+const showChainOfThought = computed(() => authStore.user?.showChainOfThought === true)
+
 const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => messageBody.value.text, {
-  stripThinkBlocks: true,
+  stripThinkBlocks: () => !showChainOfThought.value,
 })
 
 const isAssistant = computed(() => props.message.role === 'assistant')

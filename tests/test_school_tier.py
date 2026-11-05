@@ -407,12 +407,17 @@ def test_redis_org_cache_roundtrips_extra_member_seats():
         invitation_code="INVITE",
         is_active=True,
         mindmate_agent_alias="小思",
+        show_chain_of_thought_oto=True,
+        show_chain_of_thought_internal_group=False,
+        show_chain_of_thought_cross_org_group=True,
     )
 
     payload = serialize_org(org)
     assert payload["extra_member_seats"] == "25"
     assert payload["teaching_design_template_key"] == ""
     assert payload["mindmate_agent_alias"] == "小思"
+    assert payload["show_chain_of_thought_oto"] == "1"
+    assert payload["show_chain_of_thought_cross_org_group"] == "1"
     hash_schema_current = getattr(cache, "_hash_schema_current")
     assert hash_schema_current(payload) is True
 
@@ -420,8 +425,11 @@ def test_redis_org_cache_roundtrips_extra_member_seats():
     assert restored.extra_member_seats == 25
     assert restored.teaching_design_template_key is None
     assert restored.mindmate_agent_alias == "小思"
+    assert restored.show_chain_of_thought_oto is True
+    assert restored.show_chain_of_thought_internal_group is False
+    assert restored.show_chain_of_thought_cross_org_group is True
 
-    legacy_alias = {key: value for key, value in payload.items() if key != "mindmate_agent_alias"}
+    legacy_alias = {key: value for key, value in payload.items() if key != "show_chain_of_thought_oto"}
     assert hash_schema_current(legacy_alias) is False
 
     payload["teaching_design_template_key"] = "bundled"
