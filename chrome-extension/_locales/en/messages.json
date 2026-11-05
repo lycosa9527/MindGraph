@@ -288,7 +288,7 @@
     "description": "Label"
   },
   "baseUrlPresetProduction": {
-    "message": "mg.mindspringedu.com",
+    "message": "www.mindspringedu.com",
     "description": "Production server preset"
   },
   "baseUrlPresetTest": {

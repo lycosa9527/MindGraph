@@ -63,7 +63,6 @@ class StorageManager:
                 "file_storage_mb": 0.0,
                 "document_count": 0,
                 "chunk_count": 0,
-                "qdrant_chunks": 0,
                 "total_bytes": 0,
                 "total_mb": 0.0,
                 "usage_percent": 0.0,
@@ -96,9 +95,6 @@ class StorageManager:
             "file_storage_mb": file_storage_bytes / (1024 * 1024),
             "document_count": document_count,
             "chunk_count": chunk_count,
-            "qdrant_chunks": 0,
-            "qdrant_storage_bytes": 0,
-            "qdrant_storage_mb": 0.0,
             "total_bytes": total_bytes,
             "total_mb": total_mb,
             "usage_percent": usage_percent,
@@ -140,11 +136,9 @@ class StorageManager:
 
         return {
             "total_file_storage_mb": total_file_storage / (1024 * 1024),
-            "total_qdrant_storage_mb": 0.0,
             "total_storage_mb": total_bytes / (1024 * 1024),
             "total_documents": total_documents,
             "total_chunks": total_chunks,
-            "total_qdrant_chunks": 0,
             "user_count": len(spaces),
         }
 

@@ -34,7 +34,7 @@ Stored under `%TEMP%\mindgraph-file-reader\`:
 | `settings.json` | Server URL and platform preference |
 | `credentials.dpapi` | MindGraph API token + phone (DPAPI) |
 
-Default server: **test.mindspringedu.com** (dropdown also offers **mg.mindspringedu.com** and **localhost:9527** for local dev)
+Default server: **test.mindspringedu.com** (dropdown also offers **www.mindspringedu.com** and **localhost:9527** for local dev). A saved `mg.mindspringedu.com` address is rewritten to `www`.
 
 ## Usage
 

@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Removed from folder',
   'sidebar.chatHistory.uncategorizedEmpty': 'No uncategorized conversations',
   'sidebar.chatHistory.uncategorizedSection': 'Uncategorized',
-  'sidebar.chunkTest': 'Pagsubok ng RAG chunk',
   'sidebar.collapseSidebar': 'I-collapse ang sidebar',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

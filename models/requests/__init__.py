@@ -41,15 +41,6 @@ from .requests_knowledge_space import (
     PackageUpdateRequest,
     PackageIngestTextRequest,
     PackageIngestWebRequest,
-    RetrievalTestRequest,
-    QueryFeedbackRequest,
-    QueryTemplateRequest,
-    ManualEvaluationRequest,
-    EvaluationDatasetRequest,
-    EvaluationRunRequest,
-    RelationshipRequest,
-    MetadataUpdateRequest,
-    RollbackRequest,
 )
 
 __all__ = [
@@ -87,13 +78,4 @@ __all__ = [
     "PackageUpdateRequest",
     "PackageIngestTextRequest",
     "PackageIngestWebRequest",
-    "RetrievalTestRequest",
-    "QueryFeedbackRequest",
-    "QueryTemplateRequest",
-    "ManualEvaluationRequest",
-    "EvaluationDatasetRequest",
-    "EvaluationRunRequest",
-    "RelationshipRequest",
-    "MetadataUpdateRequest",
-    "RollbackRequest",
 ]

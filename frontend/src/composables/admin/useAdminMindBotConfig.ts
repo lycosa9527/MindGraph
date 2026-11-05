@@ -94,7 +94,6 @@ export function useAdminMindBotConfig(options?: {
   const { t } = useLanguage()
   const notify = useNotifications()
   const { publicSiteUrl } = usePublicSiteUrl()
-
   const loading = ref(false)
   const saving = ref(false)
   const rotating = ref(false)

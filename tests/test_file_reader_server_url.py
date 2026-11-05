@@ -15,7 +15,8 @@ from file_reader.server_url import (
 def test_normalize_production_https() -> None:
     """Accept MindGraph production hosts over HTTPS."""
     assert normalize_server_url("https://test.mindspringedu.com") == "https://test.mindspringedu.com"
-    assert normalize_server_url("https://mg.mindspringedu.com/") == "https://mg.mindspringedu.com"
+    assert normalize_server_url("https://www.mindspringedu.com/") == "https://www.mindspringedu.com"
+    assert normalize_server_url("https://mg.mindspringedu.com/") == "https://www.mindspringedu.com"
 
 
 def test_normalize_localhost_http() -> None:
@@ -44,7 +45,7 @@ def test_reject_non_default_port_production() -> None:
 
 def test_preset_label_round_trip() -> None:
     """Map preset labels to URLs and back."""
-    for label in ("mg.mindspringedu.com", "test.mindspringedu.com", "localhost:9527"):
+    for label in ("www.mindspringedu.com", "test.mindspringedu.com", "localhost:9527"):
         url = server_url_from_preset_label(label)
         assert preset_label_for_server_url(url) == label
 

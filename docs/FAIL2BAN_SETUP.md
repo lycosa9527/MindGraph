@@ -27,7 +27,7 @@ Authoritative parameter tables and examples: **[AbuseIPDB APIv2](https://docs.ab
 - `sudo systemctl enable --now fail2ban`
 - **Nginx Proxy Manager** (or another reverse proxy) access logs on disk the host can read
 
-`scripts/setup/setup.py` **Step 9** (system verification) runs **`fail2ban-client status`** on Linux and prints **SUCCESS** or **WARNING** like Redis/Qdrant, pointing at this doc.
+`scripts/setup/setup.py` **Step 9** (system verification) runs **`fail2ban-client status`** on Linux and prints **SUCCESS** or **WARNING** like Redis, pointing at this doc.
 
 ### Bundled CLI (check / deploy / reload)
 
@@ -42,7 +42,7 @@ Subcommands: **`check`** (status + jail + logpath), **`deploy`** (copy templates
 
 On **Linux**, the application runs the same checks on startup (main worker only) and **exits with copy-paste instructions** if Fail2ban is missing, the daemon is down, templates are not under `/etc/fail2ban`, or the `npm-mindgraph` jail is not loaded. Disable with **`FAIL2BAN_STARTUP_CHECK=false`** in `.env` (e.g. Docker or dev hosts without Fail2ban). Optional **`FAIL2BAN_ETC`** overrides the config root (default `/etc/fail2ban`).
 
-For **all** launch dependencies (Redis port free, HTTP port, Qdrant, Celery, PostgreSQL hints, Tesseract): run **`python -m services.infrastructure.utils.launch_commands`** and use the printed cheatsheet.
+For **all** launch dependencies (Redis port free, HTTP port, Celery, PostgreSQL hints, Tesseract): run **`python -m services.infrastructure.utils.launch_commands`** and use the printed cheatsheet.
 
 ## Nginx Proxy Manager — standard layout (same on all servers)
 
@@ -118,7 +118,7 @@ Use a shared sync prefix so every env reads the same objects (PG dumps can stay 
 
 ```bash
 COS_KEY_PREFIX=backups/mindgraph-CHANGE          # optional; default is {env}/backups
-COS_SYNC_KEY_PREFIX=backups/mindgraph-shared     # shared blocklists / Qdrant / Celery / Playwright / GeoLite
+COS_SYNC_KEY_PREFIX=backups/mindgraph-shared     # shared blocklists / Celery / Playwright / GeoLite
 ```
 
 Layout under `COS_SYNC_KEY_PREFIX`:
@@ -127,7 +127,7 @@ Layout under `COS_SYNC_KEY_PREFIX`:
 sync/crowdsec/blocklist.txt + meta.json
 sync/abuseipdb/blocklist.txt + meta.json
 sync/geolite/GeoLite2-Country.mmdb + meta.json
-sync/qdrant/…  sync/celery/…  sync/playwright/… (browser + apt-deps)
+sync/celery/…  sync/playwright/… (browser + apt-deps)
 ```
 
 **Seed / force publish** (publisher host only; do not run CrowdSec force-pull on more than one machine the same day):
@@ -139,7 +139,7 @@ python scripts/db/publish_blocklists_to_cos.py --as-publisher --prune-orphan-qdr
 
 Manage sync from **Admin → Settings → COS** (`/api/auth/admin/cos/crowdsec|abuseipdb|geolite/...`). See `COS_SYNC_*` in [`env.example`](../env.example).
 
-Blocklist COS **publish** runs via the in-process blocklist scheduler (`BACKUP_HOUR`). The COS mirror scheduler publishes Qdrant/Celery/GeoLite on the publisher and pulls blocklists + stack artifacts on consumers.
+Blocklist COS **publish** runs via the in-process blocklist scheduler (`BACKUP_HOUR`). The COS mirror scheduler publishes Celery, Playwright, and GeoLite on the publisher and pulls blocklists + stack artifacts on consumers. It does not publish a vector server. `--prune-orphan-qdrant` still deletes leftover `sync/qdrant/` tarballs that `meta.json` does not name.
 
 ### Verifying the request hot path (one `SISMEMBER` per request)
 

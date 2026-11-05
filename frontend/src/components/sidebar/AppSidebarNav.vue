@@ -17,7 +17,6 @@ import {
   UserPlus,
   Wand2,
   Waypoints,
-  Wrench,
 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
@@ -26,7 +25,6 @@ import { useSeminarUnreadSummary } from '@/composables/mindmate/useSeminarUnread
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
 const ChatHistory = defineAsyncComponent(() => import('./ChatHistory.vue'))
-const ChunkTestHistory = defineAsyncComponent(() => import('./ChunkTestHistory.vue'))
 const DiagramHistory = defineAsyncComponent(() => import('./DiagramHistory.vue'))
 const LibraryCommentsHistory = defineAsyncComponent(() => import('./LibraryCommentsHistory.vue'))
 const WorkshopChatHistory = defineAsyncComponent(() => import('./WorkshopChatHistory.vue'))
@@ -244,48 +242,6 @@ const mindmateUnreadLabel = computed(() => {
             /></span>
           </div>
         </I18nTooltip>
-        <!-- Chunk Test -->
-        <I18nTooltip
-          v-if="
-            !s.isLearningSpaceStudent &&
-            s.isAuthenticated &&
-            s.featureRagChunkTest &&
-            !s.hideKnowledgeSpaceNav
-          "
-          k="sidebar.chunkTest"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('chunk-test')"
-            @click="s.setMode('chunk-test')"
-          >
-            <Wrench
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.chunkTest"
-            /></span>
-          </div>
-        </I18nTooltip>
-        <transition name="panel-slide">
-          <div
-            v-if="
-              !s.isLearningSpaceStudent &&
-              s.isAuthenticated &&
-              s.featureRagChunkTest &&
-              !s.hideKnowledgeSpaceNav &&
-              s.showPanel('chunk-test')
-            "
-            class="sidebar-panel"
-          >
-            <ChunkTestHistory />
-          </div>
-        </transition>
 
         <I18nTooltip
           v-if="!s.isLearningSpaceStudent && s.showTrainingNav"

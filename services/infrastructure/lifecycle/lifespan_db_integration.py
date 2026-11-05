@@ -18,7 +18,6 @@ from services.auth.ip_geolocation import get_geolocation_service
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.recovery.recovery_startup import (
     check_database_on_startup,
-    cleanup_incomplete_chunk_operations,
 )
 from services.redis.cache.redis_cache_loader import reload_cache_from_database
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, FILE_IO_ERRORS
@@ -76,14 +75,6 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             if is_main_worker:
                 logger.error("Failed to record startup failure: %s", alert_error)
         raise SystemExit(1) from init_exc
-
-    logger.debug("[LIFESPAN] Cleaning up incomplete chunk test operations (post-migration)...")
-    cleaned_chunk = await cleanup_incomplete_chunk_operations()
-    if cleaned_chunk > 0 and is_main_worker:
-        logger.info(
-            "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
-            cleaned_chunk,
-        )
 
     if is_main_worker:
         logger.debug("Database initialized successfully")

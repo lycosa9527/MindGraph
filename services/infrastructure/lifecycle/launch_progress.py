@@ -88,7 +88,7 @@ STAGE_COMPLETE = 22
 STAGE_NAMES = {
     STAGE_SIGNAL_HANDLERS: "Registering Signal Handlers",
     STAGE_REDIS: "Initializing Redis Database",
-    STAGE_QDRANT: "Initializing Qdrant Vector Database",
+    STAGE_QDRANT: "Personal knowledge (VibeFlow)",
     STAGE_CELERY: "Checking Celery Worker",
     STAGE_DEPENDENCIES: "Checking System Dependencies",
     STAGE_DB_INTEGRITY: "Checking PostgreSQL Database Integrity",

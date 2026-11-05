@@ -27,7 +27,6 @@ import { isGuestAuthPath } from './utils/authRedirect'
 import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
 import { installIteratorGlobalStub } from './utils/iteratorGlobalStub'
-import { loadMobileDebugConsole } from './utils/loadMobileDebugConsole'
 import { installModalTwoFingerScroll } from './utils/modalTwoFingerScroll'
 import { syncOfficeEmbedFromSearch } from './utils/officeEmbed'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
@@ -48,9 +47,6 @@ installCsrfFetchInterceptor()
 
 // Two-finger swipe scrolls long dialogs (one finger stays tap / native pan).
 installModalTwoFingerScroll()
-
-// iOS Safari on-device console (Eruda) when ?eruda=1 / test.* host.
-void loadMobileDebugConsole()
 
 const pwaDevEnabled = import.meta.env.VITE_PWA_DEV === '1'
 

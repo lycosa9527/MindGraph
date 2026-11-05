@@ -197,7 +197,13 @@ class PetWindow(QWidget):
         self._menu.exec(event.globalPos())
 
     def _server(self) -> str:
-        return self._prefs.get("server") or "mg.mindspringedu.com"
+        raw = self._prefs.get("server") or "www.mindspringedu.com"
+        origin = normalize_origin(raw)
+        if origin.startswith("https://"):
+            return origin.removeprefix("https://")
+        if origin.startswith("http://"):
+            return origin.removeprefix("http://")
+        return origin
 
     def _open_mindmate(self) -> None:
         if not self._ready():

@@ -5,6 +5,7 @@ import {
   sameOriginTempImageFetchUrl,
   shouldProxyMindmateTempImageUrl,
   shouldRewriteMindmateTempImageUrl,
+  toPublicHttpsUrl,
 } from '@/utils/mindmateTempImageUrl'
 
 describe('shouldRewriteMindmateTempImageUrl', () => {
@@ -52,6 +53,17 @@ describe('sameOriginTempImageFetchUrl', () => {
   })
 })
 
+describe('toPublicHttpsUrl', () => {
+  it('upgrades a public http url and keeps loopback', () => {
+    expect(toPublicHttpsUrl('http://mg.mindspringedu.com/api/temp_images/a.png?sig=1')).toBe(
+      'https://www.mindspringedu.com/api/temp_images/a.png?sig=1'
+    )
+    expect(toPublicHttpsUrl('http://localhost:9527/api/temp_images/a.png')).toBe(
+      'http://localhost:9527/api/temp_images/a.png'
+    )
+  })
+})
+
 describe('rewriteMindmateTempImageUrls', () => {
   it('rewrites loopback temp image urls to same-origin api path', () => {
     const content =
@@ -64,9 +76,10 @@ describe('rewriteMindmateTempImageUrls', () => {
   it('proxies whitelisted remote temp image urls', () => {
     const remote =
       'https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x'
+    const canonical = remote.replace('mg.mindspringedu.com', 'www.mindspringedu.com')
     const content = `![](${remote})`
     expect(rewriteMindmateTempImageUrls(content, 'localhost:41732')).toBe(
-      `![](/api/proxy-image?url=${encodeURIComponent(remote)})`
+      `![](/api/proxy-image?url=${encodeURIComponent(canonical)})`
     )
   })
 
@@ -76,6 +89,32 @@ describe('rewriteMindmateTempImageUrls', () => {
     const content = `![](${remote})`
     expect(rewriteMindmateTempImageUrls(content, 'localhost:41732')).toBe(
       `![](/api/proxy-image?url=${encodeURIComponent(remote)})`
+    )
+  })
+
+  it('proxies an http deployment host as https', () => {
+    const remote =
+      'http://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x'
+    const secure = 'https://www.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x'
+    const content = `![](${remote})`
+    expect(rewriteMindmateTempImageUrls(content, 'localhost:41732')).toBe(
+      `![](/api/proxy-image?url=${encodeURIComponent(secure)})`
+    )
+  })
+
+  it('upgrades a public http preview that stays absolute', () => {
+    const content =
+      '![](http://mindgraph.example.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(rewriteMindmateTempImageUrls(content, 'mg.mindspringedu.com')).toBe(
+      content.replace('http://', 'https://')
+    )
+  })
+
+  it('rewrites a legacy mg temp image onto the www page origin', () => {
+    const content =
+      '![](https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(rewriteMindmateTempImageUrls(content, 'www.mindspringedu.com')).toBe(
+      '![](/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
     )
   })
 

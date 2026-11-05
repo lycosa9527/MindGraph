@@ -1,12 +1,12 @@
 """
 Process Monitor Service for MindGraph Application
 
-Monitors health of critical services (Qdrant, Celery, Redis) and automatically
+Monitors health of critical services (Celery, Redis) and automatically
 restarts failed subprocesses with circuit breaker protection.
 
 Features:
 - Periodic health monitoring (configurable interval)
-- Auto-restart for crashed subprocesses (Qdrant, Celery)
+- Auto-restart for a crashed Celery worker
 - Circuit breaker pattern (prevents restart loops)
 - Critical failure records for service outages
 - Multi-worker coordination via Redis distributed lock

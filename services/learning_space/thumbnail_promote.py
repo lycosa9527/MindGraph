@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.learning_space import LearningAssignment, LearningSubmission
 from services.learning_space.passwords import merge_ai_permissions
+from services.learning_space.thumbnail_submit import THUMB_PENDING
 from services.learning_space.thumbnail_storage import (
     assignment_thumbnail_promote_pending,
     assignment_thumbnails_changed,
@@ -155,6 +156,9 @@ async def ensure_submission_thumbnail_ref(
     """Move a submitted homework thumbnail onto COS when the snapshot still holds a data URL."""
     snap = submission.snapshot_spec
     if not isinstance(snap, dict):
+        return
+    pending = snap.get(THUMB_PENDING)
+    if isinstance(pending, str) and pending.strip():
         return
     updated = dict(snap)
     changed = await asyncio.to_thread(

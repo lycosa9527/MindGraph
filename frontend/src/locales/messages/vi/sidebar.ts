@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Removed from folder',
   'sidebar.chatHistory.uncategorizedEmpty': 'No uncategorized conversations',
   'sidebar.chatHistory.uncategorizedSection': 'Uncategorized',
-  'sidebar.chunkTest': 'Kiểm tra chunk RAG',
   'sidebar.collapseSidebar': 'Thu gọn thanh bên',
   'sidebar.showcase': 'trường hợp vuông',
   'sidebar.zhihui': 'Chie',

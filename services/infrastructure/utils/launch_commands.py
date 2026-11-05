@@ -1,7 +1,7 @@
 """
 Copy-paste commands for MindGraph launch dependencies.
 
-Single source of truth for operator hints (ports, Redis, Qdrant, Celery, Fail2ban,
+Single source of truth for operator hints (ports, Redis, Celery, Fail2ban,
 Tesseract OCR, Playwright, etc.).
 
 Run:
@@ -37,12 +37,11 @@ LIFESPAN_ORDER_TEXT = """
   1. Fail2ban gate (Linux only; FAIL2BAN_STARTUP_CHECK=false to skip)
   2. Redis (required)
   3. AbuseIPDB/CrowdSec baselines (warnings only if merge fails)
-  4. Qdrant (if FEATURE_KNOWLEDGE_SPACE)
-  5. Celery worker check (if FEATURE_KNOWLEDGE_SPACE)
-  6. LibreOffice + Noto CJK fonts (if Showcase server covers enabled)
-  7. System deps / Tesseract (if Knowledge Space)
-  8. Database integrity + init_db
-  9. Remaining services (LLM, schedulers, etc.)
+  4. Celery worker check (if FEATURE_KNOWLEDGE_SPACE)
+  5. LibreOffice + Noto CJK fonts (if Showcase server covers enabled)
+  6. System deps / Tesseract (if Knowledge Space)
+  7. Database integrity + init_db
+  8. Remaining services (LLM, schedulers, etc.)
 """.strip()
 
 
@@ -139,32 +138,13 @@ def lines_http_port_in_use(port: int, pid: int | None, *, include_footer: bool =
     return out
 
 
-def lines_qdrant_connection_failed(
-    connection_info: str,
-    exc: str,
-    port: int,
-    *,
-    include_footer: bool = True,
-) -> list[str]:
-    """Lines qdrant connection failed."""
-    lines = [
-        f"Failed to connect to Qdrant at: {connection_info}",
-        f"Error: {exc}",
-        "",
-        "MindGraph requires Qdrant when Knowledge Space is enabled.",
-        "",
-        "  Install (Linux):  conda activate mindgraph && "
-        'sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py',
-        "  Ubuntu service:   sudo systemctl start qdrant",
-        "  Foreground:       qdrant",
-        "",
-        "Set QDRANT_HOST or QDRANT_URL in .env (see docs/QDRANT_SETUP.md).",
-        "",
-        *lines_tcp_port_kill(port),
+def lines_personal_knowledge_hint() -> list[str]:
+    """Knowledge Space stores markdown on Aliyun OSS for VibeFlow."""
+    return [
+        "Personal knowledge does not use a local vector server.",
+        "Set OSS_* in .env. VibeFlow watches vibeflow/source/.",
+        "See docs/PERSONAL_KNOWLEDGE.md.",
     ]
-    if include_footer:
-        lines.extend(error_footer_launch_reference())
-    return lines
 
 
 def lines_fail2ban_host_install() -> list[str]:
@@ -258,9 +238,6 @@ def lines_optional_feature_packages() -> list[str]:
         "RAG / knowledge / chunking:",
         "  pip install numpy",
         "  pip install semchunk jieba3 tiktoken langdetect opencc-python-reimplemented",
-        "  pip install spacy && python -m spacy download en_core_web_sm",
-        "  pip install chonkie langchain-text-splitters llm-chunking",
-        "  pip install datasets>=2.14.0",
         "",
         "Repo / DB maintenance scripts:",
         "  python scripts/build_prompt_language_registry.py",
@@ -356,8 +333,8 @@ def build_cheatsheet_text() -> str:
         "--- HTTP listen port (python main.py / uvicorn) ---",
         *lines_http_port_in_use(8000, None, include_footer=False),
         "",
-        "--- Qdrant (FEATURE_KNOWLEDGE_SPACE=true) ---",
-        *lines_qdrant_connection_failed("localhost:6333", "<example>", 6333, include_footer=False),
+        "--- Personal knowledge (FEATURE_KNOWLEDGE_SPACE=true) ---",
+        *lines_personal_knowledge_hint(),
         "",
         "--- Celery ---",
         *lines_celery_recovery(),

@@ -139,7 +139,7 @@ LLM_CALL_FAILURES: Tuple[Type[Exception], ...] = (
     LLMServiceError,
 )
 
-# Qdrant vector store operations
+# Knowledge ingest failures. The name stays from the retired local vector client.
 QDRANT_ERRORS: Tuple[Type[Exception], ...] = (
     QdrantUnexpectedResponse,
     ConnectionError,

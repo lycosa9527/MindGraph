@@ -8,6 +8,7 @@
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],
   "host_permissions": [
+    "https://www.mindspringedu.com/*",
     "https://mg.mindspringedu.com/*",
     "https://test.mindspringedu.com/*",
     "http://localhost:9527/*",

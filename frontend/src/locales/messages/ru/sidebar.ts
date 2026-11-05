@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Removed from folder',
   'sidebar.chatHistory.uncategorizedEmpty': 'No uncategorized conversations',
   'sidebar.chatHistory.uncategorizedSection': 'Uncategorized',
-  'sidebar.chunkTest': 'Блочное тестирование RAG',
   'sidebar.collapseSidebar': 'Свернуть боковую панель',
   'sidebar.showcase': 'Кейс-Сквер',
   'sidebar.zhihui': 'Чи',

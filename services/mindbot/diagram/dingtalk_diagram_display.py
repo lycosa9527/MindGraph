@@ -8,6 +8,7 @@ from services.diagram.assistant_markdown import (
     should_buffer_diagram_markdown_reply,
     strip_diagram_id_html_comments,
 )
+from utils.public_https_url import upgrade_public_media_urls_in_text
 
 # Re-export for MindBot pipeline imports.
 should_skip_ai_card_for_dingtalk_diagram = should_buffer_diagram_markdown_reply
@@ -24,10 +25,12 @@ def format_dingtalk_outbound_markdown(text: str) -> str:
     Format assistant markdown for DingTalk clients only.
 
     Rewrites ``![mg:uuid](url)`` to ``![](url)`` and hides HTML diagram-id comments.
-    The original ``text`` is kept intact for Dify history, usage logs, and MindMate.
+    Public preview URLs are https. The original ``text`` is kept intact for Dify
+    history, usage logs, and MindMate.
     """
     cleaned = rewrite_dingtalk_diagram_markdown_alt(text)
     cleaned = strip_diagram_id_html_comments(cleaned)
+    cleaned = upgrade_public_media_urls_in_text(cleaned)
     lines = [line.rstrip() for line in cleaned.splitlines()]
     compact = "\n".join(line for line in lines if line.strip())
     return compact.strip() or " "

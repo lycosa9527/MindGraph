@@ -73,7 +73,6 @@ class FeatureFlagsResponse(BaseModel):
     """Feature flags response model."""
 
     external_base_url: str
-    feature_rag_chunk_test: bool
     feature_showcase: bool
     feature_zhihui: bool
     feature_knowledge_space: bool
@@ -129,7 +128,6 @@ async def get_feature_flags(
     )
     return FeatureFlagsResponse(
         external_base_url=external_base,
-        feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
         feature_showcase=config.FEATURE_SHOWCASE,
         feature_zhihui=config.FEATURE_ZHIHUI,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,

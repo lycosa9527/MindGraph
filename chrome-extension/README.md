@@ -128,7 +128,7 @@ You can install in **both** Chrome and Edge on the same PC — each browser keep
 
 ## Settings
 
-- **Server** — Dropdown: **`mg.mindspringedu.com`** (production), **`test.mindspringedu.com`**, or **`localhost:9527`** (local dev). Stored as full `http`/`https` origin after save. Existing custom URLs map to production on load.
+- **Server** — Dropdown: **`www.mindspringedu.com`** (production), **`test.mindspringedu.com`**, or **`localhost:9527`** (local dev). Stored as full `http`/`https` origin after save. A saved `mg.mindspringedu.com` origin maps to production on load.
 - **Account (phone)** — Same value as **`X-MG-Account`** for API tokens.
 - **API token** — `mgat_…` from the app (**账户信息** → **API Token**). After save, a line under the token shows **valid-until** from **`GET /api/auth/api-token`** (metadata only; same auth headers as `/me`).
 
@@ -172,7 +172,7 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
 - Privacy policy (web + browser extension): **`/privacy`** or **`/privacy-policy.html`** on your MindGraph server (e.g. `https://test.mindspringedu.com/privacy` after backend deploy, or `https://test.mindspringedu.com/privacy-policy.html` from dist only). Must be **static HTML** for Chrome Web Store (no SPA shell). Extension appendix: `#browser-extension`.
 - Credentials (`mgat_` token, phone account, server preset) are stored in **`chrome.storage.local`** on this device (unencrypted, same as typical extensions). Use disk encryption, a trusted browser profile, and **revoke API tokens** on shared machines (MindGraph web app → account → API token).
 - **Wireshark / network sniffing:**
-  - **mg.mindspringedu.com** and **test.mindspringedu.com** use **HTTPS** — Bearer tokens and request bodies are encrypted in transit.
+  - **www.mindspringedu.com** and **test.mindspringedu.com** use **HTTPS** — Bearer tokens and request bodies are encrypted in transit.
   - **localhost:9527** uses **HTTP** — tokens and page content sent to the API are **plaintext on the wire**. The Settings server dropdown shows a warning when local is selected; use only on a trusted dev machine.
 - **SmartEdu downloads** append `accessToken=` to some CDN URLs (required by SmartEdu). Do not share download links; tokens are cleared from extension storage on 401.
 - **Host permissions:** MindGraph API origins are listed explicitly in `manifest.json`. `https://*/*` and `http://*/*` remain for document extract fetches to ~25 third-party document hosts and SmartEdu CDNs (`*.smartedu.cn`, `*.cbern.com.cn`, etc.). Details: [`HOST_PERMISSIONS.md`](HOST_PERMISSIONS.md).

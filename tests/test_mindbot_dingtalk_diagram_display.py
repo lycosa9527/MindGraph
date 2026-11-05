@@ -9,9 +9,10 @@ from services.mindbot.diagram.dingtalk_diagram_display import (
     should_skip_ai_card_for_dingtalk_diagram,
 )
 
-_URL = "https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc&exp=999"
+_STORED = "https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc&exp=999"
+_URL = "https://www.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc&exp=999"
 _UUID = "12eed5a2-6489-4c25-a4d3-f76e9f1aa9ef"
-_DIFY_ANSWER = f"![mg:{_UUID}]({_URL}&mgdid={_UUID})\n<!-- mg-diagram-id:{_UUID} -->"
+_DIFY_ANSWER = f"![mg:{_UUID}]({_STORED}&mgdid={_UUID})\n<!-- mg-diagram-id:{_UUID} -->"
 
 
 def test_format_dingtalk_outbound_markdown_keeps_inline_image() -> None:
@@ -24,16 +25,23 @@ def test_format_dingtalk_outbound_markdown_keeps_inline_image() -> None:
 
 def test_format_dingtalk_outbound_markdown_mixed_prose_and_image() -> None:
     """Prose stays with the inline preview image in one markdown message."""
-    text = f"说明文字\n\n![mg:uuid]({_URL})\n<!-- mg-diagram-id:uuid -->"
+    text = f"说明文字\n\n![mg:uuid]({_STORED})\n<!-- mg-diagram-id:uuid -->"
     wire = format_dingtalk_outbound_markdown(text)
     assert wire.startswith("说明文字")
     assert f"![]({_URL})" in wire
 
 
+def test_format_dingtalk_outbound_markdown_upgrades_http_preview() -> None:
+    """DingTalk fetches the preview over https even when history stored http."""
+    http_url = "http://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc"
+    wire = format_dingtalk_outbound_markdown(f"![mg:uuid]({http_url})")
+    assert wire == "![](https://www.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc)"
+
+
 def test_rewrite_dingtalk_diagram_markdown_alt() -> None:
     """Empty alt avoids DingTalk markdown colon issues."""
-    text = f"![mg:uuid]({_URL})"
-    assert rewrite_dingtalk_diagram_markdown_alt(text) == f"![]({_URL})"
+    text = f"![mg:uuid]({_STORED})"
+    assert rewrite_dingtalk_diagram_markdown_alt(text) == f"![]({_STORED})"
 
 
 def test_dingtalk_answer_contains_diagram_preview() -> None:

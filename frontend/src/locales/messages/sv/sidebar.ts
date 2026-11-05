@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Flyttade ut från mappen',
   'sidebar.chatHistory.uncategorizedEmpty': 'Det finns inga okategoriserade konversationer än',
   'sidebar.chatHistory.uncategorizedSection': 'Okategoriserad',
-  'sidebar.chunkTest': 'RAG-blocktestning',
   'sidebar.collapseSidebar': 'Dölj sidofältet',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

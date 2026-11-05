@@ -47,7 +47,7 @@ def chinese_numeral_to_int(raw: str) -> Optional[int]:
 
 
 def build_section_key(kind: str, number: str, title: str) -> str:
-    """Build a stable slug-like key for Qdrant filtering."""
+    """Build a stable slug-like key for section lookup."""
     if kind in {"chapter_en", "chapter_zh_digit", "chapter_zh_cn"}:
         return f"chapter-{number}"
     if kind == "section_en":

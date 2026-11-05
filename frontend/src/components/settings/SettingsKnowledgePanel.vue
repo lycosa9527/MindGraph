@@ -366,11 +366,11 @@ function extensionOf(name: string): string {
 
 function rejectFile(file: File): boolean {
   if (file.size > MAX_FILE_BYTES) {
-    notify.errorKey('knowledge.upload.fileTooLarge')
+    notify.errorKey('settings.knowledge.fileTooLarge')
     return true
   }
   if (!ALLOWED_EXTENSIONS.includes(extensionOf(file.name))) {
-    notify.errorKey('knowledge.upload.unsupportedType')
+    notify.errorKey('settings.knowledge.unsupportedType')
     return true
   }
   return false

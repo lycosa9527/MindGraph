@@ -1,6 +1,6 @@
 # MindGraph documentation
 
-App version **5.180.208**. This index lists the living docs. Historical behavior stays in [CHANGELOG.md](../CHANGELOG.md).
+App version **5.180.209**. This index lists the living docs. Historical behavior stays in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Start here
 
@@ -20,7 +20,7 @@ App version **5.180.208**. This index lists the living docs. Historical behavior
 | [Vue](VUE_SETUP.md) | Frontend dev server and proxy timeouts |
 | [PostgreSQL](POSTGRES_SETUP.md) | Database |
 | [Redis](REDIS_SETUP.md) | Cache, sessions, collab |
-| [Qdrant](QDRANT_SETUP.md) | Knowledge Space |
+| [Personal knowledge](PERSONAL_KNOWLEDGE.md) | OSS markdown + VibeFlow (no local vector server) |
 | [Celery](CELERY_SETUP.md) | Background workers |
 | [Fail2ban + AbuseIPDB](FAIL2BAN_SETUP.md) | Host ban reporting |
 | [ip2region patch](IP2REGION_PATCH_GUIDE.md) | Geo lookup patch |

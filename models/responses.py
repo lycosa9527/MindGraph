@@ -371,47 +371,6 @@ class DocumentListResponse(BaseModel):
     total: int
 
 
-class RetrievalTestResult(BaseModel):
-    """Response model for a single retrieval test result."""
-
-    chunk_id: int
-    text: str
-    score: float
-    document_id: int
-    document_name: str
-    chunk_index: int
-
-
-class RetrievalTestResponse(BaseModel):
-    """Response model for retrieval test results."""
-
-    query: str
-    method: str
-    results: List[RetrievalTestResult]
-    timing: dict
-    stats: dict
-
-
-class RetrievalTestHistoryItem(BaseModel):
-    """Response model for a single retrieval test history item."""
-
-    id: int
-    query: str
-    method: str
-    top_k: int
-    score_threshold: float
-    result_count: int
-    timing: dict
-    created_at: str
-
-
-class RetrievalTestHistoryResponse(BaseModel):
-    """Response model for retrieval test history."""
-
-    queries: List[RetrievalTestHistoryItem]
-    total: int
-
-
 class KnowledgeSpaceSettingsResponse(BaseModel):
     """Effective Knowledge Space settings for the current user."""
 
@@ -433,20 +392,6 @@ class KnowledgeSpaceSettingsUpdateResponse(BaseModel):
 
     settings: KnowledgeSpaceSettingsResponse
     reindex_required: bool
-
-
-class CompressionMetricsResponse(BaseModel):
-    """Response model for compression metrics."""
-
-    compression_enabled: bool
-    compression_type: Optional[str]
-    points_count: int
-    vector_size: int
-    estimated_uncompressed_size: float
-    estimated_compressed_size: float
-    compression_ratio: float
-    storage_savings_percent: float
-    error: Optional[str] = None
 
 
 class BatchResponse(BaseModel):
@@ -493,110 +438,6 @@ class PackageDetailResponse(BaseModel):
 
     package: PackageResponse
     documents: List[DocumentResponse]
-
-
-class VersionResponse(BaseModel):
-    """Response model for a document version."""
-
-    id: int
-    document_id: int
-    version_number: int
-    chunk_count: int
-    change_summary: Optional[Dict[str, Any]] = None
-    created_at: str
-
-
-class VersionListResponse(BaseModel):
-    """Response model for a list of document versions."""
-
-    versions: List[VersionResponse]
-    total: int
-
-
-class QueryTemplateResponse(BaseModel):
-    """Response model for a query template."""
-
-    id: int
-    name: str
-    template_text: str
-    parameters: Optional[Dict[str, Any]] = None
-    usage_count: int
-    success_rate: float
-    created_at: str
-    updated_at: str
-
-
-class QueryAnalyticsResponse(BaseModel):
-    """Response model for query analytics."""
-
-    common_queries: List[Dict[str, Any]]
-    low_performing_queries: List[Dict[str, Any]]
-    average_scores: Dict[str, float]
-    suggestions: List[str]
-
-
-class RelationshipResponse(BaseModel):
-    """Response model for a document relationship."""
-
-    id: int
-    source_document_id: int
-    target_document_id: int
-    relationship_type: str
-    context: Optional[str] = None
-    created_at: str
-
-
-class EvaluationDatasetResponse(BaseModel):
-    """Response model for an evaluation dataset."""
-
-    id: int
-    name: str
-    description: Optional[str] = None
-    queries: List[Dict[str, Any]]
-    created_at: str
-    updated_at: str
-
-
-class EvaluationRunResponse(BaseModel):
-    """Response model for evaluation run results."""
-
-    dataset_id: int
-    method: str
-    total_queries: int
-    evaluated_queries: int
-    average_metrics: Dict[str, float]
-    query_results: List[Dict[str, Any]]
-
-
-class ChunkTestProgressResponse(BaseModel):
-    """Response model for chunk test progress."""
-
-    test_id: int
-    session_id: Optional[str] = None  # UUID for session tracking
-    status: str  # 'pending', 'processing', 'completed', 'failed'
-    current_method: Optional[str] = None
-    current_stage: Optional[str] = None
-    progress_percent: int = 0
-    completed_methods: Optional[List[str]] = None
-
-
-class ChunkTestResultResponse(BaseModel):
-    """Response model for chunk test results."""
-
-    test_id: int
-    session_id: Optional[str] = None  # UUID for session tracking
-    dataset_name: str
-    document_ids: Optional[List[int]] = None
-    chunking_comparison: Dict[str, Any]
-    retrieval_comparison: Dict[str, Any]
-    summary: Dict[str, Any]
-    evaluation_results: Optional[Dict[str, Any]] = None
-    status: Optional[str] = None
-    current_method: Optional[str] = None
-    current_stage: Optional[str] = None
-    progress_percent: Optional[int] = None
-    completed_methods: Optional[List[str]] = None
-    created_at: str
 
 
 # ============================================================================

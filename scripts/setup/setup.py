@@ -13,8 +13,7 @@ This script handles the complete installation and setup of MindGraph, including:
   (docs/REDIS_SETUP.md, docs/POSTGRES_SETUP.md). When Redis is 8.6+ and
   /etc/redis/redis.conf exists, enables key-memory-histograms (startup-only Redis
   setting) and restarts the service. Prompts let you skip apt installs.
-- Qdrant vector server (Knowledge Space): on Linux with sudo, downloads the official
-  release from GitHub, installs systemd (docs/QDRANT_SETUP.md). Optional skip via prompt.
+- Personal knowledge uses Aliyun OSS and VibeFlow (docs/PERSONAL_KNOWLEDGE.md). No local vector server.
 - Fail2ban (optional host firewall): verification step runs fail2ban-client status on Linux
   (docs/FAIL2BAN_SETUP.md).
 
@@ -30,7 +29,7 @@ Usage:
     pip install -r requirements.txt
     python scripts/setup/setup.py
 
-Linux system packages (Redis, PostgreSQL, Qdrant) with sudo — keep conda on PATH:
+Linux system packages (Redis, PostgreSQL) with sudo — keep conda on PATH:
 
     conda activate mindgraph
     sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
@@ -56,11 +55,7 @@ import re
 import shutil
 import subprocess
 import sys
-import tarfile
-import tempfile
 import time
-import urllib.error
-import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -73,13 +68,6 @@ from conda_runtime import (
     run_as_project_user,
     run_as_project_user_streaming,
 )
-from services.infrastructure.sync.cos_sync_env import (
-    is_cos_consumer,
-    qdrant_download_source,
-    qdrant_tarball_cos_key,
-)
-from services.infrastructure.sync.qdrant_release import qdrant_target_version
-from services.utils import tencent_cos_client
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
@@ -214,30 +202,28 @@ def prompt_yes_no(message: str, default: bool = False) -> bool:
     return line in ("y", "yes", "1", "true")
 
 
-def resolve_setup_interactive_options() -> Tuple[bool, bool, bool]:
+def resolve_setup_interactive_options() -> Tuple[bool, bool]:
     """
     Ask which optional parts to skip (Linux). Non-interactive: all False.
 
     Returns:
-        (allow_non_root, skip_redis_postgres, skip_qdrant)
+        (allow_non_root, skip_redis_postgres)
     """
     if not _stdin_is_tty() or _non_interactive_env():
         print(
             "[INFO] Non-interactive mode (pipe or MINDGRAPH_NON_INTERACTIVE=1): "
             "full system setup; use sudo on Linux for apt installs."
         )
-        return False, False, False
+        return False, False
 
     allow_non_root = False
     skip_redis = False
-    skip_qdrant = False
 
     if platform.system().lower() == "linux":
         print("\n--- Setup options (Linux) ---")
         if not is_elevated_privileges():
             allow_non_root = prompt_yes_no(
-                "Continue without sudo? This skips apt installs (Tesseract, Playwright "
-                "system deps, Redis, PostgreSQL, Qdrant server)",
+                "Continue without sudo? This skips apt installs (Tesseract, Playwright system deps, Redis, PostgreSQL)",
                 default=False,
             )
         else:
@@ -245,12 +231,8 @@ def resolve_setup_interactive_options() -> Tuple[bool, bool, bool]:
                 "Skip installing Redis and PostgreSQL via apt (you will use your own)?",
                 default=False,
             )
-            skip_qdrant = prompt_yes_no(
-                "Skip installing the Qdrant vector server (you will use your own)?",
-                default=False,
-            )
 
-    return allow_non_root, skip_redis, skip_qdrant
+    return allow_non_root, skip_redis
 
 
 # Constants
@@ -304,7 +286,7 @@ CORE_DEPENDENCIES = {
 
 PROGRESS_BAR_LENGTH = 30
 MAX_LINE_LENGTH = 100
-SETUP_STEPS = 9
+SETUP_STEPS = 8
 
 REQUIRED_LOG_FILES = ["uvicorn_access.log", "uvicorn_error.log", "app.log", "agent.log"]
 
@@ -343,47 +325,13 @@ CHROMIUM_DIR = os.path.join(BROWSERS_DIR, "chromium")
 # Project docs (relative to repo root) for Redis / PostgreSQL
 DOC_REDIS = "docs/REDIS_SETUP.md"
 DOC_POSTGRES = "docs/POSTGRES_SETUP.md"
-DOC_QDRANT = "docs/QDRANT_SETUP.md"
+DOC_PERSONAL_KNOWLEDGE = "docs/PERSONAL_KNOWLEDGE.md"
 DOC_FAIL2BAN = "docs/FAIL2BAN_SETUP.md"
 
 # MindGraph requires recent Redis / PostgreSQL; setup targets latest apt packages
 # that meet these minimums (see docs/REDIS_SETUP.md, docs/POSTGRES_SETUP.md).
 MIN_REDIS_VERSION = (8, 6, 0)
 MIN_POSTGRESQL_VERSION = (18, 3, 0)
-
-# Qdrant server binary from GitHub Releases (see docs/QDRANT_SETUP.md).
-# Keep aligned with qdrant-client pin in requirements.txt.
-QDRANT_GITHUB_VERSION = "1.18.3"
-QDRANT_LOCAL_BIN = "/usr/local/bin/qdrant"
-QDRANT_CONFIG_PATH = "/etc/qdrant/config.yaml"
-QDRANT_SYSTEMD_PATH = "/etc/systemd/system/qdrant.service"
-QDRANT_CONFIG_YAML = """storage:
-  storage_path: "/var/lib/qdrant/storage"
-  snapshots_path: "/var/lib/qdrant/snapshots"
-service:
-  host: "0.0.0.0"
-  api_port: 6333
-  grpc_port: 6334
-log_level: INFO
-"""
-QDRANT_SYSTEMD_UNIT = """[Unit]
-Description=Qdrant Vector Database
-Documentation=https://qdrant.tech/documentation/
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/qdrant --config-path /etc/qdrant/config.yaml
-Restart=always
-RestartSec=5
-User=root
-WorkingDirectory=/var/lib/qdrant
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-"""
 
 
 class SetupError(Exception):
@@ -443,12 +391,12 @@ def is_elevated_privileges() -> bool:
 
 
 def print_infrastructure_docs_hint(project_root: str) -> None:
-    """Point operators at Redis/PostgreSQL/Qdrant/Fail2ban documentation."""
-    print("\n[INFO] Redis, PostgreSQL, Qdrant, and Fail2ban:")
+    """Point operators at Redis, PostgreSQL, personal knowledge, and Fail2ban docs."""
+    print("\n[INFO] Redis, PostgreSQL, personal knowledge, and Fail2ban:")
     for rel, title in (
         (DOC_REDIS, "Redis"),
         (DOC_POSTGRES, "PostgreSQL"),
-        (DOC_QDRANT, "Qdrant"),
+        (DOC_PERSONAL_KNOWLEDGE, "Personal knowledge (VibeFlow)"),
         (DOC_FAIL2BAN, "Fail2ban + AbuseIPDB"),
     ):
         path = os.path.join(project_root, rel)
@@ -1076,230 +1024,6 @@ def verify_redis_postgres_hints() -> None:
         print(f"    [WARNING] PostgreSQL: psql not in PATH; install {min_p}+ if using DATABASE_URL")
 
 
-def qdrant_api_responding() -> bool:
-    """True if Qdrant HTTP API answers on port 6333 (docs/QDRANT_SETUP.md)."""
-    try:
-        with urllib.request.urlopen(
-            "http://127.0.0.1:6333/collections",
-            timeout=3,
-        ) as response:
-            return response.status == 200
-    except (OSError, urllib.error.URLError, ValueError):
-        return False
-
-
-def _qdrant_linux_arch_suffix() -> Optional[str]:
-    """Prebuilt tarball suffix for Qdrant GitHub Releases (arch -> filename)."""
-    machine = platform.machine().lower()
-    if machine in ("x86_64", "amd64"):
-        return "x86_64-unknown-linux-gnu"
-    if machine in ("aarch64", "arm64"):
-        return "aarch64-unknown-linux-gnu"
-    return None
-
-
-def _qdrant_find_binary() -> Optional[str]:
-    """Return path to an executable qdrant binary if found."""
-    for path in (
-        QDRANT_LOCAL_BIN,
-        "/usr/bin/qdrant",
-        os.path.expanduser("~/qdrant/qdrant"),
-    ):
-        if os.path.isfile(path) and os.access(path, os.X_OK):
-            return path
-    return None
-
-
-def _qdrant_client_importable(project_root: str) -> bool:
-    """Qdrant client importable."""
-    return _python_can_import(active_python(), "qdrant_client", project_root)
-
-
-def _ensure_qdrant_client_pip(project_root: str) -> bool:
-    """Ensure qdrant-client is installed (requirements.txt should already have done this)."""
-    if _qdrant_client_importable(project_root):
-        return True
-    print("[INFO] Installing qdrant-client via pip...")
-    result = run_as_project_user(
-        [active_python(), "-m", "pip", "install", "qdrant-client"],
-        cwd=project_root,
-    )
-    return result.returncode == 0 and _qdrant_client_importable(project_root)
-
-
-def _qdrant_download_to_file(url: str, dest: str) -> bool:
-    """Qdrant download to file."""
-    try:
-        with urllib.request.urlopen(url, timeout=300) as response:
-            with open(dest, "wb") as outfile:
-                shutil.copyfileobj(response, outfile)
-        return True
-    except OSError:
-        return False
-
-
-def install_qdrant_linux_server() -> bool:
-    """
-    Install Qdrant from GitHub Releases + systemd (Ubuntu/Linux production).
-
-    Single entry point with MindGraph setup (no separate install_qdrant scripts).
-    """
-    print("\n============================================================")
-    print("  Qdrant vector database (GitHub release + systemd)")
-    print("============================================================\n")
-
-    if qdrant_api_responding():
-        print("[INFO] Qdrant API already responding on port 6333")
-        return _ensure_qdrant_client_pip(os.getcwd())
-
-    binary_path = _qdrant_find_binary()
-    binary_exists = binary_path is not None
-    systemd_unit = os.path.isfile(QDRANT_SYSTEMD_PATH)
-    needs_setup = False
-
-    if binary_exists and systemd_unit:
-        run_command("systemctl start qdrant", "Starting Qdrant service", check=False)
-        time.sleep(3)
-        if qdrant_api_responding():
-            return _ensure_qdrant_client_pip(os.getcwd())
-        needs_setup = True
-        print("[WARNING] Qdrant systemd unit present but API not responding; reconfiguring...")
-    elif binary_exists and not systemd_unit:
-        needs_setup = True
-        print("[INFO] Qdrant binary found without systemd unit; configuring service...")
-
-    if not binary_exists:
-        arch = _qdrant_linux_arch_suffix()
-        if arch is None:
-            print("[ERROR] Unsupported CPU for Qdrant prebuilt binary; see https://github.com/qdrant/qdrant/releases")
-            return False
-        url = f"https://github.com/qdrant/qdrant/releases/download/v{QDRANT_GITHUB_VERSION}/qdrant-{arch}.tar.gz"
-        tmp_dir = tempfile.mkdtemp(prefix="mg_qdrant_")
-        tar_path = os.path.join(tmp_dir, "qdrant.tgz")
-        downloaded = False
-        try:
-            prefer_cos = qdrant_download_source() == "cos" or (qdrant_download_source() == "auto" and is_cos_consumer())
-            if prefer_cos and tencent_cos_client.cos_credentials_configured():
-                version = qdrant_target_version()
-                cos_key = qdrant_tarball_cos_key(version, arch)
-                print(f"[INFO] Downloading Qdrant v{version} from COS ({arch})...")
-                downloaded = tencent_cos_client.download_file(
-                    cos_key,
-                    Path(tar_path),
-                    log_prefix="[Setup]",
-                )
-        except ImportError:
-            downloaded = False
-
-        if not downloaded:
-            print(f"[INFO] Downloading Qdrant v{QDRANT_GITHUB_VERSION} from GitHub ({arch})...")
-            if not _qdrant_download_to_file(url, tar_path):
-                print("[ERROR] Failed to download Qdrant tarball")
-                shutil.rmtree(tmp_dir, ignore_errors=True)
-                return False
-        try:
-            with tarfile.open(tar_path, "r:gz") as archive:
-                if sys.version_info >= (3, 12):
-                    archive.extractall(tmp_dir, filter="data")
-                else:
-                    archive.extractall(tmp_dir)
-        except (OSError, tarfile.TarError) as err:
-            print(f"[ERROR] Failed to extract Qdrant: {err}")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            return False
-        inner_bin = os.path.join(tmp_dir, "qdrant")
-        if not os.path.isfile(inner_bin):
-            print("[ERROR] qdrant binary missing inside release archive")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            return False
-        shutil.move(inner_bin, QDRANT_LOCAL_BIN)
-        os.chmod(QDRANT_LOCAL_BIN, 0o755)
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-        print(f"[SUCCESS] Installed Qdrant binary -> {QDRANT_LOCAL_BIN}")
-
-    if not binary_exists or needs_setup:
-        os.makedirs("/var/lib/qdrant/storage", mode=0o755, exist_ok=True)
-        os.makedirs("/var/lib/qdrant/snapshots", mode=0o755, exist_ok=True)
-        os.makedirs("/etc/qdrant", mode=0o755, exist_ok=True)
-        with open(QDRANT_CONFIG_PATH, "w", encoding="utf-8") as cfg:
-            cfg.write(QDRANT_CONFIG_YAML)
-        with open(QDRANT_SYSTEMD_PATH, "w", encoding="utf-8") as unit:
-            unit.write(QDRANT_SYSTEMD_UNIT)
-        run_command("systemctl daemon-reload", "systemctl daemon-reload", check=False)
-        run_command("systemctl enable qdrant", "systemctl enable qdrant", check=False)
-        run_command("systemctl start qdrant", "systemctl start qdrant", check=False)
-
-    print("[INFO] Waiting for Qdrant to listen on 6333...")
-    time.sleep(5)
-
-    if not _ensure_qdrant_client_pip(os.getcwd()):
-        print("[ERROR] Could not install qdrant-client; check pip / requirements.txt")
-        return False
-
-    if qdrant_api_responding():
-        print("[SUCCESS] Qdrant is running — API http://127.0.0.1:6333  gRPC 127.0.0.1:6334")
-        print("[INFO] sudo systemctl status qdrant  |  sudo journalctl -u qdrant -f")
-        return True
-
-    print("[WARNING] Qdrant did not respond; check: sudo journalctl -u qdrant -n 50 (docs/QDRANT_SETUP.md)")
-    return False
-
-
-def install_qdrant_via_documented_flow(
-    project_root: str,
-    skip: bool,
-    allow_non_root: bool,
-) -> bool:
-    """
-    Install Qdrant server per docs/QDRANT_SETUP.md (GitHub binary + systemd, Ubuntu).
-
-    project_root is unused (kept for API compatibility with main()).
-    """
-    del project_root
-    if skip:
-        print("\n[INFO] Skipping Qdrant server install (you chose to skip)")
-        return qdrant_api_responding()
-
-    if platform.system().lower() != "linux":
-        print(
-            "\n[INFO] Qdrant server auto-install targets Linux (systemd). "
-            "On other OSes use Docker, WSL, or follow docs/QDRANT_SETUP.md manually."
-        )
-        return qdrant_api_responding()
-
-    if allow_non_root or not is_elevated_privileges():
-        print(
-            "\n[INFO] Qdrant server install needs root (systemd, /usr/local/bin). "
-            'Skipping. Run: conda activate mindgraph && sudo -E env PATH="$PATH" '
-            '"$(which python)" scripts/setup/setup.py (see docs/QDRANT_SETUP.md)'
-        )
-        return qdrant_api_responding()
-
-    if qdrant_api_responding():
-        print("\n[INFO] Qdrant server already responding on http://127.0.0.1:6333")
-        return True
-
-    ok = install_qdrant_linux_server()
-    if ok:
-        print("[INFO] Set QDRANT_HOST=localhost:6333 in .env for Knowledge Space (see env.example)")
-    return ok
-
-
-def verify_qdrant_hint(project_root: str) -> None:
-    """Print Qdrant server and Python client status (Knowledge Space)."""
-    if qdrant_api_responding():
-        print("    [SUCCESS] Qdrant API http://127.0.0.1:6333/collections (docs/QDRANT_SETUP.md)")
-    else:
-        print(
-            "    [WARNING] Qdrant not listening on port 6333; "
-            "configure QDRANT_HOST or run install (docs/QDRANT_SETUP.md)"
-        )
-    if _qdrant_client_importable(project_root):
-        print("    [SUCCESS] Python package qdrant-client is importable")
-    else:
-        print("    [WARNING] qdrant-client not importable; ensure Step 4 (pip install -r requirements.txt) completed")
-
-
 def fail2ban_client_available() -> bool:
     """True if fail2ban-client is on PATH."""
     return shutil.which("fail2ban-client") is not None
@@ -1665,10 +1389,7 @@ def install_python_dependencies(project_root: str) -> bool:
     pip_python = prepare_pip_python(project_root)
 
     if check_dependencies_already_installed(project_root):
-        print(
-            "\n[INFO] Core Python imports OK; syncing full requirements.txt "
-            "(celery, ip2region, qdrant-client, DB clients, etc.)..."
-        )
+        print("\n[INFO] Core Python imports OK; syncing full requirements.txt (celery, ip2region, DB clients, etc.)...")
     else:
         print("\n[INFO] Installing Python dependencies...")
 
@@ -2682,11 +2403,6 @@ def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
     else:
         print("    ⏭️  Python dependencies - Already installed (skipped)")
 
-    if setup_summary.get("qdrant"):
-        print("    ✅ Qdrant server - Installed or API responding")
-    else:
-        print("    ⏭️  Qdrant - Skipped or verify QDRANT_HOST (docs/QDRANT_SETUP.md)")
-
     if setup_summary["playwright"]:
         print("    ✅ Playwright browser - Installed/Updated")
     else:
@@ -2713,10 +2429,7 @@ def print_next_steps() -> None:
         "    2. Set REDIS_URL and (if used) DATABASE_URL / PostgreSQL vars — "
         "see docs/REDIS_SETUP.md, docs/POSTGRES_SETUP.md"
     )
-    print(
-        "    3. Knowledge Space: set QDRANT_HOST (e.g. localhost:6333) if using RAG; "
-        "full setup runs Qdrant on Linux+sudo (docs/QDRANT_SETUP.md)"
-    )
+    print("    3. Knowledge Space: set OSS_* so VibeFlow can watch markdown (docs/PERSONAL_KNOWLEDGE.md)")
     print("    4. Activate miniconda (Linux/macOS/WSL):")
     print("       conda activate mindgraph")
     print("    5. National data center / map IP lookups (optional):")
@@ -2746,7 +2459,7 @@ def parse_setup_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     """Parse CLI for setup.py (--help only; options are chosen via prompts)."""
     parser = argparse.ArgumentParser(
         description=(
-            "MindGraph complete setup: Tesseract, Redis, PostgreSQL, Qdrant (Linux), "
+            "MindGraph complete setup: Tesseract, Redis, PostgreSQL, "
             "Python deps, Playwright Chromium + OS dependencies."
         ),
         epilog=(
@@ -2782,7 +2495,7 @@ def main() -> None:
     print("[INFO] Smart Setup: Will skip steps that are already complete")
     print("=" * 60)
 
-    allow_non_root, skip_redis_postgres, skip_qdrant = resolve_setup_interactive_options()
+    allow_non_root, skip_redis_postgres = resolve_setup_interactive_options()
 
     try:
         ensure_linux_elevation_or_allow(allow_non_root)
@@ -2810,7 +2523,6 @@ def main() -> None:
         "redis": False,
         "postgres": False,
         "db_init": False,
-        "qdrant": False,
     }
 
     try:
@@ -2848,17 +2560,8 @@ def main() -> None:
         if setup_database_schema(Path(project_root)):
             setup_summary["db_init"] = True
 
-        # Step 6: Qdrant vector server (Linux + sudo; docs/QDRANT_SETUP.md)
-        print(f"\n[STEP 6/{SETUP_STEPS}] Qdrant vector database (Knowledge Space)...")
-        if install_qdrant_via_documented_flow(
-            project_root,
-            skip=skip_qdrant,
-            allow_non_root=allow_non_root,
-        ):
-            setup_summary["qdrant"] = True
-
-        # Step 7: Install Playwright
-        print(f"\n[STEP 7/{SETUP_STEPS}] Playwright browser...")
+        # Step 6: Install Playwright
+        print(f"\n[STEP 6/{SETUP_STEPS}] Playwright browser...")
 
         # First, try to extract from zip if available (fastest option)
         chromium_from_zip = False
@@ -2892,19 +2595,18 @@ def main() -> None:
                     print(f"[WARNING] Offline Chromium setup skipped: {e}")
                     print("[INFO] You can run this manually later if needed")
 
-        # Step 8: Setup logging and data directories
-        print(f"\n[STEP 8/{SETUP_STEPS}] Directory setup...")
+        # Step 7: Setup logging and data directories
+        print(f"\n[STEP 7/{SETUP_STEPS}] Directory setup...")
         if setup_logs_directory():
             setup_summary["logs"] = True
         setup_data_directory()
         setup_application_directories()
 
-        # Step 9: Comprehensive verification
-        print(f"\n[STEP 9/{SETUP_STEPS}] System verification...")
+        # Step 8: Comprehensive verification
+        print(f"\n[STEP 8/{SETUP_STEPS}] System verification...")
         verify_dependencies(project_root)
         verify_tesseract_ocr()
         verify_redis_postgres_hints()
-        verify_qdrant_hint(project_root)
         verify_fail2ban_hint()
         verify_playwright_browsers(project_root)
         verify_file_structure()

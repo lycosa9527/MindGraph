@@ -1,6 +1,6 @@
 # Celery Setup Guide
 
-MindGraph uses **Celery** for background task processing (Knowledge Space document ingestion, MindMate export jobs, and related RAG pipelines). Celery is **required** when Knowledge Space is enabled — the application will not start without a reachable worker and Redis broker.
+MindGraph uses **Celery** for background work: personal-knowledge ingest (extract, split, OSS upload), MindMate export, ZhiHui lesson decks, Mind Classroom, and Showcase covers. Celery is **required** when Knowledge Space is enabled — the application will not start without a reachable worker and Redis broker. Retrieval does not use a local vector server; see [PERSONAL_KNOWLEDGE.md](PERSONAL_KNOWLEDGE.md).
 
 ## Prerequisites
 
@@ -9,8 +9,8 @@ Install and start dependencies first:
 | Service | Guide |
 |---------|-------|
 | **Redis** (broker + result backend) | [REDIS_SETUP.md](REDIS_SETUP.md) |
-| **Qdrant** (vector store; server mode for multi-process) | [QDRANT_SETUP.md](QDRANT_SETUP.md) |
 | **PostgreSQL** (document metadata, RLS) | [POSTGRES_SETUP.md](POSTGRES_SETUP.md) |
+| **Aliyun OSS** (personal-knowledge markdown) | [PERSONAL_KNOWLEDGE.md](PERSONAL_KNOWLEDGE.md) |
 
 Recommended first-time stack install (Linux):
 
@@ -133,10 +133,6 @@ python -m celery -A config.celery worker --loglevel=info --concurrency=4 -Q defa
 
 On boot, `[tasks]` must include `mind_classroom.run_script` and `mind_classroom.run_slides`. If the API manages Celery (`CELERY_MANAGED_BY_APP=true`), restart the API instead — it replaces a stale banner on its own.
 
-## Why Qdrant server mode?
-
-Embedded Qdrant works for single-process dev only. With Celery, FastAPI and workers must share the same Qdrant server — see [QDRANT_SETUP.md](QDRANT_SETUP.md#why-qdrant-server-concurrent-access-for-background-processing).
-
 ## RLS and database access
 
 Celery workers import [config/celery.py](../config/celery.py), which bootstraps PostgreSQL RLS migration URLs on startup (`bootstrap_rls_migration_from_env()`). Sync DB paths use `rls_sync_session(for_celery_user)` — ensure `DATABASE_URL` / `DATABASE_MIGRATION_URL` in `.env` match [POSTGRES_SETUP.md](POSTGRES_SETUP.md).
@@ -165,11 +161,11 @@ Celery workers import [config/celery.py](../config/celery.py), which bootstraps 
 python -m services.infrastructure.utils.launch_commands
 ```
 
-Includes Redis, Qdrant, Celery, PostgreSQL, Playwright, and Tesseract hints in one place.
+Includes Redis, Celery, PostgreSQL, Playwright, and Tesseract hints in one place.
 
 ## COS mirror
 
-When PyPI is unreachable, a publisher host uploads the Celery wheel to COS; consumers install from COS with the same script used for Qdrant:
+When PyPI is unreachable, a publisher host uploads the Celery wheel to COS; consumers install from COS:
 
 ```bash
 python scripts/db/update_stack_from_cos.py

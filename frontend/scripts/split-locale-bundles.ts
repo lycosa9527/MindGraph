@@ -57,8 +57,6 @@ function bundleForKey(key: string): string {
     case 'knowledge':
     case 'knowledgeSpace':
     case 'rag':
-    case 'chunkTest':
-    case 'chunkTestResults':
       return 'knowledge'
     case 'community':
     case 'library':

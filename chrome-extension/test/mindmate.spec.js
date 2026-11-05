@@ -644,7 +644,10 @@ describe("canvas diagram link helpers", () => {
     loadModule("shared-mindgraph.js", "MindGraphShared");
     const shared = globalThis.MindGraphShared;
     expect(shared.resolveMindGraphSettings({ baseUrlPresetId: "production" }).baseUrl).toBe(
-      "https://mg.mindspringedu.com",
+      "https://www.mindspringedu.com",
+    );
+    expect(shared.resolveMindGraphSettings({ baseUrl: "https://mg.mindspringedu.com/" }).baseUrl).toBe(
+      "https://www.mindspringedu.com",
     );
     expect(shared.resolveMindGraphSettings({ baseUrlPresetId: "test" }).baseUrl).toBe(
       "https://test.mindspringedu.com",

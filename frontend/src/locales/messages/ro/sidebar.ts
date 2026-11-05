@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Mutat din dosar',
   'sidebar.chatHistory.uncategorizedEmpty': 'Nu există încă conversații neclasificate',
   'sidebar.chatHistory.uncategorizedSection': 'Necategorizat',
-  'sidebar.chunkTest': 'Testarea blocurilor RAG',
   'sidebar.collapseSidebar': 'Restrângeți bara laterală',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

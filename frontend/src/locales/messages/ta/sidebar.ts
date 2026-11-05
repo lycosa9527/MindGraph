@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Removed from folder',
   'sidebar.chatHistory.uncategorizedEmpty': 'No uncategorized conversations',
   'sidebar.chatHistory.uncategorizedSection': 'Uncategorized',
-  'sidebar.chunkTest': 'RAG தொகுதி சோதனை',
   'sidebar.collapseSidebar': 'பக்கப்பட்டியைச் சுருக்கவும்',
   'sidebar.showcase': 'வழக்கு சதுரம்',
   'sidebar.zhihui': 'சீ',

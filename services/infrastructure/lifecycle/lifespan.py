@@ -44,6 +44,7 @@ from services.infrastructure.lifecycle.lifespan_shutdown import (
     LifespanBackgroundTasks,
     run_lifespan_shutdown,
 )
+from services.learning_space.thumbnail_worker import start_submit_thumbnail_worker
 from services.mcp.session_lifespan import mindgraph_mcp_session_run
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.lifecycle.startup_env_requirements import (
@@ -335,6 +336,16 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
+    submit_thumbnail_task: asyncio.Task[None] | None = None
+    submit_thumbnail_stop: asyncio.Event | None = None
+    try:
+        submit_thumbnail_task, submit_thumbnail_stop = start_submit_thumbnail_worker()
+        if is_main_worker:
+            logger.debug("Homework thumbnail renderer started")
+    except BACKGROUND_INFRA_ERRORS as e:
+        if is_main_worker:
+            logger.warning("Failed to start homework thumbnail renderer: %s", e)
+
     export_cleanup_task = None
     try:
         export_cleanup_task = asyncio.create_task(start_export_cleanup_scheduler(interval_hours=1))
@@ -435,7 +446,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Documents are now registered via register_image_folders.py script
     # Users manually export PDFs to images and place folders in storage/library/
 
-    # Start process monitor (health monitoring and auto-restart for Qdrant, Celery, Redis)
+    # Start process monitor (health monitoring and auto-restart for Celery and Redis)
     # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
     # All workers start the monitor, but only the lock holder performs monitoring
     process_monitor_task: asyncio.Task | None = None
@@ -517,6 +528,8 @@ async def lifespan(fastapi_app: FastAPI):
         api_key_usage_flush_task=api_key_usage_flush_task,
         dify_health_poller_task=dify_health_poller_task,
         export_cleanup_task=export_cleanup_task,
+        submit_thumbnail_task=submit_thumbnail_task,
+        submit_thumbnail_stop=submit_thumbnail_stop,
     )
 
     # Yield control to application. MCP session_manager must run for the whole

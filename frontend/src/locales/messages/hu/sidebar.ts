@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Elhelyezve a mappából',
   'sidebar.chatHistory.uncategorizedEmpty': 'Még nincsenek kategorizálatlan beszélgetések',
   'sidebar.chatHistory.uncategorizedSection': 'Nincs kategorizálva',
-  'sidebar.chunkTest': 'RAG blokk tesztelése',
   'sidebar.collapseSidebar': 'Oldalsáv összecsukása',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

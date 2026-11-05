@@ -108,7 +108,7 @@ async def test_action_update_runs_pending(monkeypatch):
     run_updates.assert_awaited_once()
     assert run_updates.await_args is not None
     plan = run_updates.await_args.args[0]
-    assert plan["qdrant"]["run"] is True
+    assert plan["qdrant"]["run"] is False
     assert plan["celery"]["run"] is False
     assert plan["playwright"]["run"] is True
     assert plan["geolite"]["run"] is True

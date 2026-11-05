@@ -4,7 +4,6 @@ Process management utilities for MindGraph application.
 Handles starting and stopping required services:
 - Redis server (via systemctl or manual)
 - Celery worker (subprocess)
-- Qdrant server (subprocess or systemd service)
 - PostgreSQL server (subprocess or systemd service)
 - Signal handlers for graceful shutdown
 

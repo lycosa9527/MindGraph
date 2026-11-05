@@ -73,6 +73,18 @@ def test_origin_allowed_when_matches_public_site(monkeypatch: pytest.MonkeyPatch
     assert canvas_collab_websocket_origin_is_allowed(evil, allowed) is False
 
 
+def test_http_external_base_url_does_not_allow_http_origin(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An http EXTERNAL_BASE_URL does not whitelist the plaintext page origin."""
+    monkeypatch.delenv("COLLAB_WS_ALLOW_MISSING_ORIGIN", raising=False)
+    monkeypatch.setenv("EXTERNAL_BASE_URL", "http://mg.example.com")
+    monkeypatch.setenv("COLLAB_WS_ALLOWED_ORIGINS", "https://app.example.com")
+    allowed = load_collab_ws_allowed_origins_env()
+    http_origin = Headers({"origin": "http://mg.example.com"})
+    https_origin = Headers({"origin": "https://mg.example.com"})
+    assert canvas_collab_websocket_origin_is_allowed(http_origin, allowed) is False
+    assert canvas_collab_websocket_origin_is_allowed(https_origin, allowed) is True
+
+
 def test_load_origins_stays_off_without_allowlist(monkeypatch: pytest.MonkeyPatch) -> None:
     """EXTERNAL_BASE_URL alone does not turn CSWSH policy on."""
     monkeypatch.delenv("COLLAB_WS_ALLOWED_ORIGINS", raising=False)

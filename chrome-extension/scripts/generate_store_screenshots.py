@@ -133,7 +133,7 @@ _SLIDES: tuple[SlideSpec, ...] = (
         primary_button="SAVE",
         extra_lines=(
             "SERVER",
-            "mg.mindspringedu.com",
+            "www.mindspringedu.com",
             "API TOKEN",
             "mgat_••••••••••••",
         ),

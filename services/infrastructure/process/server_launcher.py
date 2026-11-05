@@ -3,7 +3,7 @@ Server launcher for MindGraph FastAPI application.
 
 Orchestrates the startup sequence:
 - Dependency checking
-- Process management (Redis, Celery, Qdrant)
+- Process management (Redis, Celery)
 - Uvicorn server startup
 - Graceful shutdown handling
 
@@ -117,7 +117,7 @@ def run_server() -> None:
     Run MindGraph with Uvicorn (FastAPI async server).
 
     Orchestrates the complete startup sequence:
-    1. Check and start dependencies (Redis, Qdrant, Celery)
+    1. Check and start dependencies (Redis, Celery)
     2. Setup error filtering and signal handlers
     3. Start Uvicorn server
     4. Handle graceful shutdown
@@ -183,7 +183,7 @@ def run_server() -> None:
         # ========================================================================
         # DEPENDENCY CHECKING AND STARTUP SEQUENCE
         # ========================================================================
-        # All services (Redis, PostgreSQL, Qdrant, Celery) must be verified
+        # All services (Redis, PostgreSQL, Celery) must be verified
         # as running before the application continues. This ensures the app
         # doesn't start in a partially-ready state.
         # ========================================================================
@@ -275,7 +275,7 @@ def run_server() -> None:
         # All services verified and running - continue with application startup
         celery_note = ""
         if config.FEATURE_KNOWLEDGE_SPACE:
-            celery_note = ", Qdrant, Celery"
+            celery_note = ", Celery"
         elif need_celery:
             celery_note = ", Celery"
         showcase_note = ", LibreOffice/CJK" if showcase_server_covers_enabled() else ""
@@ -289,7 +289,7 @@ def run_server() -> None:
         logger.debug("=" * 80)
         ready_extra = ""
         if config.FEATURE_KNOWLEDGE_SPACE:
-            ready_extra = " + Qdrant + Celery"
+            ready_extra = " + Celery"
         elif need_celery:
             ready_extra = " + Celery"
         if showcase_server_covers_enabled():

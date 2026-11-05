@@ -346,6 +346,8 @@ def test_require_wechat_callback_url_needs_external_base(
     assert exc_info.value.detail == AUTH_ERROR_MISCONFIGURED
     monkeypatch.setenv("EXTERNAL_BASE_URL", "https://test.mindspringedu.com")
     assert require_wechat_callback_url().endswith("/api/auth/oauth/wechat/callback")
+    monkeypatch.setenv("EXTERNAL_BASE_URL", "http://test.mindspringedu.com/api")
+    assert require_wechat_callback_url() == "https://test.mindspringedu.com/api/auth/oauth/wechat/callback"
 
 
 def test_wechat_credentials_configured_requires_both(monkeypatch: pytest.MonkeyPatch) -> None:

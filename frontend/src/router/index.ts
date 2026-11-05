@@ -5,7 +5,6 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { refreshOfficeEmbedLayout, useMobileDetect } from '@/composables/core/useMobileDetect'
 import { consumeTrainingDeckNavigation } from '@/composables/training/trainingDeckNav'
-import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -271,28 +270,6 @@ const routes: RouteRecordRaw[] = [
     name: 'MobileLearningSpace',
     component: () => import('@/pages/LearningSpacePage.vue'),
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('learningSpace') },
-  },
-  {
-    path: '/chunk-test',
-    name: 'ChunkTest',
-    component: () => import('@/pages/ChunkTestPage.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresFeatureFlag: 'ragChunkTest',
-      layout: 'main',
-      ...pageTitle('chunkTest'),
-    },
-  },
-  {
-    path: '/chunk-test/results/:testId',
-    name: 'ChunkTestResults',
-    component: () => import('@/pages/ChunkTestResultsPage.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresFeatureFlag: 'ragChunkTest',
-      layout: 'main',
-      ...pageTitle('chunkTestResults'),
-    },
   },
   {
     path: '/library',
@@ -563,12 +540,6 @@ router.beforeEach(async (to, from) => {
   }
 
   // Check feature flags
-  if (
-    to.meta.requiresFeatureFlag === 'ragChunkTest' &&
-    (!featureFlagsStore.getFeatureRagChunkTest() || HIDE_KNOWLEDGE_SPACE_NAV)
-  ) {
-    return { name: 'MindMate' }
-  }
   if (to.name === 'Showcase' && !featureFlagsStore.getFeatureShowcase()) {
     return { name: 'MindMate' }
   }

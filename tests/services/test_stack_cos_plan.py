@@ -28,7 +28,7 @@ def test_stack_check_exit_code_update_available():
     assert (
         stack_cos_plan.stack_check_exit_code(
             _plan(update_needed=True, cos_version="1.18.2"),
-            _plan(update_needed=False),
+            _plan(update_needed=True, cos_version="5.6.0"),
         )
         == 1
     )
@@ -89,20 +89,20 @@ def test_stack_check_exit_code_one_meta_missing_one_ok():
 def test_stack_update_prompt_partial():
     prompt = stack_cos_plan.stack_update_prompt(
         _plan(update_needed=True, cos_version="1.18.2"),
-        _plan(reason="cos_meta_missing"),
+        _plan(update_needed=True, cos_version="5.6.0"),
     )
-    assert prompt == "Install Qdrant 1.18.2 from COS now"
+    assert prompt == "Install Celery 5.6.0 from COS now"
 
 
 def test_resolve_stack_update_pending_only():
     plan = stack_cos_plan.resolve_stack_update(
         _plan(update_needed=True),
-        _plan(update_needed=False),
+        _plan(update_needed=True),
         _plan(update_needed=False),
         reinstall=False,
     )
-    assert plan["qdrant"] == {"run": True, "force": False}
-    assert plan["celery"] == {"run": False, "force": False}
+    assert plan["qdrant"] == {"run": False, "force": False}
+    assert plan["celery"] == {"run": True, "force": False}
     assert plan["playwright"] == {"run": False, "force": False}
 
 
@@ -113,7 +113,7 @@ def test_resolve_stack_update_reinstall():
         _plan(update_needed=False),
         reinstall=True,
     )
-    assert plan["qdrant"] == {"run": True, "force": True}
+    assert plan["qdrant"] == {"run": False, "force": False}
     assert plan["celery"] == {"run": True, "force": True}
     assert plan["playwright"] == {"run": True, "force": True}
 

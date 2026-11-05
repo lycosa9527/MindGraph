@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Přesunuto ze složky',
   'sidebar.chatHistory.uncategorizedEmpty': 'Zatím zde nejsou žádné nezařazené konverzace',
   'sidebar.chatHistory.uncategorizedSection': 'Nezařazené',
-  'sidebar.chunkTest': 'Testování bloku RAG',
   'sidebar.collapseSidebar': 'Sbalit postranní panel',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

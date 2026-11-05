@@ -1,6 +1,6 @@
-# Backend deploy verification (test / mg)
+# Backend deploy verification (test / www)
 
-Run after deploying current MindGraph backend + Alembic migrations to **test.mindspringedu.com** and **mg.mindspringedu.com**.
+Run after deploying current MindGraph backend + Alembic migrations to **test.mindspringedu.com** and **www.mindspringedu.com**.
 
 Replace `BASE`, `ACCOUNT`, and `MGAT` with values from extension Settings.
 

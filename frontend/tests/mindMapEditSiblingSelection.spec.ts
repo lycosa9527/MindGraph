@@ -23,7 +23,6 @@ function enableMindMapV2Canvas(): void {
   const flagsStore = useFeatureFlagsStore()
   flagsStore.flags = {
     external_base_url: '',
-    feature_rag_chunk_test: false,
     feature_showcase: false,
     feature_knowledge_space: false,
     feature_library: false,

@@ -6,14 +6,17 @@ from urllib.parse import urlparse
 
 LOCAL_DEV_HOSTS = frozenset({"localhost", "127.0.0.1"})
 
+CANONICAL_PUBLIC_HOST = "www.mindspringedu.com"
+LEGACY_PUBLIC_HOST = "mg.mindspringedu.com"
+
 SERVER_URL_PRESET_LABELS: tuple[str, ...] = (
-    "mg.mindspringedu.com",
+    CANONICAL_PUBLIC_HOST,
     "test.mindspringedu.com",
     "localhost:9527",
 )
 
 SERVER_URL_BY_PRESET_LABEL: dict[str, str] = {
-    "mg.mindspringedu.com": "https://mg.mindspringedu.com",
+    CANONICAL_PUBLIC_HOST: f"https://{CANONICAL_PUBLIC_HOST}",
     "test.mindspringedu.com": "https://test.mindspringedu.com",
     "localhost:9527": "http://localhost:9527",
 }
@@ -57,13 +60,18 @@ def normalize_server_url(raw: str) -> str:
         if port != 443:
             raise ServerUrlError("Only port 443 is allowed for production servers")
 
+    scheme = parsed.scheme
+    if host == LEGACY_PUBLIC_HOST:
+        host = CANONICAL_PUBLIC_HOST
+        scheme = "https"
+
     netloc = host
     if port is not None and port not in (80, 443):
         netloc = f"{host}:{port}"
     elif port == 443 and parsed.scheme == "https":
         netloc = host
 
-    return f"{parsed.scheme}://{netloc}"
+    return f"{scheme}://{netloc}"
 
 
 def server_url_from_preset_label(label: str) -> str:

@@ -31,6 +31,7 @@ from services.infrastructure.process.fatal_process_exit import fatal_startup_exi
 from services.markets.alipay_certs import cert_bundle_present
 from services.markets.alipay_settings import resolve_alipay_cert_dir
 from utils.dify_mindmate_user_id import describe_mindmate_dify_user_prefix_error
+from utils.public_hosts import CANONICAL_PUBLIC_ORIGIN
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +182,7 @@ def _oauth_gaps() -> list[StartupEnvGap]:
                 "OAuth public URL",
                 (
                     "QR login needs the public HTTPS origin for redirect URIs.",
-                    "  EXTERNAL_BASE_URL=https://mg.mindspringedu.com",
+                    f"  EXTERNAL_BASE_URL={CANONICAL_PUBLIC_ORIGIN}",
                     "  Or set FEATURE_WECHAT_LOGIN=False and FEATURE_DINGTALK_LOGIN=False",
                 ),
             )
@@ -366,7 +367,7 @@ def startup_env_requirement_lines(gaps: list[StartupEnvGap] | None = None) -> li
     lines.extend(
         [
             "  cp env.example .env",
-            "  Redis, PostgreSQL, Qdrant, Celery, LibreOffice, and Playwright",
+            "  Redis, PostgreSQL, Celery, LibreOffice, and Playwright",
             "  are checked next and print their own install steps.",
             "  Full cheatsheet: python -m services.infrastructure.utils.launch_commands",
             _BANNER,

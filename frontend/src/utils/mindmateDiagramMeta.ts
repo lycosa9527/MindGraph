@@ -2,7 +2,7 @@
 import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
 import { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
 
-export { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
+export { rewriteMindmateTempImageUrls, toPublicHttpsUrl } from '@/utils/mindmateTempImageUrl'
 
 const DIAGRAM_ID_COMMENT_RE = /<!--\s*mg-diagram-id:([a-f0-9-]+)\s*-->/i
 const DIAGRAM_ID_COMMENT_STRIP_RE = /<!--\s*mg-diagram-id:[a-f0-9-]+\s*-->\s*/gi

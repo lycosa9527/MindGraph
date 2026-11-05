@@ -406,7 +406,7 @@ _EXTENSION_SECTION: tuple[str, tuple[str, ...]] = (
             "are cleared automatically when they expire (e.g. HTTP 401)."
         ),
         (
-            "Use https://mg.mindspringedu.com in production. The localhost dev preset uses HTTP and "
+            "Use https://www.mindspringedu.com in production. The localhost dev preset uses HTTP and "
             "is intended for trusted development machines only."
         ),
         (

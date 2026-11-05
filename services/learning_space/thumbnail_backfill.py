@@ -16,6 +16,8 @@ from typing import Any, Protocol
 from fastapi import HTTPException
 from PIL import Image
 from playwright.async_api import Error as PlaywrightError
+from sqlalchemy.orm import object_session
+from sqlalchemy.orm.attributes import flag_modified
 
 from models.domain.learning_space import LearningAssignment, LearningSubmission
 from routers.api.vueflow_screenshot import DiagramScreenshotError, capture_diagram_screenshot
@@ -35,7 +37,13 @@ from services.learning_space.thumbnail_storage import (
     template_thumbnail_ref_ready,
     thumbnail_is_durable,
 )
-from services.learning_space.thumbnail_submit import submit_thumbnail_renderer
+from services.learning_space.thumbnail_submit import (
+    THUMB_PENDING,
+    THUMB_TOKEN,
+    backfill_still_matches,
+    clear_thumbnail_work,
+    submit_thumbnail_renderer,
+)
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 
@@ -78,6 +86,8 @@ class _CardJob:
     inline_thumb: str
     assignment: LearningAssignment | None
     submission: LearningSubmission | None
+    thumb_token: str = ""
+    replaced_ref: str = ""
 
 
 @dataclass
@@ -186,7 +196,16 @@ def _jobs_for_submission(submission: LearningSubmission, skip: set[str]) -> list
     if snap is None and not diagram_id:
         return []
     current = snap.get("thumbnail") if snap else None
-    if thumbnail_is_durable(current):
+    pending = ""
+    token = ""
+    if snap is not None:
+        raw_pending = snap.get(THUMB_PENDING)
+        if isinstance(raw_pending, str) and raw_pending.strip():
+            pending = raw_pending.strip()
+        raw_token = snap.get(THUMB_TOKEN)
+        if isinstance(raw_token, str) and raw_token.strip():
+            token = raw_token.strip()
+    if thumbnail_is_durable(current) and not pending:
         return []
     key = f"submission:{int(submission.id)}"
     if key in skip:
@@ -200,6 +219,7 @@ def _jobs_for_submission(submission: LearningSubmission, skip: set[str]) -> list
             inline_thumb=str(current).strip() if isinstance(current, str) else "",
             assignment=None,
             submission=submission,
+            thumb_token=pending or token,
         )
     ]
 
@@ -298,21 +318,61 @@ def _write_reference(assignment: LearningAssignment, diagram_id: str, ref: str) 
     assignment.ai_permissions = raw
 
 
-def _write_submission(submission: LearningSubmission, ref: str) -> None:
+def _write_submission(submission: LearningSubmission, ref: str, token: str) -> str | None:
+    """Store ``ref``. Return the previous image to delete, or None when the token moved."""
     snap = dict(submission.snapshot_spec) if isinstance(submission.snapshot_spec, dict) else {}
+    if not backfill_still_matches(snap, token) or not is_image_ref(ref):
+        return None
+    previous = snap.get("thumbnail")
     snap["thumbnail"] = ref
+    clear_thumbnail_work(snap)
     submission.snapshot_spec = snap
+    if object_session(submission) is not None:
+        flag_modified(submission, "snapshot_spec")
+    if isinstance(previous, str) and previous.strip() and previous.strip() != ref:
+        return previous.strip()
+    return ""
 
 
-def _persist_ref(job: _CardJob, ref: str) -> None:
+def _persist_ref(job: _CardJob, ref: str) -> bool:
     if job.kind == "template" and job.assignment is not None and is_image_ref(ref):
         _write_template(job.assignment, ref)
-        return
+        return True
     if job.kind == "reference" and job.assignment is not None and ref:
         _write_reference(job.assignment, job.diagram_id, ref)
-        return
+        return True
     if job.kind == "submission" and job.submission is not None and is_image_ref(ref):
-        _write_submission(job.submission, ref)
+        replaced = _write_submission(job.submission, ref, job.thumb_token)
+        if replaced is None:
+            return False
+        job.replaced_ref = replaced
+        return True
+    return True
+
+
+async def _reload_submission(db: _ThumbnailDb, submission: LearningSubmission) -> bool:
+    """Read the row again after the render, so a resubmit is not overwritten."""
+    refresh = getattr(db, "refresh", None)
+    if not callable(refresh):
+        return True
+    try:
+        refreshed = refresh(submission, with_for_update=True)
+        if isinstance(refreshed, Awaitable):
+            await refreshed
+    except DATABASE_ERRORS as exc:
+        logger.warning("[LearningSpace] Thumbnail row reload failed id=%s: %s", submission.id, exc)
+        return False
+    return isinstance(submission.snapshot_spec, dict)
+
+
+async def _keep_ref(db: _ThumbnailDb, job: _CardJob, ref: str) -> bool:
+    if job.kind == "submission" and job.submission is not None and not await _reload_submission(db, job.submission):
+        await _drop_uncommitted_image(ref)
+        return False
+    if _persist_ref(job, ref):
+        return True
+    await _drop_uncommitted_image(ref)
+    return False
 
 
 async def _library_fields(
@@ -348,20 +408,28 @@ async def _rendered_ref(
     return stored, True
 
 
-async def _fill_job(job: _CardJob, *, load_diagram: LoadDiagram, render_png: RenderPng) -> _FillResult:
+async def _fill_job(
+    db: _ThumbnailDb,
+    job: _CardJob,
+    *,
+    load_diagram: LoadDiagram,
+    render_png: RenderPng,
+) -> _FillResult:
     """Upload an existing image, or render the spec. ``ready`` means an http image already shows."""
     inline_data = _data_url(job.inline_thumb)
     if inline_data:
         ref = await asyncio.to_thread(promote_data_url_sync, inline_data, owner_id=job.owner_id)
         if is_image_ref(ref):
-            _persist_ref(job, ref)
+            if not await _keep_ref(db, job, ref):
+                return _FillResult("failed", False)
             return _FillResult("stored", False)
     library_thumb, spec, diagram_type = await _library_fields(job, load_diagram)
     library_data = _data_url(library_thumb)
     if library_data and not inline_data:
         ref = await asyncio.to_thread(promote_data_url_sync, library_data, owner_id=job.owner_id)
         if is_image_ref(ref):
-            _persist_ref(job, ref)
+            if not await _keep_ref(db, job, ref):
+                return _FillResult("failed", False)
             return _FillResult("stored", False)
     http_thumb = _http_url(job.inline_thumb) or _http_url(library_thumb)
     if http_thumb and job.kind == "reference":
@@ -383,7 +451,8 @@ async def _fill_job(job: _CardJob, *, load_diagram: LoadDiagram, render_png: Ren
         return _FillResult("failed", True)
     if not is_image_ref(ref):
         return _FillResult("failed", used_browser)
-    _persist_ref(job, ref)
+    if not await _keep_ref(db, job, ref):
+        return _FillResult("failed", used_browser)
     return _FillResult("generated", used_browser)
 
 
@@ -500,7 +569,7 @@ async def fill_missing_card_thumbnails(
         if touched >= THUMBNAIL_BATCH_LIMIT or renders >= _MAX_RENDERS:
             break
         try:
-            result = await _fill_job(job, load_diagram=loader, render_png=render)
+            result = await _fill_job(db, job, load_diagram=loader, render_png=render)
         except _FILL_ERRORS as exc:
             logger.warning("[LearningSpace] Thumbnail backfill failed key=%s: %s", job.key, exc)
             result = _FillResult("failed", False)
@@ -513,6 +582,8 @@ async def fill_missing_card_thumbnails(
                 _record(result, job, counts)
                 touched += 1
                 break
+            if job.replaced_ref:
+                await _drop_uncommitted_image(job.replaced_ref)
         _record(result, job, counts)
         touched += 1
         if result.rendered:

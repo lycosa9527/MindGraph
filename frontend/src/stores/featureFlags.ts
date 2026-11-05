@@ -17,7 +17,6 @@ export interface FeatureOrgAccessEntry {
 
 interface FeatureFlagsResponse {
   external_base_url: string
-  feature_rag_chunk_test: boolean
   feature_showcase: boolean
   feature_zhihui: boolean
   feature_knowledge_space: boolean
@@ -58,7 +57,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   function defaultFeatureFlags(): FeatureFlagsResponse {
     return {
       external_base_url: '',
-      feature_rag_chunk_test: false,
       feature_showcase: false,
       feature_zhihui: false,
       feature_knowledge_space: false,
@@ -185,10 +183,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
    * Get feature flag value synchronously (returns cached value or default)
    * For router guards - call fetchFlags() first if you need fresh data
    */
-  function getFeatureRagChunkTest(): boolean {
-    return flags.value?.feature_rag_chunk_test ?? false
-  }
-
   function getFeatureShowcase(): boolean {
     return flags.value?.feature_showcase ?? false
   }
@@ -280,7 +274,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     flags,
     isLoading,
     fetchFlags,
-    getFeatureRagChunkTest,
     getFeatureShowcase,
     getFeatureZhihui,
     getFeatureKnowledgeSpace,

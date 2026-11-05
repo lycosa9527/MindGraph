@@ -15,10 +15,11 @@ import { computed, nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 import { ArrowUpRight } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
+import { CANONICAL_PUBLIC_ORIGIN } from '@/constants/publicHosts'
 import { BlackCat } from '@/utils/mascot/blackCat'
 import { markTestServerBannerShownToday } from '@/utils/testServerBanner'
 
-const PRODUCTION_URL = 'https://www.mindspringedu.com'
+const PRODUCTION_URL = CANONICAL_PUBLIC_ORIGIN
 
 const visible = defineModel<boolean>({ required: true })
 

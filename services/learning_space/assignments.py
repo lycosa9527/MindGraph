@@ -59,10 +59,7 @@ from services.learning_space.thumbnail_storage import (
     submission_thumbnail_src,
     template_thumbnail_ref_ready,
 )
-from services.learning_space.thumbnail_submit import (
-    SubmitThumbnailJob,
-    schedule_submit_thumbnail,
-)
+from services.learning_space.thumbnail_submit import THUMB_PENDING, THUMB_TOKEN
 from services.learning_space.students import count_class_students
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -609,30 +606,22 @@ async def submit_assignment(
             detail="Diagram service unavailable",
         ) from exc
     snapshot: dict[str, Any] | None = None
-    pending_thumb: SubmitThumbnailJob | None = None
     previous_snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
     previous_keys = collect_thumbnail_keys(None, [previous_snap] if previous_snap else [])
     if diagram:
         previous_thumb = previous_snap.get("thumbnail") if previous_snap else None
         kept = stored_submit_thumbnail(diagram.get("thumbnail"), previous_thumb)
+        token = uuid4().hex
         snapshot = {
             "title": diagram.get("title"),
             "diagram_type": diagram.get("diagram_type"),
             "spec": diagram.get("spec"),
             "language": diagram.get("language", "zh"),
-            "thumb_token": uuid4().hex,
+            THUMB_TOKEN: token,
+            THUMB_PENDING: token,
         }
         if kept:
             snapshot["thumbnail"] = kept
-        pending_thumb = SubmitThumbnailJob(
-            submission_id=int(submission.id),
-            owner_id=int(student.id),
-            token=str(snapshot["thumb_token"]),
-            spec=snapshot.get("spec"),
-            diagram_type=snapshot.get("diagram_type"),
-            fallback_thumb=diagram.get("thumbnail"),
-            previous_ref=kept,
-        )
     else:
         logger.warning(
             "[LearningSpace] Submit without live diagram assignment=%s student=%s diagram=%s",
@@ -669,8 +658,6 @@ async def submit_assignment(
     stale_keys = [key for key in previous_keys if key not in fresh_keys]
     if stale_keys:
         await asyncio.to_thread(delete_stored_images_sync, stale_keys)
-    if pending_thumb is not None:
-        schedule_submit_thumbnail(pending_thumb)
     logger.info(
         "[LearningSpace] Submitted assignment=%s class=%s student=%s submission=%s",
         assignment.id,

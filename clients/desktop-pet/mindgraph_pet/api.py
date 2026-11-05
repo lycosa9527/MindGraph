@@ -20,9 +20,19 @@ class ApiError(Exception):
         self.code = code
 
 
+_CANONICAL_PUBLIC_HOST = "www.mindspringedu.com"
+_LEGACY_PUBLIC_HOST = "mg.mindspringedu.com"
+
+
 def normalize_origin(server: str) -> str:
-    """Turn a preset host into an origin with a scheme and no trailing slash."""
+    """Turn a preset host into an origin with a scheme and no trailing slash.
+
+    The legacy ``mg`` hostname is the same app as ``www``.
+    """
     text = server.strip().rstrip("/")
+    host = text.split("://", 1)[-1].split("/", 1)[0].split(":", 1)[0].lower()
+    if host == _LEGACY_PUBLIC_HOST:
+        return f"https://{_CANONICAL_PUBLIC_HOST}"
     if text.startswith("http://") or text.startswith("https://"):
         return text
     if text.startswith("localhost") or text.startswith("127.0.0.1"):

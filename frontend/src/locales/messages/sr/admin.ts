@@ -65,8 +65,6 @@ export default {
   'admin.feature.mindbotHint': 'ХТТП повратни позив робота предузећа, конфигурисање Дифи и кључ у складу са школом; адреса повратног позива захтева ХТТПС.',
   'admin.feature.mindmateExport': 'Извоз MindMate записа',
   'admin.feature.mindmateExportHint': 'Панел супер администратора: Прегледајте и извезите Дифи записе разговора између веб MindMate-а и ДингТалк MindBot-а.',
-  'admin.feature.ragChunkTest': 'РАГ тестирање у комадима',
-  'admin.feature.ragChunkTestHint': 'Алати за оцењивање у оквиру простора знања.',
   'admin.feature.smartResponse': 'Паметан повратак (уређај)',
   'admin.feature.smartResponseHint': 'ЕСП32/наставни сат итд. приступ.',
   'admin.feature.teacherUsage': 'Анализа употребе наставника',

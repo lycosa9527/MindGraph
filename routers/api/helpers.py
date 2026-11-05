@@ -24,6 +24,12 @@ from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_jwt_secret, is_teacher
 from utils.auth.request_helpers import get_client_ip
+from utils.public_hosts import rewrite_legacy_public_origin
+from utils.public_https_url import (
+    is_loopback_host,
+    normalize_external_base_url,
+    upgrade_public_http_url,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -45,46 +51,6 @@ def strip_leading_http_schemes(value: str) -> str:
         else:
             break
     return result
-
-
-def collapse_double_scheme_base_url(value: str) -> str:
-    """Fix EXTERNAL_BASE_URL values like http://https://host when mis-set."""
-    result = (value or "").strip()
-    for _ in range(3):
-        lower = result.lower()
-        if lower.startswith("http://https://"):
-            result = result[7:]
-        elif lower.startswith("https://http://"):
-            result = result[8:]
-        else:
-            break
-    return result.rstrip("/")
-
-
-def _strip_redundant_trailing_api_path(base: str) -> str:
-    """
-    If EXTERNAL_BASE_URL is set to .../api (mount path duplicated in env), drop the final
-    /api so we do not build .../api/api/temp_images/...
-    """
-    s = (base or "").strip().rstrip("/")
-    if len(s) >= 4 and s[-4:].lower() == "/api":
-        return s[:-4].rstrip("/")
-    return s
-
-
-def normalize_external_base_url(value: str) -> str:
-    """
-    Canonical public site base from EXTERNAL_BASE_URL: fix double-scheme typos, trim slashes,
-    drop a mistaken trailing /api, require http(s) scheme (otherwise return empty).
-    """
-    collapsed = collapse_double_scheme_base_url(value)
-    if not collapsed:
-        return ""
-    no_dup_api = _strip_redundant_trailing_api_path(collapsed)
-    low = no_dup_api.lower()
-    if not (low.startswith("http://") or low.startswith("https://")):
-        return ""
-    return no_dup_api
 
 
 def _signed_path_for_public_url(signed_path: str) -> str:
@@ -109,16 +75,6 @@ def _host_has_traditional_port(authority: str) -> bool:
     return 1 <= p <= 65535
 
 
-def _is_local_loopback_host(host: str) -> bool:
-    """True for typical local dev hostnames; those links need the Uvicorn bind port."""
-    b = (host or "").lower().strip()
-    if b in ("localhost", "127.0.0.1", "::1"):
-        return True
-    if b.count(".") == 3 and b.startswith("127."):
-        return all(p.isdigit() and 0 <= int(p) <= 255 for p in b.split("."))
-    return False
-
-
 def _authority_for_public_temp_url(authority: str) -> str:
     """
     Build host[:port] for public temp-image URLs when not using X-Forwarded-* or EXTERNAL_BASE_URL.
@@ -135,7 +91,7 @@ def _authority_for_public_temp_url(authority: str) -> str:
         return f"localhost:{os.getenv('PORT', '9527')}"
     if _host_has_traditional_port(auth):
         return auth
-    if _is_local_loopback_host(auth):
+    if is_loopback_host(auth):
         return f"{auth}:{os.getenv('PORT', '9527')}"
     public_port = (os.getenv("EXTERNAL_PUBLIC_PORT") or "").strip()
     if public_port.isdigit() and 1 <= int(public_port) <= 65535:
@@ -151,7 +107,7 @@ def _request_is_loopback(request: Request) -> bool:
         (request.headers.get("Host") or "").split(":")[0],
         forwarded.split(":")[0],
     )
-    return any(_is_local_loopback_host(part) for part in candidates)
+    return any(is_loopback_host(part) for part in candidates)
 
 
 def _loopback_media_url(request: Request, prefix: str, path_seg: str) -> str:
@@ -172,6 +128,8 @@ def _build_public_api_media_url(request: Request, api_prefix: str, signed_path: 
     Loopback callers keep the request host so local Vite/API do not emit
     EXTERNAL_BASE_URL (often the test server). Remote callers still use
     EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST.
+    Public hosts are always https, even when the env value or the inbound
+    scheme is http.
     """
     path_seg = _signed_path_for_public_url(signed_path)
     prefix = api_prefix.strip("/")
@@ -181,21 +139,23 @@ def _build_public_api_media_url(request: Request, api_prefix: str, signed_path: 
 
     external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
     if external_base:
-        return f"{external_base}/{prefix}/{path_seg}"
-
-    forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").strip()
-    forwarded_host_raw = (request.headers.get("X-Forwarded-Host") or "").strip()
-    if forwarded_proto and forwarded_host_raw:
-        host_only = strip_leading_http_schemes(forwarded_host_raw).strip().rstrip("/")
+        built = f"{external_base}/{prefix}/{path_seg}"
+    else:
+        forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").strip()
+        forwarded_host_raw = (request.headers.get("X-Forwarded-Host") or "").strip()
+        host_only = ""
+        if forwarded_proto and forwarded_host_raw:
+            host_only = strip_leading_http_schemes(forwarded_host_raw).strip().rstrip("/")
         if host_only:
-            return f"{forwarded_proto}://{host_only}/{prefix}/{path_seg}"
-
-    protocol = request.url.scheme
-    raw_host = strip_leading_http_schemes(os.getenv("EXTERNAL_HOST", "localhost") or "localhost")
-    if not raw_host:
-        raw_host = "localhost"
-    public_authority = _authority_for_public_temp_url(raw_host)
-    return f"{protocol}://{public_authority}/{prefix}/{path_seg}"
+            built = f"{forwarded_proto}://{host_only}/{prefix}/{path_seg}"
+        else:
+            protocol = request.url.scheme
+            raw_host = strip_leading_http_schemes(os.getenv("EXTERNAL_HOST", "localhost") or "localhost")
+            if not raw_host:
+                raw_host = "localhost"
+            public_authority = _authority_for_public_temp_url(raw_host)
+            built = f"{protocol}://{public_authority}/{prefix}/{path_seg}"
+    return rewrite_legacy_public_origin(upgrade_public_http_url(built))
 
 
 def build_public_temp_image_url(request: Request, signed_path: str) -> str:
@@ -203,7 +163,7 @@ def build_public_temp_image_url(request: Request, signed_path: str) -> str:
     Public URL for /api/temp_images (signed path).
 
     Loopback requests stay on the request host. Otherwise: EXTERNAL_BASE_URL,
-    then X-Forwarded-Proto/Host, then EXTERNAL_HOST.
+    then X-Forwarded-Proto/Host, then EXTERNAL_HOST. Public hosts use https.
     """
     return _build_public_api_media_url(request, "api/temp_images", signed_path)
 

@@ -28,7 +28,7 @@ let indexUpdates = 0
 let sidebarUpdates = 0
 
 for (const name of fs.readdirSync(messagesRoot)) {
-  if (name === 'zh' || name === 'en' || name === 'it_test') continue
+  if (name === 'zh' || name === 'en') continue
   const dir = path.join(messagesRoot, name)
   if (!fs.statSync(dir).isDirectory()) continue
   const indexPath = path.join(dir, 'index.ts')

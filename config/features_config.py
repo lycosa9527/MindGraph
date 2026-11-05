@@ -37,16 +37,11 @@ class FeaturesConfigMixin:
         return True
 
     @property
-    def FEATURE_RAG_CHUNK_TEST(self):
-        """Enable RAG Chunk Test feature (hidden by default)."""
-        return self._get_cached_value("FEATURE_RAG_CHUNK_TEST", "False").lower() == "true"
-
-    @property
     def FEATURE_KNOWLEDGE_SPACE(self):
         """Enable Personal Knowledge Space (RAG) feature.
 
         Disabled by default. Set FEATURE_KNOWLEDGE_SPACE=True in .env to enable.
-        Requires Qdrant and Celery to be running.
+        Stores markdown on Aliyun OSS for VibeFlow. Ingest runs on Celery.
         """
         return self._get_cached_value("FEATURE_KNOWLEDGE_SPACE", "False").lower() == "true"
 
@@ -261,7 +256,7 @@ class FeaturesConfigMixin:
 
         Disabled by default. Set FEATURE_TEST_SERVER_BANNER=True on the test server
         so visitors see SwissWarningModal (once/day + on login + always on /auth) and a persistent
-        watermark, with a jump link to production (mg.mindspringedu.com).
+        watermark, with a jump link to production (www.mindspringedu.com).
 
         Frontend: frontend/src/components/common/SwissWarningModal.vue
         """

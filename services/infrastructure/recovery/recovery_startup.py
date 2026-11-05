@@ -12,7 +12,7 @@ import logging
 import os
 from typing import Any, Dict
 
-from sqlalchemy import select, text
+from sqlalchemy import text
 
 from config.database import (
     DATABASE_URL,
@@ -20,136 +20,15 @@ from config.database import (
     check_integrity,
     recover_from_kill_9,
 )
-from models.domain.knowledge_space import ChunkTestDocument
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.recovery.recovery_locks import (
     acquire_integrity_check_lock,
     release_integrity_check_lock,
 )
-from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
 from services.utils.backup_scheduler import get_backup_status
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
-
-
-async def _chunk_test_documents_table_exists() -> bool:
-    """Return True if chunk_test_documents exists (migrations may not have created it yet)."""
-
-    async with async_engine.connect() as conn:
-        result = await conn.execute(
-            text(
-                """
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM information_schema.tables
-                    WHERE table_schema = current_schema()
-                      AND table_name = :tbl
-                )
-                """
-            ),
-            {"tbl": ChunkTestDocument.__tablename__},
-        )
-        row = result.fetchone()
-        return bool(row[0]) if row else False
-
-
-async def _cleanup_user_documents(user_id, docs) -> int:
-    """Clean up stuck documents for a single user using an async session.
-
-    Returns count cleaned.
-    """
-    cleaned = 0
-    async with user_rls_session(int(user_id)) as db:
-        try:
-            service = ChunkTestDocumentService(db, user_id)
-        except BACKGROUND_INFRA_ERRORS as exc:
-            logger.error(
-                "[Recovery] Failed to create service for user %s: %s",
-                user_id,
-                exc,
-                exc_info=True,
-            )
-            return 0
-
-        for doc in docs:
-            try:
-                await service.cleanup_incomplete_processing(doc.id)
-                cleaned += 1
-                logger.info(
-                    "[Recovery] Cleaned up incomplete processing for document %s (user %s)",
-                    doc.id,
-                    user_id,
-                )
-            except BACKGROUND_INFRA_ERRORS as exc:
-                logger.error(
-                    "[Recovery] Failed to cleanup document %s: %s",
-                    doc.id,
-                    exc,
-                    exc_info=True,
-                )
-    return cleaned
-
-
-async def cleanup_incomplete_chunk_operations() -> int:
-    """
-    Clean up incomplete chunk operations after kill -9.
-
-    Detects documents stuck in 'processing' status and:
-    1. Cleans up partial Qdrant data
-    2. Deletes partial chunks from database
-    3. Resets status to 'pending' for retry
-
-    Returns:
-        Number of documents cleaned up
-    """
-    try:
-        if not await _chunk_test_documents_table_exists():
-            logger.debug(
-                "[Recovery] Skipping incomplete chunk cleanup: table %s is not present",
-                ChunkTestDocument.__tablename__,
-            )
-            return 0
-        async with system_rls_session() as db:
-            result = await db.execute(select(ChunkTestDocument).where(ChunkTestDocument.status == "processing"))
-            stuck_docs = result.scalars().all()
-    except ImportError as exc:
-        logger.debug(
-            "[Recovery] Could not import chunk test models (may not be available): %s",
-            exc,
-        )
-        return 0
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.warning(
-            "[Recovery] Error during incomplete chunk operations cleanup: %s",
-            exc,
-        )
-        return 0
-
-    if not stuck_docs:
-        logger.debug("[Recovery] No documents stuck in processing status")
-        return 0
-
-    logger.info(
-        "[Recovery] Found %d document(s) stuck in 'processing' status, cleaning up...",
-        len(stuck_docs),
-    )
-
-    docs_by_user: Dict[Any, list] = {}
-    for doc in stuck_docs:
-        docs_by_user.setdefault(doc.user_id, []).append(doc)
-
-    cleaned_count = 0
-    for uid, docs in docs_by_user.items():
-        cleaned_count += await _cleanup_user_documents(uid, docs)
-
-    if cleaned_count > 0:
-        logger.info(
-            "[Recovery] Successfully cleaned up %d incomplete chunk operation(s)",
-            cleaned_count,
-        )
-    return cleaned_count
 
 
 async def check_database_on_startup() -> bool:

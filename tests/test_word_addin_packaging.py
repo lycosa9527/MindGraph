@@ -16,16 +16,20 @@ from utils.word_addin_packaging import (
 
 def test_production_manifest_rewrites_shell_urls() -> None:
     """Production manifest points shell URLs at the public origin, not localhost."""
-    xml = build_production_manifest_xml("https://mg.mindspringedu.com")
-    assert "https://mg.mindspringedu.com/word-addin/src/taskpane/mindgraph.html" in xml
-    assert "https://mg.mindspringedu.com/word-addin/assets/icons/mindgraph-80.png" in xml
+    xml = build_production_manifest_xml("https://www.mindspringedu.com")
+    assert "https://www.mindspringedu.com/word-addin/src/taskpane/mindgraph.html" in xml
+    assert "https://www.mindspringedu.com/word-addin/assets/icons/mindgraph-80.png" in xml
     assert "https://localhost:3000" not in xml
     assert "http://localhost:9527" not in xml
     assert "127.0.0.1" not in xml
+    assert "<AppDomain>https://www.mindspringedu.com</AppDomain>" in xml
     assert "<AppDomain>https://mg.mindspringedu.com</AppDomain>" in xml
     assert "<AppDomain>https://365.kdocs.cn</AppDomain>" in xml
     # Path-suffixed AppDomains are invalid and prevent the CustomTab from showing.
-    assert "<AppDomain>https://mg.mindspringedu.com/word-addin</AppDomain>" not in xml
+    assert "<AppDomain>https://www.mindspringedu.com/word-addin</AppDomain>" not in xml
+    legacy = build_production_manifest_xml("https://mg.mindspringedu.com")
+    assert "https://www.mindspringedu.com/word-addin/src/taskpane/mindgraph.html" in legacy
+    assert "https://mg.mindspringedu.com/word-addin/" not in legacy
     assert "/word-addin</AppDomain>" not in xml
     # Must not share the git/Vite Dev Id — npm start would overwrite Install.cmd.
     assert f"<Id>{PRODUCTION_ADDIN_ID}</Id>" in xml

@@ -1,5 +1,5 @@
 """
-Pure helpers for stack COS CLI (Qdrant, Celery, Playwright, GeoLite).
+Pure helpers for stack COS CLI (Celery, Playwright, GeoLite).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -37,6 +37,17 @@ def _optional_plans(*plans: dict | None) -> List[dict]:
     return [plan for plan in plans if plan is not None]
 
 
+def _live_stack_plans(
+    qdrant_plan: dict,
+    celery_plan: dict,
+    playwright_plan: dict | None,
+    geolite_plan: dict | None,
+) -> List[dict]:
+    """Celery, Playwright, and GeoLite. The retired vector plan is not installed."""
+    del qdrant_plan
+    return [celery_plan, *_optional_plans(playwright_plan, geolite_plan)]
+
+
 def stack_check_exit_code(
     qdrant_plan: dict,
     celery_plan: dict,
@@ -47,8 +58,9 @@ def stack_check_exit_code(
     Exit code for check action.
 
     0 = up to date, 1 = update available, 2 = config/meta error.
+    A missing local vector server does not count.
     """
-    plans = [qdrant_plan, celery_plan, *_optional_plans(playwright_plan, geolite_plan)]
+    plans = _live_stack_plans(qdrant_plan, celery_plan, playwright_plan, geolite_plan)
     if any(plan.get("reason") == "cos_not_configured" for plan in plans):
         return 2
     if not any(artifact_on_cos(plan) for plan in plans):
@@ -68,7 +80,7 @@ def stack_has_pending_updates(
     geolite_plan: dict | None = None,
 ) -> bool:
     """True when at least one on-COS artifact is newer than installed."""
-    plans = [qdrant_plan, celery_plan, *_optional_plans(playwright_plan, geolite_plan)]
+    plans = _live_stack_plans(qdrant_plan, celery_plan, playwright_plan, geolite_plan)
     return any(artifact_on_cos(plan) and plan.get("update_needed") for plan in plans)
 
 
@@ -80,8 +92,7 @@ def stack_update_prompt(
 ) -> Optional[str]:
     """Human-readable install prompt, or None when no COS artifacts exist."""
     parts: List[str] = []
-    if artifact_on_cos(qdrant_plan) and qdrant_plan.get("update_needed"):
-        parts.append(f"Qdrant {qdrant_plan.get('cos_version')}")
+    del qdrant_plan
     if artifact_on_cos(celery_plan) and celery_plan.get("update_needed"):
         parts.append(f"Celery {celery_plan.get('cos_version')}")
     if playwright_plan is not None and artifact_on_cos(playwright_plan) and playwright_plan.get("update_needed"):
@@ -115,8 +126,9 @@ def resolve_stack_update(
 ) -> StackUpdatePlan:
     """Decide which components to update and whether to force reinstall."""
     pw_plan = playwright_plan or {"reason": "cos_meta_missing", "update_needed": False}
+    del qdrant_plan
     return {
-        "qdrant": _component_update(qdrant_plan, reinstall=reinstall),
+        "qdrant": {"run": False, "force": False},
         "celery": _component_update(celery_plan, reinstall=reinstall),
         "playwright": _component_update(pw_plan, reinstall=reinstall),
         "geolite": _component_update(geolite_plan, reinstall=reinstall),

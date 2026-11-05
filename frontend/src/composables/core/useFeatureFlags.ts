@@ -30,7 +30,6 @@ export function useFeatureFlags() {
 
   const live = computed(() => store.flags ?? data.value ?? null)
 
-  const featureRagChunkTest = computed(() => live.value?.feature_rag_chunk_test ?? false)
   const featureShowcase = computed(() => live.value?.feature_showcase ?? false)
   const featureZhihui = computed(() => live.value?.feature_zhihui ?? false)
   const featureKnowledgeSpace = computed(() => live.value?.feature_knowledge_space ?? false)
@@ -60,7 +59,6 @@ export function useFeatureFlags() {
   const tencentCaptchaAppId = computed(() => live.value?.tencent_captcha_app_id ?? '')
 
   return {
-    featureRagChunkTest,
     featureShowcase,
     featureZhihui,
     featureKnowledgeSpace,

@@ -14,14 +14,10 @@ from typing import Any, FrozenSet
 
 from starlette.datastructures import Headers
 
-logger = logging.getLogger(__name__)
+from utils.public_hosts import FIRST_PARTY_HTTPS_ORIGINS
+from utils.public_https_url import normalize_external_base_url
 
-_MINDGRAPH_HTTPS_ORIGINS = frozenset(
-    {
-        "https://mg.mindspringedu.com",
-        "https://www.mindspringedu.com",
-    }
-)
+logger = logging.getLogger(__name__)
 
 
 def normalize_origin_header(origin: str) -> str:
@@ -53,20 +49,25 @@ def parse_collab_ws_allowed_origins(raw: str | None) -> FrozenSet[str]:
 
 
 def first_party_ws_origins_from_env() -> FrozenSet[str]:
-    """Public site origin from ``EXTERNAL_BASE_URL`` (Word Voice, ESP32 watch)."""
-    return parse_collab_ws_allowed_origins(os.environ.get("EXTERNAL_BASE_URL"))
+    """Public site origin from ``EXTERNAL_BASE_URL`` (Word Voice, ESP32 watch).
+
+    A public ``http://`` base is stored as ``https://``. An ``http`` page origin
+    stays rejected.
+    """
+    base = normalize_external_base_url(os.environ.get("EXTERNAL_BASE_URL") or "")
+    return parse_collab_ws_allowed_origins(base)
 
 
 def expand_mindgraph_https_siblings(origins: FrozenSet[str]) -> FrozenSet[str]:
     """Both public HTTPS hosts are first-party whenever the CSWSH allowlist is on.
 
-    Production serves the same app on ``www`` and ``mg``. The allowlist does not
-    need to name either host. An empty set stays empty so the policy stays off.
-    Plain ``http`` is not added.
+    The canonical site is ``www``. The legacy ``mg`` name is the same app.
+    The allowlist does not need to name either host. An empty set stays empty
+    so the policy stays off. Plain ``http`` is not added.
     """
     if not origins:
         return origins
-    return frozenset(origins | _MINDGRAPH_HTTPS_ORIGINS)
+    return frozenset(origins | FIRST_PARTY_HTTPS_ORIGINS)
 
 
 def load_collab_ws_allowed_origins_env() -> FrozenSet[str]:

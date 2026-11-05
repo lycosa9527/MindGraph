@@ -13,7 +13,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.208-brightgreen.svg" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.209-brightgreen.svg" alt="Version"></a>
 </p>
 
 ---
@@ -86,7 +86,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Workshop Chat (研习社): school-scoped real-time channels, topics, DMs, reactions, and file attachments
 - **Showcase** (案例广场): community case gallery with teaching-design / diagram publish, AI copy, Office→PDF preview, cover job manifesto, and admin moderation — see [services/showcase/README.md](services/showcase/README.md)
 - International landing page with Chinese / International UI version toggle
-- Knowledge Space (RAG) for document management and retrieval
+- Knowledge Space: personal folders stored as markdown on Aliyun OSS and retrieved through VibeFlow
 - Library with image-based document viewing
 - Teacher usage tracking
 
@@ -116,7 +116,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 |-------|--------------|
 | **Frontend** | Vue 3.5, TypeScript, Vite 7, Tailwind CSS 4, Pinia, Vue Flow, KaTeX |
 | **Backend** | Python 3.13, FastAPI, Uvicorn, Alembic |
-| **Data** | PostgreSQL (JSONB), Redis 8+, Qdrant |
+| **Data** | PostgreSQL (JSONB), Redis 8+, Aliyun OSS (VibeFlow for personal knowledge) |
 | **AI** | LangGraph, Dashscope (Qwen), Volcengine (Doubao, DeepSeek, Kimi), Dify |
 
 ---
@@ -128,8 +128,8 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Miniconda (Python 3.13+ env named `mindgraph`)
 - Node.js and npm (latest; see [docs/NODE_NVM_SETUP.md](docs/NODE_NVM_SETUP.md))
 - Redis 7.0+ (8.6+ recommended for key-memory histograms and VSET)
-- Qdrant (for Knowledge Space)
 - PostgreSQL
+- Aliyun OSS when Knowledge Space is on (VibeFlow watches the markdown objects; no local vector server)
 
 ### Installation
 
@@ -142,7 +142,7 @@ conda activate mindgraph
 pip install -r requirements.txt
 python -m playwright install chromium
 
-# Linux system packages: Redis, PostgreSQL, Qdrant, Playwright deps, Tesseract OCR
+# Linux system packages: Redis, PostgreSQL, Playwright deps, Tesseract OCR
 sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
 
 # Optional: install dashboard assets (ECharts, China GeoJSON, ip2region)
@@ -153,7 +153,8 @@ cd frontend && npm install && npm run build && cd ..
 
 # Configuration
 cp env.example .env
-# Edit .env: set QWEN_API_KEY, REDIS_URL, QDRANT_HOST, DATABASE_URL
+# Edit .env: set QWEN_API_KEY, REDIS_URL, DATABASE_URL
+# Knowledge Space also needs OSS_* (see env.example)
 ```
 
 ### Run
@@ -176,7 +177,7 @@ Default: `http://localhost:9527`
 | `/mindgraph` | Diagram gallery |
 | `/canvas` | Interactive diagram editor |
 | `/canvas?openDocSummary=1` | Canvas with Document Summary panel open |
-| `/knowledge-space` | RAG document management |
+| `/knowledge-space` | Personal knowledge folders |
 | `/library` | Document library |
 | `/workshop-chat` | Workshop Chat — real-time teacher collaboration |
 | `/showcase` | Showcase — community case gallery |
@@ -194,7 +195,6 @@ Required environment variables:
 ```bash
 QWEN_API_KEY=your-api-key
 REDIS_URL=redis://localhost:6379/0
-QDRANT_HOST=localhost:6333   # For Knowledge Space
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost/mindgraph
 PORT=9527
 DEBUG=False
@@ -210,7 +210,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_ZHIHUI` | `True` | ZhiHui text-to-image |
 | `FEATURE_STUDENT_LEARNING_SPACE` | `True` | Classroom homework |
 | `FEATURE_MINDMATE` | `False` | MindMate AI chat |
-| `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
+| `FEATURE_KNOWLEDGE_SPACE` | `False` | Personal knowledge (Aliyun OSS + VibeFlow; Celery ingests files) |
 | `FEATURE_LIBRARY` | `False` | Library PDF viewer |
 | `FEATURE_WORKSHOP_CHAT` | `False` | Workshop Chat (研习社) |
 | `FEATURE_WECHAT_LOGIN` | `False` | WeChat QR login (platform-wide; production only — one Open Platform domain) |
@@ -257,6 +257,7 @@ Index: [docs/README.md](docs/README.md). Tests: [tests/README.md](tests/README.m
 - [Showcase](services/showcase/README.md)
 - [Kitty](services/kitty/README.md)
 - [DingTalk Account Binding](docs/architecture/dingtalk_account_binding.md)
+- [Personal knowledge](docs/PERSONAL_KNOWLEDGE.md)
 - [`.mg` file format](docs/MG_FILE_FORMAT.md)
 
 ---

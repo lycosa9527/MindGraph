@@ -74,7 +74,7 @@ def section_title_matches_hint(title: str, section_number: str, label: str) -> b
 
 
 def collect_distinct_section_keys(payloads: Iterable[dict]) -> List[str]:
-    """Unique non-empty section_key values from Qdrant payloads."""
+    """Unique non-empty section_key values from stored payloads."""
     keys: List[str] = []
     seen: set[str] = set()
     for payload in payloads:

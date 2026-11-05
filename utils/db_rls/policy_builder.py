@@ -91,10 +91,6 @@ GEWE_TABLES = [
 ]
 GEWE_EXPR = "rls_platform_admin_only()"
 
-USER_OR_SPACE_VISIBLE = (
-    "(space_id IS NOT NULL AND rls_knowledge_space_visible(space_id)) "
-    "OR (space_id IS NULL AND rls_user_visible(user_id))"
-)
 EMBEDDINGS_EXPR = "rls_is_system_mode() OR rls_community_read_allowed()"
 DIRECT_MESSAGE_EXPR = "rls_user_visible(sender_id) OR rls_user_visible(recipient_id)"
 COMMUNITY_POST_WRITE = "author_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
@@ -104,7 +100,6 @@ KNOWLEDGE_SPACE_CHILD_TABLES = [
     ("knowledge_documents", "rls_knowledge_space_visible(space_id)"),
     ("document_chunks", "rls_knowledge_document_visible(document_id)"),
     ("embeddings", EMBEDDINGS_EXPR),
-    ("knowledge_queries", "rls_knowledge_space_visible(space_id)"),
     (
         "chunk_attachments",
         (
@@ -121,30 +116,6 @@ KNOWLEDGE_SPACE_CHILD_TABLES = [
     ),
     ("document_batches", "rls_diagram_visible(user_id)"),
     ("document_versions", "rls_knowledge_document_visible(document_id)"),
-    ("query_feedback", "rls_knowledge_space_visible(space_id)"),
-    ("query_templates", USER_OR_SPACE_VISIBLE),
-    (
-        "document_relationships",
-        ("rls_knowledge_document_visible(source_document_id) OR rls_knowledge_document_visible(target_document_id)"),
-    ),
-    ("evaluation_datasets", USER_OR_SPACE_VISIBLE),
-    (
-        "evaluation_results",
-        (
-            "EXISTS (SELECT 1 FROM evaluation_datasets ed WHERE ed.id = dataset_id AND ("
-            "(ed.space_id IS NOT NULL AND rls_knowledge_space_visible(ed.space_id)) "
-            "OR (ed.space_id IS NULL AND rls_user_visible(ed.user_id))))"
-        ),
-    ),
-    ("chunk_test_results", "rls_diagram_visible(user_id)"),
-    ("chunk_test_documents", "rls_diagram_visible(user_id)"),
-    (
-        "chunk_test_document_chunks",
-        (
-            "EXISTS (SELECT 1 FROM chunk_test_documents ctd "
-            "WHERE ctd.id = document_id AND rls_diagram_visible(ctd.user_id))"
-        ),
-    ),
 ]
 
 # Leftover DebateVerse table. Kept out of USER_OWNED_TABLES because there is

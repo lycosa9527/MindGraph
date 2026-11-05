@@ -168,7 +168,7 @@ def _prompt_yes_no(question: str, default_yes: bool) -> bool:
 
 def _prompt_menu_choice() -> str:
     print()
-    print("Stack COS (Qdrant + Celery + Playwright + GeoLite)")
+    print("Stack COS (Celery + Playwright + GeoLite)")
     print("  1) Check all (COS vs installed)")
     print("  2) Update from COS")
     print("  3) Status (full JSON)")
@@ -475,7 +475,7 @@ async def _action_status() -> int:
 
 def _prompt_publish_targets() -> List[str]:
     print("Publish target:")
-    print("  1) All (Qdrant + Celery + Playwright + GeoLite)")
+    print("  1) Celery, Playwright, and GeoLite")
     print("  2) Qdrant only")
     print("  3) Celery only")
     print("  4) Playwright only (Chromium + apt deps)")
@@ -489,7 +489,7 @@ def _prompt_publish_targets() -> List[str]:
         return ["playwright"]
     if choice in ("5", "g", "geolite"):
         return ["geolite"]
-    return ["qdrant", "celery", "playwright", "geolite"]
+    return ["celery", "playwright", "geolite"]
 
 
 def _validate_publish_file(path_text: str, label: str) -> Path | None:

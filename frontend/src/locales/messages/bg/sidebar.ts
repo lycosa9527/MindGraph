@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Преместено извън папката',
   'sidebar.chatHistory.uncategorizedEmpty': 'Все още няма некатегоризирани разговори',
   'sidebar.chatHistory.uncategorizedSection': 'Некатегоризиран',
-  'sidebar.chunkTest': 'Тестване на RAG блок',
   'sidebar.collapseSidebar': 'Свиване на страничната лента',
   'sidebar.showcase': 'Случай Квадрат',
   'sidebar.zhihui': 'Чие',

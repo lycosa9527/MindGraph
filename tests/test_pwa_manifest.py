@@ -43,6 +43,26 @@ def test_build_pwa_manifest_uses_absolute_start_url_and_id() -> None:
     assert manifest["icons"][0]["src"] == "/pwa-192x192.png"
 
 
+def test_public_site_origin_upgrades_http_external_base() -> None:
+    """A public EXTERNAL_BASE_URL set with http is served as https."""
+    request = _request()
+    with patch.dict(os.environ, {"EXTERNAL_BASE_URL": "http://public.example.com"}, clear=False):
+        assert public_site_origin_from_request(request) == "https://public.example.com"
+
+
+def test_public_site_origin_upgrades_forwarded_http() -> None:
+    """An http forwarded proto on a public host does not stay in the manifest."""
+    request = _request(
+        headers=[
+            (b"x-forwarded-proto", b"http"),
+            (b"x-forwarded-host", b"edge.example.com"),
+        ]
+    )
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("EXTERNAL_BASE_URL", None)
+        assert public_site_origin_from_request(request) == "https://edge.example.com"
+
+
 def test_public_site_origin_prefers_external_base_url() -> None:
     """Test public site origin prefers external base url."""
     request = _request()

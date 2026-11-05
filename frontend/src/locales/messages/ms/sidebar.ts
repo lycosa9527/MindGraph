@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Removed from folder',
   'sidebar.chatHistory.uncategorizedEmpty': 'No uncategorized conversations',
   'sidebar.chatHistory.uncategorizedSection': 'Uncategorized',
-  'sidebar.chunkTest': 'Uji chunk RAG',
   'sidebar.collapseSidebar': 'Ciutkan sidebar',
   'sidebar.showcase': 'Pameran',
   'sidebar.zhihui': 'Chie',

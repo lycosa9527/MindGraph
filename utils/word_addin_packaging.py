@@ -7,6 +7,12 @@ import re
 import zipfile
 from pathlib import Path
 
+from utils.public_hosts import (
+    CANONICAL_PUBLIC_ORIGIN,
+    LEGACY_PUBLIC_ORIGIN,
+    rewrite_legacy_public_origin,
+)
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WORD_ADDIN_DIR = _PROJECT_ROOT / "word-addin"
 MANIFEST_TEMPLATE = WORD_ADDIN_DIR / "manifest.xml"
@@ -22,7 +28,8 @@ PRODUCTION_DISPLAY_NAME = "MindGraph"
 
 _ALWAYS_APP_DOMAINS = (
     "https://test.mindspringedu.com",
-    "https://mg.mindspringedu.com",
+    CANONICAL_PUBLIC_ORIGIN,
+    LEGACY_PUBLIC_ORIGIN,
     "https://365.kdocs.cn",
 )
 
@@ -118,13 +125,16 @@ MindGraph site must be **HTTPS**.
 
 
 def normalize_public_origin(origin: str) -> str:
-    """Normalize a public site origin (no trailing slash)."""
+    """Normalize a public site origin (no trailing slash).
+
+    The legacy ``mg`` hostname is rewritten to the canonical ``www`` origin.
+    """
     cleaned = (origin or "").strip().rstrip("/")
     if not cleaned:
         raise ValueError("public origin is required")
     if "://" not in cleaned:
         cleaned = f"https://{cleaned}"
-    return cleaned
+    return rewrite_legacy_public_origin(cleaned)
 
 
 def build_production_manifest_xml(public_origin: str) -> str:
@@ -263,7 +273,7 @@ def build_word_addin_zip_bytes(public_origin: str | None = None) -> bytes:
     """
     Deploy zip for downloads.
 
-    ``public_origin`` is required for production URLs (e.g. https://mg.mindspringedu.com).
+    ``public_origin`` is required. A legacy ``mg`` origin is rewritten to ``www``.
     """
     if not public_origin:
         raise ValueError("public_origin is required for the Word add-in deploy zip")

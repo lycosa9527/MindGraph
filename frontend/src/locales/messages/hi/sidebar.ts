@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Removed from folder',
   'sidebar.chatHistory.uncategorizedEmpty': 'No uncategorized conversations',
   'sidebar.chatHistory.uncategorizedSection': 'Uncategorized',
-  'sidebar.chunkTest': 'RAG चंक परीक्षण',
   'sidebar.collapseSidebar': 'साइडबार संक्षिप्त करें',
   'sidebar.showcase': 'प्रदर्शन',
   'sidebar.zhihui': 'ची',

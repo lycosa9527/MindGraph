@@ -43,7 +43,6 @@ vue_spa_module = importlib.import_module("routers.core.vue_spa")
         "/export-render",
         "/m",
         "/m/canvas",
-        "/chunk-test/results/42",
     ],
 )
 def test_is_spa_route_true_for_client_routes(path: str) -> None:

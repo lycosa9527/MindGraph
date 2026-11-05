@@ -4,8 +4,8 @@
 
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
-**Base URL**: `https://mg.mindspringedu.com` (or your deployed server URL)  
-**App version**: 5.180.208
+**Base URL**: `https://www.mindspringedu.com` (or your deployed server URL)  
+**App version**: 5.180.209
 **Architecture**: FastAPI with LLM classification
 
 **Key Features**:
@@ -41,7 +41,7 @@ API密钥通过管理面板 `/admin` 生成（需要管理员账户）。
 **Example | 示例:**
 ```bash
 # Production server
-curl -X POST https://mg.mindspringedu.com/api/generate_png \
+curl -X POST https://www.mindspringedu.com/api/generate_png \
   -H "Content-Type: application/json" \
   -H "X-API-Key: mg_example_REPLACE_WITH_YOUR_OWN_API_KEY" \
   -d '{"prompt": "Compare cats and dogs", "language": "en"}'
@@ -145,7 +145,7 @@ POST /api/generate-text-to-image
 
 **Authentication**: Required (`X-API-Key` or JWT) — same generation API keys as `generate_dingtalk`.
 
-**Production Endpoint**: `https://mg.mindspringedu.com/api/generate-text-to-image`
+**Production Endpoint**: `https://www.mindspringedu.com/api/generate-text-to-image`
 
 #### Request
 
@@ -171,7 +171,7 @@ X-API-Key: your_api_key_here
 Plain text (not JSON):
 
 ```
-![](https://mg.mindspringedu.com/api/zhihui/assets/zhihui/generations/<uuid>.png?sig=...&exp=...)
+![](https://www.mindspringedu.com/api/zhihui/assets/zhihui/generations/<uuid>.png?sig=...&exp=...)
 ```
 
 Asset URLs are signed (long TTL). Prefer conversation APIs below; legacy admin list: `GET /api/zhihui/history`.
@@ -229,8 +229,8 @@ POST /generate_dingtalk
 
 **Authentication**: Required (API key) | 必需（API密钥）
 
-**Production Endpoint**: `https://mg.mindspringedu.com/api/generate_dingtalk`  
-**生产环境端点**: `https://mg.mindspringedu.com/api/generate_dingtalk`
+**Production Endpoint**: `https://www.mindspringedu.com/api/generate_dingtalk`  
+**生产环境端点**: `https://www.mindspringedu.com/api/generate_dingtalk`
 
 **Note**: Both endpoints are supported for backward compatibility.
 
@@ -264,14 +264,14 @@ Returns **plain text** in markdown image format (not JSON):
 ```
 Content-Type: text/plain; charset=utf-8
 
-![](https://mg.mindspringedu.com/api/temp_images/dingtalk_a1b2c3d4_1692812345.png)
+![](https://www.mindspringedu.com/api/temp_images/dingtalk_a1b2c3d4_1692812345.png)
 ```
 
 **Response Format**: The endpoint returns raw plain text (not JSON) containing markdown image syntax with an empty alt text field. This format is optimized for direct use in DingTalk messages.
 
 **Example Response**:
 ```
-![](https://mg.mindspringedu.com/api/temp_images/dingtalk_346703f0_1760217144.png)
+![](https://www.mindspringedu.com/api/temp_images/dingtalk_346703f0_1760217144.png)
 ```
 
 #### Important Notes
@@ -479,7 +479,7 @@ Generate an API key through the admin panel at `/admin` (admin account required)
 #### Step 2: Configure Dify HTTP Node | 步骤2：配置Dify HTTP节点
 
 **HTTP Request Node Configuration:**
-- **URL**: `https://mg.mindspringedu.com/api/generate_png`
+- **URL**: `https://www.mindspringedu.com/api/generate_png`
 - **Method**: `POST`
 - **Headers**: 
   - `Content-Type: application/json`
@@ -527,7 +527,7 @@ Generate an API key through the admin panel at `/admin` (admin account required)
 
 **Complete Dify HTTP Node Example | 完整的Dify HTTP节点示例:**
 ```
-URL: https://mg.mindspringedu.com/api/generate_png
+URL: https://www.mindspringedu.com/api/generate_png
 Method: POST
 Headers:
   Content-Type: application/json
@@ -548,7 +548,7 @@ Body:
 **Example:**
 ```bash
 # Save PNG response to file
-curl -X POST https://mg.mindspringedu.com/api/generate_png \
+curl -X POST https://www.mindspringedu.com/api/generate_png \
   -H "Content-Type: application/json" \
   -H "X-API-Key: mg_xxxxx" \
   -d '{"prompt": "Compare cats and dogs"}' \
@@ -789,7 +789,7 @@ Generate an API key through the admin panel at `/admin` (admin account required)
 #### Step 2: Configure Dify HTTP Node | 步骤2：配置Dify HTTP节点
 
 **HTTP Request Node Configuration:**
-- **URL**: `https://mg.mindspringedu.com/api/generate_png`
+- **URL**: `https://www.mindspringedu.com/api/generate_png`
 - **Method**: `POST`
 - **Headers**: 
   - `Content-Type: application/json`
@@ -837,7 +837,7 @@ Generate an API key through the admin panel at `/admin` (admin account required)
 
 **Complete Dify HTTP Node Example | 完整的Dify HTTP节点示例:**
 ```
-URL: https://mg.mindspringedu.com/api/generate_png
+URL: https://www.mindspringedu.com/api/generate_png
 Method: POST
 Headers:
   Content-Type: application/json
@@ -858,7 +858,7 @@ Body:
 **Example:**
 ```bash
 # Save PNG response to file
-curl -X POST https://mg.mindspringedu.com/api/generate_png \
+curl -X POST https://www.mindspringedu.com/api/generate_png \
   -H "Content-Type: application/json" \
   -H "X-API-Key: mg_xxxxx" \
   -d '{"prompt": "Compare cats and dogs"}' \
@@ -911,7 +911,7 @@ import requests
 
 def generate_png(prompt, api_key, language="zh", style=None):
     # Production server
-    url = "https://mg.mindspringedu.com/api/generate_png"
+    url = "https://www.mindspringedu.com/api/generate_png"
     # Local development: url = "http://localhost:9527/api/generate_png"
     
     headers = {
@@ -955,7 +955,7 @@ async function generatePNG(prompt, apiKey, language = 'zh', style = null) {
     if (style) payload.style = style;
     
     // Production server
-    const response = await axios.post('https://mg.mindspringedu.com/api/generate_png', payload, {
+    const response = await axios.post('https://www.mindspringedu.com/api/generate_png', payload, {
     // Local development: const response = await axios.post('http://localhost:9527/api/generate_png', payload, {
         headers: {
             'Content-Type': 'application/json',

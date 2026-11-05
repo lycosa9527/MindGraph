@@ -30,7 +30,6 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { isPaidSchoolTier } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores/auth'
 import { useLearningSpaceStore } from '@/stores/learningSpace'
@@ -71,7 +70,6 @@ export function useAppSidebar() {
     useMindMateBranding()
   const mindMateLabelKey = computed(() => (hasCustomMindMateName.value ? '' : 'sidebar.mindMate'))
   const {
-    featureRagChunkTest,
     featureShowcase,
     featureZhihui,
     featureLibrary,
@@ -104,7 +102,6 @@ export function useAppSidebar() {
     if (path.startsWith('/learning-space') || path.startsWith('/m/learning-space')) {
       return 'learning-space'
     }
-    if (path.startsWith('/chunk-test')) return 'chunk-test'
     if (path.startsWith('/showcase')) return 'showcase'
     if (path.startsWith('/zhihui')) return 'zhihui'
     if (path.startsWith('/library')) return 'library'
@@ -337,7 +334,6 @@ export function useAppSidebar() {
     mindmate: '/mindmate',
     mindgraph: '/mindgraph',
     'learning-space': '/learning-space',
-    'chunk-test': '/chunk-test',
     showcase: '/showcase',
     zhihui: '/zhihui',
     library: '/library',
@@ -833,11 +829,9 @@ export function useAppSidebar() {
     router,
     uiStore,
     authStore,
-    featureRagChunkTest,
     featureShowcase,
     featureZhihui,
     showZhihuiNav,
-    hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,
     featureLibrary,
     featureSmartResponse,
     featureTeacherUsage,

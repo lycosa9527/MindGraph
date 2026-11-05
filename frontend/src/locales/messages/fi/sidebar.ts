@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Siirretty pois kansiosta',
   'sidebar.chatHistory.uncategorizedEmpty': 'Ei ole vielä luokittelemattomia keskusteluja',
   'sidebar.chatHistory.uncategorizedSection': 'Luokittelematon',
-  'sidebar.chunkTest': 'RAG-lohkon testaus',
   'sidebar.collapseSidebar': 'Tiivistä sivupalkki',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

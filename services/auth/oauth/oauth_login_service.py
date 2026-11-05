@@ -34,6 +34,7 @@ from services.auth.oauth.oauth_constants import (
     normalize_oauth_error_code,
 )
 from services.auth.oauth.wechat_oauth_client import WechatOauthClient
+from utils.public_https_url import normalize_external_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -74,14 +75,12 @@ def wechat_credentials_configured() -> bool:
 
 
 def public_site_base_url() -> str:
-    """Canonical HTTPS base for OAuth redirect URIs."""
-    raw = (os.getenv("EXTERNAL_BASE_URL", "") or "").strip()
-    if not raw:
-        return ""
-    low = raw.lower()
-    if low.startswith("http://") or low.startswith("https://"):
-        return raw.rstrip("/")
-    return ""
+    """Canonical HTTPS base for OAuth redirect URIs.
+
+    Same rules as other public links: public ``http://`` becomes ``https://``,
+    a mistaken trailing ``/api`` is dropped, and loopback stays http.
+    """
+    return normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", "") or "")
 
 
 def wechat_callback_url() -> str:

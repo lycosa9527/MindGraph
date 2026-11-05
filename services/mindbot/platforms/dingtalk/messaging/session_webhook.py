@@ -23,6 +23,8 @@ import os
 import re
 from typing import Any
 
+from utils.public_https_url import upgrade_public_media_url, upgrade_public_media_urls_in_text
+
 _MAX_OUT = 20000
 _OPENAPI_TEXT_MAX = 5000
 _OPENAPI_MARKDOWN_TITLE_MAX = 80
@@ -36,10 +38,15 @@ def _truncate(text: str) -> str:
 
 
 def sanitize_markdown_for_dingtalk(text: str) -> str:
-    """Light cleanup; DingTalk markdown is a subset of CommonMark."""
+    """Light cleanup; DingTalk markdown is a subset of CommonMark.
+
+    Public temp-image and asset links are rewritten to https so DingTalk
+    fetches the preview over TLS even when a stored message used http.
+    """
     if not text:
         return " "
-    t = text.replace("\r\n", "\n")
+    t = upgrade_public_media_urls_in_text(text)
+    t = t.replace("\r\n", "\n")
     t = re.sub(r"\n{4,}", "\n\n\n", t)
     return t
 
@@ -102,9 +109,9 @@ def markdown_title_and_body_for_openapi(answer: str) -> tuple[str, str]:
 
 
 def _first_https_url_line(answer: str) -> str:
-    """First https url line."""
+    """First https url line. Public temp-image lines are upgraded from http."""
     for line in answer.strip().splitlines():
-        line = line.strip()
+        line = upgrade_public_media_url(line.strip())
         if line.startswith("https://"):
             return line[:2048]
     return ""

@@ -14,33 +14,19 @@ from fastapi.responses import Response
 from config.settings import config
 from routers.api.helpers import normalize_external_base_url
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.public_hosts import FIRST_PARTY_PUBLIC_HOSTS, rewrite_legacy_public_origin
+from utils.public_https_url import is_loopback_host, upgrade_public_http_url
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
 
-_STATIC_ALLOWED_DOMAINS = frozenset(
-    {
-        "mg.mindspringedu.com",
-    }
-)
+_STATIC_ALLOWED_DOMAINS = FIRST_PARTY_PUBLIC_HOSTS
 
 _DINGTALK_TEMP_IMAGE_PATH_RE = re.compile(
     r"/temp_images/dingtalk_[a-f0-9]{8}_\d+\.png",
     re.IGNORECASE,
 )
-
-
-def _is_loopback_hostname(hostname: str) -> bool:
-    host = (hostname or "").lower()
-    if host in ("localhost", "127.0.0.1", "::1"):
-        return True
-    if host.startswith("127."):
-        parts = host.split(".")
-        if len(parts) != 4:
-            return False
-        return all(part.isdigit() and 0 <= int(part) <= 255 for part in parts)
-    return False
 
 
 def allowed_image_proxy_domains() -> frozenset[str]:
@@ -58,7 +44,7 @@ def _dev_local_temp_image_url_allowed(parsed: ParseResult) -> bool:
     """DEBUG only: allow proxying loopback /temp_images/dingtalk_*.png (local dev UI)."""
     if not config.debug:
         return False
-    if not _is_loopback_hostname(parsed.hostname or ""):
+    if not is_loopback_host(parsed.hostname or ""):
         return False
     path = parsed.path or ""
     return _DINGTALK_TEMP_IMAGE_PATH_RE.search(path) is not None
@@ -78,7 +64,7 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
 
     Security:
     - Only allows images from whitelisted domains
-    - Redirects are not followed (prevents SSRF via redirect to internal URLs)
+    - A legacy mg host is fetched as www. Any other redirect is refused.
     - Only allows image content types
     - Limits response size to 10MB
     """
@@ -94,9 +80,10 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
         logger.warning("Image proxy blocked for non-whitelisted domain: %s", domain)
         raise HTTPException(status_code=403, detail="Domain not allowed")
 
+    fetch_url = rewrite_legacy_public_origin(upgrade_public_http_url(url))
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, follow_redirects=False)
+            response = await client.get(fetch_url, follow_redirects=False)
 
             if response.status_code != 200:
                 if response.status_code in (301, 302, 303, 307, 308):

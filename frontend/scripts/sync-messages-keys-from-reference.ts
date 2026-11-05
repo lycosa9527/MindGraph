@@ -91,7 +91,7 @@ function localeDirsTier27(): string[] {
   return [...TIER_27_EXCEPT_ZH]
 }
 
-const SKIP_LOCALE_DIRS = new Set(['zh', '__test__', 'it_test'])
+const SKIP_LOCALE_DIRS = new Set(['zh', '__test__'])
 
 function localeDirsAll(): string[] {
   return readdirSync(ROOT)

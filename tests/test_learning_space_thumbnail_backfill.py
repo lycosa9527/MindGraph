@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
+from datetime import UTC, datetime
 
 import pytest
 
@@ -17,18 +17,25 @@ from services.learning_space.thumbnail_backfill import (
     fill_missing_card_thumbnails,
     store_rendered_thumbnail,
 )
-from services.learning_space.thumbnail_backfill_scan import SUBMISSION_THUMBNAIL_OPEN
-from services.learning_space.thumbnail_storage import (
-    stored_submit_thumbnail,
-    submit_thumbnail_source,
+from services.learning_space.thumbnail_backfill_scan import (
+    SUBMISSION_THUMBNAIL_OPEN,
+    SUBMIT_THUMBNAIL_DUE_SQL,
 )
+from services.learning_space.thumbnail_storage import stored_submit_thumbnail
 from services.learning_space.thumbnail_submit import (
+    THUMB_ATTEMPTS,
+    THUMB_PENDING,
+    THUMB_RETRY_AT,
+    THUMB_TOKEN,
     SubmitThumbnailJob,
     apply_submit_thumbnail,
-    inflight_thumbnails,
+    backfill_still_matches,
+    hold_thumbnail_claim,
     render_submit_thumbnail,
     run_submit_thumbnail_job,
-    schedule_submit_thumbnail,
+    schedule_thumbnail_retry,
+    snapshot_thumbnail_due,
+    thumbnail_clock,
 )
 
 _PNG_1X1 = (
@@ -332,7 +339,12 @@ def test_submission_gap_sql_reads_thumbnail_text() -> None:
     """The scan filter asks Postgres for the thumbnail string, not the diagram spec."""
     compiled = str(select(LearningSubmission.id).where(SUBMISSION_THUMBNAIL_OPEN).compile(dialect=postgresql.dialect()))
     assert "snapshot_spec->>'thumbnail'" in compiled
+    assert "snapshot_spec->>'thumb_pending'" in compiled
     assert "lsimg:%" in compiled
+    assert "status IN ('submitted', 'returned')" in SUBMIT_THUMBNAIL_DUE_SQL
+    assert "OR COALESCE(snapshot_spec->>'thumb_pending', '') <> ''" in SUBMIT_THUMBNAIL_DUE_SQL
+    assert "thumb_retry_at" in SUBMIT_THUMBNAIL_DUE_SQL
+    assert "jsonb_typeof(snapshot_spec->'spec')" in SUBMIT_THUMBNAIL_DUE_SQL
 
 
 @pytest.mark.asyncio
@@ -407,11 +419,21 @@ def test_submit_row_keeps_cos_image_and_skips_data_urls() -> None:
 
 def test_stale_render_does_not_replace_a_newer_submit() -> None:
     """A render for an older submit leaves the newer snapshot alone."""
-    snapshot = {"thumb_token": "new", "spec": _SPEC}
+    snapshot = {
+        THUMB_TOKEN: "new",
+        THUMB_PENDING: "new",
+        THUMB_ATTEMPTS: 2,
+        THUMB_RETRY_AT: "2026-11-05T08:00:00Z",
+        "spec": _SPEC,
+    }
     assert apply_submit_thumbnail(snapshot, "old", f"{IMAGE_REF_PREFIX}9/2026/10/old.png") is False
     assert "thumbnail" not in snapshot
+    assert snapshot[THUMB_PENDING] == "new"
     assert apply_submit_thumbnail(snapshot, "new", f"{IMAGE_REF_PREFIX}9/2026/10/new.png") is True
     assert snapshot["thumbnail"] == f"{IMAGE_REF_PREFIX}9/2026/10/new.png"
+    assert THUMB_PENDING not in snapshot
+    assert THUMB_ATTEMPTS not in snapshot
+    assert THUMB_RETRY_AT not in snapshot
 
 
 @pytest.mark.asyncio
@@ -445,18 +467,74 @@ async def test_background_job_drops_image_when_submit_moved_on(monkeypatch: pyte
     assert dropped == [["9/2026/10/late.png"]]
 
 
+def test_pending_resubmit_stays_due_while_the_old_image_shows() -> None:
+    """A kept COS image does not hide a render that never finished."""
+    now = thumbnail_clock()
+    old = f"{IMAGE_REF_PREFIX}9/2026/10/card.png"
+    pending = {THUMB_TOKEN: "new", THUMB_PENDING: "new", "spec": _SPEC, "thumbnail": old}
+    assert snapshot_thumbnail_due(pending, now) is True
+    finished = {THUMB_TOKEN: "new", "spec": _SPEC, "thumbnail": old}
+    assert snapshot_thumbnail_due(finished, now) is False
+    waiting = {
+        THUMB_TOKEN: "new",
+        THUMB_PENDING: "new",
+        THUMB_RETRY_AT: "2999-01-01T00:00:00Z",
+        "spec": _SPEC,
+    }
+    assert snapshot_thumbnail_due(waiting, now) is False
+    assert snapshot_thumbnail_due({"spec": "not-a-diagram", THUMB_PENDING: "new"}, now) is False
+
+
+def test_failed_render_records_a_later_retry() -> None:
+    """The same submit stays queued, and the next try waits."""
+    snapshot = {THUMB_TOKEN: "tok", THUMB_PENDING: "tok", "spec": _SPEC}
+    now = datetime(2026, 11, 5, 8, 0, tzinfo=UTC)
+    assert schedule_thumbnail_retry(snapshot, "older", now) is False
+    assert schedule_thumbnail_retry(snapshot, "tok", now) is True
+    assert snapshot[THUMB_ATTEMPTS] == 1
+    assert snapshot[THUMB_RETRY_AT] == "2026-11-05T08:00:15Z"
+    assert snapshot[THUMB_PENDING] == "tok"
+    assert schedule_thumbnail_retry(snapshot, "tok", now) is True
+    assert snapshot[THUMB_ATTEMPTS] == 2
+    assert snapshot[THUMB_RETRY_AT] == "2026-11-05T08:01:00Z"
+
+
+def test_claim_lease_hides_the_row_until_it_expires() -> None:
+    """A row being drawn is not due again until the lease time."""
+    snapshot = {THUMB_TOKEN: "tok", THUMB_PENDING: "tok", "spec": _SPEC}
+    now = datetime(2026, 11, 5, 8, 0, tzinfo=UTC)
+    assert hold_thumbnail_claim(snapshot, "tok", now, 180) is True
+    assert snapshot[THUMB_RETRY_AT] == "2026-11-05T08:03:00Z"
+    assert snapshot_thumbnail_due(snapshot, thumbnail_clock(now)) is False
+    assert snapshot_thumbnail_due(snapshot, "2026-11-05T08:03:00Z") is True
+
+
+def test_finished_submit_is_not_queued_again() -> None:
+    """A PNG that already landed is not replaced or put back on the queue."""
+    now = datetime(2026, 11, 5, 8, 0, tzinfo=UTC)
+    done = f"{IMAGE_REF_PREFIX}9/2026/10/done.png"
+    snapshot = {THUMB_TOKEN: "tok", "spec": _SPEC, "thumbnail": done}
+    assert schedule_thumbnail_retry(snapshot, "tok", now) is False
+    assert THUMB_PENDING not in snapshot
+    late = f"{IMAGE_REF_PREFIX}9/2026/10/late.png"
+    assert apply_submit_thumbnail(snapshot, "tok", late) is False
+    assert snapshot["thumbnail"] == done
+    assert backfill_still_matches(snapshot, "tok") is False
+    assert backfill_still_matches({THUMB_TOKEN: "tok", "spec": _SPEC}, "tok") is True
+
+
 @pytest.mark.asyncio
-async def test_schedule_returns_before_the_render_finishes(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Queuing a thumbnail does not wait for the renderer."""
-    started = asyncio.Event()
-    release = asyncio.Event()
+async def test_missing_render_asks_for_a_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A render that produces no image leaves the submission queued."""
+    noted: list[int] = []
 
-    async def _slow(job: SubmitThumbnailJob, *, save: object = None) -> None:
-        del job, save
-        started.set()
-        await release.wait()
+    async def _note(job: SubmitThumbnailJob) -> None:
+        noted.append(job.submission_id)
 
-    monkeypatch.setattr("services.learning_space.thumbnail_submit.run_submit_thumbnail_job", _slow)
+    async def _render(*_args: object, **_kwargs: object) -> str:
+        return ""
+
+    monkeypatch.setattr("services.learning_space.thumbnail_submit.render_submit_thumbnail", _render)
     job = SubmitThumbnailJob(
         submission_id=8,
         owner_id=9,
@@ -466,20 +544,51 @@ async def test_schedule_returns_before_the_render_finishes(monkeypatch: pytest.M
         fallback_thumb=None,
         previous_ref=None,
     )
-    schedule_submit_thumbnail(job)
-    try:
-        assert started.is_set() is False
-        await asyncio.wait_for(started.wait(), timeout=1)
-    finally:
-        release.set()
-        pending = set(inflight_thumbnails.tasks)
-        if pending:
-            await asyncio.wait(pending)
+    await run_submit_thumbnail_job(job, note_failure=_note)
+    assert noted == [8]
 
 
-def test_submit_keeps_cos_thumbnail_when_diagram_has_none() -> None:
-    """Resubmit must not drop a backfilled COS image when the library thumbnail is empty."""
-    kept = submit_thumbnail_source(None, f"{IMAGE_REF_PREFIX}9/2026/10/card.png")
-    assert kept == f"{IMAGE_REF_PREFIX}9/2026/10/card.png"
-    fresh = submit_thumbnail_source(_PNG_DATA_URL, f"{IMAGE_REF_PREFIX}9/2026/10/card.png")
-    assert fresh == _PNG_DATA_URL
+@pytest.mark.asyncio
+async def test_pending_cos_thumbnail_is_rendered_again(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resubmit keeps the old card image and still asks for a new PNG."""
+    _patch_put(monkeypatch)
+    dropped: list[list[str]] = []
+
+    def _drop(keys: list[str]) -> None:
+        dropped.append(list(keys))
+
+    monkeypatch.setattr("services.learning_space.thumbnail_backfill.delete_stored_images_sync", _drop)
+    old = f"{IMAGE_REF_PREFIX}9/2026/10/old.png"
+    submission = _submission(
+        41,
+        {
+            "diagram_type": "mind_map",
+            "spec": _SPEC,
+            "thumbnail": old,
+            THUMB_TOKEN: "tok",
+            THUMB_PENDING: "tok",
+        },
+    )
+    rendered: list[str] = []
+
+    async def _render(_spec: dict, diagram_type: str) -> bytes:
+        rendered.append(diagram_type)
+        return _PNG_1X1
+
+    async def _load(_owner: int, _diagram_id: str) -> dict:
+        return {"diagram_type": "mind_map", "spec": _SPEC}
+
+    result = await fill_missing_card_thumbnails(
+        _Db(),
+        [],
+        [submission],
+        render_png=_render,
+        load_diagram=_load,
+    )
+    assert result["generated"] == 1
+    assert rendered == ["mind_map"]
+    snap = submission.snapshot_spec
+    assert isinstance(snap, dict)
+    assert snap["thumbnail"] == f"{IMAGE_REF_PREFIX}4/2026/10/thumb.png"
+    assert THUMB_PENDING not in snap
+    assert dropped == [["9/2026/10/old.png"]]

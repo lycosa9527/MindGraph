@@ -464,20 +464,6 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "dedup_columns": ("document_id", "version_number"),
         "fk_remaps": {"document_id": "knowledge_documents", "created_by": "users"},
     },
-    "document_relationships": {
-        "order": 6,
-        "pk_type": "serial",
-        "dedup_columns": (
-            "source_document_id",
-            "target_document_id",
-            "relationship_type",
-        ),
-        "fk_remaps": {
-            "source_document_id": "knowledge_documents",
-            "target_document_id": "knowledge_documents",
-            "created_by": "users",
-        },
-    },
     "chat_messages": {
         "order": 6,
         "pk_type": "serial",
@@ -521,12 +507,6 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
             "judge_participant_id": "debate_participants",
             "best_debater_id": "debate_participants",
         },
-    },
-    "evaluation_datasets": {
-        "order": 6,
-        "pk_type": "serial",
-        "dedup_columns": ("user_id", "space_id", "name"),
-        "fk_remaps": {"user_id": "users", "space_id": "knowledge_spaces"},
     },
     "user_topic_preferences": {
         "order": 6,
@@ -579,55 +559,6 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "pk_type": "serial",
         "dedup_columns": ("model_name", "provider_name", "hash"),
         "fk_remaps": {},
-    },
-    "knowledge_queries": {
-        "order": 7,
-        "pk_type": "serial",
-        "incremental_watermark": "created_at",
-        "fk_remaps": {"user_id": "users", "space_id": "knowledge_spaces"},
-    },
-    "chunk_test_results": {
-        "order": 7,
-        "pk_type": "serial",
-        "dedup_columns": ("user_id", "session_id", "created_at"),
-        "fk_remaps": {"user_id": "users"},
-    },
-    "chunk_test_documents": {
-        "order": 7,
-        "pk_type": "serial",
-        "dedup_columns": ("user_id", "file_path", "created_at"),
-        "fk_remaps": {"user_id": "users"},
-    },
-    "evaluation_results": {
-        "order": 8,
-        "pk_type": "serial",
-        "dedup_columns": ("dataset_id", "query_id", "method", "created_at"),
-        "fk_remaps": {
-            "dataset_id": "evaluation_datasets",
-            "query_id": "knowledge_queries",
-        },
-    },
-    "query_feedback": {
-        "order": 8,
-        "pk_type": "serial",
-        "dedup_columns": ("query_id", "user_id", "created_at"),
-        "fk_remaps": {
-            "query_id": "knowledge_queries",
-            "user_id": "users",
-            "space_id": "knowledge_spaces",
-        },
-    },
-    "query_templates": {
-        "order": 8,
-        "pk_type": "serial",
-        "dedup_columns": ("user_id", "space_id", "name"),
-        "fk_remaps": {"user_id": "users", "space_id": "knowledge_spaces"},
-    },
-    "chunk_test_document_chunks": {
-        "order": 8,
-        "pk_type": "serial",
-        "dedup_columns": ("document_id", "chunk_index", "chunking_method"),
-        "fk_remaps": {"document_id": "chunk_test_documents"},
     },
 }
 

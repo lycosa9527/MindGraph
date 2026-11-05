@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Premješteno iz mape',
   'sidebar.chatHistory.uncategorizedEmpty': 'Još nema nekategoriziranih razgovora',
   'sidebar.chatHistory.uncategorizedSection': 'Nekategorizirano',
-  'sidebar.chunkTest': 'RAG blok testiranje',
   'sidebar.collapseSidebar': 'Sažmi bočnu traku',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

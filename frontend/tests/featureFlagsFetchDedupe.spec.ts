@@ -14,7 +14,6 @@ function flagsResponse(overrides: Record<string, unknown> = {}): Response {
   return new Response(
     JSON.stringify({
       external_base_url: '',
-      feature_rag_chunk_test: false,
       feature_showcase: true,
       feature_zhihui: false,
       feature_knowledge_space: false,

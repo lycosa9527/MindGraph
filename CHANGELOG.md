@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.209] - 2026-11-05
+
+> **The public site is www.mindspringedu.com, a submitted homework redraws its thumbnail, and the chunk-test lab is gone.**
+
+### Changed
+
+- **Public origin** — Links the app builds use `https://www.mindspringedu.com`. An `mg` host is rewritten to `www`, including DingTalk previews, the Chrome extension, the Word add-in, the file reader, and the desktop pet. Public media URLs are https. Localhost stays on the scheme it was given. WebSocket upgrades still accept both hosts.
+- **Homework thumbnails** — After a student submits, an API worker draws the diagram thumbnail. The submission stays pending until the PNG is stored, so a restart draws it again. A Redis lock keeps the API workers from drawing the same card at once.
+- **Docs** — Knowledge Space is personal folders on Aliyun OSS, retrieved through VibeFlow. The install guide no longer lists a local vector server.
+
+### Removed
+
+- **Chunk test** — The chunk-test pages, APIs, feature flag, and lab tables are gone. Alembic `0165` drops the chunk-test tables and leftover grants. Alembic `0166` drops the unused knowledge-lab tables.
+- **Mobile debug console** — The on-device debug console and its script are gone.
+
+### Tests
+
+- [`tests/test_public_https_url.py`](tests/test_public_https_url.py), [`tests/test_public_temp_image_url.py`](tests/test_public_temp_image_url.py), [`tests/test_learning_space_thumbnail_backfill.py`](tests/test_learning_space_thumbnail_backfill.py), [`tests/test_mindbot_dingtalk_diagram_display.py`](tests/test_mindbot_dingtalk_diagram_display.py)
+- [`frontend/tests/mindmateTempImageUrl.spec.ts`](frontend/tests/mindmateTempImageUrl.spec.ts)
+
 ## [5.180.208] - 2026-11-04
 
 > **The file panel shows which personal-knowledge step is running, and Document Summary extracts no longer fill the library cap.**

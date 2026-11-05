@@ -257,9 +257,6 @@ docs/operations/*
 # ruff
 .ruff_cache/
 
-# RAG test datasets
-services/knowledge/rag_chunk_test/rag-test/
-
 # Local PG mind-map export fixtures (may contain user diagram data)
 frontend/tests/fixtures/pg_mindmaps/
 

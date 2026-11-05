@@ -17,9 +17,12 @@ var MG_DEFAULT_PREFS = {
   agentAvatarUrl: '',
 }
 
+var MG_CANONICAL_ORIGIN = 'https://www.mindspringedu.com'
+var MG_LEGACY_HOST = 'mg.mindspringedu.com'
+
 var MG_BASE_URL_PRESETS = [
   { id: 'test', url: 'https://test.mindspringedu.com', labelZh: '测试', labelEn: 'Test' },
-  { id: 'mg', url: 'https://mg.mindspringedu.com', labelZh: 'MG', labelEn: 'MG' },
+  { id: 'www', url: MG_CANONICAL_ORIGIN, labelZh: '正式', labelEn: 'Production' },
   // Vite shell is :3000; MindGraph API + SPA for handoff is :9527.
   { id: 'local', url: 'http://localhost:9527', labelZh: '本地 :9527', labelEn: 'Local :9527' },
 ]
@@ -44,9 +47,22 @@ function mgShellHostOrigin() {
 }
 
 function mgNormalizeBaseUrl(url) {
-  return String(url || '')
+  var normalized = String(url || '')
     .trim()
     .replace(/\/+$/, '')
+  if (!normalized) {
+    return normalized
+  }
+  try {
+    var withScheme = normalized.indexOf('://') === -1 ? 'https://' + normalized : normalized
+    var parsed = new URL(withScheme)
+    if (parsed.hostname === MG_LEGACY_HOST) {
+      return MG_CANONICAL_ORIGIN
+    }
+  } catch (err) {
+    return normalized
+  }
+  return normalized
 }
 
 /** True when Settings must use the same origin as the hosted shell (CSP connect-src). */

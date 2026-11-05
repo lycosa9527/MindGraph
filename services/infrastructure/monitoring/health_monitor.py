@@ -264,7 +264,7 @@ class HealthMonitor:
         """
         Check if process monitor is actively handling the health issue.
 
-        Process monitor handles: qdrant, celery, redis
+        Process monitor handles: celery, redis
         Health monitor should alert if:
         - Process monitor circuit breaker is open (restart attempts failed)
         - Issue is not handled by process monitor (database, LLM, etc.)
@@ -285,7 +285,7 @@ class HealthMonitor:
         if not isinstance(checks, dict):
             return False, "Invalid health check response structure"
 
-        process_monitor_services = {"qdrant", "celery", "redis"}
+        process_monitor_services = {"celery", "redis"}
         unhealthy_components = []
         process_monitor_handled_components = []
 

@@ -6,7 +6,8 @@ Manifest `host_permissions` are split into **explicit MindGraph servers** plus *
 
 | Origin | Purpose |
 |--------|---------|
-| `https://mg.mindspringedu.com/*` | Production |
+| `https://www.mindspringedu.com/*` | Production |
+| `https://mg.mindspringedu.com/*` | Legacy production name (same app) |
 | `https://test.mindspringedu.com/*` | Test |
 | `http://localhost:9527/*` | Local dev (HTTP — see Settings warning) |
 | `http://127.0.0.1:9527/*` | Local dev alternate |
@@ -26,7 +27,7 @@ Page capture (`executeScript`) uses **`activeTab`** + **`scripting`** on the tab
 
 ## Installed-plugin marker
 
-`presence-mark.js` runs at `document_start` on the MindGraph web app so the site can hide the install button. Matches are the API presets plus `https://www.mindspringedu.com/*`. The script only sets a DOM attribute. It does not widen `host_permissions`.
+`presence-mark.js` runs at `document_start` on the MindGraph web app so the site can hide the install button. Matches are the production origin, the legacy `mg` name, the test server, and local dev. The script only sets a DOM attribute. It does not widen `host_permissions`.
 
 ## Why wildcards remain
 

@@ -288,7 +288,7 @@
     "description": "标签"
   },
   "baseUrlPresetProduction": {
-    "message": "mg.mindspringedu.com",
+    "message": "www.mindspringedu.com",
     "description": "生产环境"
   },
   "baseUrlPresetTest": {

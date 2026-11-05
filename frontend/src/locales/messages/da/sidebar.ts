@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Flyttet ud af mappen',
   'sidebar.chatHistory.uncategorizedEmpty': 'Der er ingen ukategoriserede samtaler endnu',
   'sidebar.chatHistory.uncategorizedSection': 'Ikke kategoriseret',
-  'sidebar.chunkTest': 'RAG blok test',
   'sidebar.collapseSidebar': 'Skjul sidebjælken',
   'sidebar.showcase': 'Case Square',
   'sidebar.zhihui': 'Chie',

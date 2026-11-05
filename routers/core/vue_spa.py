@@ -147,12 +147,6 @@ async def vue_pub_dash(_request: Request):
     return RedirectResponse(url=_PUBLIC_DASHBOARD_ADMIN, status_code=301)
 
 
-@router.get("/debug", response_class=HTMLResponse)
-async def vue_debug(request: Request):
-    """Serve Vue SPA for debug route."""
-    return await _serve_index(request)
-
-
 @router.get("/mindmate", response_class=HTMLResponse)
 async def vue_mindmate(request: Request):
     """Serve Vue SPA for mindmate route."""

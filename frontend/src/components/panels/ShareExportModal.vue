@@ -27,6 +27,7 @@ import { dataUrlToBlob, deliverExportFile } from '@/utils/deliverExportFile'
 import {
   parseMindmateDiagramLibraryId,
   rewriteMindmateTempImageUrls,
+  toPublicHttpsUrl,
   stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
 import {
@@ -199,7 +200,8 @@ function isExternalUrl(url: string): boolean {
  * Convert an external image URL to base64 data URL using a proxy to avoid CORS issues
  */
 async function imageToBase64(url: string): Promise<string> {
-  const cacheKey = extractMindmatePreviewCacheKey(url)
+  const source = toPublicHttpsUrl(url)
+  const cacheKey = extractMindmatePreviewCacheKey(source)
   if (cacheKey) {
     const cached = await readMindmateDiagramPreview(cacheKey)
     if (cached) {
@@ -212,41 +214,41 @@ async function imageToBase64(url: string): Promise<string> {
   }
 
   // Only proxy external URLs
-  if (!isExternalUrl(url)) {
+  if (!isExternalUrl(source)) {
     // For local/bundled assets, fetch directly
     try {
-      const response = await fetch(url)
-      if (!response.ok) return url
+      const response = await fetch(source)
+      if (!response.ok) return source
       const blob = await response.blob()
       return new Promise((resolve) => {
         const reader = new FileReader()
         reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = () => resolve(url)
+        reader.onerror = () => resolve(source)
         reader.readAsDataURL(blob)
       })
     } catch {
-      return url
+      return source
     }
   }
 
   try {
     // Use the backend proxy to fetch external images and avoid CORS
-    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(source)}`
     const response = await fetch(proxyUrl)
     if (!response.ok) {
-      console.warn(`Failed to fetch image via proxy: ${url}`)
-      return url // Return original URL as fallback
+      console.warn(`Failed to fetch image via proxy: ${source}`)
+      return source
     }
     const blob = await response.blob()
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = () => resolve(url) // Fallback to original URL
+      reader.onerror = () => resolve(source)
       reader.readAsDataURL(blob)
     })
   } catch (error) {
-    console.warn(`Failed to convert image to base64: ${url}`, error)
-    return url // Return original URL as fallback
+    console.warn(`Failed to convert image to base64: ${source}`, error)
+    return source
   }
 }
 

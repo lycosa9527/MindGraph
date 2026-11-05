@@ -159,7 +159,7 @@ if KNOWLEDGE_SPACE_MODULE is not None:
 else:
     logger.warning(
         "[API] Knowledge Space router NOT registered - import failed or router is None. "
-        "Check DEBUG logs for details. This may be due to missing dependencies (Qdrant, Celery)."
+        "Check DEBUG logs for details. This may be due to a missing dependency (Celery)."
     )
 
 # Document Summary — short /api/doc-summary/* paths (split from knowledge-space URLs)

@@ -34,6 +34,7 @@ from services.mindbot.platforms.dingtalk.messaging.session_webhook import (
     sanitize_markdown_for_dingtalk,
 )
 from utils.env_helpers import env_bool
+from utils.public_https_url import upgrade_public_media_url
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ async def send_openapi_image_by_url(
     sender_s = sender.strip() if isinstance(sender, str) else ""
     conv_id = body.get("conversationId") or body.get("conversation_id")
     conv_s = conv_id.strip() if isinstance(conv_id, str) else ""
-    url = photo_url.strip()[:2048]
+    url = upgrade_public_media_url(photo_url.strip())[:2048]
     if not url.lower().startswith("https://"):
         logger.warning(
             "[MindBot] openapi_image_skip_non_https %s url=%s",

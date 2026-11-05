@@ -56,7 +56,6 @@ def test_vue_router_extensionless_paths_are_spa_routes(path: str) -> None:
         "/dashboard",
         "/dashboard/login",
         "/pub-dash",
-        "/debug",
         "/mindmate",
         "/mindgraph",
         "/canvas",

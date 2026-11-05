@@ -18,6 +18,8 @@ import httpx
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
+from utils.public_hosts import CANONICAL_PUBLIC_ORIGIN
+
 logger = logging.getLogger(__name__)
 
 MAX_FETCH_BYTES = 2 * 1024 * 1024
@@ -215,7 +217,7 @@ async def fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
     )
 
     headers = {
-        "User-Agent": "MindGraphCanvas/1.0 (+https://mg.mindspringedu.com)",
+        "User-Agent": f"MindGraphCanvas/1.0 (+{CANONICAL_PUBLIC_ORIGIN})",
         "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
         "Host": _host_header_value(hostname, parsed.port, parsed.scheme),
     }

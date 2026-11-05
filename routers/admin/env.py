@@ -354,7 +354,7 @@ async def restore_env_from_backup(backup_filename: str, scope: AdminScope = Depe
                 "warning": (
                     "Runtime config reloaded from restored file. "
                     "A full server restart may still be required for settings that "
-                    "only apply at process startup (e.g. Knowledge Space/Qdrant)."
+                    "only apply at process startup (e.g. Knowledge Space ingest)."
                 ),
             }
         raise HTTPException(
@@ -416,7 +416,7 @@ async def reload_runtime_env(
 
     Reloads this worker, then publishes a Redis fan-out so sibling uvicorn workers
     reload as well. Feature routers are mounted at startup and gated at runtime;
-    Knowledge Space still needs Qdrant/Celery that were initialized at process start.
+    Knowledge Space ingest still needs the Celery worker that started with the process.
     """
     try:
         env_manager = EnvManager()

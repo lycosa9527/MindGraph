@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Премештено из фолдера',
   'sidebar.chatHistory.uncategorizedEmpty': 'Још увек нема некатегорисаних разговора',
   'sidebar.chatHistory.uncategorizedSection': 'Унцатегоризед',
-  'sidebar.chunkTest': 'РАГ блок тестирање',
   'sidebar.collapseSidebar': 'Скупи бочну траку',
   'sidebar.showcase': 'Цасе Скуаре',
   'sidebar.zhihui': 'Цхие',

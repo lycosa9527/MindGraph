@@ -10,9 +10,10 @@ from __future__ import annotations
 import re
 
 from services.mindmate.teaching_design_flag import strip_reply_kind_markers
+from utils.public_https_url import upgrade_public_http_url
 
 GENERATED_PREVIEW_MD_RE = re.compile(
-    r"!\[[^\]]*\]\((https://[^)\s]+/api/temp_images/dingtalk_[^)\s]+)\)",
+    r"!\[[^\]]*\]\((https?://[^)\s]+/api/temp_images/dingtalk_[^)\s]+)\)",
     re.IGNORECASE,
 )
 MG_DIAGRAM_ID_COMMENT_RE = re.compile(
@@ -52,11 +53,11 @@ def parse_assistant_diagram_library_id(text: str) -> str | None:
 
 
 def extract_generate_dingtalk_preview_url(text: str) -> str | None:
-    """Return HTTPS temp_images URL from generate_dingtalk markdown."""
+    """Return the public https temp_images URL from generate_dingtalk markdown."""
     match = GENERATED_PREVIEW_MD_RE.search((text or "").strip())
     if not match:
         return None
-    url = match.group(1).strip()
+    url = upgrade_public_http_url(match.group(1).strip())
     if not url.lower().startswith("https://"):
         return None
     return url

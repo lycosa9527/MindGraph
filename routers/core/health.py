@@ -549,7 +549,7 @@ async def comprehensive_health_check(
     - Application status
     - Redis connection
     - Database integrity
-    - Process monitoring (Qdrant, Celery, Redis)
+    - Process monitoring (Celery, Redis)
     - AbuseIPDB and CrowdSec blocklist dates (informational; a stale copy stays healthy)
     - LLM services (optional, disabled by default to avoid API costs)
 
@@ -681,7 +681,7 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
     """
     Process monitor health check endpoint.
 
-    Returns detailed status of monitored services (Qdrant, Celery, Redis)
+    Returns detailed status of monitored services (Celery, Redis)
     including metrics, restart counts, and circuit breaker status.
 
     Returns:

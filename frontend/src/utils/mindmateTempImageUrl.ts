@@ -1,12 +1,19 @@
 /** Rewrite MindMate temp-image markdown URLs for same-origin dev proxy. */
 
+import {
+  CANONICAL_PUBLIC_HOST,
+  FIRST_PARTY_PUBLIC_HOSTS,
+  LEGACY_PUBLIC_HOST,
+} from '@/constants/publicHosts'
+
 const TEMP_IMAGE_ABSOLUTE_URL_RE = /https?:\/\/[^/]+\/(?:api\/)?temp_images\/([^\s)"'<>]+)/gi
 
 /**
  * Remote MindGraph hosts proxied through `/api/proxy-image` (must match backend whitelist).
  * Keeps `<img>` loads same-origin and avoids CORB on HTML/JSON error bodies from cross-origin fetches.
+ * ``www`` and legacy ``mg`` are the same app.
  */
-export const MINDMATE_TEMP_IMAGE_PROXY_HOSTS = new Set(['mg.mindspringedu.com'])
+export const MINDMATE_TEMP_IMAGE_PROXY_HOSTS = FIRST_PARTY_PUBLIC_HOSTS
 
 function isLoopbackHost(hostname: string): boolean {
   const host = (hostname || '').toLowerCase()
@@ -29,6 +36,38 @@ function isLoopbackHost(hostname: string): boolean {
   return false
 }
 
+/** Public hosts load over https. The legacy mg host is emitted as www. Loopback stays. */
+function publicHttpsTempImageUrl(url: URL): URL {
+  const next = new URL(url.href)
+  if (next.protocol === 'http:' && !isLoopbackHost(next.hostname)) {
+    next.protocol = 'https:'
+    if (next.port === '80') {
+      next.port = ''
+    }
+  }
+  if (next.hostname.toLowerCase() === LEGACY_PUBLIC_HOST) {
+    next.hostname = CANONICAL_PUBLIC_HOST
+    next.protocol = 'https:'
+    if (next.port === '80' || next.port === '443') {
+      next.port = ''
+    }
+  }
+  return next
+}
+
+/** Public absolute URL with https. Loopback and relative paths stay as given. */
+export function toPublicHttpsUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || '').trim()
+  if (!trimmed.toLowerCase().startsWith('http://')) {
+    return trimmed
+  }
+  try {
+    return publicHttpsTempImageUrl(new URL(trimmed)).href
+  } catch {
+    return trimmed
+  }
+}
+
 /** True when the temp-image URL should be rewritten to `/api/temp_images/...`. */
 export function shouldRewriteMindmateTempImageUrl(url: URL, pageHost?: string): boolean {
   if (isLoopbackHost(url.hostname)) {
@@ -38,7 +77,14 @@ export function shouldRewriteMindmateTempImageUrl(url: URL, pageHost?: string): 
   if (!page) {
     return false
   }
-  return url.host.toLowerCase() === page
+  if (url.host.toLowerCase() === page) {
+    return true
+  }
+  const pageName = page.split(':')[0]
+  return (
+    FIRST_PARTY_PUBLIC_HOSTS.has(url.hostname.toLowerCase()) &&
+    FIRST_PARTY_PUBLIC_HOSTS.has(pageName)
+  )
 }
 
 function isLoopbackPageHost(pageHost?: string): boolean {
@@ -99,16 +145,16 @@ export function sameOriginTempImageFetchUrl(rawUrl: string): string {
 export function rewriteMindmateTempImageUrls(content: string, pageHost?: string): string {
   return (content || '').replace(TEMP_IMAGE_ABSOLUTE_URL_RE, (match, pathAndQuery: string) => {
     try {
-      const parsed = new URL(match)
+      const parsed = publicHttpsTempImageUrl(new URL(match))
       if (shouldRewriteMindmateTempImageUrl(parsed, pageHost)) {
         return `/api/temp_images/${pathAndQuery}`
       }
       if (shouldProxyMindmateTempImageUrl(parsed, pageHost)) {
-        return `/api/proxy-image?url=${encodeURIComponent(match)}`
+        return `/api/proxy-image?url=${encodeURIComponent(parsed.href)}`
       }
+      return parsed.href
     } catch {
       return match
     }
-    return match
   })
 }

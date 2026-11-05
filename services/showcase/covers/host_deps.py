@@ -231,7 +231,7 @@ def enforce_showcase_cover_host_deps_or_exit() -> None:
     """
     Hard-fail boot when Showcase server covers are enabled but host deps are missing.
 
-    Mirrors Redis/Qdrant feature gates: clear console prompt + ``sys.exit(1)``.
+    Mirrors other startup gates: clear console prompt + ``sys.exit(1)``.
     """
     if not showcase_server_covers_enabled():
         logger.debug("[SHOWCASE] Skipping LibreOffice/CJK font check (server covers disabled)")

@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': '已移出文件夹',
   'sidebar.chatHistory.uncategorizedEmpty': '暂无未分类对话',
   'sidebar.chatHistory.uncategorizedSection': '未分类',
-  'sidebar.chunkTest': 'RAG分块测试',
   'sidebar.collapseSidebar': '收起侧边栏',
   'sidebar.showcase': '案例广场',
   'sidebar.zhihui': '智绘',

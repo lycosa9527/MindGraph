@@ -38,12 +38,38 @@ ASSIGNMENT_THUMBNAIL_OPEN = text(
 )
 SUBMISSION_THUMBNAIL_OPEN = text(
     """
-    (diagram_id IS NOT NULL OR snapshot_spec IS NOT NULL)
-    AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'lsimg:%'
-    AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'http://%'
-    AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'https://%'
+    COALESCE(snapshot_spec->>'thumb_pending', '') <> ''
+    OR (
+      (diagram_id IS NOT NULL OR snapshot_spec IS NOT NULL)
+      AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'lsimg:%'
+      AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'http://%'
+      AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'https://%'
+    )
     """
 )
+# Submitted work whose frozen spec still needs a PNG. ``thumb_pending`` stays set
+# when a resubmit is showing the previous image. A returned assignment the
+# student has reopened is a draft, and that pending token is still this queue.
+SUBMIT_THUMBNAIL_DUE_SQL = """
+snapshot_spec IS NOT NULL
+AND jsonb_typeof(snapshot_spec->'spec') = 'object'
+AND (
+  status IN ('submitted', 'returned')
+  OR COALESCE(snapshot_spec->>'thumb_pending', '') <> ''
+)
+AND (
+  COALESCE(snapshot_spec->>'thumb_pending', '') <> ''
+  OR (
+    COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'lsimg:%'
+    AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'http://%'
+    AND COALESCE(snapshot_spec->>'thumbnail', '') NOT LIKE 'https://%'
+  )
+)
+AND (
+  COALESCE(snapshot_spec->>'thumb_retry_at', '') = ''
+  OR snapshot_spec->>'thumb_retry_at' <= :now_iso
+)
+"""
 
 
 def _skipped_submission_ids(skip: set[str]) -> set[int]:

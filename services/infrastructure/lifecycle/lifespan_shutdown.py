@@ -72,6 +72,8 @@ class LifespanBackgroundTasks:
     api_key_usage_flush_task: Optional[asyncio.Task] = None
     dify_health_poller_task: Optional[asyncio.Task] = None
     export_cleanup_task: Optional[asyncio.Task] = None
+    submit_thumbnail_task: Optional[asyncio.Task] = None
+    submit_thumbnail_stop: Optional[asyncio.Event] = None
 
 
 async def run_lifespan_shutdown(
@@ -117,6 +119,17 @@ async def run_lifespan_shutdown(
             pass
         if is_main_worker:
             logger.debug("Temp export cleanup scheduler stopped")
+
+    if holdings.submit_thumbnail_stop is not None:
+        holdings.submit_thumbnail_stop.set()
+    if holdings.submit_thumbnail_task:
+        holdings.submit_thumbnail_task.cancel()
+        try:
+            await holdings.submit_thumbnail_task
+        except asyncio.CancelledError:
+            pass
+        if is_main_worker:
+            logger.debug("Homework thumbnail renderer stopped")
 
     if holdings.workshop_cleanup_task:
         holdings.workshop_cleanup_task.cancel()

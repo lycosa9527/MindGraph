@@ -64,7 +64,7 @@ function readLocaleStrings(): Array<{ lang: string; key: string; value: string }
   const keySet = new Set(TOOLBAR_LABEL_KEYS)
   const pattern = /['"]([^'"]+)['"]\s*:\s*'((?:\\'|[^'])*)'/g
   for (const lang of readdirSync(localesRoot)) {
-    if (lang === 'it_test' || lang.endsWith('.ts')) continue
+    if (lang.endsWith('.ts')) continue
     const dir = resolve(localesRoot, lang)
     let files: string[]
     try {

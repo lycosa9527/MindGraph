@@ -64,15 +64,6 @@ def thumbnail_is_durable(value: object) -> bool:
     return _stable_thumbnail(value)
 
 
-def submit_thumbnail_source(diagram_thumb: object, previous_thumb: object) -> object:
-    """Prefer a fresh diagram image. Keep a stored COS ref when the diagram has none."""
-    if isinstance(diagram_thumb, str) and diagram_thumb.strip():
-        return diagram_thumb
-    if isinstance(previous_thumb, str) and is_image_ref(previous_thumb.strip()):
-        return previous_thumb.strip()
-    return diagram_thumb
-
-
 def stored_submit_thumbnail(diagram_thumb: object, previous_thumb: object) -> str | None:
     """COS or http image kept on the row while a new render runs.
 

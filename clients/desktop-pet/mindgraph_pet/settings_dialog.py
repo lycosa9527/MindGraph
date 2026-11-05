@@ -18,7 +18,7 @@ from mindgraph_pet.api import ApiError, verify
 from mindgraph_pet.version_info import installed_version
 
 PRESETS = (
-    "mg.mindspringedu.com",
+    "www.mindspringedu.com",
     "test.mindspringedu.com",
     "localhost:9527",
 )

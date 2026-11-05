@@ -12,12 +12,12 @@
   const MINDMATE_API_MESSAGE_MAX_LEN = 5000;
   const FETCH_TIMEOUT_MS = 180000;
   const VERIFY_TIMEOUT_MS = 60000;
-  const DEFAULT_MINDGRAPH_BASE_URL = "https://mg.mindspringedu.com";
+  const DEFAULT_MINDGRAPH_BASE_URL = "https://www.mindspringedu.com";
   const MINDMAP_GENERATE_PORT = "mindmap-generate";
 
   /** @type {readonly { id: string, url: string, labelKey: string }[]} */
   const BASE_URL_PRESETS = Object.freeze([
-    { id: "production", url: "https://mg.mindspringedu.com", labelKey: "baseUrlPresetProduction" },
+    { id: "production", url: "https://www.mindspringedu.com", labelKey: "baseUrlPresetProduction" },
     { id: "test", url: "https://test.mindspringedu.com", labelKey: "baseUrlPresetTest" },
     { id: "local", url: "http://localhost:9527", labelKey: "baseUrlPresetLocal" },
   ]);
@@ -75,6 +75,18 @@
 
   function normalizeBaseUrl(url) {
     const trimmed = (url || "").trim().replace(/\/+$/, "");
+    if (!trimmed) {
+      return trimmed;
+    }
+    try {
+      const withScheme = trimmed.includes("://") ? trimmed : `https://${trimmed}`;
+      const parsed = new URL(withScheme);
+      if (parsed.hostname === "mg.mindspringedu.com") {
+        return DEFAULT_MINDGRAPH_BASE_URL;
+      }
+    } catch {
+      return trimmed;
+    }
     return trimmed;
   }
 

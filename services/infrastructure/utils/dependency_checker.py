@@ -3,8 +3,7 @@ Dependency checking utilities for MindGraph application.
 
 Handles checking for required dependencies:
 - Redis (Python package + server binary/service)
-- Celery (Python package + Redis + Qdrant dependencies)
-- Qdrant (Python package + server binary/service)
+- Celery (Python package + Redis)
 - PostgreSQL (Python package + server binaries)
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -18,7 +17,6 @@ import os
 import re
 import subprocess
 import sys
-import urllib.request
 from pathlib import Path
 from types import ModuleType
 from typing import Optional
@@ -176,74 +174,6 @@ def check_celery_installed() -> tuple[bool, str]:
         )
 
     return True, "Celery is installed and dependencies are available"
-
-
-def check_qdrant_installed() -> tuple[bool, str]:
-    """
-    Check if Qdrant is installed (Python package + server binary/service).
-
-    Returns:
-        tuple[bool, str]: (is_installed, message)
-    """
-    # Check Python package (qdrant-client package imports as qdrant_client)
-    if not check_package_installed("qdrant_client"):
-        return (
-            False,
-            "Qdrant Python package not installed. Install with: pip install qdrant-client",
-        )
-
-    # Check if Qdrant is already running
-    try:
-        with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
-            return True, "Qdrant is installed and running"
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.debug("Qdrant connectivity check failed: %s", exc)
-
-    # Check if Qdrant binary exists in common locations
-    qdrant_paths = [
-        os.path.expanduser("~/qdrant/qdrant"),
-        "/usr/local/bin/qdrant",
-        "/usr/bin/qdrant",
-    ]
-
-    qdrant_binary_found = False
-    for path in qdrant_paths:
-        if os.path.exists(path) and os.access(path, os.X_OK):
-            qdrant_binary_found = True
-            break
-
-    # Check if Qdrant systemd service exists (Linux)
-    qdrant_service_found = False
-    if sys.platform != "win32":
-        try:
-            result = subprocess.run(
-                [
-                    "systemctl",
-                    "list-unit-files",
-                    "--type=service",
-                    "--quiet",
-                    "qdrant.service",
-                ],
-                capture_output=True,
-                timeout=2,
-                check=False,
-            )
-            if result.returncode == 0:
-                qdrant_service_found = True
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pass
-
-    if qdrant_binary_found or qdrant_service_found:
-        return True, "Qdrant is installed but not running"
-
-    return False, (
-        "Qdrant server binary not found. Install Qdrant:\n"
-        "  - Run: conda activate mindgraph && "
-        'sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py '
-        "(Linux; see docs/QDRANT_SETUP.md)\n"
-        "  - Or download from: https://github.com/qdrant/qdrant/releases\n"
-        "  - Or set QDRANT_HOST to point to an existing Qdrant server"
-    )
 
 
 def check_postgresql_installed() -> tuple[bool, str]:

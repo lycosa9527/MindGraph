@@ -22,6 +22,7 @@
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
     <AppDomain>https://test.mindspringedu.com</AppDomain>
+    <AppDomain>https://www.mindspringedu.com</AppDomain>
     <AppDomain>https://mg.mindspringedu.com</AppDomain>
     <AppDomain>http://localhost:9527</AppDomain>
     <AppDomain>https://365.kdocs.cn</AppDomain>

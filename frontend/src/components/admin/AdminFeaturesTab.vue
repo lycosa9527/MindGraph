@@ -37,7 +37,6 @@ const updateEnvSettingsMutation = useUpdateAdminEnvSettings()
 const reloadEnvRuntimeMutation = useReloadAdminEnvRuntime()
 
 interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
-  feature_rag_chunk_test: boolean
   feature_showcase: boolean
   feature_knowledge_space: boolean
   feature_mind_classroom_slide_deck: boolean
@@ -136,12 +135,6 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_MIND_CLASSROOM_SLIDE_DECK',
     labelKey: 'admin.feature.mindClassroomSlideDeck',
     hintKey: 'admin.feature.mindClassroomSlideDeckHint',
-  },
-  {
-    apiKey: 'feature_rag_chunk_test',
-    envKey: 'FEATURE_RAG_CHUNK_TEST',
-    labelKey: 'admin.feature.ragChunkTest',
-    hintKey: 'admin.feature.ragChunkTestHint',
   },
   {
     apiKey: 'feature_smart_response',

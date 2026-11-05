@@ -1,6 +1,6 @@
 # Production security deploy checklist
 
-Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS-terminated reverse-proxy deployment).
+Use this when rolling hardened MindGraph to **www.mindspringedu.com** (or any TLS-terminated reverse-proxy deployment). `mg.mindspringedu.com` is the legacy name for the same app and should redirect to `www`.
 
 ## Pre-deploy: server `.env`
 
@@ -15,7 +15,7 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 | `FEATURE_OAUTH_LOGIN` | **Removed.** Delete from `.env`. A leftover value is ignored (startup warning); it does not enable QR login. |
 | `WECHAT_OAUTH_APP_ID` + `WECHAT_OAUTH_APP_SECRET` | Required when `FEATURE_WECHAT_LOGIN=True`; both empty leaves WeChat off; one-sided pair aborts startup |
 | `EXTERNAL_BASE_URL` | HTTPS public origin for OAuth callbacks and Alipay `return_url` (warns if unset while WeChat or DingTalk OAuth is on) |
-| `COLLAB_WS_ALLOWED_ORIGINS` | When non-empty, cookie-authenticated WebSocket upgrades also accept `https://www.mindspringedu.com` and `https://mg.mindspringedu.com`. The list does not have to name either host. Plain `http` stays rejected. Leave unset to keep the check off. |
+| `COLLAB_WS_ALLOWED_ORIGINS` | When non-empty, cookie-authenticated WebSocket upgrades also accept `https://www.mindspringedu.com` and the legacy `https://mg.mindspringedu.com`. The list does not have to name either host. Plain `http` stays rejected. Leave unset to keep the check off. |
 | `ALIPAY_APP_ID` + `ALIPAY_NOTIFY_BASE_URL` + certs in `data/alipay-certs/` | Required when `FEATURE_MARKETS=True`. Certificate-mode upload folder (gitignored); override with `ALIPAY_CERT_DIR`. Notify URL: `{ALIPAY_NOTIFY_BASE_URL}/api/markets/payments/alipay/notify`. Product is 电脑网站支付 (`alipay.trade.page.pay`). |
 | `ENTERPRISE_MODE_PUBLIC_ACK=I_UNDERSTAND_PUBLIC_EXPOSURE_RISK` | `AUTH_MODE=enterprise` |
 
@@ -25,7 +25,7 @@ Do **not** copy `CHANGE-ME-before-production` from `env.example`.
 
 The shared `{env}/{module}` tree is **dev/** and **test/** only. Production still uses the live keys. **Do not** set `COS_ENV_PREFIX=production` and **do not** strip `COS_*_PREFIX` from the production `.env` until the bucket is copied.
 
-| Variable | Keep on mg.mindspringedu.com |
+| Variable | Keep on the production host |
 |----------|------------------------------|
 | `COS_KEY_PREFIX` | `backups/mg.mindspringedu.com` (host dumps) |
 | `COS_SYNC_KEY_PREFIX` | `backups/mindgraph-shared` |
@@ -118,7 +118,7 @@ location /api {
 
 The backend also emits SSE comment keepalives every 25s during Dify silence ([`sse_streaming.py`](../../routers/api/sse_streaming.py)); raising the proxy timeout to 300s is still required for very long single gaps and aligns with Dify client `sock_read`. Org training follow (`GET /api/training/events`) uses the same `X-Accel-Buffering: no` plus ~20s comment keepalives; see [training_follow.md](training_follow.md).
 
-5. **Extension mind-map PNG** — `POST /api/web_content_mindmap_png` can take up to **180s** (extension client abort). Use the same `proxy_read_timeout` / `proxy_send_timeout` **≥ 180s** on `/api` (300s is fine and matches MindMate above). Playwright render + LLM run server-side; cert testers need a current backend build on `mg.mindspringedu.com` / `test.mindspringedu.com`.
+5. **Extension mind-map PNG** — `POST /api/web_content_mindmap_png` can take up to **180s** (extension client abort). Use the same `proxy_read_timeout` / `proxy_send_timeout` **≥ 180s** on `/api` (300s is fine and matches MindMate above). Playwright render + LLM run server-side; cert testers need a current backend build on `www.mindspringedu.com` / `test.mindspringedu.com`.
 
 6. **MCP Streamable HTTP** — `POST /api/mcp` tool calls proxy into `/api/generate_dingtalk` (up to **180s**). Use the same `proxy_read_timeout` / `proxy_send_timeout` **≥ 180s** on `/api` (300s is fine). Requires `FEATURE_MCP_HTTP=True`, Bearer `mgat_…` + `X-MG-Account`. See [`docs/operations/mcp_http.md`](../operations/mcp_http.md).
 
@@ -135,15 +135,15 @@ Deploy **backend and frontend build together**. CSRF double-submit is enforced o
 
 ```bash
 # Response headers (no unsafe-eval; HSTS should appear)
-curl -sI https://mg.mindspringedu.com/ | grep -iE 'strict-transport|content-security'
+curl -sI https://www.mindspringedu.com/ | grep -iE 'strict-transport|content-security'
 # WeChat QR widget (bind/login) — header must list official 网站应用 hosts
-curl -sI https://mg.mindspringedu.com/ | grep -i content-security-policy | grep -E 'res.wx.qq.com|open.weixin.qq.com' || echo "FAIL: WeChat CSP hosts missing"
+curl -sI https://www.mindspringedu.com/ | grep -i content-security-policy | grep -E 'res.wx.qq.com|open.weixin.qq.com' || echo "FAIL: WeChat CSP hosts missing"
 
 # External PWA bootstrap (must not 404)
-curl -sI https://mg.mindspringedu.com/pwa-install-early.js | head -5
+curl -sI https://www.mindspringedu.com/pwa-install-early.js | head -5
 
 # Meta CSP must not include frame-ancestors (browsers ignore it in <meta>; avoids console warning)
-curl -s https://mg.mindspringedu.com/ | grep frame-ancestors && echo "FAIL: redeploy frontend" || echo "OK"
+curl -s https://www.mindspringedu.com/ | grep frame-ancestors && echo "FAIL: redeploy frontend" || echo "OK"
 
 # Backend smoke (from app host / CI)
 python -m pytest tests/test_csrf_protection.py tests/test_security_production_hardening.py -q
@@ -179,7 +179,6 @@ This moves the current secret to `jwt:secret:previous` and generates a new activ
 ## Follow-up after stable rollout
 
 - Reduce CSRF bootstrap allow-once path once `[Security] CSRF_BOOTSTRAP` logs are near zero.
-- Migrate legacy pickle embedding blobs to JSON in Knowledge Space.
 - Record security release notes in `CHANGELOG.md`.
 
 ## Pre-production hardening (before mg prod)
@@ -204,9 +203,9 @@ python -m pytest tests/routers/test_health_status.py \
 Post-hardening verification:
 
 ```bash
-curl -s https://mg.mindspringedu.com/status
-curl -s https://mg.mindspringedu.com/api/config/features | grep workshop_chat_preview
-curl -sI https://mg.mindspringedu.com/ | grep -i content-security
+curl -s https://www.mindspringedu.com/status
+curl -s https://www.mindspringedu.com/api/config/features | grep workshop_chat_preview
+curl -sI https://www.mindspringedu.com/ | grep -i content-security
 ```
 
 **Explicitly deferred** (separate epics, not blockers for prod): CSP nonces to replace `'unsafe-inline'`, `Cross-Origin-Opener-Policy`, `/.well-known/security.txt`, hiding `server: openresty` at the proxy.

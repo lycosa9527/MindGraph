@@ -33,6 +33,13 @@ def test_extract_generate_dingtalk_preview_url() -> None:
     assert extract_generate_dingtalk_preview_url(_DIFY_ANSWER) == f"{_URL}&mgdid={_UUID}"
 
 
+def test_extract_generate_dingtalk_preview_url_upgrades_http() -> None:
+    """A stored http preview is returned as https."""
+    http_url = _URL.replace("https://", "http://", 1)
+    text = f"![mg:{_UUID}]({http_url})"
+    assert extract_generate_dingtalk_preview_url(text) == http_url.replace("http://", "https://", 1)
+
+
 def test_extract_preview_unique_id() -> None:
     """Extract temp PNG id from preview URL."""
     assert extract_preview_unique_id(_DIFY_ANSWER) == "deadbeef"

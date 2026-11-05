@@ -60,7 +60,6 @@ export default {
   'sidebar.chatHistory.removedFromFolder': 'Μετακινήθηκε εκτός φακέλου',
   'sidebar.chatHistory.uncategorizedEmpty': 'Δεν υπάρχουν ακόμη μη κατηγοριοποιημένες συνομιλίες',
   'sidebar.chatHistory.uncategorizedSection': 'Χωρίς κατηγοριοποίηση',
-  'sidebar.chunkTest': 'Δοκιμή μπλοκ RAG',
   'sidebar.collapseSidebar': 'Σύμπτυξη πλαϊνής γραμμής',
   'sidebar.showcase': 'Πλατεία υπόθεσης',
   'sidebar.zhihui': 'Chie',
