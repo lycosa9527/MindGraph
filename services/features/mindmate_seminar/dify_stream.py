@@ -178,7 +178,7 @@ async def stream_assistant_reply(
     )
     full_answer: list[str] = []
     teaching_flagged = False
-    cached_org = await org_cache.get_by_id(org_id)
+    cached_org = await org_cache.get_by_id(org_id) if org_id is not None else None
     thinking_gate = MindmateThinkingGate(organization_shows_chain_of_thought(cached_org))
     aborted = False
     outcome = "ok"

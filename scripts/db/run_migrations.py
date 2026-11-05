@@ -24,8 +24,9 @@ RLS is mandatory: the script sets ``DATABASE_MIGRATION_URL`` automatically
   ``scripts/db/dump_import_postgres.py`` — each
   ``mindgraph.postgresql.*.dump`` needs a ``*.dump.manifest.json`` beside it.
 
-Usage:
+Usage (repo root, or this directory):
     python scripts/db/run_migrations.py
+    python run_migrations.py
 
 Menu option 4 runs the full local dev path: RLS roles (if missing), alembic upgrade
 head, patch ``.env`` with ``mindgraph_app`` / ``mindgraph_migrate``, optional Redis flush.
@@ -49,6 +50,10 @@ from urllib.parse import urlparse, urlunparse
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine, make_url
 
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
 from scripts.db.migration_urls import (
     RLS_HEAD_REVISION,
     ROLE_APP,
@@ -65,8 +70,7 @@ from scripts.db.redis_flush import flush_redis_cache, redis_flush_cli_hint, redi
 from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist, iter_bootstrap_guidance, try_bootstrap_rls_roles
 from services.utils.error_types import DATABASE_ERRORS
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+PROJECT_ROOT = project_root
 os.environ.setdefault("PYTHONPATH", str(PROJECT_ROOT))
 
 _DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
