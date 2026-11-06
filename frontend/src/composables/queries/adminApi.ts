@@ -144,6 +144,7 @@ export interface AdminTrendsResponse {
   values?: number[]
   points?: AdminTrendPoint[]
   data?: Array<{ date: string; value: number; input?: number; output?: number }>
+  total?: number
   [key: string]: unknown
 }
 

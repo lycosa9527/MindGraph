@@ -8,7 +8,7 @@ Proprietary License
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone, tzinfo
+from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Any, Optional, TypedDict
 
 from sqlalchemy import func, or_
@@ -81,6 +81,11 @@ def apply_token_service_filter(stmt: Any, service: Optional[str]) -> Any:
     return stmt
 
 
+def beijing_calendar_day(column: Any) -> Any:
+    """Naive UTC timestamp as a Beijing calendar date (UTC+8, no DST)."""
+    return func.date(column + timedelta(hours=8))
+
+
 def beijing_period_starts(beijing_now: datetime) -> BeijingPeriodStarts:
     """UTC cutoffs aligned with Beijing calendar day boundaries."""
     beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -93,15 +98,6 @@ def beijing_period_starts(beijing_now: datetime) -> BeijingPeriodStarts:
         "month_ago": month_ago,
         "beijing_today_start": beijing_today_start,
     }
-
-
-def utc_date_to_beijing_key(utc_date: date | str, beijing_timezone: tzinfo) -> str:
-    """Map a UTC calendar date to Beijing date string key."""
-    if isinstance(utc_date, str):
-        utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-    utc_datetime = datetime.combine(utc_date, datetime.min.time())
-    beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(beijing_timezone)
-    return str(beijing_datetime.date())
 
 
 def utc_hour_bucket(column: Any) -> Any:

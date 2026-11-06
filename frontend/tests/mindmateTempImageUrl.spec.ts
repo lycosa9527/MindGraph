@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { rewriteLegacyPublicOrigin } from '@/constants/publicHosts'
 import {
   rewriteMindmateTempImageUrls,
   sameOriginTempImageFetchUrl,
@@ -7,6 +8,18 @@ import {
   shouldRewriteMindmateTempImageUrl,
   toPublicHttpsUrl,
 } from '@/utils/mindmateTempImageUrl'
+
+describe('rewriteLegacyPublicOrigin', () => {
+  it('rewrites mg and leaves the test server', () => {
+    expect(rewriteLegacyPublicOrigin('https://mg.mindspringedu.com/')).toBe(
+      'https://www.mindspringedu.com'
+    )
+    expect(rewriteLegacyPublicOrigin('https://test.mindspringedu.com')).toBe(
+      'https://test.mindspringedu.com'
+    )
+    expect(rewriteLegacyPublicOrigin('http://localhost:9527')).toBe('http://localhost:9527')
+  })
+})
 
 describe('shouldRewriteMindmateTempImageUrl', () => {
   it('rewrites loopback hosts', () => {
@@ -57,6 +70,12 @@ describe('toPublicHttpsUrl', () => {
   it('upgrades a public http url and keeps loopback', () => {
     expect(toPublicHttpsUrl('http://mg.mindspringedu.com/api/temp_images/a.png?sig=1')).toBe(
       'https://www.mindspringedu.com/api/temp_images/a.png?sig=1'
+    )
+    expect(toPublicHttpsUrl('https://mg.mindspringedu.com/api/temp_images/a.png?sig=1')).toBe(
+      'https://www.mindspringedu.com/api/temp_images/a.png?sig=1'
+    )
+    expect(toPublicHttpsUrl('https://test.mindspringedu.com/api/temp_images/a.png')).toBe(
+      'https://test.mindspringedu.com/api/temp_images/a.png'
     )
     expect(toPublicHttpsUrl('http://localhost:9527/api/temp_images/a.png')).toBe(
       'http://localhost:9527/api/temp_images/a.png'

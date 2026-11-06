@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sa_sum
 
@@ -34,7 +34,7 @@ from utils.auth.mindbot_token_stats import (
 )
 from utils.auth.token_stats_queries import (
     apply_token_service_filter,
-    utc_date_to_beijing_key,
+    beijing_calendar_day,
     utc_hour_bucket,
     utc_naive_hour_to_beijing_key,
 )
@@ -48,6 +48,7 @@ from ..dependencies import (
 from ..helpers import BEIJING_TIMEZONE, get_beijing_now
 from .school_scope import resolve_school_dashboard_org_id_scoped
 from .stats import _sql_count
+from .stats_helpers import platform_user_clause
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,43 @@ router = APIRouter()
 def _apply_token_service_filter(stmt, service_filter: Optional[str]):
     """Restrict TokenUsage rows to mindgraph or mindmate (matches token-stats breakdown)."""
     return apply_token_service_filter(stmt, service_filter)
+
+
+def _day_key(value: Any) -> str:
+    """YYYY-MM-DD for a SQL date or datetime."""
+    if isinstance(value, datetime):
+        value = value.date()
+    return str(value)[:10]
+
+
+def _counts_by_day(rows: Any) -> Dict[str, int]:
+    """Index grouped day counts by YYYY-MM-DD."""
+    counts: Dict[str, int] = {}
+    for row in rows:
+        key = _day_key(row.date)
+        counts[key] = counts.get(key, 0) + int(row.count)
+    return counts
+
+
+def _created_before_window(column: Any, window_start: datetime) -> Any:
+    """Rows already present at the chart start, including timestamps that were never stored."""
+    return or_(column < window_start, column.is_(None))
+
+
+def _cumulative_trend(date_list: list[Any], initial_count: int, counts_by_date: Dict[str, int]) -> list[Dict[str, Any]]:
+    """Running total for each Beijing day in ``date_list``."""
+    cumulative = initial_count
+    series: list[Dict[str, Any]] = []
+    for day in date_list:
+        key = str(day)
+        cumulative += counts_by_date.get(key, 0)
+        series.append({"date": key, "value": cumulative})
+    return series
+
+
+def _daily_trend(date_list: list[Any], counts_by_date: Dict[str, int]) -> list[Dict[str, Any]]:
+    """One point per Beijing day, missing days as zero."""
+    return [{"date": str(day), "value": counts_by_date.get(str(day), 0)} for day in date_list]
 
 
 @router.get("/admin/stats/trends")
@@ -90,7 +128,6 @@ async def get_stats_trends_admin(
 
     # Handle all-time query (days=None or days=0)
     if all_time:
-        beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
         # Chart window: last year in Beijing (same as previous all-time display range)
         beijing_start = beijing_today_start - timedelta(days=365)
     else:
@@ -102,7 +139,6 @@ async def get_stats_trends_admin(
         # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
         days_value = days if days is not None else 30
         beijing_start = beijing_today_start - timedelta(days=days_value)
-        beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
 
     # UTC lower bound for SQL; matches first day on the chart (avoids None comparisons and
     # keeps cumulative series correct for the displayed window).
@@ -117,120 +153,85 @@ async def get_stats_trends_admin(
         current += timedelta(days=1)
 
     trends_data = []
+    registration_total: Optional[int] = None
 
     if metric == "users":
-        # Daily cumulative user count
+        # Cumulative platform users. Last point matches GET /admin/stats total_users.
         try:
             initial_count = (
-                await db.execute(select(_sql_count(User.id)).where(User.created_at < trends_filter_start_utc))
+                await db.execute(
+                    select(_sql_count(User.id)).where(
+                        _created_before_window(User.created_at, trends_filter_start_utc),
+                        platform_user_clause(),
+                    )
+                )
             ).scalar_one_or_none() or 0
 
+            beijing_day = beijing_calendar_day(User.created_at)
             user_counts = (
                 await db.execute(
                     select(
-                        func.date(User.created_at).label("date"),
+                        beijing_day.label("date"),
                         _sql_count(User.id).label("count"),
                     )
-                    .where(User.created_at >= trends_filter_start_utc)
-                    .group_by(func.date(User.created_at))
+                    .where(User.created_at >= trends_filter_start_utc, platform_user_clause())
+                    .group_by(beijing_day)
                 )
             ).all()
-
-            # Map UTC dates to Beijing dates
-            counts_by_date = {}
-            for row in user_counts:
-                utc_date = row.date
-                # Database may return date as string, need to parse it
-                if isinstance(utc_date, str):
-                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-                utc_datetime = datetime.combine(utc_date, datetime.min.time())
-                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-                beijing_date_str = str(beijing_datetime.date())
-                counts_by_date[beijing_date_str] = counts_by_date.get(beijing_date_str, 0) + row.count
-
-            # Calculate cumulative counts
-            cumulative = initial_count
-            for date in date_list:
-                date_str = str(date)
-                if date_str in counts_by_date:
-                    cumulative += counts_by_date[date_str]
-                trends_data.append({"date": date_str, "value": cumulative})
+            trends_data = _cumulative_trend(date_list, int(initial_count), _counts_by_day(user_counts))
         except DATABASE_ERRORS as e:
             logger.error("Error fetching user trends: %s", e)
-            # Return zeros if error
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
 
     elif metric == "organizations":
-        # Daily cumulative organization count
         try:
             initial_count = (
                 await db.execute(
-                    select(_sql_count(Organization.id)).where(Organization.created_at < trends_filter_start_utc)
+                    select(_sql_count(Organization.id)).where(
+                        _created_before_window(Organization.created_at, trends_filter_start_utc)
+                    )
                 )
             ).scalar_one_or_none() or 0
 
+            beijing_day = beijing_calendar_day(Organization.created_at)
             org_counts = (
                 await db.execute(
                     select(
-                        func.date(Organization.created_at).label("date"),
+                        beijing_day.label("date"),
                         _sql_count(Organization.id).label("count"),
                     )
                     .where(Organization.created_at >= trends_filter_start_utc)
-                    .group_by(func.date(Organization.created_at))
+                    .group_by(beijing_day)
                 )
             ).all()
-
-            counts_by_date = {}
-            for row in org_counts:
-                utc_date = row.date
-                if isinstance(utc_date, str):
-                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-                utc_datetime = datetime.combine(utc_date, datetime.min.time())
-                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-                beijing_date_str = str(beijing_datetime.date())
-                counts_by_date[beijing_date_str] = counts_by_date.get(beijing_date_str, 0) + row.count
-
-            cumulative = initial_count
-            for date in date_list:
-                date_str = str(date)
-                if date_str in counts_by_date:
-                    cumulative += counts_by_date[date_str]
-                trends_data.append({"date": date_str, "value": cumulative})
+            trends_data = _cumulative_trend(date_list, int(initial_count), _counts_by_day(org_counts))
         except DATABASE_ERRORS as e:
             logger.error("Error fetching organization trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
 
     elif metric == "registrations":
-        # Daily new user registrations (non-cumulative)
+        # Daily new platform users. Today matches the dashboard card; total matches total_users.
         try:
+            registration_total = int(
+                (await db.execute(select(_sql_count(User.id)).where(platform_user_clause()))).scalar_one() or 0
+            )
+            beijing_day = beijing_calendar_day(User.created_at)
             reg_counts = (
                 await db.execute(
                     select(
-                        func.date(User.created_at).label("date"),
+                        beijing_day.label("date"),
                         _sql_count(User.id).label("count"),
                     )
-                    .where(User.created_at >= trends_filter_start_utc)
-                    .group_by(func.date(User.created_at))
+                    .where(
+                        User.created_at >= trends_filter_start_utc,
+                        platform_user_clause(),
+                    )
+                    .group_by(beijing_day)
                 )
             ).all()
-
-            # Map UTC dates to Beijing dates
-            counts_by_date = {}
-            for row in reg_counts:
-                utc_date = row.date
-                # Database may return date as string, need to parse it
-                if isinstance(utc_date, str):
-                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-                utc_datetime = datetime.combine(utc_date, datetime.min.time())
-                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-                beijing_date_str = str(beijing_datetime.date())
-                counts_by_date[beijing_date_str] = counts_by_date.get(beijing_date_str, 0) + row.count
-
-            for date in date_list:
-                date_str = str(date)
-                trends_data.append({"date": date_str, "value": counts_by_date.get(date_str, 0)})
+            trends_data = _daily_trend(date_list, _counts_by_day(reg_counts))
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching registration trends: %s", e)
             for date in date_list:
@@ -240,26 +241,20 @@ async def get_stats_trends_admin(
         # Daily token usage (non-cumulative)
         # Optional service filter: mindgraph | mindmate (matches token-stats breakdown)
         try:
+            usage_day = beijing_calendar_day(TokenUsage.created_at)
             token_counts_stmt = select(
-                func.date(TokenUsage.created_at).label("date"),
+                usage_day.label("date"),
                 sa_sum(TokenUsage.total_tokens).label("total_tokens"),
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.success)
             token_counts_stmt = _apply_token_service_filter(token_counts_stmt, service_filter)
             token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
-            token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
+            token_counts = (await db.execute(token_counts_stmt.group_by(usage_day))).all()
 
-            # Map UTC dates to Beijing dates
             tokens_by_date = {}
             for row in token_counts:
-                utc_date = row.date
-                # Database may return date as string, need to parse it
-                if isinstance(utc_date, str):
-                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-                utc_datetime = datetime.combine(utc_date, datetime.min.time())
-                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-                beijing_date_str = str(beijing_datetime.date())
+                beijing_date_str = _day_key(row.date)
                 if beijing_date_str not in tokens_by_date:
                     tokens_by_date[beijing_date_str] = {
                         "total": 0,
@@ -278,7 +273,6 @@ async def get_stats_trends_admin(
                 merge_mindbot_daily_rows_into_tokens_by_date(
                     tokens_by_date,
                     mindbot_counts,
-                    beijing_timezone=BEIJING_TIMEZONE,
                 )
 
             for date in date_list:
@@ -303,7 +297,10 @@ async def get_stats_trends_admin(
             detail=f"Invalid metric: {metric}. Must be one of: users, organizations, registrations, tokens",
         )
 
-    return {"metric": metric, "days": days, "data": trends_data}
+    payload: Dict[str, Any] = {"metric": metric, "days": days, "data": trends_data}
+    if registration_total is not None:
+        payload["total"] = registration_total
+    return payload
 
 
 @router.get("/admin/stats/school/trends")
@@ -403,7 +400,6 @@ async def get_organization_token_trends_admin(
 
     # Handle all-time query (days=None or days=0)
     if all_time:
-        beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
         # For date list generation, start from organization creation
         beijing_start = org.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
         beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -416,8 +412,6 @@ async def get_organization_token_trends_admin(
         # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
         days_value = days if days is not None else 30
         beijing_start = beijing_today_start - timedelta(days=days_value)
-        beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
-
     trends_filter_start_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
 
     trends_data = []
@@ -498,26 +492,20 @@ async def get_organization_token_trends_admin(
             current += timedelta(days=1)
 
         try:
+            usage_day = beijing_calendar_day(TokenUsage.created_at)
             token_counts_stmt = select(
-                func.date(TokenUsage.created_at).label("date"),
+                usage_day.label("date"),
                 sa_sum(TokenUsage.total_tokens).label("total_tokens"),
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.organization_id == org.id, TokenUsage.success)
             token_counts_stmt = _apply_token_service_filter(token_counts_stmt, service_filter)
             token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
-            token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
+            token_counts = (await db.execute(token_counts_stmt.group_by(usage_day))).all()
 
-            # Map UTC dates to Beijing dates
             tokens_by_date = {}
             for row in token_counts:
-                utc_date = row.date
-                # Database may return date as string, need to parse it
-                if isinstance(utc_date, str):
-                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-                utc_datetime = datetime.combine(utc_date, datetime.min.time())
-                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-                beijing_date_str = str(beijing_datetime.date())
+                beijing_date_str = _day_key(row.date)
                 if beijing_date_str not in tokens_by_date:
                     tokens_by_date[beijing_date_str] = {
                         "total": 0,
@@ -537,7 +525,6 @@ async def get_organization_token_trends_admin(
                 merge_mindbot_daily_rows_into_tokens_by_date(
                     tokens_by_date,
                     mindbot_counts,
-                    beijing_timezone=BEIJING_TIMEZONE,
                 )
 
             for date in date_list:
@@ -603,7 +590,6 @@ async def get_user_token_trends_admin(
 
     # Handle all-time query (days=None or days=0)
     if all_time:
-        beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
         # For date list generation, start from user creation
         beijing_start = user.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
         beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -616,8 +602,6 @@ async def get_user_token_trends_admin(
         # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
         days_value = days if days is not None else 10
         beijing_start = beijing_today_start - timedelta(days=days_value)
-        beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
-
     trends_filter_start_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
 
     trends_data = []
@@ -692,20 +676,20 @@ async def get_user_token_trends_admin(
 
         # Daily token usage for this user (non-cumulative)
         try:
+            usage_day = beijing_calendar_day(TokenUsage.created_at)
             token_counts_stmt = select(
-                func.date(TokenUsage.created_at).label("date"),
+                usage_day.label("date"),
                 sa_sum(TokenUsage.total_tokens).label("total_tokens"),
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.user_id == user.id, TokenUsage.success)
             token_counts_stmt = _apply_token_service_filter(token_counts_stmt, service_filter)
             token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
-            token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
+            token_counts = (await db.execute(token_counts_stmt.group_by(usage_day))).all()
 
-            # Map UTC dates to Beijing dates
             tokens_by_date = {}
             for row in token_counts:
-                beijing_date_str = utc_date_to_beijing_key(row.date, BEIJING_TIMEZONE)
+                beijing_date_str = _day_key(row.date)
                 if beijing_date_str not in tokens_by_date:
                     tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
                 tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
@@ -721,7 +705,6 @@ async def get_user_token_trends_admin(
                 merge_mindbot_daily_rows_into_tokens_by_date(
                     tokens_by_date,
                     mindbot_rows,
-                    beijing_timezone=BEIJING_TIMEZONE,
                 )
 
             for date in date_list:

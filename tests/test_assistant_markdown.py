@@ -13,6 +13,7 @@ from services.diagram.assistant_markdown import (
 )
 
 _URL = "https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc"
+_PUBLIC = "https://www.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc"
 _UUID = "12eed5a2-6489-4c25-a4d3-f76e9f1aa9ef"
 _DIFY_ANSWER = f"![mg:{_UUID}]({_URL}&mgdid={_UUID})\n<!-- mg-diagram-id:{_UUID} -->"
 
@@ -30,14 +31,14 @@ def test_parse_assistant_diagram_library_id_from_mg_alt() -> None:
 
 def test_extract_generate_dingtalk_preview_url() -> None:
     """Extract HTTPS preview URL from markdown."""
-    assert extract_generate_dingtalk_preview_url(_DIFY_ANSWER) == f"{_URL}&mgdid={_UUID}"
+    assert extract_generate_dingtalk_preview_url(_DIFY_ANSWER) == f"{_PUBLIC}&mgdid={_UUID}"
 
 
 def test_extract_generate_dingtalk_preview_url_upgrades_http() -> None:
     """A stored http preview is returned as https."""
     http_url = _URL.replace("https://", "http://", 1)
     text = f"![mg:{_UUID}]({http_url})"
-    assert extract_generate_dingtalk_preview_url(text) == http_url.replace("http://", "https://", 1)
+    assert extract_generate_dingtalk_preview_url(text) == _PUBLIC
 
 
 def test_extract_preview_unique_id() -> None:

@@ -30,6 +30,24 @@ def is_loopback_host(host: str) -> bool:
     return False
 
 
+def strip_leading_http_schemes(value: str) -> str:
+    """Remove leading http:// and https:// prefixes, repeatedly.
+
+    Some reverse proxies send a full URL in X-Forwarded-Host. The host part
+    must not include a scheme, since the caller supplies the scheme separately.
+    """
+    result = (value or "").strip()
+    while True:
+        lower = result.lower()
+        if lower.startswith("https://"):
+            result = result[8:]
+        elif lower.startswith("http://"):
+            result = result[7:]
+        else:
+            break
+    return result
+
+
 def collapse_double_scheme_base_url(value: str) -> str:
     """Fix EXTERNAL_BASE_URL values like http://https://host when mis-set."""
     result = (value or "").strip()

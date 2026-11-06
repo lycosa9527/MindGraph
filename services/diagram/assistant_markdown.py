@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 
 from services.mindmate.teaching_design_flag import strip_reply_kind_markers
+from utils.public_hosts import rewrite_legacy_public_origin
 from utils.public_https_url import upgrade_public_http_url
 
 GENERATED_PREVIEW_MD_RE = re.compile(
@@ -57,7 +58,7 @@ def extract_generate_dingtalk_preview_url(text: str) -> str | None:
     match = GENERATED_PREVIEW_MD_RE.search((text or "").strip())
     if not match:
         return None
-    url = upgrade_public_http_url(match.group(1).strip())
+    url = rewrite_legacy_public_origin(upgrade_public_http_url(match.group(1).strip()))
     if not url.lower().startswith("https://"):
         return None
     return url

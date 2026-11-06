@@ -22,10 +22,12 @@ import {
   getAdminMindBotOrgSession,
 } from '@/composables/admin/useAdminMindBotConfig'
 import {
+  ADMIN_TREND_CARD_POINTS,
   ADMIN_TREND_CHART_MOUNT_DELAY_MS,
   ADMIN_TREND_DAYS_MAP,
   formatAdminTrendNumber,
   renderAdminTrendLineChart,
+  sumRecentTrendPoints,
 } from '@/composables/admin/useAdminTrendChart'
 import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
@@ -424,15 +426,11 @@ async function loadUserTokenCards(signal: AbortSignal) {
   if (props.userId == null) return
   const data = await fetchAdminStatsTrendsUser({ user_id: props.userId, days: 0 }, signal)
   const arr = (data as { data?: Array<{ value?: number }> }).data ?? []
-  const sum = (n: number) =>
-    arr.slice(-n).reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
   periodCards.value = {
-    today: formatAdminTrendNumber(sum(1) || 0),
-    week: formatAdminTrendNumber(sum(7) || 0),
-    month: formatAdminTrendNumber(sum(30) || 0),
-    total: formatAdminTrendNumber(
-      arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
-    ),
+    today: formatAdminTrendNumber(sumRecentTrendPoints(arr, ADMIN_TREND_CARD_POINTS.today)),
+    week: formatAdminTrendNumber(sumRecentTrendPoints(arr, ADMIN_TREND_CARD_POINTS.week)),
+    month: formatAdminTrendNumber(sumRecentTrendPoints(arr, ADMIN_TREND_CARD_POINTS.month)),
+    total: formatAdminTrendNumber(arr.reduce((sum, point) => sum + (point.value ?? 0), 0)),
   }
 }
 

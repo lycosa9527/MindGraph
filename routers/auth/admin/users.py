@@ -51,7 +51,6 @@ from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
 from utils.auth.bayi_mode import canonical_bayi_subject, is_admin_account_phone
 from utils.auth.role_constants import (
     ALL_USER_ROLES,
-    ROLE_STUDENT,
     db_roles_for_canonical_filter,
     normalize_role,
 )
@@ -59,6 +58,7 @@ from utils.auth.user_daily_token_quota import resolve_daily_usage
 from utils.auth.school_tier import assert_organization_has_member_capacity
 from utils.email_validation import validate_email_for_api
 
+from .stats_helpers import platform_user_clause
 from ..dependencies import (
     get_language_dependency,
     require_admin,
@@ -107,7 +107,7 @@ async def list_users_admin(
         conditions.append(User.role.in_(tuple(db_roles_for_canonical_filter(canonical_role))))
     else:
         # Classroom Learning Space accounts are managed under 学习空间 → 学生管理.
-        conditions.append(User.role != ROLE_STUDENT)
+        conditions.append(platform_user_clause())
     if search:
         search_term = f"%{search}%"
         conditions.append((User.name.like(search_term)) | (User.phone.like(search_term)))

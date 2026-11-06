@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue'
 
+import { rewriteLegacyPublicOrigin } from '@/constants/publicHosts'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 export function usePublicSiteUrl() {
@@ -11,10 +12,10 @@ export function usePublicSiteUrl() {
   const publicSiteUrl = computed(() => {
     const raw = store.flags?.external_base_url?.trim()
     if (raw) {
-      return raw.replace(/\/$/, '')
+      return rewriteLegacyPublicOrigin(raw)
     }
     if (typeof window !== 'undefined') {
-      return window.location.origin
+      return rewriteLegacyPublicOrigin(window.location.origin)
     }
     return ''
   })

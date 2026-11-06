@@ -13,7 +13,22 @@ export const ADMIN_TREND_DAYS_MAP = {
   total: 0,
 } as const
 
+/**
+ * Points on a Beijing window that starts at today-minus-offset and includes today.
+ * Week and month match token-stats (`today 00:00` minus 7 or 30 days). Today is that
+ * calendar day only, the same cutoff as the dashboard registration card.
+ */
+export const ADMIN_TREND_CARD_POINTS = {
+  today: 1,
+  week: ADMIN_TREND_DAYS_MAP.week + 1,
+  month: ADMIN_TREND_DAYS_MAP.month + 1,
+} as const
+
 export type AdminTrendPeriod = keyof typeof ADMIN_TREND_DAYS_MAP
+
+export function sumRecentTrendPoints(points: Array<{ value?: number }>, count: number): number {
+  return points.slice(-count).reduce((sum, point) => sum + (point.value ?? 0), 0)
+}
 
 export type AdminTrendChartColorScheme = 'light' | 'dark'
 

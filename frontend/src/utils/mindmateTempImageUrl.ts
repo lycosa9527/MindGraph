@@ -11,7 +11,7 @@ const TEMP_IMAGE_ABSOLUTE_URL_RE = /https?:\/\/[^/]+\/(?:api\/)?temp_images\/([^
 /**
  * Remote MindGraph hosts proxied through `/api/proxy-image` (must match backend whitelist).
  * Keeps `<img>` loads same-origin and avoids CORB on HTML/JSON error bodies from cross-origin fetches.
- * ``www`` and legacy ``mg`` are the same app.
+ * www and legacy mg are the same app.
  */
 export const MINDMATE_TEMP_IMAGE_PROXY_HOSTS = FIRST_PARTY_PUBLIC_HOSTS
 
@@ -58,7 +58,8 @@ function publicHttpsTempImageUrl(url: URL): URL {
 /** Public absolute URL with https. Loopback and relative paths stay as given. */
 export function toPublicHttpsUrl(rawUrl: string): string {
   const trimmed = (rawUrl || '').trim()
-  if (!trimmed.toLowerCase().startsWith('http://')) {
+  const lower = trimmed.toLowerCase()
+  if (!lower.startsWith('http://') && !lower.startsWith('https://')) {
     return trimmed
   }
   try {

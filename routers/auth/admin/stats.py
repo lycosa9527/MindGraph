@@ -51,7 +51,6 @@ from utils.auth.api_key_usage_stats import (
     GENERATE_TEXT_TO_IMAGE_ENDPOINT,
     count_successful_endpoint_calls,
 )
-from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.school_tier import school_dashboard_quotas_payload
 
 from ..dependencies import (
@@ -62,6 +61,7 @@ from ..dependencies import (
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 from .school_scope import resolve_school_dashboard_org_id_scoped
 from .stats_helpers import build_admin_token_rankings as _build_admin_token_rankings
+from .stats_helpers import platform_user_clause
 from .stats_helpers import sql_count_column as _sql_count
 from .stats_helpers import token_stats_by_org_today as _token_stats_by_org_today
 from .stats_helpers import (
@@ -132,7 +132,7 @@ async def get_stats_admin(
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get system statistics (ADMIN ONLY)"""
-    total_users = (await db.execute(select(_sql_count(User.id)).where(User.role != ROLE_STUDENT))).scalar_one()
+    total_users = (await db.execute(select(_sql_count(User.id)).where(platform_user_clause()))).scalar_one()
     total_orgs = (await db.execute(select(_sql_count(Organization.id)))).scalar_one()
 
     # Use Beijing time for "today" calculations
@@ -147,7 +147,7 @@ async def get_stats_admin(
         await db.execute(
             select(_sql_count(User.id)).where(
                 User.created_at >= today_start,
-                User.role != ROLE_STUDENT,
+                platform_user_clause(),
             )
         )
     ).scalar_one()
@@ -263,7 +263,7 @@ async def get_school_stats(
         await db.execute(
             select(_sql_count(User.id)).where(
                 User.organization_id == effective_org_id,
-                User.role != ROLE_STUDENT,
+                platform_user_clause(),
             )
         )
     ).scalar_one()
@@ -272,7 +272,7 @@ async def get_school_stats(
             select(_sql_count(User.id)).where(
                 User.organization_id == effective_org_id,
                 User.created_at >= today_start,
-                User.role != ROLE_STUDENT,
+                platform_user_clause(),
             )
         )
     ).scalar_one()

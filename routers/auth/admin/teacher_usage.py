@@ -32,7 +32,7 @@ from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
-from routers.auth.helpers import BEIJING_TIMEZONE, get_beijing_now
+from routers.auth.helpers import get_beijing_now
 from services.teacher_usage_stats import (
     compute_and_upsert_user_usage_stats_async,
     get_classification_config_async,
@@ -40,12 +40,34 @@ from services.teacher_usage_stats import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.role_constants import TEACHER_ROLES
+from utils.auth.token_stats_queries import beijing_calendar_day
 
 from ..dependencies import require_settings_teacher_usage
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _beijing_day_key(value: Any) -> str:
+    """YYYY-MM-DD for a SQL date or datetime."""
+    if isinstance(value, datetime):
+        value = value.date()
+    return str(value)[:10]
+
+
+async def _counts_by_beijing_day(
+    db: AsyncSession,
+    stamp: Any,
+    counted: Any,
+    *filters: Any,
+) -> dict[str, int]:
+    """Count rows on each Beijing calendar day."""
+    day = beijing_calendar_day(stamp)
+    rows = (
+        await db.execute(select(day.label("d"), sa_count(counted).label("cnt")).where(*filters).group_by(day))
+    ).all()
+    return {_beijing_day_key(row.d): int(row.cnt or 0) for row in rows}
 
 
 class ClassificationThresholds(BaseModel):
@@ -483,99 +505,39 @@ async def get_user_detail(
             date_list.append(current.date())
             current += timedelta(days=1)
 
-        edit_by_date: dict[str, int] = {}
-        export_by_date: dict[str, int] = {}
-        autocomplete_by_date: dict[str, int] = {}
-        one_sentence_by_date: dict[str, int] = {}
-
-        edit_rows = (
-            await db.execute(
-                select(
-                    func.date(UserActivityLog.created_at).label("d"),
-                    sa_count(UserActivityLog.id).label("cnt"),
-                )
-                .where(
-                    UserActivityLog.user_id == user_id,
-                    UserActivityLog.activity_type.in_(["diagram_edit", "one_sentence_edit"]),
-                    UserActivityLog.created_at >= beijing_start,
-                )
-                .group_by(func.date(UserActivityLog.created_at))
-            )
-        ).all()
-        for row in edit_rows:
-            utc_date = row.d
-            if isinstance(utc_date, str):
-                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-            utc_dt = datetime.combine(utc_date, datetime.min.time())
-            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-            edit_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
-
-        export_rows = (
-            await db.execute(
-                select(
-                    func.date(UserActivityLog.created_at).label("d"),
-                    sa_count(UserActivityLog.id).label("cnt"),
-                )
-                .where(
-                    UserActivityLog.user_id == user_id,
-                    UserActivityLog.activity_type == "diagram_export",
-                    UserActivityLog.created_at >= beijing_start,
-                )
-                .group_by(func.date(UserActivityLog.created_at))
-            )
-        ).all()
-        for row in export_rows:
-            utc_date = row.d
-            if isinstance(utc_date, str):
-                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-            utc_dt = datetime.combine(utc_date, datetime.min.time())
-            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-            export_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
-
-        ac_rows = (
-            await db.execute(
-                select(
-                    func.date(TokenUsage.created_at).label("d"),
-                    sa_count(TokenUsage.id).label("cnt"),
-                )
-                .where(
-                    TokenUsage.user_id == user_id,
-                    TokenUsage.request_type == "autocomplete",
-                    TokenUsage.success.is_(True),
-                    TokenUsage.created_at >= beijing_start,
-                )
-                .group_by(func.date(TokenUsage.created_at))
-            )
-        ).all()
-        for row in ac_rows:
-            utc_date = row.d
-            if isinstance(utc_date, str):
-                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-            utc_dt = datetime.combine(utc_date, datetime.min.time())
-            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-            autocomplete_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
-
-        one_sentence_rows = (
-            await db.execute(
-                select(
-                    func.date(UserActivityLog.created_at).label("d"),
-                    sa_count(UserActivityLog.id).label("cnt"),
-                )
-                .where(
-                    UserActivityLog.user_id == user_id,
-                    UserActivityLog.activity_type == "one_sentence_generate",
-                    UserActivityLog.created_at >= beijing_start,
-                )
-                .group_by(func.date(UserActivityLog.created_at))
-            )
-        ).all()
-        for row in one_sentence_rows:
-            utc_date = row.d
-            if isinstance(utc_date, str):
-                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-            utc_dt = datetime.combine(utc_date, datetime.min.time())
-            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-            one_sentence_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
+        edit_by_date = await _counts_by_beijing_day(
+            db,
+            UserActivityLog.created_at,
+            UserActivityLog.id,
+            UserActivityLog.user_id == user_id,
+            UserActivityLog.activity_type.in_(["diagram_edit", "one_sentence_edit"]),
+            UserActivityLog.created_at >= beijing_start,
+        )
+        export_by_date = await _counts_by_beijing_day(
+            db,
+            UserActivityLog.created_at,
+            UserActivityLog.id,
+            UserActivityLog.user_id == user_id,
+            UserActivityLog.activity_type == "diagram_export",
+            UserActivityLog.created_at >= beijing_start,
+        )
+        autocomplete_by_date = await _counts_by_beijing_day(
+            db,
+            TokenUsage.created_at,
+            TokenUsage.id,
+            TokenUsage.user_id == user_id,
+            TokenUsage.request_type == "autocomplete",
+            TokenUsage.success.is_(True),
+            TokenUsage.created_at >= beijing_start,
+        )
+        one_sentence_by_date = await _counts_by_beijing_day(
+            db,
+            UserActivityLog.created_at,
+            UserActivityLog.id,
+            UserActivityLog.user_id == user_id,
+            UserActivityLog.activity_type == "one_sentence_generate",
+            UserActivityLog.created_at >= beijing_start,
+        )
 
         for d in date_list:
             date_str = str(d)

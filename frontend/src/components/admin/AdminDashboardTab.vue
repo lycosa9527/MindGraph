@@ -22,7 +22,11 @@ import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { buildAdminTrendChartLabels } from '@/composables/admin/useAdminTrendChart'
+import {
+  ADMIN_TREND_CARD_POINTS,
+  buildAdminTrendChartLabels,
+  sumRecentTrendPoints,
+} from '@/composables/admin/useAdminTrendChart'
 import {
   queryErrorMessage,
   useQueryErrorNotification,
@@ -413,23 +417,26 @@ async function showTrendChart(
       const cardsResData = cardsData as { data?: Array<{ value: number }> }
       const arr = cardsResData?.data ?? []
       if (metric === 'registrations') {
-        const sum = (n: number) =>
-          arr.slice(-n).reduce((a: number, b: { value: number }) => a + (b.value ?? 0), 0)
+        const showCount = (value: number): string => value.toLocaleString()
+        const reportedTotal = (cardsData as { total?: number }).total
+        const windowSum = arr.reduce((sum, point) => sum + (point.value ?? 0), 0)
         periodCards.value = {
-          today: String(sum(1) || 0),
-          week: String(sum(7) || 0),
-          month: String(sum(30) || 0),
-          total: String(arr.reduce((a: number, b: { value: number }) => a + (b.value ?? 0), 0)),
+          today: showCount(sumRecentTrendPoints(arr, ADMIN_TREND_CARD_POINTS.today)),
+          week: showCount(sumRecentTrendPoints(arr, ADMIN_TREND_CARD_POINTS.week)),
+          month: showCount(sumRecentTrendPoints(arr, ADMIN_TREND_CARD_POINTS.month)),
+          total: showCount(reportedTotal ?? windowSum),
         }
       } else {
-        const valAt = (idx: number) =>
+        const valAt = (idx: number): number | string =>
           arr.length > idx ? (arr[arr.length - 1 - idx]?.value ?? '-') : '-'
-        const final = arr.length ? (arr[arr.length - 1]?.value ?? '-') : '-'
+        const final: number | string = arr.length ? (arr[arr.length - 1]?.value ?? '-') : '-'
+        const showCount = (value: number | string): string =>
+          typeof value === 'number' ? value.toLocaleString() : value
         periodCards.value = {
-          today: String(final),
-          week: String(valAt(7)),
-          month: String(valAt(30)),
-          total: String(final),
+          today: showCount(final),
+          week: showCount(valAt(7)),
+          month: showCount(valAt(30)),
+          total: showCount(final),
         }
       }
     }

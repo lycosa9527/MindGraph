@@ -83,6 +83,32 @@ def test_public_site_origin_uses_forwarded_headers() -> None:
         assert public_site_origin_from_request(request) == "https://edge.example.com"
 
 
+def test_public_site_origin_rewrites_legacy_forwarded_host() -> None:
+    """WorkBuddy and add-in downloads must not embed the legacy mg host."""
+    request = _request(
+        headers=[
+            (b"x-forwarded-proto", b"https"),
+            (b"x-forwarded-host", b"mg.mindspringedu.com"),
+        ]
+    )
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("EXTERNAL_BASE_URL", None)
+        assert public_site_origin_from_request(request) == "https://www.mindspringedu.com"
+
+
+def test_public_site_origin_keeps_test_host() -> None:
+    """The test server is a different origin and stays unchanged."""
+    request = _request(
+        headers=[
+            (b"x-forwarded-proto", b"https"),
+            (b"x-forwarded-host", b"test.mindspringedu.com"),
+        ]
+    )
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("EXTERNAL_BASE_URL", None)
+        assert public_site_origin_from_request(request) == "https://test.mindspringedu.com"
+
+
 def test_public_site_origin_falls_back_to_host_header() -> None:
     """Test public site origin falls back to host header."""
     request = _request(headers=[(b"host", b"localhost:9527")])

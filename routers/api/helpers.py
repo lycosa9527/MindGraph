@@ -28,29 +28,11 @@ from utils.public_hosts import rewrite_legacy_public_origin
 from utils.public_https_url import (
     is_loopback_host,
     normalize_external_base_url,
+    strip_leading_http_schemes,
     upgrade_public_http_url,
 )
 
 _logger = logging.getLogger(__name__)
-
-
-def strip_leading_http_schemes(value: str) -> str:
-    """
-    Remove leading http:// and https:// prefixes, repeatedly.
-
-    Some reverse proxies send a full URL in X-Forwarded-Host; the Host part must
-    not include a scheme, since we build scheme separately from X-Forwarded-Proto.
-    """
-    result = (value or "").strip()
-    while True:
-        lower = result.lower()
-        if lower.startswith("https://"):
-            result = result[8:]
-        elif lower.startswith("http://"):
-            result = result[7:]
-        else:
-            break
-    return result
 
 
 def _signed_path_for_public_url(signed_path: str) -> str:

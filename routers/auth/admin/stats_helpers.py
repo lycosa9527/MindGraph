@@ -26,12 +26,18 @@ from utils.auth.mindbot_token_stats import (
     merge_mindbot_tokens_into_top_user_rows,
     merge_org_token_stats,
 )
+from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.token_stats_queries import token_usage_service_filter
 
 
 def sql_count_column(column: Any) -> ColumnElement:
     """Sql count column."""
     return sql_count(column)
+
+
+def platform_user_clause() -> ColumnElement:
+    """Users counted by the admin total and the user list. Classroom students are separate."""
+    return User.role != ROLE_STUDENT
 
 
 def mask_user_phone(phone: Optional[str]) -> str:

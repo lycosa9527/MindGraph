@@ -28,6 +28,8 @@ The ClawHub and git copies are **not ready to go**. `account.json` is placeholde
 
 If you did not download from 账户信息, put the three keys in `account.json` (or `skills.entries.mindgraph.env`). Never commit a real token. Regenerating the token in 账户信息 invalidates old skill folders and the Chrome extension.
 
+A download from production writes `https://www.mindspringedu.com`. A download from the test server writes `https://test.mindspringedu.com`. The git placeholder below stays on the test server so an unconfigured copy does not call production.
+
 ```json
 {
   "MINDGRAPH_BASE_URL": "https://test.mindspringedu.com",

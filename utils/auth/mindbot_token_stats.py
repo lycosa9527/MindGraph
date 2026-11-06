@@ -11,10 +11,10 @@ Proprietary License
 
 from __future__ import annotations
 
-from datetime import datetime, tzinfo
+from datetime import datetime
 from typing import Any, Dict, MutableMapping, Optional, TypedDict
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.functions import coalesce as sa_coalesce
@@ -25,7 +25,7 @@ from models.domain.auth import Organization, User
 from models.domain.mindbot_usage import MindbotUsageEvent
 from services.mindbot.errors import MindbotErrorCode
 from utils.auth.token_stats_queries import (
-    utc_date_to_beijing_key,
+    beijing_calendar_day,
     utc_hour_bucket,
     utc_naive_hour_to_beijing_key,
 )
@@ -328,12 +328,13 @@ async def merge_mindbot_tokens_into_top_user_rows(
 def merge_mindbot_daily_rows_into_tokens_by_date(
     tokens_by_date: MutableMapping[str, Dict[str, int]],
     mindbot_rows: list[Any],
-    *,
-    beijing_timezone: tzinfo,
 ) -> None:
-    """Add MindBot daily rows into a trends ``tokens_by_date`` map (UTC date → Beijing key)."""
+    """Add MindBot daily rows into a trends map. ``row.date`` is already a Beijing day."""
     for row in mindbot_rows:
-        beijing_date_str = utc_date_to_beijing_key(row.date, beijing_timezone)
+        day = row.date
+        if isinstance(day, datetime):
+            day = day.date()
+        beijing_date_str = str(day)[:10]
         if beijing_date_str not in tokens_by_date:
             tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
         tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
@@ -348,10 +349,11 @@ async def aggregate_mindbot_tokens_by_date(
     organization_id: Optional[int] = None,
     linked_user_id: Optional[int] = None,
 ) -> list[Any]:
-    """Daily MindBot token sums keyed by UTC date (same shape as token trends query)."""
+    """Daily MindBot token sums keyed by Beijing calendar date."""
+    usage_day = beijing_calendar_day(MindbotUsageEvent.created_at)
     stmt = (
         select(
-            func.date(MindbotUsageEvent.created_at).label("date"),
+            usage_day.label("date"),
             sa_sum(_effective_total_expr()).label("total_tokens"),
             sa_sum(_effective_input_expr()).label("input_tokens"),
             sa_sum(_effective_output_expr()).label("output_tokens"),
@@ -362,7 +364,7 @@ async def aggregate_mindbot_tokens_by_date(
                 organization_id=organization_id,
             )
         )
-        .group_by(func.date(MindbotUsageEvent.created_at))
+        .group_by(usage_day)
     )
     if linked_user_id is not None:
         stmt = stmt.where(MindbotUsageEvent.linked_user_id == linked_user_id)

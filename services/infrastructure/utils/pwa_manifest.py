@@ -11,13 +11,20 @@ import os
 
 from fastapi import Request
 
-from routers.api.helpers import normalize_external_base_url, strip_leading_http_schemes
 from utils.auth.request_helpers import is_https
-from utils.public_https_url import upgrade_public_http_url
+from utils.public_hosts import rewrite_legacy_public_origin
+from utils.public_https_url import (
+    normalize_external_base_url,
+    strip_leading_http_schemes,
+    upgrade_public_http_url,
+)
 
 
 def public_site_origin_from_request(request: Request) -> str:
-    """Resolve the public origin for the manifest. Public hosts are https."""
+    """Resolve the public origin for the manifest, skill zip, and add-in.
+
+    Public hosts are https. A legacy ``mg`` host is rewritten to ``www``.
+    """
     external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
     if external_base:
         return external_base
@@ -27,12 +34,14 @@ def public_site_origin_from_request(request: Request) -> str:
     if forwarded_proto and forwarded_host_raw:
         host_only = strip_leading_http_schemes(forwarded_host_raw).strip().rstrip("/")
         if host_only:
-            return upgrade_public_http_url(f"{forwarded_proto}://{host_only}")
+            built = upgrade_public_http_url(f"{forwarded_proto}://{host_only}")
+            return rewrite_legacy_public_origin(built)
 
     scheme = "https" if is_https(request) else request.url.scheme
     raw_host = strip_leading_http_schemes(request.headers.get("Host") or request.url.netloc or "localhost")
     host = raw_host.split(",")[0].strip().rstrip("/")
-    return upgrade_public_http_url(f"{scheme}://{host}".rstrip("/"))
+    built = upgrade_public_http_url(f"{scheme}://{host}".rstrip("/"))
+    return rewrite_legacy_public_origin(built)
 
 
 def build_pwa_manifest(origin: str) -> dict:

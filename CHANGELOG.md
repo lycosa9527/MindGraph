@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.210] - 2026-11-06
+
+> **Admin user totals share one count, and a visit on the old mg host still opens www.**
+
+### Fixed
+
+- **Admin user totals** — 总用户数, the user-trend 今日 and 全部, and the registration-trend 全部 count the same accounts: every user except classroom students. Chart days are Beijing calendar days, so a signup in the first hours of a window stays on that day. 过去一周 and 过去一月 cover today plus the 7 or 30 days before it, the same window as the token cards. Token charts and the teacher-activity chart use those Beijing days. The user list uses the same student filter.
+- **Public origin** — A page or proxy still on `mg.mindspringedu.com` builds links for `https://www.mindspringedu.com`. The test server stays `test.mindspringedu.com`. DingTalk preview links in assistant replies, the PWA manifest, the skill zip, and the add-in origin follow that rewrite. `https://` addresses are rewritten too, not only `http://`.
+
+### Changed
+
+- **浏览器扩展 0.4.29** — Production server is `www.mindspringedu.com`. A saved `mg` address loads as `www`.
+- **OpenClaw skill** — A production download writes `https://www.mindspringedu.com`. A test-server download writes the test host. The git placeholder stays on the test server.
+
+### Tests
+
+- [`tests/auth/test_admin_user_trend_population.py`](tests/auth/test_admin_user_trend_population.py), [`tests/test_pwa_manifest.py`](tests/test_pwa_manifest.py), [`tests/test_assistant_markdown.py`](tests/test_assistant_markdown.py)
+- [`frontend/tests/mindmateTempImageUrl.spec.ts`](frontend/tests/mindmateTempImageUrl.spec.ts)
+
 ## [5.180.209] - 2026-11-05
 
 > **The public site is www.mindspringedu.com, a submitted homework redraws its thumbnail, and the chunk-test lab is gone.**
