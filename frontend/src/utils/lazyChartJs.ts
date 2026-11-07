@@ -5,6 +5,26 @@ import type { ChartConfiguration, Chart as ChartType, TooltipItem } from 'chart.
 
 export type { ChartConfiguration, TooltipItem }
 
+/**
+ * Chart.js draws from an animation frame. If the canvas is gone, that frame
+ * calls save() on a null context. Dashboard charts draw once.
+ */
+export const DASHBOARD_CHART_ANIMATION = false
+
+interface ReleasableChart {
+  readonly canvas: HTMLCanvasElement | null
+  stop: () => void
+  destroy: () => void
+}
+
+export function releaseChartInstance(chart: ReleasableChart | null | undefined): void {
+  if (!chart?.canvas) {
+    return
+  }
+  chart.stop()
+  chart.destroy()
+}
+
 let chartReady: Promise<typeof ChartType> | null = null
 
 export function loadChartJs(): Promise<typeof ChartType> {

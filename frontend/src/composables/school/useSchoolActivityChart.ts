@@ -5,7 +5,7 @@ import { type Ref, onBeforeUnmount, ref, watch } from 'vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
-import { loadChartJs } from '@/utils/lazyChartJs'
+import { DASHBOARD_CHART_ANIMATION, loadChartJs, releaseChartInstance } from '@/utils/lazyChartJs'
 
 export type SchoolActivityChartKind = 'line' | 'bar'
 
@@ -25,7 +25,7 @@ export function useSchoolActivityChart(
   async function render(): Promise<void> {
     renderToken += 1
     const token = renderToken
-    instance.value?.destroy()
+    releaseChartInstance(instance.value)
     instance.value = null
     const canvas = canvasRef.value
     const chartSpec = spec.value
@@ -33,7 +33,7 @@ export function useSchoolActivityChart(
       return
     }
     const Chart = await loadChartJs()
-    if (token !== renderToken || canvasRef.value !== canvas) {
+    if (token !== renderToken || canvasRef.value !== canvas || !canvas.isConnected) {
       return
     }
     instance.value = new Chart(canvas, {
@@ -53,6 +53,7 @@ export function useSchoolActivityChart(
         ],
       },
       options: {
+        animation: DASHBOARD_CHART_ANIMATION,
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -83,7 +84,7 @@ export function useSchoolActivityChart(
   )
 
   onBeforeUnmount(() => {
-    instance.value?.destroy()
+    releaseChartInstance(instance.value)
     instance.value = null
   })
 }

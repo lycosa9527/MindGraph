@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.211] - 2026-11-07
+
+> **An admin chart stays up when you switch periods, and a diagram preview on this server does not wait on the public site.**
+
+### Fixed
+
+- **Admin charts** — Switching 今日, 过去一周, 过去一月, or 全部, or leaving `/admin`, no longer throws `Cannot read properties of null (reading 'save')`. The chart is destroyed before the canvas leaves, and it draws once.
+- **Image proxy** — `/api/proxy-image` reads a temp PNG on this host from disk. A missing file returns 404. An image on another MindGraph host is still fetched over HTTPS.
+
+### Tests
+
+- [`tests/test_image_proxy.py`](tests/test_image_proxy.py)
+- [`frontend/tests/releaseChartInstance.spec.ts`](frontend/tests/releaseChartInstance.spec.ts)
+
 ## [5.180.210] - 2026-11-06
 
 > **Admin user totals share one count, and a visit on the old mg host still opens www.**

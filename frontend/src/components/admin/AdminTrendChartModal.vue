@@ -54,6 +54,7 @@ import {
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
+import { releaseChartInstance } from '@/utils/lazyChartJs'
 
 import AdminOrgActivityTab from './AdminOrgActivityTab.vue'
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
@@ -345,20 +346,21 @@ function parseExpiresAtToDate(iso: string | null | undefined): string | null {
 
 function close() {
   abortChartRequests()
+  releaseChartInstance(chartInstance)
+  chartInstance = null
   clearMindbotSessionIfNeeded()
   emit('update:visible', false)
 }
 
 function handleClose() {
   abortChartRequests()
-  chartInstance?.destroy()
+  releaseChartInstance(chartInstance)
   chartInstance = null
 }
 
 async function loadOrgChart(signal: AbortSignal) {
   if (props.orgName == null) return
-  const daysMap = ADMIN_TREND_DAYS_MAP
-  const days = daysMap[period.value]
+  const days = ADMIN_TREND_DAYS_MAP[period.value]
   const hourly = period.value === 'today'
   return fetchAdminStatsTrendsOrganization(
     {
@@ -374,8 +376,7 @@ async function loadOrgChart(signal: AbortSignal) {
 
 async function loadUserChart(signal: AbortSignal) {
   if (props.userId == null) return
-  const daysMap = ADMIN_TREND_DAYS_MAP
-  const days = daysMap[period.value]
+  const days = ADMIN_TREND_DAYS_MAP[period.value]
   return fetchAdminStatsTrendsUser(
     {
       user_id: props.userId,
@@ -460,6 +461,8 @@ async function load() {
   if (props.type === 'org' && !props.orgName) return
   if (props.type === 'user' && props.userId == null) return
   if (props.type === 'user' && userDialogTab.value !== 'usage') return
+  releaseChartInstance(chartInstance)
+  chartInstance = null
   chartLoading.value = true
   periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
   const signal = beginChartRequest()
@@ -468,20 +471,24 @@ async function load() {
       chartTitle.value = `${t('admin.trendOrgTokens')}: ${props.orgName ?? ''}`
       const data = await loadOrgChart(signal)
       const resolvedOrgId = props.orgId ?? data?.organization_id
+      const trendPoints = data?.data ?? []
+      chartHasData.value = trendPoints.length > 0
       chartLoading.value = false
       await nextTick()
       await new Promise((r) => setTimeout(r, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
-      if (data) await renderChart({ data: data.data ?? [] })
+      if (trendPoints.length > 0) await renderChart({ data: trendPoints })
       if (resolvedOrgId != null) {
         await loadOrgTokenCards(signal, resolvedOrgId)
       }
     } else {
       chartTitle.value = t('admin.trendUserTokens')
       const data = await loadUserChart(signal)
+      const trendPoints = data?.data ?? []
+      chartHasData.value = trendPoints.length > 0
       chartLoading.value = false
       await nextTick()
       await new Promise((r) => setTimeout(r, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
-      if (data) await renderChart({ data: data.data ?? [] })
+      if (trendPoints.length > 0) await renderChart({ data: trendPoints })
       await loadUserTokenCards(signal)
     }
   } catch (err) {
@@ -740,7 +747,7 @@ watch(
       }
     } else {
       abortChartRequests()
-      chartInstance?.destroy()
+      releaseChartInstance(chartInstance)
       chartInstance = null
       pendingManagerIds.value = []
     }
@@ -816,7 +823,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  chartInstance?.destroy()
+  releaseChartInstance(chartInstance)
   chartInstance = null
 })
 </script>

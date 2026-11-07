@@ -4,7 +4,13 @@
 import type { Chart as ChartInstance } from 'chart.js'
 
 import { formatInBeijing, parseBeijingWall } from '@/utils/beijingClock'
-import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
+import {
+  type ChartConfiguration,
+  DASHBOARD_CHART_ANIMATION,
+  type TooltipItem,
+  loadChartJs,
+  releaseChartInstance,
+} from '@/utils/lazyChartJs'
 
 export const ADMIN_TREND_DAYS_MAP = {
   today: 1,
@@ -98,14 +104,7 @@ export function formatAdminTrendNumber(num: number): string {
   return num.toLocaleString()
 }
 
-export function formatAdminTrendChartLabel(value: number): string {
-  return formatAdminTrendNumber(value)
-}
-
-export function buildAdminTrendChartLabels(
-  rawData: AdminTrendChartPoint[],
-  intlLocale: string
-): string[] {
+function buildAdminTrendChartLabels(rawData: AdminTrendChartPoint[], intlLocale: string): string[] {
   return rawData.map((item) => {
     const date = parseBeijingWall(item.date)
     if (!date) return item.date
@@ -145,12 +144,13 @@ export async function renderAdminTrendLineChart(options: {
     colorScheme = 'light',
   } = options
   const palette = ADMIN_TREND_CHART_PALETTES[colorScheme]
+  releaseChartInstance(existingInstance)
+  if (!canvas.isConnected) {
+    return { instance: null, hasData: rawData.length > 0 }
+  }
   if (rawData.length === 0) {
-    existingInstance?.destroy()
     return { instance: null, hasData: false }
   }
-
-  existingInstance?.destroy()
 
   const labels = buildAdminTrendChartLabels(rawData, intlLocale)
   const values = rawData.map((item) => item.value)
@@ -218,6 +218,7 @@ export async function renderAdminTrendLineChart(options: {
     type: 'line',
     data: { labels, datasets },
     options: {
+      animation: DASHBOARD_CHART_ANIMATION,
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -241,7 +242,7 @@ export async function renderAdminTrendLineChart(options: {
           padding: 10,
           callbacks: {
             label: (ctx: TooltipItem<'line'>) =>
-              `${ctx.dataset.label}: ${formatAdminTrendChartLabel(Number(ctx.raw))}`,
+              `${ctx.dataset.label}: ${formatAdminTrendNumber(Number(ctx.raw))}`,
           },
         },
       },
@@ -253,7 +254,7 @@ export async function renderAdminTrendLineChart(options: {
           ticks: {
             color: palette.tick,
             font: { size: 11 },
-            callback: (val: string | number) => formatAdminTrendChartLabel(Number(val)),
+            callback: (val: string | number) => formatAdminTrendNumber(Number(val)),
           },
           grid: {
             color: palette.grid,
@@ -281,6 +282,9 @@ export async function renderAdminTrendLineChart(options: {
   }
 
   const Chart = await loadChartJs()
+  if (!canvas.isConnected) {
+    return { instance: null, hasData: rawData.length > 0 }
+  }
   return { instance: new Chart(canvas, config), hasData: true }
 }
 

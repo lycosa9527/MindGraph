@@ -24,7 +24,10 @@ import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import {
   ADMIN_TREND_CARD_POINTS,
-  buildAdminTrendChartLabels,
+  ADMIN_TREND_CHART_MOUNT_DELAY_MS,
+  ADMIN_TREND_DAYS_MAP,
+  type AdminTrendChartPoint,
+  renderAdminTrendLineChart,
   sumRecentTrendPoints,
 } from '@/composables/admin/useAdminTrendChart'
 import {
@@ -40,7 +43,7 @@ import {
 } from '@/composables/queries'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores/ui'
-import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
+import { releaseChartInstance } from '@/utils/lazyChartJs'
 
 const props = withDefaults(
   defineProps<{
@@ -229,12 +232,6 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
-function formatChartLabel(value: number): string {
-  if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M'
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
-  return String(value)
-}
-
 function parseTopUsers(raw: unknown): TopUserRow[] {
   const rows = raw as
     | {
@@ -376,10 +373,11 @@ async function showTrendChart(
           ? t('admin.trendRegistrations')
           : t('admin.trendTokens')
   trendModalVisible.value = true
+  releaseChartInstance(trendChartInstance)
+  trendChartInstance = null
   trendChartLoading.value = true
 
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
-  const days = daysMap[period]
+  const days = ADMIN_TREND_DAYS_MAP[period]
   const signal = beginTrendRequest()
   try {
     const [chartData, cardsData] = await Promise.all([
@@ -391,15 +389,14 @@ async function showTrendChart(
         ? fetchAdminTokenStats(undefined, signal)
         : fetchAdminStatsTrends({ metric, days: 0 }, signal),
     ])
+    const trendPoints = (chartData as { data?: AdminTrendChartPoint[] }).data ?? []
+    trendChartHasData.value = trendPoints.length > 0
     trendChartLoading.value = false
     await nextTick()
-    await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(
-      chartData as {
-        data: Array<{ date: string; value: number; input?: number; output?: number }>
-      },
-      metric
-    )
+    await new Promise((r) => setTimeout(r, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
+    if (trendPoints.length > 0) {
+      await renderTrendChart(trendPoints)
+    }
     if (metric === 'tokens') {
       const tokenData = cardsData as unknown as PlatformTokenStats
       const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
@@ -484,9 +481,10 @@ async function showServiceTokenTrendChart(
     trendChartTitle.value = t('admin.trendTokens')
   }
   trendModalVisible.value = true
+  releaseChartInstance(trendChartInstance)
+  trendChartInstance = null
   trendChartLoading.value = true
 
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const signal = beginTrendRequest()
 
   try {
@@ -494,7 +492,7 @@ async function showServiceTokenTrendChart(
       fetchAdminStatsTrends(
         {
           metric: 'tokens',
-          days: daysMap[period],
+          days: ADMIN_TREND_DAYS_MAP[period],
           service,
         },
         signal
@@ -502,13 +500,14 @@ async function showServiceTokenTrendChart(
       fetchAdminTokenStats(undefined, signal),
     ])
     platformTokenStats.value = tokenStatsData as unknown as PlatformTokenStats
+    const trendPoints = (data as { data?: AdminTrendChartPoint[] }).data ?? []
+    trendChartHasData.value = trendPoints.length > 0
     trendChartLoading.value = false
     await nextTick()
-    await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(
-      data as { data: Array<{ date: string; value: number; input?: number; output?: number }> },
-      'tokens'
-    )
+    await new Promise((r) => setTimeout(r, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
+    if (trendPoints.length > 0) {
+      await renderTrendChart(trendPoints)
+    }
 
     const fmt = (p: { input_tokens?: number; output_tokens?: number }) =>
       `${formatNumber(p?.input_tokens ?? 0)}+${formatNumber(p?.output_tokens ?? 0)}`
@@ -562,124 +561,27 @@ function showUserTokenTrend(
   userTrendModalVisible.value = true
 }
 
-async function renderTrendChart(
-  data: { data: Array<{ date: string; value: number; input?: number; output?: number }> },
-  metric: MetricKey | 'tokens'
-): Promise<void> {
-  if (!trendChartRef.value) return
-
-  const rawData = data?.data ?? []
-  trendChartHasData.value = rawData.length > 0
-  if (rawData.length === 0) {
-    trendChartInstance?.destroy()
-    trendChartInstance = null
-    return
-  }
-
-  trendChartInstance?.destroy()
-  trendChartInstance = null
-
-  const intlLocale = intlLocaleForUiCode(uiStore.language)
-  const labels = buildAdminTrendChartLabels(rawData, intlLocale)
-
-  const values = rawData.map((item) => item.value)
-  const maxVal = Math.max(...values, 0)
-  const minVal = Math.min(...values, 0)
-  const range = maxVal - minVal
-  const padding = range === 0 ? maxVal * 0.1 : range * 0.1
-  const yMin = Math.max(0, minVal - padding)
-  const yMax = maxVal + padding
-
-  const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
-    {
-      label: trendChartTitle.value,
-      data: values,
-      borderColor: '#667eea',
-      backgroundColor: 'rgba(102, 126, 234, 0.1)',
-      borderWidth: 2,
-      fill: true,
-      tension: 0.4,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-    },
-  ]
-
-  const hasInputOutput =
-    metric === 'tokens' &&
-    rawData[0] &&
-    (rawData[0].input !== undefined || rawData[0].output !== undefined)
-
-  if (hasInputOutput) {
-    datasets.push({
-      label: t('admin.inputTokens'),
-      data: rawData.map((item) => item.input ?? 0),
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    })
-    datasets.push({
-      label: t('admin.outputTokens'),
-      data: rawData.map((item) => item.output ?? 0),
-      borderColor: '#f59e0b',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    })
-  }
-
-  const config: ChartConfiguration<'line'> = {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: hasInputOutput,
-          position: 'top',
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'line'>) =>
-              `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          min: yMin,
-          max: yMax,
-          ticks: {
-            callback: (val: string | number) => formatChartLabel(Number(val)),
-          },
-        },
-        x: {
-          ticks: {
-            maxRotation: 45,
-            minRotation: 45,
-          },
-        },
-      },
-    },
-  }
-
-  const Chart = await loadChartJs()
-  trendChartInstance = new Chart(trendChartRef.value, config)
+async function renderTrendChart(rawData: AdminTrendChartPoint[]): Promise<void> {
+  const canvas = trendChartRef.value
+  if (!canvas) return
+  const result = await renderAdminTrendLineChart({
+    canvas,
+    title: trendChartTitle.value,
+    rawData,
+    intlLocale: intlLocaleForUiCode(uiStore.language),
+    inputLabel: t('admin.inputTokens'),
+    outputLabel: t('admin.outputTokens'),
+    existingInstance: trendChartInstance,
+  })
+  trendChartInstance = result.instance
+  trendChartHasData.value = result.hasData
 }
 
 function closeTrendModal() {
   abortTrendRequests()
-  trendModalVisible.value = false
-  trendChartInstance?.destroy()
+  releaseChartInstance(trendChartInstance)
   trendChartInstance = null
+  trendModalVisible.value = false
 }
 
 onMounted(() => {
@@ -692,7 +594,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
   }
 })
 onBeforeUnmount(() => {
-  trendChartInstance?.destroy()
+  releaseChartInstance(trendChartInstance)
   trendChartInstance = null
 })
 </script>

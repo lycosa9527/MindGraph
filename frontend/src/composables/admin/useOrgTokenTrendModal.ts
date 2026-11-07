@@ -23,6 +23,7 @@ import {
 } from '@/composables/queries'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores/ui'
+import { releaseChartInstance } from '@/utils/lazyChartJs'
 
 export type TokenTrendPeriod = 'today' | 'week' | 'month' | 'total'
 export type TokenTrendService = 'mindgraph' | 'mindmate' | null
@@ -186,6 +187,8 @@ export function useOrgTokenTrendModal() {
     useSchoolEndpoint.value = options.useSchoolStatsEndpoint === true
     trendChartTitle.value = trendTitle(options.orgName, service)
     trendModalVisible.value = true
+    releaseChartInstance(trendChartInstance)
+    trendChartInstance = null
     trendChartLoading.value = true
 
     const signal = beginTrendRequest()
@@ -208,10 +211,14 @@ export function useOrgTokenTrendModal() {
         statsOrgId != null
           ? fetchTokenStats(statsOrgId, useSchoolEndpoint.value, signal)
           : Promise.resolve(null)
+      const trendPoints = chartData.data ?? []
+      trendChartHasData.value = trendPoints.length > 0
       trendChartLoading.value = false
       await nextTick()
       await new Promise((resolve) => setTimeout(resolve, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
-      await renderTrendChart({ data: chartData.data ?? [] })
+      if (trendPoints.length > 0) {
+        await renderTrendChart({ data: trendPoints })
+      }
       if (tokenDataPromise) {
         const tokenData = await tokenDataPromise
         if (tokenData) {
@@ -239,13 +246,13 @@ export function useOrgTokenTrendModal() {
 
   function closeTrendModal(): void {
     abortTrendRequests()
-    trendModalVisible.value = false
-    trendChartInstance?.destroy()
+    releaseChartInstance(trendChartInstance)
     trendChartInstance = null
+    trendModalVisible.value = false
   }
 
   onBeforeUnmount(() => {
-    trendChartInstance?.destroy()
+    releaseChartInstance(trendChartInstance)
     trendChartInstance = null
   })
 
