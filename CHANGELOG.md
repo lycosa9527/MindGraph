@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.212] - 2026-11-08
+
+> **Bing and Google can crawl the public homepage, sign-in page, and privacy policy.**
+
+### Changed
+
+- **Search indexing** — `https://www.mindspringedu.com/`, `/auth`, and `/privacy` are the only crawlable pages, each as an exact path. The homepage is listed in `/sitemap.xml` and its HTML is indexable, with a canonical URL. Signed-in app routes stay disallowed. Googlebot uses the same rules. `GOOGLE_SITE_VERIFICATION` prints the Search Console HTML tag on those three pages.
+
+### Tests
+
+- [`tests/test_search_indexing.py`](tests/test_search_indexing.py)
+
 ## [5.180.211] - 2026-11-07
 
 > **An admin chart stays up when you switch periods, and a diagram preview on this server does not wait on the public site.**

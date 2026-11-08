@@ -1,8 +1,8 @@
 """Public search-engine hints: robots.txt, sitemap, and HTML stamps.
 
-Only the sign-in page and the static privacy policy are indexable. Logged-in
-app routes stay disallowed. The sitemap host follows the public origin so each
-deployment advertises itself.
+The homepage, the sign-in page, and the static privacy policy are indexable.
+Logged-in app routes stay disallowed. The sitemap host follows the public
+origin so each deployment advertises itself.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -11,6 +11,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import os
 import re
 from html import escape
 from xml.sax.saxutils import escape as xml_escape
@@ -21,9 +22,11 @@ SEARCH_DESCRIPTION = (
     "MindGraph（迈特教研）是面向教学的 AI 图示与思维导图平台。"
 )
 
-# Paths a signed-out visitor can read. ``/`` is an empty router placeholder.
-PUBLIC_INDEX_PATHS = ("/auth", "/privacy")
+# Paths a signed-out visitor can read. ``/`` is the public homepage.
+PUBLIC_INDEX_PATHS = ("/", "/auth", "/privacy")
 
+# Google Search Console HTML-tag content. Public by design; never a secret.
+_GOOGLE_SITE_VERIFICATION_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 _HEAD_CLOSE_RE = re.compile(r"</head>", re.IGNORECASE)
 _BODY_CLOSE_RE = re.compile(r"</body>", re.IGNORECASE)
 _LEGACY_TITLE_RE = re.compile(r"<title>\s*Mind Platform\s*</title>", re.IGNORECASE)
@@ -39,11 +42,13 @@ def build_robots_txt(origin: str) -> str:
     """Return robots.txt that allows the public pages and points at the sitemap."""
     base = origin.rstrip("/")
     lines = [
-        "# Public sign-in and privacy pages only. The signed-in app stays disallowed.",
+        "# Exact public URLs only. The signed-in app stays disallowed.",
+        "# A trailing $ is the end of the path (Google and Bing).",
         "User-agent: *",
-        "Allow: /auth",
-        "Allow: /privacy",
-        "Allow: /sitemap.xml",
+        "Allow: /$",
+        "Allow: /auth$",
+        "Allow: /privacy$",
+        "Allow: /sitemap.xml$",
         "Disallow: /privacy/",
         "Disallow: /privacy-policy.html",
         "Disallow: /",
@@ -52,6 +57,19 @@ def build_robots_txt(origin: str) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def is_indexable_shell_path(url_path: str) -> bool:
+    """True only for the homepage and the sign-in page, not nearby paths."""
+    return url_path in {"/", "/auth"}
+
+
+def canonical_href(origin: str, url_path: str) -> str:
+    """Absolute canonical URL for an indexable shell path on *origin*."""
+    base = origin.rstrip("/")
+    if url_path == "/":
+        return f"{base}/"
+    return f"{base}{url_path.rstrip('/')}"
 
 
 def build_sitemap_xml(origin: str) -> str:
@@ -64,6 +82,21 @@ def build_sitemap_xml(origin: str) -> str:
         f"{urls}\n"
         "</urlset>\n"
     )
+
+
+def _robots_rule_specificity(url_path: str, rule: str) -> int:
+    """Return how specific *rule* is for *url_path*, or -1 when it does not match.
+
+    A trailing ``$`` anchors the rule to the end of the path. The length includes
+    that anchor, so ``Allow: /$`` (the homepage) beats ``Disallow: /``.
+    """
+    if rule.endswith("$"):
+        if url_path != rule[:-1]:
+            return -1
+        return len(rule)
+    if url_path.startswith(rule):
+        return len(rule)
+    return -1
 
 
 def robots_allows(robots_txt: str, url_path: str) -> bool:
@@ -79,9 +112,9 @@ def robots_allows(robots_txt: str, url_path: str) -> bool:
         rule = value.strip()
         if directive not in {"allow", "disallow"} or not rule:
             continue
-        if not url_path.startswith(rule):
+        rule_len = _robots_rule_specificity(url_path, rule)
+        if rule_len < 0:
             continue
-        rule_len = len(rule)
         if rule_len > best_len:
             best_len = rule_len
             best_allow = directive == "allow"
@@ -103,6 +136,30 @@ def stamp_brand_metadata(html: str) -> str:
         if match is not None:
             html = html[: match.start()] + _NOSCRIPT_BRAND + html[match.start() :]
     return html
+
+
+def google_site_verification_token(raw: str | None = None) -> str:
+    """Return a Search Console HTML-tag token, or empty when unset or invalid."""
+    if raw is None:
+        raw = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
+    token = raw.strip()
+    if _GOOGLE_SITE_VERIFICATION_RE.fullmatch(token):
+        return token
+    return ""
+
+
+def stamp_google_site_verification(html: str, token: str) -> str:
+    """Insert the Search Console verification meta tag when *token* is set."""
+    if not token or 'name="google-site-verification"' in html:
+        return html
+    snippet = f'<meta name="google-site-verification" content="{escape(token, quote=True)}" />\n  '
+    return _insert_before_head_close(html, snippet)
+
+
+def stamp_indexable_document(html: str, canonical: str, verification_token: str = "") -> str:
+    """Add the canonical URL and, when set, the Search Console verification tag."""
+    html = stamp_canonical_link(html, canonical)
+    return stamp_google_site_verification(html, verification_token)
 
 
 def stamp_canonical_link(html: str, href: str) -> str:

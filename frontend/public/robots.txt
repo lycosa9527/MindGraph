@@ -1,10 +1,12 @@
-# Public sign-in and privacy pages only. The signed-in app stays disallowed.
+# Exact public URLs only. The signed-in app stays disallowed.
+# A trailing $ is the end of the path (Google and Bing).
 # Production serves a host-specific copy of this file that also names the sitemap.
 
 User-agent: *
-Allow: /auth
-Allow: /privacy
-Allow: /sitemap.xml
+Allow: /$
+Allow: /auth$
+Allow: /privacy$
+Allow: /sitemap.xml$
 Disallow: /privacy/
 Disallow: /privacy-policy.html
 Disallow: /

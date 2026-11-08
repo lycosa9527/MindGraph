@@ -22,8 +22,11 @@ from services.infrastructure.utils.pwa_manifest import (
 from services.infrastructure.utils.search_indexing import (
     build_robots_txt,
     build_sitemap_xml,
+    canonical_href,
+    google_site_verification_token,
+    is_indexable_shell_path,
     stamp_brand_metadata,
-    stamp_canonical_link,
+    stamp_indexable_document,
     stamp_noindex,
 )
 from services.infrastructure.utils.spa_handler import (
@@ -123,7 +126,11 @@ async def privacy_policy_static(request: Request):
         raise HTTPException(status_code=503, detail="Privacy policy page not generated")
     origin = public_site_origin_from_request(request)
     canonical = f"{origin.rstrip('/')}/privacy"
-    html = stamp_canonical_link(policy_path.read_text(encoding="utf-8"), canonical)
+    html = stamp_indexable_document(
+        policy_path.read_text(encoding="utf-8"),
+        canonical,
+        google_site_verification_token(),
+    )
     response = HTMLResponse(content=html)
     apply_no_cache_headers(response)
     return response
@@ -327,8 +334,12 @@ async def _serve_index(request: Request) -> HTMLResponse:
         )
     )
     origin = public_site_origin_from_request(request)
-    if request.url.path.rstrip("/") == "/auth":
-        html = stamp_canonical_link(html, f"{origin.rstrip('/')}/auth")
+    if is_indexable_shell_path(request.url.path):
+        html = stamp_indexable_document(
+            html,
+            canonical_href(origin, request.url.path),
+            google_site_verification_token(),
+        )
     else:
         html = stamp_noindex(html)
 
