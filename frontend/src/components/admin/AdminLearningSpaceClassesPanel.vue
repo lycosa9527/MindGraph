@@ -605,7 +605,7 @@ async function onAddAssistant(): Promise<void> {
     return
   }
   try {
-    const res = await previewAdminAccountImport(actionClass.value.id, phones)
+    const res = await previewAdminAccountImport(actionClass.value.id, { phones })
     let added = 0
     for (const row of res.items) {
       if (row.user_id == null) {

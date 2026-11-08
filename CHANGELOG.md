@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.214] - 2026-11-08
+
+> **Keep Learning Space assistant lookup working after the account-import API shape change.**
+
+### Fixed
+
+- **Learning Space admin** — adding an assistant by phone again passes `{ phones }` into `previewAdminAccountImport` (vue-tsc / DEP0205 CI).
+
 ## [5.180.213] - 2026-11-08
 
 > **Import class learners by picking people from an organization, and make dual-role Learning Space entry clearer.**
