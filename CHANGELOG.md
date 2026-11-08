@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.213] - 2026-11-08
+
+> **Import class learners by picking people from an organization, and make dual-role Learning Space entry clearer.**
+
+### Added
+
+- **Learning Space admin** — when importing existing accounts into a class, admins can search an organization and checkbox-select members (phone paste remains available).
+- **Learning Space shell** — first-time tip when an account has both teacher and learner access, pointing at the “I’m a teacher / I’m a student” switch.
+
+### Changed
+
+- **Learning Space header** — role switch uses a capsule control; labels are “我是老师” / “我是学生”.
+
+### Tests
+
+- Account import by `user_ids` and org candidate listing coverage in Learning Space tests.
+
 ## [5.180.212] - 2026-11-08
 
 > **Bing and Google can crawl the public homepage, sign-in page, and privacy policy.**

@@ -217,6 +217,18 @@ export interface AccountImportPreviewRow {
   role: string | null
 }
 
+export interface AccountImportCandidate {
+  id: number
+  name: string
+  phone: string | null
+  email: string | null
+  role: string
+  organization_id: number
+  organization_name: string
+  ok: boolean
+  error: string | null
+}
+
 function postJson<T>(path: string, body?: unknown): Promise<T> {
   return apiRequestJson<T>(path, {
     method: 'POST',
@@ -490,16 +502,36 @@ export async function runAdminImport(
   return postJson(`${BASE}/admin/classes/${classId}/import`, { names })
 }
 
+export async function listAdminAccountImportCandidates(
+  classId: number,
+  params: { organization_id: number; q?: string; limit?: number }
+): Promise<{ items: AccountImportCandidate[] }> {
+  const search = new URLSearchParams()
+  search.set('org_id', String(params.organization_id))
+  if (params.q?.trim()) {
+    search.set('q', params.q.trim())
+  }
+  if (params.limit != null && Number.isFinite(params.limit)) {
+    search.set('limit', String(params.limit))
+  }
+  return apiRequestJson(
+    `${BASE}/admin/classes/${classId}/import/accounts/candidates?${search.toString()}`
+  )
+}
+
 export async function previewAdminAccountImport(
   classId: number,
-  phones: string[]
+  body: { phones?: string[]; user_ids?: number[] }
 ): Promise<{ items: AccountImportPreviewRow[] }> {
-  return postJson(`${BASE}/admin/classes/${classId}/import/accounts/preview`, { phones })
+  return postJson(`${BASE}/admin/classes/${classId}/import/accounts/preview`, {
+    phones: body.phones ?? [],
+    user_ids: body.user_ids ?? [],
+  })
 }
 
 export async function runAdminAccountImport(
   classId: number,
-  phones: string[]
+  body: { phones?: string[]; user_ids?: number[] }
 ): Promise<{
   created: Array<{
     user_id: number
@@ -507,9 +539,12 @@ export async function runAdminAccountImport(
     name?: string | null
     organization_name?: string | null
   }>
-  failed: Array<{ phone: string; error: string }>
+  failed: Array<{ phone: string; user_id?: number | null; error: string }>
 }> {
-  return postJson(`${BASE}/admin/classes/${classId}/import/accounts`, { phones })
+  return postJson(`${BASE}/admin/classes/${classId}/import/accounts`, {
+    phones: body.phones ?? [],
+    user_ids: body.user_ids ?? [],
+  })
 }
 
 export async function listAdminStudents(classId: number): Promise<{ items: LearningStudentRow[] }> {

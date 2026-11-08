@@ -2,7 +2,7 @@
 /**
  * Learning Space top tabs (works beside the main app sidebar).
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
@@ -17,9 +17,10 @@ import {
 
 import { useLanguage } from '@/composables'
 import type { StudentTab, TeacherTab } from '@/composables/learningSpace/lsHelpers'
+import { useAuthStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 
-defineProps<{
+const props = defineProps<{
   mode: 'teacher' | 'student'
   teacherTab: TeacherTab
   studentTab: StudentTab
@@ -33,9 +34,14 @@ const emit = defineEmits<{
   'update:mode': ['teacher' | 'student']
 }>()
 
+const SHELL_ROLE_TIP_KEY = 'mg.ls.shell-role-tip.v1'
+
 const { t } = useLanguage()
 const route = useRoute()
+const authStore = useAuthStore()
 const uiStore = useUIStore()
+
+const showRoleTip = ref(false)
 
 const showSidebarExpand = computed(() => uiStore.sidebarCollapsed && !route.path.startsWith('/m/'))
 
@@ -50,6 +56,59 @@ const studentTabs: { id: StudentTab; icon: typeof Home; labelKey: string }[] = [
   { id: 'assignments', icon: BookOpen, labelKey: 'learningSpace.tabClassAssignments' },
   { id: 'works', icon: Waypoints, labelKey: 'learningSpace.tabMyPortfolio' },
 ]
+
+function shellRoleTipStorageKey(): string {
+  const userId = authStore.user?.id?.trim()
+  return userId ? `${SHELL_ROLE_TIP_KEY}:${userId}` : SHELL_ROLE_TIP_KEY
+}
+
+function hasSeenShellRoleTip(): boolean {
+  try {
+    return localStorage.getItem(shellRoleTipStorageKey()) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markShellRoleTipSeen(): void {
+  try {
+    localStorage.setItem(shellRoleTipStorageKey(), '1')
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function dismissShellRoleTip(): void {
+  if (!showRoleTip.value) return
+  showRoleTip.value = false
+  markShellRoleTipSeen()
+}
+
+function maybeShowShellRoleTip(): void {
+  if (!props.showShellSwitch || hasSeenShellRoleTip()) {
+    showRoleTip.value = false
+    return
+  }
+  showRoleTip.value = true
+}
+
+function onShellModeClick(mode: 'teacher' | 'student'): void {
+  dismissShellRoleTip()
+  emit('update:mode', mode)
+}
+
+watch(
+  () => props.showShellSwitch,
+  async (visible) => {
+    if (!visible) {
+      showRoleTip.value = false
+      return
+    }
+    await nextTick()
+    maybeShowShellRoleTip()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -70,24 +129,51 @@ const studentTabs: { id: StudentTab; icon: typeof Home; labelKey: string }[] = [
       </div>
       <div
         v-if="showShellSwitch"
-        class="ls-app__shell-switch"
+        class="ls-app__shell-switch-wrap"
       >
-        <button
-          type="button"
-          class="ls-app__tab"
-          :class="{ 'ls-app__tab--active': mode === 'teacher' }"
-          @click="emit('update:mode', 'teacher')"
+        <div
+          class="ls-app__shell-switch"
+          :class="{ 'ls-app__shell-switch--hint': showRoleTip }"
+          role="tablist"
+          :aria-label="t('learningSpace.shellRoleSwitchAria')"
         >
-          <I18nText k="learningSpace.modeReview" />
-        </button>
-        <button
-          type="button"
-          class="ls-app__tab"
-          :class="{ 'ls-app__tab--active': mode === 'student' }"
-          @click="emit('update:mode', 'student')"
+          <button
+            type="button"
+            role="tab"
+            class="ls-app__tab"
+            :class="{ 'ls-app__tab--active': mode === 'teacher' }"
+            :aria-selected="mode === 'teacher'"
+            @click="onShellModeClick('teacher')"
+          >
+            <I18nText k="learningSpace.modeReview" />
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="ls-app__tab"
+            :class="{ 'ls-app__tab--active': mode === 'student' }"
+            :aria-selected="mode === 'student'"
+            @click="onShellModeClick('student')"
+          >
+            <I18nText k="learningSpace.modeLearn" />
+          </button>
+        </div>
+        <div
+          v-if="showRoleTip"
+          class="ls-app__shell-tip"
+          role="status"
         >
-          <I18nText k="learningSpace.modeLearn" />
-        </button>
+          <p class="ls-app__shell-tip-text">
+            <I18nText k="learningSpace.shellRoleTip" />
+          </p>
+          <button
+            type="button"
+            class="ls-app__shell-tip-btn"
+            @click="dismissShellRoleTip"
+          >
+            <I18nText k="learningSpace.shellRoleTipGotIt" />
+          </button>
+        </div>
       </div>
 
       <nav

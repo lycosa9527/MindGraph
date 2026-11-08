@@ -82,6 +82,7 @@ from services.learning_space.memberships import (
     list_admin_students_global,
     preview_existing_accounts,
     replace_class_assistants,
+    search_account_import_candidates,
 )
 from services.learning_space.assignments import (
     apply_learner_due,
@@ -479,6 +480,30 @@ async def admin_import_students(
     return {"created": result.created, "failed": result.failed}
 
 
+@router.get("/admin/classes/{class_id}/import-accounts/candidates")
+@router.get("/admin/classes/{class_id}/import/accounts/candidates")
+async def admin_import_account_candidates(
+    class_id: int,
+    org_id: int = Query(..., description="Organization to list users from"),
+    q: str = Query("", max_length=100),
+    limit: int = Query(50, ge=1, le=200),
+    _scope: AdminScope = Depends(_require_ls_view),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+):
+    """List organization users for checkbox learner import."""
+    cls = await db.get(LearningClass, class_id)
+    if cls is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+    items = await search_account_import_candidates(
+        db,
+        cls,
+        organization_id=org_id,
+        query=q,
+        limit=limit,
+    )
+    return {"items": items}
+
+
 @router.post("/admin/classes/{class_id}/import-accounts/preview")
 @router.post("/admin/classes/{class_id}/import/accounts/preview")
 async def admin_import_accounts_preview(
@@ -487,11 +512,11 @@ async def admin_import_accounts_preview(
     _scope: AdminScope = Depends(_require_ls_view),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
-    """Preview existing-account import by phone (role is not changed)."""
+    """Preview existing-account import by phone and/or user id (role is not changed)."""
     cls = await db.get(LearningClass, class_id)
     if cls is None:
         raise HTTPException(status_code=404, detail="Class not found")
-    rows = await preview_existing_accounts(db, cls, body.phones)
+    rows = await preview_existing_accounts(db, cls, body.phones, user_ids=body.user_ids)
     return {
         "items": [
             {
@@ -523,7 +548,7 @@ async def admin_import_accounts(
         raise HTTPException(status_code=404, detail="Class not found")
     if cls.status != CLASS_STATUS_ACTIVE:
         raise HTTPException(status_code=400, detail="Class is archived")
-    return await import_existing_accounts(db, cls, body.phones)
+    return await import_existing_accounts(db, cls, body.phones, user_ids=body.user_ids)
 
 
 @router.get("/admin/classes/{class_id}/students")

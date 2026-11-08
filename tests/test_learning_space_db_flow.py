@@ -51,6 +51,7 @@ from services.learning_space.memberships import (
     MEMBERSHIP_ROLE_ASSISTANT,
     import_existing_accounts,
     replace_class_assistants,
+    search_account_import_candidates,
 )
 from services.learning_space.passwords import assign_learning_space_login_password
 from services.learning_space.students import import_students, reset_student_password
@@ -605,6 +606,51 @@ async def _test_submission_unique_race(world: SimpleNamespace) -> None:
             )
         ).all()
         assert len(count) == 1
+
+
+async def test_import_accounts_by_user_ids_and_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Org picker import enrolls by user id and lists eligible candidates."""
+    async with _learning_space_world(monkeypatch) as world:
+        await _test_import_accounts_by_user_ids_and_candidates(world)
+
+
+async def _test_import_accounts_by_user_ids_and_candidates(world: SimpleNamespace) -> None:
+    async with rls_async_session(_sys()) as session:
+        teacher = await session.get(User, world.teacher_id)
+        assistant = await session.get(User, world.assistant_id)
+        assert teacher is not None and assistant is not None
+        cls = await create_class_with_unique_code(
+            session,
+            name=f"{_MARK} org import",
+            teacher_user_id=int(teacher.id),
+            organization_id=world.org_a,
+            class_status=CLASS_STATUS_ACTIVE,
+            max_students=10,
+        )
+        await session.commit()
+        candidates = await search_account_import_candidates(
+            session,
+            cls,
+            organization_id=world.org_a,
+            query="",
+            limit=50,
+        )
+        by_id = {int(row["id"]): row for row in candidates}
+        assert world.assistant_id in by_id
+        assert by_id[world.assistant_id]["ok"] is True
+        assert by_id[world.teacher_id]["ok"] is False
+        assert by_id[world.teacher_id]["error"] == "is_class_teacher"
+        enrolled = await import_existing_accounts(session, cls, user_ids=[world.assistant_id])
+        assert len(enrolled["created"]) == 1
+        assert enrolled["created"][0]["user_id"] == world.assistant_id
+        again = await search_account_import_candidates(
+            session,
+            cls,
+            organization_id=world.org_a,
+            query="",
+            limit=50,
+        )
+        assert next(row for row in again if int(row["id"]) == world.assistant_id)["error"] == ("already_member")
 
 
 async def test_imported_account_cannot_be_class_teacher(monkeypatch: pytest.MonkeyPatch) -> None:

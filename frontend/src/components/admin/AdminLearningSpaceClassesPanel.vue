@@ -8,9 +8,18 @@ import { useRoute } from 'vue-router'
 import AdminLearningSpaceModal from '@/components/admin/AdminLearningSpaceModal.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import {
+  getCurrentUserOrganizationId,
+  resolveDefaultOrganizationId,
+} from '@/composables/admin/useCurrentUserOrganizationId'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
+import {
+  type AdminOrganizationOption,
+  fetchAdminOrganizations,
+} from '@/composables/queries/adminApi'
 import { normalizeSchoolTier } from '@/constants/schoolTier'
 import {
+  type AccountImportCandidate,
   type AccountImportPreviewRow,
   type ImportPreviewRow,
   type LearningClassAssistant,
@@ -19,6 +28,7 @@ import {
   type LearningStudentRow,
   adminResetPassword,
   createAdminClass,
+  listAdminAccountImportCandidates,
   listAdminClasses,
   listAdminPilots,
   listAdminStudents,
@@ -64,10 +74,39 @@ const editAssistants = ref<LearningClassAssistant[]>([])
 const assistantPhone = ref('')
 const importNamesText = ref('')
 const importPreview = ref<ImportPreviewRow[]>([])
+const accountImportMode = ref<'org' | 'phone'>('org')
 const accountPhonesText = ref('')
 const accountPreview = ref<AccountImportPreviewRow[]>([])
+const accountOrganizations = ref<AdminOrganizationOption[]>([])
+const accountOrgId = ref<number | ''>('')
+const accountMemberQuery = ref('')
+const accountCandidates = ref<AccountImportCandidate[]>([])
+const accountSelectedIds = ref<number[]>([])
+const accountCandidatesLoading = ref(false)
 const lastPasswords = ref('')
 const detailLoading = ref(false)
+
+const accountSelectableCandidates = computed(() => accountCandidates.value.filter((row) => row.ok))
+
+const accountSelectedSet = computed(() => new Set(accountSelectedIds.value))
+
+const accountAllSelectableChecked = computed(() => {
+  const ids = accountSelectableCandidates.value.map((row) => row.id)
+  return ids.length > 0 && ids.every((id) => accountSelectedSet.value.has(id))
+})
+
+const accountMyOrgName = computed(() => {
+  const myOrgId = getCurrentUserOrganizationId()
+  if (myOrgId == null) return ''
+  return accountOrganizations.value.find((org) => org.id === myOrgId)?.name || ''
+})
+
+const accountOrgPlaceholder = computed(() => {
+  if (accountMyOrgName.value) {
+    return accountMyOrgName.value
+  }
+  return t('admin.learningSpace.searchOrganization')
+})
 
 const enabledPilots = computed(() => pilots.value.filter((p) => p.enabled))
 
@@ -167,6 +206,30 @@ async function onCreateClass(): Promise<void> {
   }
 }
 
+function resetAccountImportState(): void {
+  accountImportMode.value = 'org'
+  accountPhonesText.value = ''
+  accountPreview.value = []
+  accountOrgId.value = ''
+  accountMemberQuery.value = ''
+  accountCandidates.value = []
+  accountSelectedIds.value = []
+  accountCandidatesLoading.value = false
+}
+
+function resolveAccountImportOrgId(row: LearningClassRow): number | '' {
+  const orgs = accountOrganizations.value
+  const myOrgId = getCurrentUserOrganizationId()
+  if (myOrgId != null && orgs.some((org) => org.id === myOrgId)) {
+    return myOrgId
+  }
+  const classOrgId = row.organization_id
+  if (classOrgId != null && orgs.some((org) => org.id === classOrgId)) {
+    return classOrgId
+  }
+  return resolveDefaultOrganizationId(orgs) ?? ''
+}
+
 function closeModals(): void {
   showImportModal.value = false
   showAccountImportModal.value = false
@@ -175,8 +238,7 @@ function closeModals(): void {
   actionClass.value = null
   importNamesText.value = ''
   importPreview.value = []
-  accountPhonesText.value = ''
-  accountPreview.value = []
+  resetAccountImportState()
   lastPasswords.value = ''
   students.value = []
   editAssistants.value = []
@@ -194,14 +256,97 @@ function openImport(row: LearningClassRow): void {
   showImportModal.value = true
 }
 
-function openAccountImport(row: LearningClassRow): void {
+async function openAccountImport(row: LearningClassRow): Promise<void> {
   actionClass.value = row
-  accountPhonesText.value = ''
-  accountPreview.value = []
+  resetAccountImportState()
   showDetailModal.value = false
   showEditModal.value = false
   showImportModal.value = false
   showAccountImportModal.value = true
+  if (accountOrganizations.value.length === 0) {
+    try {
+      accountOrganizations.value = await fetchAdminOrganizations()
+    } catch {
+      accountOrganizations.value = []
+    }
+  }
+  accountOrgId.value = resolveAccountImportOrgId(row)
+  if (accountOrgId.value !== '') {
+    await loadAccountCandidates({ quiet: true })
+  }
+}
+
+async function loadAccountCandidates(opts?: { quiet?: boolean }): Promise<void> {
+  if (actionClass.value == null) return
+  const orgId = Number(accountOrgId.value)
+  if (!Number.isFinite(orgId) || orgId <= 0) {
+    accountCandidates.value = []
+    accountSelectedIds.value = []
+    if (!opts?.quiet) {
+      notify.warningKey('admin.learningSpace.selectOrganization')
+    }
+    return
+  }
+  accountCandidatesLoading.value = true
+  try {
+    const res = await listAdminAccountImportCandidates(actionClass.value.id, {
+      organization_id: orgId,
+      q: accountMemberQuery.value.trim(),
+      limit: 200,
+    })
+    accountCandidates.value = Array.isArray(res.items) ? res.items : []
+    const selectable = new Set(accountCandidates.value.filter((row) => row.ok).map((row) => row.id))
+    accountSelectedIds.value = accountSelectedIds.value.filter((id) => selectable.has(id))
+    if (accountCandidates.value.length === 0 && !opts?.quiet) {
+      notify.infoKey('admin.learningSpace.searchEmpty')
+    }
+  } catch {
+    accountCandidates.value = []
+    accountSelectedIds.value = []
+    notify.errorKey('admin.learningSpace.accountCandidatesFailed')
+  } finally {
+    accountCandidatesLoading.value = false
+  }
+}
+
+function toggleAccountCandidate(id: number, checked: boolean): void {
+  if (checked) {
+    if (!accountSelectedIds.value.includes(id)) {
+      accountSelectedIds.value = [...accountSelectedIds.value, id]
+    }
+    return
+  }
+  accountSelectedIds.value = accountSelectedIds.value.filter((value) => value !== id)
+}
+
+function toggleAllAccountCandidates(checked: boolean): void {
+  if (!checked) {
+    accountSelectedIds.value = []
+    return
+  }
+  accountSelectedIds.value = accountSelectableCandidates.value.map((row) => row.id)
+}
+
+async function onAccountOrgChange(value?: number | '' | null): Promise<void> {
+  accountOrgId.value = value == null || value === '' ? '' : Number(value)
+  accountSelectedIds.value = []
+  accountPreview.value = []
+  accountMemberQuery.value = ''
+  if (accountOrgId.value === '') {
+    accountCandidates.value = []
+    return
+  }
+  await loadAccountCandidates({ quiet: true })
+}
+
+async function onAccountOrgCleared(): Promise<void> {
+  const myOrgId = getCurrentUserOrganizationId()
+  if (myOrgId != null && accountOrganizations.value.some((org) => org.id === myOrgId)) {
+    accountOrgId.value = myOrgId
+    await onAccountOrgChange(myOrgId)
+    return
+  }
+  await onAccountOrgChange('')
 }
 
 async function openDetail(row: LearningClassRow): Promise<void> {
@@ -368,15 +513,28 @@ async function onRunImport(): Promise<void> {
   }
 }
 
-async function onPreviewAccountImport(): Promise<void> {
-  if (actionClass.value == null) return
+function accountImportPayload(): { phones?: string[]; user_ids?: number[] } | null {
+  if (accountImportMode.value === 'org') {
+    if (accountSelectedIds.value.length === 0) {
+      notify.warningKey('admin.learningSpace.selectAccountsToImport')
+      return null
+    }
+    return { user_ids: [...accountSelectedIds.value] }
+  }
   const phones = parseNames(accountPhonesText.value)
   if (phones.length === 0) {
     notify.warningKey('admin.learningSpace.enterPhones')
-    return
+    return null
   }
+  return { phones }
+}
+
+async function onPreviewAccountImport(): Promise<void> {
+  if (actionClass.value == null) return
+  const body = accountImportPayload()
+  if (body == null) return
   try {
-    const res = await previewAdminAccountImport(actionClass.value.id, phones)
+    const res = await previewAdminAccountImport(actionClass.value.id, body)
     accountPreview.value = res.items
   } catch {
     notify.errorKey('admin.learningSpace.saveFailed')
@@ -385,19 +543,15 @@ async function onPreviewAccountImport(): Promise<void> {
 
 async function onRunAccountImport(): Promise<void> {
   if (actionClass.value == null) return
-  const phones = parseNames(accountPhonesText.value)
-  if (phones.length === 0) {
-    notify.warningKey('admin.learningSpace.enterPhones')
-    return
-  }
+  const body = accountImportPayload()
+  if (body == null) return
   try {
-    const res = await runAdminAccountImport(actionClass.value.id, phones)
+    const res = await runAdminAccountImport(actionClass.value.id, body)
     notify.successKey('admin.learningSpace.importDone', {
       ok: res.created.length,
       fail: res.failed.length,
     })
-    accountPhonesText.value = ''
-    accountPreview.value = []
+    resetAccountImportState()
     showAccountImportModal.value = false
     actionClass.value = null
     await loadAll()
@@ -405,6 +559,13 @@ async function onRunAccountImport(): Promise<void> {
     notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
+
+const accountImportActionsEnabled = computed(() => {
+  if (accountImportMode.value === 'org') {
+    return accountSelectedIds.value.length > 0
+  }
+  return Boolean(accountPhonesText.value.trim())
+})
 
 function accountImportError(code: string | null): string {
   if (!code) return '—'
@@ -845,13 +1006,186 @@ defineExpose({ reload: loadAll })
         v-if="actionClass"
         class="ls-form-grid"
       >
+        <div
+          class="ls-seg"
+          role="tablist"
+        >
+          <button
+            type="button"
+            class="ls-seg__btn"
+            :class="{ 'ls-seg__btn--on': accountImportMode === 'org' }"
+            role="tab"
+            :aria-selected="accountImportMode === 'org'"
+            @click="accountImportMode = 'org'"
+          >
+            <I18nText k="admin.learningSpace.importByOrganization" />
+          </button>
+          <button
+            type="button"
+            class="ls-seg__btn"
+            :class="{ 'ls-seg__btn--on': accountImportMode === 'phone' }"
+            role="tab"
+            :aria-selected="accountImportMode === 'phone'"
+            @click="accountImportMode = 'phone'"
+          >
+            <I18nText k="admin.learningSpace.importByPhone" />
+          </button>
+        </div>
+
+        <template v-if="accountImportMode === 'org'">
+          <div class="ls-account-import">
+            <div class="ls-account-import__org">
+              <label class="ls-field">
+                <I18nText k="admin.learningSpace.organization" />
+                <el-select
+                  v-model="accountOrgId"
+                  filterable
+                  clearable
+                  class="ls-el-select"
+                  :placeholder="accountOrgPlaceholder"
+                  :disabled="!canEdit || actionClass.status === 'archived'"
+                  @change="onAccountOrgChange"
+                  @clear="onAccountOrgCleared"
+                >
+                  <el-option
+                    v-for="org in accountOrganizations"
+                    :key="org.id"
+                    :label="org.name"
+                    :value="org.id"
+                  />
+                </el-select>
+              </label>
+              <p
+                v-if="accountSelectedIds.length"
+                class="ls-account-import__selected"
+              >
+                <I18nText
+                  k="admin.learningSpace.selectedAccountsCount"
+                  :params="{ count: accountSelectedIds.length }"
+                />
+              </p>
+            </div>
+
+            <div class="ls-account-import__members">
+              <div class="ls-toolbar">
+                <input
+                  v-model="accountMemberQuery"
+                  type="text"
+                  class="ls-control ls-control--wide"
+                  :placeholder="t('admin.learningSpace.accountSearchPlaceholder')"
+                  :disabled="!canEdit || actionClass.status === 'archived' || accountOrgId === ''"
+                  @keydown.enter.prevent="loadAccountCandidates()"
+                />
+                <button
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  :disabled="
+                    accountCandidatesLoading ||
+                    accountOrgId === '' ||
+                    !canEdit ||
+                    actionClass.status === 'archived'
+                  "
+                  @click="loadAccountCandidates()"
+                >
+                  <I18nText
+                    v-if="accountCandidatesLoading"
+                    k="common.loading"
+                  /><I18nText
+                    v-else
+                    k="admin.learningSpace.searchTeachers"
+                  />
+                </button>
+              </div>
+              <div
+                v-if="accountCandidatesLoading"
+                class="ls-empty"
+              >
+                <p><I18nText k="common.loading" /></p>
+              </div>
+              <div
+                v-else-if="accountOrgId === ''"
+                class="ls-empty"
+              >
+                <p><I18nText k="admin.learningSpace.selectOrganization" /></p>
+              </div>
+              <div
+                v-else-if="accountCandidates.length === 0"
+                class="ls-empty"
+              >
+                <p><I18nText k="admin.learningSpace.noOrgMembers" /></p>
+              </div>
+              <div
+                v-else
+                class="ls-table-wrap"
+              >
+                <table class="ls-table ls-table--compact">
+                  <thead>
+                    <tr>
+                      <th>
+                        <input
+                          type="checkbox"
+                          :checked="accountAllSelectableChecked"
+                          :disabled="
+                            !canEdit ||
+                            actionClass.status === 'archived' ||
+                            accountSelectableCandidates.length === 0
+                          "
+                          @change="
+                            toggleAllAccountCandidates(($event.target as HTMLInputElement).checked)
+                          "
+                        />
+                      </th>
+                      <th><I18nText k="auth.name" /></th>
+                      <th><I18nText k="admin.learningSpace.phone" /></th>
+                      <th><I18nText k="admin.learningSpace.accountRole" /></th>
+                      <th><I18nText k="admin.learningSpace.status" /></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="row in accountCandidates"
+                      :key="row.id"
+                    >
+                      <td>
+                        <input
+                          type="checkbox"
+                          :checked="accountSelectedSet.has(row.id)"
+                          :disabled="!row.ok || !canEdit || actionClass.status === 'archived'"
+                          @change="
+                            toggleAccountCandidate(
+                              row.id,
+                              ($event.target as HTMLInputElement).checked
+                            )
+                          "
+                        />
+                      </td>
+                      <td>{{ row.name || row.phone || '—' }}</td>
+                      <td>{{ row.phone || '—' }}</td>
+                      <td>{{ userRoleLabel(t, row.role) }}</td>
+                      <td>
+                        {{
+                          row.ok
+                            ? t('admin.learningSpace.importCandidateOk')
+                            : accountImportError(row.error)
+                        }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </template>
+
         <textarea
+          v-else
           v-model="accountPhonesText"
           class="ls-control"
           rows="6"
           :placeholder="t('admin.learningSpace.importAccountsPlaceholder')"
           :disabled="!canEdit || actionClass.status === 'archived'"
         />
+
         <div
           v-if="canEdit && actionClass.status !== 'archived'"
           class="ls-toolbar"
@@ -859,7 +1193,7 @@ defineExpose({ reload: loadAll })
           <button
             type="button"
             class="ls-btn ls-btn--ghost ls-btn--sm"
-            :disabled="!accountPhonesText.trim()"
+            :disabled="!accountImportActionsEnabled"
             @click="onPreviewAccountImport"
           >
             <I18nText k="admin.learningSpace.preview" />
@@ -867,7 +1201,7 @@ defineExpose({ reload: loadAll })
           <button
             type="button"
             class="ls-btn ls-btn--primary"
-            :disabled="!accountPhonesText.trim()"
+            :disabled="!accountImportActionsEnabled"
             @click="onRunAccountImport"
           >
             <I18nText k="admin.learningSpace.import" />
@@ -890,7 +1224,7 @@ defineExpose({ reload: loadAll })
               v-for="(row, idx) in accountPreview"
               :key="idx"
             >
-              <td>{{ row.phone }}</td>
+              <td>{{ row.phone || '—' }}</td>
               <td>{{ row.name || '—' }}</td>
               <td>{{ row.organization_name || '—' }}</td>
               <td>{{ row.ok ? 'OK' : accountImportError(row.error) }}</td>

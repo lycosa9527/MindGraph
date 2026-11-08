@@ -27,7 +27,7 @@ from models.domain.learning_space import (
 from services.learning_space.admin_teachers import organization_display_map, user_display_map
 from services.learning_space.clock import utc_isoformat
 from services.learning_space.passwords import staff_visible_learning_space_password
-from utils.auth.role_constants import ROLE_STUDENT
+from utils.auth.role_constants import ROLE_STUDENT, db_roles_for_canonical_filter
 from utils.auth.roles import is_student
 from utils.db.session_open import system_rls_session
 
@@ -231,74 +231,6 @@ async def _org_name_for_user(user: User) -> str:
     return names.get(int(user.organization_id), "")
 
 
-async def preview_existing_accounts(
-    db: AsyncSession, learning_class: LearningClass, phones: list[str]
-) -> list[AccountImportPreviewRow]:
-    """Validate phones for learner import (no writes)."""
-    rows: list[AccountImportPreviewRow] = []
-    current_count = await _roster_headcount(db, learning_class.id)
-    ok_count = 0
-    seen_users: set[int] = set()
-    for phone in phones:
-        user = await find_user_by_phone(db, phone)
-        if user is None:
-            rows.append(AccountImportPreviewRow(phone=phone, ok=False, error="not_found"))
-            continue
-        if int(user.id) in seen_users:
-            rows.append(
-                AccountImportPreviewRow(
-                    phone=phone,
-                    ok=False,
-                    error="already_member",
-                    user_id=int(user.id),
-                    name=user.name,
-                    organization_name=await _org_name_for_user(user),
-                    role=user.role,
-                )
-            )
-            continue
-        error = await _import_block_reason(db, learning_class, user)
-        if error:
-            rows.append(
-                AccountImportPreviewRow(
-                    phone=phone,
-                    ok=False,
-                    error=error,
-                    user_id=int(user.id),
-                    name=user.name,
-                    organization_name=await _org_name_for_user(user),
-                    role=user.role,
-                )
-            )
-            continue
-        if current_count + ok_count >= int(learning_class.max_students):
-            rows.append(
-                AccountImportPreviewRow(
-                    phone=phone,
-                    ok=False,
-                    error="class_full",
-                    user_id=int(user.id),
-                    name=user.name,
-                    organization_name=await _org_name_for_user(user),
-                    role=user.role,
-                )
-            )
-            continue
-        ok_count += 1
-        seen_users.add(int(user.id))
-        rows.append(
-            AccountImportPreviewRow(
-                phone=phone,
-                ok=True,
-                user_id=int(user.id),
-                name=user.name,
-                organization_name=await _org_name_for_user(user),
-                role=user.role,
-            )
-        )
-    return rows
-
-
 async def _roster_headcount(db: AsyncSession, class_id: int) -> int:
     classroom = await count_classroom_students(db, class_id)
     learners = await count_class_learners(db, class_id)
@@ -318,14 +250,184 @@ async def _import_block_reason(db: AsyncSession, learning_class: LearningClass, 
     return None
 
 
-async def import_existing_accounts(db: AsyncSession, learning_class: LearningClass, phones: list[str]) -> dict:
+async def _preview_row_for_user(
+    db: AsyncSession,
+    learning_class: LearningClass,
+    user: User,
+    *,
+    phone: str,
+    current_count: int,
+    ok_count: int,
+    seen_users: set[int],
+) -> AccountImportPreviewRow:
+    """Build one preview row for a resolved user (shared by phone and id import)."""
+    org_name = await _org_name_for_user(user)
+    if int(user.id) in seen_users:
+        return AccountImportPreviewRow(
+            phone=phone,
+            ok=False,
+            error="already_member",
+            user_id=int(user.id),
+            name=user.name,
+            organization_name=org_name,
+            role=user.role,
+        )
+    error = await _import_block_reason(db, learning_class, user)
+    if error:
+        return AccountImportPreviewRow(
+            phone=phone,
+            ok=False,
+            error=error,
+            user_id=int(user.id),
+            name=user.name,
+            organization_name=org_name,
+            role=user.role,
+        )
+    if current_count + ok_count >= int(learning_class.max_students):
+        return AccountImportPreviewRow(
+            phone=phone,
+            ok=False,
+            error="class_full",
+            user_id=int(user.id),
+            name=user.name,
+            organization_name=org_name,
+            role=user.role,
+        )
+    return AccountImportPreviewRow(
+        phone=phone,
+        ok=True,
+        user_id=int(user.id),
+        name=user.name,
+        organization_name=org_name,
+        role=user.role,
+    )
+
+
+async def preview_existing_accounts(
+    db: AsyncSession,
+    learning_class: LearningClass,
+    phones: list[str] | None = None,
+    *,
+    user_ids: list[int] | None = None,
+) -> list[AccountImportPreviewRow]:
+    """Validate phones and/or user ids for learner import (no writes)."""
+    rows: list[AccountImportPreviewRow] = []
+    current_count = await _roster_headcount(db, learning_class.id)
+    ok_count = 0
+    seen_users: set[int] = set()
+
+    for phone in phones or []:
+        user = await find_user_by_phone(db, phone)
+        if user is None:
+            rows.append(AccountImportPreviewRow(phone=phone, ok=False, error="not_found"))
+            continue
+        row = await _preview_row_for_user(
+            db,
+            learning_class,
+            user,
+            phone=phone,
+            current_count=current_count,
+            ok_count=ok_count,
+            seen_users=seen_users,
+        )
+        rows.append(row)
+        if row.ok and row.user_id is not None:
+            ok_count += 1
+            seen_users.add(int(row.user_id))
+
+    pending_ids = [int(uid) for uid in (user_ids or []) if int(uid) > 0]
+    if pending_ids:
+        result = await db.execute(select(User).where(User.id.in_(pending_ids)))
+        by_id = {int(user.id): user for user in result.scalars().all()}
+        for uid in pending_ids:
+            user = by_id.get(uid)
+            if user is None:
+                rows.append(AccountImportPreviewRow(phone="", ok=False, error="not_found", user_id=uid))
+                continue
+            phone = (user.phone or "").strip()
+            row = await _preview_row_for_user(
+                db,
+                learning_class,
+                user,
+                phone=phone,
+                current_count=current_count,
+                ok_count=ok_count,
+                seen_users=seen_users,
+            )
+            rows.append(row)
+            if row.ok and row.user_id is not None:
+                ok_count += 1
+                seen_users.add(int(row.user_id))
+    return rows
+
+
+async def search_account_import_candidates(
+    db: AsyncSession,
+    learning_class: LearningClass,
+    *,
+    organization_id: int,
+    query: str = "",
+    limit: int = 50,
+) -> list[dict]:
+    """List org users for checkbox import (excludes Learning Space student accounts)."""
+    student_roles = tuple(db_roles_for_canonical_filter(ROLE_STUDENT))
+    conditions = [
+        User.organization_id == int(organization_id),
+        User.role.notin_(student_roles),
+    ]
+    q = (query or "").strip()
+    if q:
+        term = f"%{q}%"
+        conditions.append((User.name.like(term)) | (User.phone.like(term)) | (User.email.like(term)))
+
+    result = await db.execute(
+        select(User).where(*conditions).order_by(User.name.asc(), User.id.desc()).limit(max(1, min(int(limit), 200)))
+    )
+    users = list(result.scalars().all())
+    if not users:
+        return []
+
+    org_names = await organization_display_map({int(organization_id)})
+    org_name = org_names.get(int(organization_id), "")
+    items: list[dict] = []
+    for user in users:
+        error = await _import_block_reason(db, learning_class, user)
+        items.append(
+            {
+                "id": int(user.id),
+                "name": user.name or "",
+                "phone": user.phone,
+                "email": user.email,
+                "role": user.role,
+                "organization_id": int(organization_id),
+                "organization_name": org_name,
+                "ok": error is None,
+                "error": error,
+            }
+        )
+    return items
+
+
+async def import_existing_accounts(
+    db: AsyncSession,
+    learning_class: LearningClass,
+    phones: list[str] | None = None,
+    *,
+    user_ids: list[int] | None = None,
+) -> dict:
     """Enroll existing accounts as learners; never changes ``users.role``."""
-    preview = await preview_existing_accounts(db, learning_class, phones)
+    preview = await preview_existing_accounts(db, learning_class, phones, user_ids=user_ids)
     created: list[dict] = []
     failed: list[dict] = []
     for row in preview:
         if not row.ok or row.user_id is None:
-            failed.append({"phone": row.phone, "error": row.error or "invalid"})
+            failed.append(
+                {
+                    "phone": row.phone,
+                    "user_id": row.user_id,
+                    "error": row.error or "invalid",
+                }
+            )
             continue
         membership = LearningClassMembership(
             class_id=int(learning_class.id),

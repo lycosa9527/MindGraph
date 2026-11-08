@@ -11,7 +11,7 @@ import re
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 _CLASS_CODE_RE = re.compile(r"^[A-Za-z0-9]{4,16}$")
 
@@ -78,9 +78,19 @@ class StudentImportRequest(BaseModel):
 
 
 class AccountImportRequest(BaseModel):
-    """Import existing registered accounts into a class by phone."""
+    """Import existing registered accounts by phone and/or user id."""
 
-    phones: list[str] = Field(..., min_length=1, max_length=200)
+    phones: list[str] = Field(default_factory=list, max_length=200)
+    user_ids: list[int] = Field(default_factory=list, max_length=200)
+
+    @model_validator(mode="after")
+    def require_phones_or_user_ids(self) -> AccountImportRequest:
+        """At least one phone or user id is required."""
+        self.phones = [p.strip() for p in self.phones if (p or "").strip()]
+        self.user_ids = list(dict.fromkeys(int(uid) for uid in self.user_ids if int(uid) > 0))
+        if not self.phones and not self.user_ids:
+            raise ValueError("phones or user_ids required")
+        return self
 
 
 class AssignmentCreate(BaseModel):

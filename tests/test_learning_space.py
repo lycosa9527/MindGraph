@@ -33,7 +33,7 @@ from routers.features.learning_space.deps import (
     bind_superadmin_learning_space_rls,
     pin_superadmin_learning_space_rls,
 )
-from routers.features.learning_space.schemas import ClassUpdate
+from routers.features.learning_space.schemas import AccountImportRequest, ClassUpdate
 from services.diagram.semantic_spec_validation import validate_semantic_spec
 from services.learning_space.access import (
     assert_assignment_deletable,
@@ -664,6 +664,18 @@ def test_parse_account_phones_dedupes() -> None:
     assert normalize_account_phone(" 138-0013-8000 ") == "13800138000"
     phones = parse_account_phones("13800138000\n13800138000\n13900139000")
     assert phones == ["13800138000", "13900139000"]
+
+
+def test_account_import_request_accepts_user_ids() -> None:
+    """Org checkbox import may send user ids without phones."""
+    body = AccountImportRequest(user_ids=[3, 3, 7])
+    assert body.phones == []
+    assert body.user_ids == [3, 7]
+    phones_only = AccountImportRequest(phones=["13800138000"])
+    assert not phones_only.user_ids
+    assert phones_only.phones == ["13800138000"]
+    with pytest.raises(ValidationError):
+        AccountImportRequest()
 
 
 def _staff_class() -> SimpleNamespace:
