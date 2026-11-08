@@ -1163,11 +1163,10 @@ defineExpose({ reload: loadAll })
                       <td>{{ row.phone || '—' }}</td>
                       <td>{{ userRoleLabel(t, row.role) }}</td>
                       <td>
-                        {{
-                          row.ok
-                            ? t('admin.learningSpace.importCandidateOk')
-                            : accountImportError(row.error)
-                        }}
+                        <I18nText
+                          v-if="row.ok"
+                          k="admin.learningSpace.importCandidateOk"
+                        /><template v-else>{{ accountImportError(row.error) }}</template>
                       </td>
                     </tr>
                   </tbody>

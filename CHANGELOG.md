@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.215] - 2026-11-08
+
+> **Satisfy the bilingual template check on Learning Space org-import status cells.**
+
+### Fixed
+
+- **Learning Space admin** — org-import candidate status uses `<I18nText>` instead of `{{ t(...) }}` in a ternary.
+
 ## [5.180.214] - 2026-11-08
 
 > **Keep Learning Space assistant lookup working after the account-import API shape change.**
