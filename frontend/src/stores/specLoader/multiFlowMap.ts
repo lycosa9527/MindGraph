@@ -116,14 +116,12 @@ function computeFlowNodeWidth(node: DiagramNode, adornments: MindMapAdornmentsBy
  *
  * @param nodes - Current diagram nodes
  * @param topicNodeWidth - Optional actual width of topic node (for dynamic width adjustment)
- * @param _nodeWidths - Unused, kept for call-site compatibility
  * @param nodeDimensions - DOM-measured node dimensions (height used for vertical stacking)
  * @returns Recalculated nodes with updated positions
  */
 export function recalculateMultiFlowMapLayout(
   nodes: DiagramNode[],
   topicNodeWidth: number | null = null,
-  _nodeWidths: Record<string, number> = {},
   nodeDimensions: Record<string, { width: number; height: number }> = {},
   imageNodeIds: ReadonlySet<string> = new Set(),
   adornments: MindMapAdornmentsByPath = {}
@@ -153,9 +151,10 @@ export function recalculateMultiFlowMapLayout(
   const nodeWidth = DEFAULT_NODE_WIDTH
   const verticalGap = DEFAULT_VERTICAL_SPACING - 40 // 20px gap between nodes
 
+  const nodeById = new Map(nodes.map((node) => [node.id, node]))
   const getH = (id: string): number => {
     const pinia = nodeDimensions[id]?.height
-    const node = nodes.find((item) => item.id === id)
+    const node = nodeById.get(id)
     const textH = heightWithSecondaryLine(
       DEFAULT_NODE_HEIGHT,
       node ? learningSheetLayoutSecondary(node) : undefined,
@@ -320,7 +319,8 @@ export function recalculateMultiFlowMapLayout(
 }
 
 /**
- * Load multi-flow map spec into diagram nodes and connections
+ * Load multi-flow map spec into diagram nodes and connections, placed by
+ * {@link recalculateMultiFlowMapLayout} on text estimates.
  *
  * @param spec - Multi-flow map spec with event, causes, and effects
  * @returns SpecLoaderResult with nodes and connections
@@ -330,30 +330,18 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const causes = (spec.causes as string[]) || []
   const effects = (spec.effects as string[]) || []
 
-  // Layout constants from layoutConfig
-  const centerX = DEFAULT_CENTER_X
-  const centerY = DEFAULT_CENTER_Y
-  const sideSpacing = DEFAULT_SIDE_SPACING
-  const verticalSpacing = DEFAULT_VERTICAL_SPACING + 10 // 70px
-  const nodeWidth = DEFAULT_NODE_WIDTH
-  const nodeHeight = DEFAULT_NODE_HEIGHT
-  const topicWidth = estimateMultiFlowTopicWidth(event)
-
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Event node - use multi-flow map specific width
   const claimedIds = new Set<string>([MULTI_FLOW_EVENT_NODE_ID])
 
   nodes.push({
     id: MULTI_FLOW_EVENT_NODE_ID,
     text: event,
     type: 'topic',
-    position: { x: centerX - topicWidth / 2, y: centerY - nodeHeight / 2 },
+    position: { x: 0, y: 0 },
   })
 
-  // Causes
-  const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causes.forEach((cause, index) => {
     const color = thinkingMapStampedBranchColor(index)
     const causeId = takeMultiFlowMapStableId(claimedIds)
@@ -361,10 +349,7 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
       id: causeId,
       text: cause,
       type: 'flow',
-      position: {
-        x: centerX - sideSpacing - nodeWidth / 2,
-        y: causeStartY + index * verticalSpacing - nodeHeight / 2,
-      },
+      position: { x: 0, y: 0 },
       data: stampMultiFlowData('cause', index, { [MULTI_FLOW_UID_DATA_KEY]: causeId }),
       style: {
         backgroundColor: color.fill,
@@ -381,8 +366,6 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
     })
   })
 
-  // Effects
-  const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effects.forEach((effect, index) => {
     const color = thinkingMapStampedBranchColor(index)
     const effectId = takeMultiFlowMapStableId(claimedIds)
@@ -390,10 +373,7 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
       id: effectId,
       text: effect,
       type: 'flow',
-      position: {
-        x: centerX + sideSpacing - nodeWidth / 2,
-        y: effectStartY + index * verticalSpacing - nodeHeight / 2,
-      },
+      position: { x: 0, y: 0 },
       data: stampMultiFlowData('effect', index, { [MULTI_FLOW_UID_DATA_KEY]: effectId }),
       style: {
         backgroundColor: color.fill,
@@ -410,5 +390,5 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
     })
   })
 
-  return { nodes, connections }
+  return { nodes: recalculateMultiFlowMapLayout(nodes), connections }
 }

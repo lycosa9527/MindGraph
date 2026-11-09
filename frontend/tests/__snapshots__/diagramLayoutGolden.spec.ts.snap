@@ -1,0 +1,930 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`diagram layout golden positions > bilingual brace: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "brace-whole topic @40,236.5 -x-",
+    "n1 brace @220,118 -x-",
+    "n2 brace @380,40 -x-",
+    "n3 brace @380,119 -x-",
+    "n4 brace @380,198 -x-",
+    "n5 brace @220,277 -x-",
+    "n6 brace @380,278 -x-",
+    "n7 brace @220,396.5 -x-",
+    "n8 brace @380,358 -x-",
+    "n9 brace @380,437 -x-",
+    "dimension-label label @50,323.5 -x-",
+  ],
+  "load": [
+    "brace-whole topic @40,236.5 -x-",
+    "n1 brace @220,118 -x-",
+    "n2 brace @380,40 -x-",
+    "n3 brace @380,119 -x-",
+    "n4 brace @380,198 -x-",
+    "n5 brace @220,277 -x-",
+    "n6 brace @380,278 -x-",
+    "n7 brace @220,396.5 -x-",
+    "n8 brace @380,358 -x-",
+    "n9 brace @380,437 -x-",
+    "dimension-label label @50,323.5 -x-",
+  ],
+  "measured": [
+    "brace-whole topic @40,260 -x-",
+    "n1 brace @220,130 -x-",
+    "n2 brace @377,40 -x-",
+    "n3 brace @377,120 -x-",
+    "n4 brace @377,220 -x-",
+    "n5 brace @224.5,310 -x-",
+    "n6 brace @377,300 -x-",
+    "n7 brace @224.5,450 -x-",
+    "n8 brace @377,400 -x-",
+    "n9 brace @377,480 -x-",
+    "dimension-label label @50,364 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual bridge: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "dimension-label label @40,268 -x-",
+    "n1 branch @232,258.2 -x-",
+    "n2 branch @232,305 -x-",
+    "n3 branch @314,258.2 -x-",
+    "n4 branch @314,305 -x-",
+    "n5 branch @397.36,258.2 -x-",
+    "n6 branch @397.36,305 -x-",
+    "n7 branch @837.72,258.2 -x-",
+    "n8 branch @837.72,305 -x-",
+    "n9 branch @919.72,258.2 -x-",
+    "n10 branch @919.72,305 -x-",
+    "n11 branch @919.72,413.8 -x-",
+    "n12 branch @919.72,460.6 -x-",
+  ],
+  "load": [
+    "dimension-label label @40,268 -x-",
+    "n1 branch @232,258.2 -x-",
+    "n2 branch @232,305 -x-",
+    "n3 branch @314,258.2 -x-",
+    "n4 branch @314,305 -x-",
+    "n5 branch @397.36,258.2 -x-",
+    "n6 branch @397.36,305 -x-",
+    "n7 branch @837.72,258.2 -x-",
+    "n8 branch @837.72,305 -x-",
+    "n9 branch @919.72,258.2 -x-",
+    "n10 branch @919.72,305 -x-",
+    "n11 branch @919.72,413.8 -x-",
+    "n12 branch @919.72,460.6 -x-",
+  ],
+  "measured": [
+    "dimension-label label @40,258 -x-",
+    "n1 branch @232,231 -x-",
+    "n2 branch @232,305 -x-",
+    "n3 branch @370,211 -x-",
+    "n4 branch @370,305 -x-",
+    "n5 branch @499,231 -x-",
+    "n6 branch @499,305 -x-",
+    "n7 branch @799,231 -x-",
+    "n8 branch @799,305 -x-",
+    "n9 branch @937,211 -x-",
+    "n10 branch @937,305 -x-",
+    "n11 branch @937,461 -x-",
+    "n12 branch @937,535 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual bubble: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-37 -x-",
+    "n2 bubble @488,77 -x-",
+    "n3 bubble @488,305 -x-",
+    "n4 bubble @291,419 -x-",
+    "n5 bubble @93,305 -x-",
+    "n6 bubble @93,76 -x-",
+  ],
+  "load": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-37 -x-",
+    "n2 bubble @488,77 -x-",
+    "n3 bubble @488,305 -x-",
+    "n4 bubble @291,419 -x-",
+    "n5 bubble @93,305 -x-",
+    "n6 bubble @93,76 -x-",
+  ],
+  "measured": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-37 -x-",
+    "n2 bubble @488,77 -x-",
+    "n3 bubble @488,305 -x-",
+    "n4 bubble @291,419 -x-",
+    "n5 bubble @93,305 -x-",
+    "n6 bubble @93,76 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual bubbleRounded: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-111 -x-",
+    "n2 bubble @552,341 -x-",
+    "n3 bubble @29,341 -x-",
+  ],
+  "load": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-37 -x-",
+    "n2 bubble @488,305 -x-",
+    "n3 bubble @93,305 -x-",
+  ],
+  "measured": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-111 -x-",
+    "n2 bubble @552,341 -x-",
+    "n3 bubble @29,341 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual bubbleUnderline: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-37 -x-",
+    "n2 bubble @519,191 -x-",
+    "n3 bubble @291,419 -x-",
+    "n4 bubble @63,191 -x-",
+  ],
+  "load": [
+    "topic topic @332,232 -x-",
+    "n1 bubble @291,-37 -x-",
+    "n2 bubble @519,191 -x-",
+    "n3 bubble @291,419 -x-",
+    "n4 bubble @63,191 -x-",
+  ],
+  "measured": [
+    "topic topic @361,258 -x-",
+    "n1 bubble @352,31 -x-",
+    "n2 bubble @512,268 -x-",
+    "n3 bubble @356,495 -x-",
+    "n4 bubble @119,268 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual circle: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "outer-boundary boundary @60,-40 680x680",
+    "topic center @332,232 -x-",
+    "n2 bubble @306,-21 -x-",
+    "n3 bubble @522,136 -x-",
+    "n4 bubble @440,390 -x-",
+    "n5 bubble @172,390 -x-",
+    "n6 bubble @90,136 -x-",
+  ],
+  "load": [
+    "outer-boundary boundary @60,-40 680x680",
+    "topic center @332,232 -x-",
+    "n2 bubble @306,-21 -x-",
+    "n3 bubble @522,136 -x-",
+    "n4 bubble @440,390 -x-",
+    "n5 bubble @172,390 -x-",
+    "n6 bubble @90,136 -x-",
+  ],
+  "measured": [
+    "outer-boundary boundary @0,-100 800x800",
+    "topic center @332,232 -x-",
+    "n2 bubble @275,-83 -x-",
+    "n3 bubble @521,95 -x-",
+    "n4 bubble @427,384 -x-",
+    "n5 bubble @123,384 -x-",
+    "n6 bubble @29,95 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual circleRectangle: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "outer-boundary boundary @-90,-190 980x980",
+    "topic center @332,232 -x-",
+    "n2 bubble @290,-127 -x-",
+    "n3 bubble @607,190 -x-",
+    "n4 bubble @290,507 -x-",
+    "n5 bubble @-27,190 -x-",
+  ],
+  "load": [
+    "outer-boundary boundary @30,-70 740x740",
+    "topic center @332,232 -x-",
+    "n2 bubble @290,-53 -x-",
+    "n3 bubble @534,190 -x-",
+    "n4 bubble @290,434 -x-",
+    "n5 bubble @47,190 -x-",
+  ],
+  "measured": [
+    "outer-boundary boundary @-710,-810 2220x2220",
+    "topic center @332,232 -x-",
+    "n2 bubble @82,-661 -x-",
+    "n3 bubble @724,-18 -x-",
+    "n4 bubble @82,624 -x-",
+    "n5 bubble @-561,-18 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual circleUnderline: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "outer-boundary boundary @60,-40 680x680",
+    "topic center @332,232 -x-",
+    "n2 bubble @306,-21 -x-",
+    "n3 bubble @503,320 -x-",
+    "n4 bubble @109,320 -x-",
+  ],
+  "load": [
+    "outer-boundary boundary @60,-40 680x680",
+    "topic center @332,232 -x-",
+    "n2 bubble @306,-21 -x-",
+    "n3 bubble @503,320 -x-",
+    "n4 bubble @109,320 -x-",
+  ],
+  "measured": [
+    "outer-boundary boundary @10,-90 780x780",
+    "topic center @361,268 -x-",
+    "n2 bubble @361,23 -x-",
+    "n3 bubble @568,380 -x-",
+    "n4 bubble @63,390 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual doubleBubble: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "left-topic topic @338,104 -x-",
+    "right-topic topic @872,104 -x-",
+    "n2 bubble @437,76.5 423x65",
+    "n3 bubble @437,153.5 423x65",
+    "n4 bubble @40,40 248x65",
+    "n5 bubble @40,115 248x65",
+    "n6 bubble @40,190 248x65",
+    "n7 bubble @1009,92 79x36",
+    "n8 bubble @1009,167 79x36",
+  ],
+  "load": [
+    "left-topic topic @338,104 -x-",
+    "right-topic topic @872,104 -x-",
+    "n2 bubble @437,76.5 423x65",
+    "n3 bubble @437,153.5 423x65",
+    "n4 bubble @40,40 248x65",
+    "n5 bubble @40,115 248x65",
+    "n6 bubble @40,190 248x65",
+    "n7 bubble @1009,92 79x36",
+    "n8 bubble @1009,167 79x36",
+  ],
+  "measured": [
+    "left-topic topic @338,104 -x-",
+    "right-topic topic @872,104 -x-",
+    "n2 bubble @437,76.5 423x65",
+    "n3 bubble @437,153.5 423x65",
+    "n4 bubble @40,40 248x65",
+    "n5 bubble @40,115 248x65",
+    "n6 bubble @40,190 248x65",
+    "n7 bubble @1009,92 79x36",
+    "n8 bubble @1009,167 79x36",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual flowHorizontal: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "flow-topic topic @40,268 -x-",
+    "n1 flow @220,269 -x-",
+    "n2 flow @380,269 -x-",
+    "n3 flowSubstep @380,372 -x-",
+    "n4 flowSubstep @380,445 -x-",
+    "n5 flow @540,269 -x-",
+    "n6 flow @730,231 -x-",
+    "n7 flowSubstep @730,409 -x-",
+    "n8 flowSubstep @700,482 -x-",
+    "n9 flow @919,269 -x-",
+    "n10 flow @919,654 -x-",
+    "n11 flow @730,654 -x-",
+  ],
+  "load": [
+    "flow-topic topic @40,268 -x-",
+    "n1 flow @220,269 -x-",
+    "n2 flow @380,269 -x-",
+    "n3 flowSubstep @380,372 -x-",
+    "n4 flowSubstep @380,445 -x-",
+    "n5 flow @540,269 -x-",
+    "n6 flow @730,231 -x-",
+    "n7 flowSubstep @730,409 -x-",
+    "n8 flowSubstep @700,482 -x-",
+    "n9 flow @919,269 -x-",
+    "n10 flow @919,654 -x-",
+    "n11 flow @730,654 -x-",
+  ],
+  "measured": [
+    "flow-topic topic @40,258 -x-",
+    "n1 flow @220,268 -x-",
+    "n2 flow @380,268 -x-",
+    "n3 flowSubstep @380,372 -x-",
+    "n4 flowSubstep @380,468 -x-",
+    "n5 flow @540,268 -x-",
+    "n6 flow @765,258 -x-",
+    "n7 flowSubstep @765,382 -x-",
+    "n8 flowSubstep @700,458 -x-",
+    "n9 flow @990,258 -x-",
+    "n10 flow @990,604 -x-",
+    "n11 flow @765,604 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual flowVertical: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "flow-topic topic @278,80 -x-",
+    "n1 flow @340,277 -x-",
+    "n2 flowSubstep @500,205 -x-",
+    "n3 flowSubstep @500,278 -x-",
+    "n4 flowSubstep @500,351 -x-",
+    "n5 flow @340,462 -x-",
+    "n6 flow @340,613 -x-",
+    "n7 flowSubstep @500,614 -x-",
+    "n8 flow @340,726 -x-",
+  ],
+  "load": [
+    "flow-topic topic @278,80 -x-",
+    "n1 flow @340,277 -x-",
+    "n2 flowSubstep @500,205 -x-",
+    "n3 flowSubstep @500,278 -x-",
+    "n4 flowSubstep @500,351 -x-",
+    "n5 flow @340,462 -x-",
+    "n6 flow @340,613 -x-",
+    "n7 flowSubstep @500,614 -x-",
+    "n8 flow @340,726 -x-",
+  ],
+  "measured": [
+    "flow-topic topic @316,80 -x-",
+    "n1 flow @340,310 -x-",
+    "n2 flowSubstep @500,224 -x-",
+    "n3 flowSubstep @500,300 -x-",
+    "n4 flowSubstep @500,396 -x-",
+    "n5 flow @340,510 -x-",
+    "n6 flow @340,614 -x-",
+    "n7 flowSubstep @500,624 -x-",
+    "n8 flow @340,748 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual flowVerticalNoSubsteps: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "flow-topic topic @340,80 -x-",
+    "n1 flow @340,205 -x-",
+    "n2 flow @340,308 -x-",
+    "n3 flow @340,459 -x-",
+  ],
+  "load": [
+    "flow-topic topic @340,80 -x-",
+    "n1 flow @340,205 -x-",
+    "n2 flow @340,308 -x-",
+    "n3 flow @340,459 -x-",
+  ],
+  "measured": [
+    "flow-topic topic @340,80 -x-",
+    "n1 flow @340,224 -x-",
+    "n2 flow @340,328 -x-",
+    "n3 flow @340,432 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual multiFlow: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "event topic @301.5,268.5 -x-",
+    "n1 flow @-194.5,185.5 356x-",
+    "n2 flow @-194.5,268.5 356x-",
+    "n3 flow @-194.5,351.5 356x-",
+    "n4 flow @638.5,227 356x-",
+    "n5 flow @638.5,310 356x-",
+  ],
+  "load": [
+    "event topic @301.5,268.5 -x-",
+    "n1 flow @-194.5,185.5 356x-",
+    "n2 flow @-194.5,268.5 356x-",
+    "n3 flow @-194.5,351.5 356x-",
+    "n4 flow @638.5,227 356x-",
+    "n5 flow @638.5,310 356x-",
+  ],
+  "measured": [
+    "event topic @301.5,258 -x-",
+    "n1 flow @-194.5,174 356x-",
+    "n2 flow @-194.5,258 356x-",
+    "n3 flow @-194.5,342 356x-",
+    "n4 flow @638.5,226 356x-",
+    "n5 flow @638.5,310 356x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bilingual tree: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "tree-topic topic @340,40 120x48",
+    "n1 branch @168.5,153 90x59",
+    "n2 branch @168.5,236 90x51",
+    "n3 branch @54,297 319x51",
+    "n4 branch @168.5,358 90x51",
+    "n5 branch @433,153 90x59",
+    "n6 branch @433,236 90x51",
+    "n7 branch @583,153 163x59",
+    "n8 branch @619.5,236 90x51",
+    "n9 branch @619.5,297 90x51",
+    "dimension-label label @328,98 -x-",
+  ],
+  "load": [
+    "tree-topic topic @340,40 120x48",
+    "n1 branch @168.5,153 90x59",
+    "n2 branch @168.5,236 90x51",
+    "n3 branch @54,297 319x51",
+    "n4 branch @168.5,358 90x51",
+    "n5 branch @433,153 90x59",
+    "n6 branch @433,236 90x51",
+    "n7 branch @583,153 163x59",
+    "n8 branch @619.5,236 90x51",
+    "n9 branch @619.5,297 90x51",
+    "dimension-label label @328,98 -x-",
+  ],
+  "measured": [
+    "tree-topic topic @340,40 120x84",
+    "n1 branch @181,212 88x64",
+    "n2 branch @181,300 88x64",
+    "n3 branch @100,374 250x84",
+    "n4 branch @181,468 88x64",
+    "n5 branch @410,212 88x64",
+    "n6 branch @410,300 88x84",
+    "n7 branch @558,212 142x64",
+    "n8 branch @589.5,300 79x64",
+    "n9 branch @585,374 88x84",
+    "dimension-label label @328,134 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > brace: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "brace-whole topic @40,275 -x-",
+    "n1 brace @282.5,110 -x-",
+    "n2 brace @505,40 -x-",
+    "n3 brace @505,106 -x-",
+    "n4 brace @505,180 -x-",
+    "n5 brace @282.5,246 -x-",
+    "n6 brace @505,246 -x-",
+    "n7 brace @220,411 -x-",
+    "n8 brace @505,312 -x-",
+    "n9 brace @505,378 -x-",
+    "n10 brace @505,444 -x-",
+    "n11 brace @505,510 -x-",
+    "dimension-label label @50,345 -x-",
+  ],
+  "load": [
+    "brace-whole topic @40,275 -x-",
+    "n1 brace @282.5,110 -x-",
+    "n2 brace @505,40 -x-",
+    "n3 brace @505,106 -x-",
+    "n4 brace @505,180 -x-",
+    "n5 brace @282.5,246 -x-",
+    "n6 brace @505,246 -x-",
+    "n7 brace @220,411 -x-",
+    "n8 brace @505,312 -x-",
+    "n9 brace @505,378 -x-",
+    "n10 brace @505,444 -x-",
+    "n11 brace @505,510 -x-",
+    "dimension-label label @50,345 -x-",
+  ],
+  "measured": [
+    "brace-whole topic @40,263 -x-",
+    "n1 brace @296.5,108 -x-",
+    "n2 brace @557,40 -x-",
+    "n3 brace @557,98 -x-",
+    "n4 brace @557,176 -x-",
+    "n5 brace @305.5,244 -x-",
+    "n6 brace @557,234 -x-",
+    "n7 brace @220,409 -x-",
+    "n8 brace @557,312 -x-",
+    "n9 brace @557,370 -x-",
+    "n10 brace @557,448 -x-",
+    "n11 brace @557,506 -x-",
+    "dimension-label label @42.5,345 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bridge: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "dimension-label label @40,275 -x-",
+    "n0 branch @232,259 -x-",
+    "n1 branch @232,305 -x-",
+    "n2 branch @317.68,259 -x-",
+    "n3 branch @317.68,305 -x-",
+    "n4 branch @412.16,250.2 -x-",
+    "n5 branch @412.16,305 -x-",
+    "n6 branch @726.96,259 -x-",
+    "n7 branch @726.96,305 -x-",
+    "n8 branch @812.64,259 -x-",
+    "n9 branch @812.64,305 -x-",
+    "n10 branch @812.64,413 -x-",
+    "n11 branch @812.64,459 -x-",
+    "n12 branch @726.96,413 -x-",
+    "n13 branch @726.96,459 -x-",
+  ],
+  "load": [
+    "n0 branch @232,259 -x-",
+    "n1 branch @232,305 -x-",
+    "n2 branch @317.68,259 -x-",
+    "n3 branch @317.68,305 -x-",
+    "n4 branch @412.16,250.2 -x-",
+    "n5 branch @412.16,305 -x-",
+    "n6 branch @726.96,259 -x-",
+    "n7 branch @726.96,305 -x-",
+    "n8 branch @812.64,259 -x-",
+    "n9 branch @812.64,305 -x-",
+    "n10 branch @812.64,413 -x-",
+    "n11 branch @812.64,459 -x-",
+    "n12 branch @726.96,413 -x-",
+    "n13 branch @726.96,459 -x-",
+    "dimension-label label @40,275 -x-",
+  ],
+  "measured": [
+    "dimension-label label @40,275 -x-",
+    "n0 branch @232,233 -x-",
+    "n1 branch @232,305 -x-",
+    "n2 branch @388,253 -x-",
+    "n3 branch @388,305 -x-",
+    "n4 branch @553,253 -x-",
+    "n5 branch @553,305 -x-",
+    "n6 branch @1240,233 -x-",
+    "n7 branch @1240,305 -x-",
+    "n8 branch @1396,253 -x-",
+    "n9 branch @1396,305 -x-",
+    "n10 branch @1396,459 -x-",
+    "n11 branch @1396,511 -x-",
+    "n12 branch @1240,439 -x-",
+    "n13 branch @1240,511 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > bubble: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "topic topic @340,240 -x-",
+    "n1 bubble @286,-38 -x-",
+    "n2 bubble @499,117 -x-",
+    "n3 bubble @418,367 -x-",
+    "n4 bubble @154,367 -x-",
+    "n5 bubble @73,117 -x-",
+  ],
+  "load": [
+    "topic topic @340,240 -x-",
+    "n1 bubble @286,-38 -x-",
+    "n2 bubble @499,117 -x-",
+    "n3 bubble @418,367 -x-",
+    "n4 bubble @154,367 -x-",
+    "n5 bubble @73,117 -x-",
+  ],
+  "measured": [
+    "topic topic @340,240 -x-",
+    "n1 bubble @286,-38 -x-",
+    "n2 bubble @499,117 -x-",
+    "n3 bubble @418,367 -x-",
+    "n4 bubble @154,367 -x-",
+    "n5 bubble @73,117 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > circle: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "outer-boundary boundary @50,-50 700x700",
+    "topic center @340,240 -x-",
+    "n2 bubble @298,-30 -x-",
+    "n3 bubble @495,84 -x-",
+    "n4 bubble @495,311 -x-",
+    "n5 bubble @298,425 -x-",
+    "n6 bubble @100,311 -x-",
+    "n7 bubble @100,84 -x-",
+  ],
+  "load": [
+    "outer-boundary boundary @50,-50 700x700",
+    "topic center @340,240 -x-",
+    "n2 bubble @298,-30 -x-",
+    "n3 bubble @495,84 -x-",
+    "n4 bubble @495,311 -x-",
+    "n5 bubble @298,425 -x-",
+    "n6 bubble @100,311 -x-",
+    "n7 bubble @100,84 -x-",
+  ],
+  "measured": [
+    "outer-boundary boundary @-580,-680 1960x1960",
+    "topic center @340,240 -x-",
+    "n2 bubble @82,-664 -x-",
+    "n3 bubble @640,-341 -x-",
+    "n4 bubble @640,304 -x-",
+    "n5 bubble @82,627 -x-",
+    "n6 bubble @-477,304 -x-",
+    "n7 bubble @-477,-341 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > circleSingle: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "outer-boundary boundary @-489937180595860740,-489937180595860740 979874361191722200x979874361191722200",
+    "topic center @340,240 -x-",
+    "n2 bubble @374,-489937180595860740 -x-",
+  ],
+  "load": [
+    "outer-boundary boundary @-489937180595860740,-489937180595860740 979874361191722200x979874361191722200",
+    "topic center @340,240 -x-",
+    "n2 bubble @374,-489937180595860740 -x-",
+  ],
+  "measured": [
+    "outer-boundary boundary @-612421475744826100,-612421475744826200 1224842951489653000x1224842951489653000",
+    "topic center @340,240 -x-",
+    "n2 bubble @367,-612421475744826200 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > doubleBubble: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "left-topic topic @236,101.5 -x-",
+    "right-topic topic @952,101.5 -x-",
+    "n2 bubble @320.5,76.5 639x65",
+    "n3 bubble @320.5,153.5 639x65",
+    "n4 bubble @40,40 146x65",
+    "n5 bubble @40,115 146x65",
+    "n6 bubble @40,190 146x65",
+    "n7 bubble @1094,91 83x38",
+    "n8 bubble @1094,166 83x38",
+  ],
+  "load": [
+    "left-topic topic @236,101.5 -x-",
+    "right-topic topic @952,101.5 -x-",
+    "n2 bubble @320.5,76.5 639x65",
+    "n3 bubble @320.5,153.5 639x65",
+    "n4 bubble @40,40 146x65",
+    "n5 bubble @40,115 146x65",
+    "n6 bubble @40,190 146x65",
+    "n7 bubble @1094,91 83x38",
+    "n8 bubble @1094,166 83x38",
+  ],
+  "measured": [
+    "left-topic topic @236,101.5 -x-",
+    "right-topic topic @952,101.5 -x-",
+    "n2 bubble @320.5,76.5 639x65",
+    "n3 bubble @320.5,153.5 639x65",
+    "n4 bubble @40,40 146x65",
+    "n5 bubble @40,115 146x65",
+    "n6 bubble @40,190 146x65",
+    "n7 bubble @1094,91 83x38",
+    "n8 bubble @1094,166 83x38",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > flowHorizontal: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "flow-topic topic @40,276 -x-",
+    "n1 flow @221,276 -x-",
+    "n2 flowSubstep @220,364 -x-",
+    "n3 flowSubstep @221,424 -x-",
+    "n4 flow @381,276 -x-",
+    "n5 flow @541,256 -x-",
+    "n6 flow @797,276 -x-",
+    "n7 flowSubstep @797,364 -x-",
+    "n8 flow @957,276 -x-",
+    "n9 flow @957,544 -x-",
+    "n10 flow @797,544 -x-",
+  ],
+  "load": [
+    "flow-topic topic @40,276 -x-",
+    "n1 flow @221,276 -x-",
+    "n2 flowSubstep @220,364 -x-",
+    "n3 flowSubstep @221,424 -x-",
+    "n4 flow @381,276 -x-",
+    "n5 flow @541,256 -x-",
+    "n6 flow @797,276 -x-",
+    "n7 flowSubstep @797,364 -x-",
+    "n8 flow @957,276 -x-",
+    "n9 flow @957,544 -x-",
+    "n10 flow @797,544 -x-",
+  ],
+  "measured": [
+    "flow-topic topic @40,269 -x-",
+    "n1 flow @274,279 -x-",
+    "n2 flowSubstep @242,361 -x-",
+    "n3 flowSubstep @251,415 -x-",
+    "n4 flow @451,279 -x-",
+    "n5 flow @633,256 -x-",
+    "n6 flow @1333,269 -x-",
+    "n7 flowSubstep @1310,371 -x-",
+    "n8 flow @1528,279 -x-",
+    "n9 flow @1510,549 -x-",
+    "n10 flow @1333,559 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > flowVertical: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "flow-topic topic @340,80 -x-",
+    "n1 flow @340,248 -x-",
+    "n2 flowSubstep @500,188 -x-",
+    "n3 flowSubstep @500,248 -x-",
+    "n4 flowSubstep @500,308 -x-",
+    "n5 flow @340,406 -x-",
+    "n6 flow @340,535 -x-",
+    "n7 flowSubstep @500,535 -x-",
+    "n8 flow @340,633 -x-",
+  ],
+  "load": [
+    "flow-topic topic @340,80 -x-",
+    "n1 flow @340,248 -x-",
+    "n2 flowSubstep @500,188 -x-",
+    "n3 flowSubstep @500,248 -x-",
+    "n4 flowSubstep @500,308 -x-",
+    "n5 flow @340,406 -x-",
+    "n6 flow @340,535 -x-",
+    "n7 flowSubstep @500,535 -x-",
+    "n8 flow @340,633 -x-",
+  ],
+  "measured": [
+    "flow-topic topic @347,80 -x-",
+    "n1 flow @340,266 -x-",
+    "n2 flowSubstep @500,202 -x-",
+    "n3 flowSubstep @500,256 -x-",
+    "n4 flowSubstep @500,330 -x-",
+    "n5 flow @340,422 -x-",
+    "n6 flow @340,551 -x-",
+    "n7 flowSubstep @486,561 -x-",
+    "n8 flow @340,663 -x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > mindmap legacy: bilingual load 1`] = `
+[
+  "topic topic @360,268 -x-",
+  "n1 branch @492,239 -x-",
+  "n2 branch @624,209.5 -x-",
+  "n3 branch @624,268.5 -x-",
+  "n4 branch @492,343.5 -x-",
+  "n5 branch @212,276.5 -x-",
+  "n6 branch @80,276.5 -x-",
+]
+`;
+
+exports[`diagram layout golden positions > mindmap legacy: load 1`] = `
+[
+  "topic topic @360,275.5 -x-",
+  "n1 branch @492,221 -x-",
+  "n2 branch @624,198 -x-",
+  "n3 branch @624,244 -x-",
+  "n4 branch @492,306 -x-",
+  "n5 branch @624,306 -x-",
+  "n6 branch @492,368 -x-",
+  "n7 branch @228,183 -x-",
+  "n8 branch @96,183 -x-",
+  "n9 branch @228,314 -x-",
+  "n10 branch @96,245 -x-",
+  "n11 branch @96,291 -x-",
+  "n12 branch @96,337 -x-",
+  "n13 branch @96,383 -x-",
+]
+`;
+
+exports[`diagram layout golden positions > mindmap v2: bilingual load 1`] = `
+[
+  "topic topic @355,272 -x-",
+  "n1 branch @497,243 -x-",
+  "n2 branch @639,209.5 -x-",
+  "n3 branch @639,258.5 -x-",
+  "n4 branch @497,343.5 -x-",
+  "n5 branch @207,276.5 -x-",
+  "n6 branch @65,278.5 -x-",
+]
+`;
+
+exports[`diagram layout golden positions > mindmap v2: load 1`] = `
+[
+  "topic topic @355,279.5 -x-",
+  "n1 branch @497,232 -x-",
+  "n2 branch @660.16,194.5 -x-",
+  "n3 branch @660.16,230.5 -x-",
+  "n4 branch @497,317.5 -x-",
+  "n5 branch @660.16,319.5 -x-",
+  "n6 branch @497,371.5 -x-",
+  "n7 branch @183.04,207 -x-",
+  "n8 branch @41.04,209 -x-",
+  "n9 branch @183.04,307 -x-",
+  "n10 branch @41.04,255 -x-",
+  "n11 branch @41.04,291 -x-",
+  "n12 branch @41.04,327 -x-",
+  "n13 branch @41.04,363 -x-",
+]
+`;
+
+exports[`diagram layout golden positions > multiFlow: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "event topic @270,275 -x-",
+    "n1 flow @-83,205 213x-",
+    "n2 flow @-83,275 213x-",
+    "n3 flow @-83,345 213x-",
+    "n4 flow @670,240 213x-",
+    "n5 flow @670,310 213x-",
+  ],
+  "load": [
+    "event topic @270,275 -x-",
+    "n1 flow @-83,205 213x-",
+    "n2 flow @-83,275 213x-",
+    "n3 flow @-83,345 213x-",
+    "n4 flow @670,240 213x-",
+    "n5 flow @670,310 213x-",
+  ],
+  "measured": [
+    "event topic @270,269 -x-",
+    "n1 flow @-83,207 213x-",
+    "n2 flow @-83,269 213x-",
+    "n3 flow @-83,331 213x-",
+    "n4 flow @670,248 213x-",
+    "n5 flow @670,310 213x-",
+  ],
+}
+`;
+
+exports[`diagram layout golden positions > tree: load, estimate recalc, measured recalc 1`] = `
+{
+  "estimated": [
+    "tree-topic topic @340,40 120x48",
+    "n1 branch @93.5,140 90x44",
+    "n2 branch @93.5,208 90x38",
+    "n3 branch @41.5,256 194x77",
+    "n4 branch @93.5,343 90x38",
+    "n5 branch @295.5,140 90x44",
+    "n6 branch @295.5,208 90x38",
+    "n7 branch @445.5,140 163x66",
+    "n8 branch @668.5,140 90x44",
+    "n9 branch @668.5,208 90x38",
+    "n10 branch @668.5,256 90x38",
+    "dimension-label label @286,98 -x-",
+  ],
+  "load": [
+    "tree-topic topic @340,40 120x48",
+    "n1 branch @93.5,140 90x-",
+    "n2 branch @93.5,208 90x-",
+    "n3 branch @41.5,256 194x-",
+    "n4 branch @93.5,343 90x-",
+    "n5 branch @295.5,140 90x-",
+    "n6 branch @295.5,208 90x-",
+    "n7 branch @445.5,140 163x-",
+    "n8 branch @668.5,140 90x-",
+    "n9 branch @668.5,208 90x-",
+    "n10 branch @668.5,256 90x-",
+    "dimension-label label @286,98 -x-",
+  ],
+  "measured": [
+    "tree-topic topic @333.5,40 133x62",
+    "n1 branch @3.5,168 106x42",
+    "n2 branch @3.5,234 106x42",
+    "n3 branch @-262,286 637x62",
+    "n4 branch @8,358 97x42",
+    "n5 branch @444,168 97x42",
+    "n6 branch @435,234 115x62",
+    "n7 branch @610,168 304x42",
+    "n8 branch @974,168 88x42",
+    "n9 branch @978.5,234 79x62",
+    "n10 branch @974,306 88x42",
+    "dimension-label label @286,112 -x-",
+  ],
+}
+`;

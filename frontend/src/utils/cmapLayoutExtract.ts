@@ -6,7 +6,6 @@ import {
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { pillHalfExtentForOverlap } from '@/composables/diagrams/useRadialLayout'
 import {
   type ConceptMapPillFootprintPx,
   estimateConceptMapPillFootprintPx,
@@ -24,6 +23,7 @@ import {
   instanceFieldMap,
   parseJavaSerializationStream,
 } from '@/utils/javaSerializationParse'
+import { pillHalfExtentForOverlap } from '@/utils/layout/radial'
 
 export type LayoutPositionsByLabel = Record<string, { x: number; y: number }>
 

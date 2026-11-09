@@ -17,8 +17,5 @@ export function requestDiagramLayoutRecalc(ctx: DiagramContext): void {
     ctx.scheduleMindMapRecalc()
     return
   }
-  if (diagramType === 'multi_flow_map') {
-    ctx.multiFlowMapRecalcTrigger.value += 1
-  }
   ctx.layoutRecalcTrigger.value += 1
 }

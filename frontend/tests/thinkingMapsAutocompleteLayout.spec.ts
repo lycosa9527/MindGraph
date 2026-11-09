@@ -380,7 +380,7 @@ function recalc(type: DiagramType, canvas: Canvas): Canvas {
     return { ...canvas, nodes: recalculateFlowMapLayout(canvas.nodes, dims) }
   }
   if (type === 'multi_flow_map') {
-    return { ...canvas, nodes: recalculateMultiFlowMapLayout(canvas.nodes, null, {}, dims) }
+    return { ...canvas, nodes: recalculateMultiFlowMapLayout(canvas.nodes, null, dims) }
   }
   if (type === 'bridge_map') {
     return { ...canvas, nodes: recalculateBridgeMapLayout(canvas.nodes, dims) }

@@ -12,16 +12,9 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
 import { FLOW_TOPIC_NODE_ID, isFlowMapStepNode, readFlowStepIndex } from '@/utils/flowMapIdentity'
+import { type SerpentineSlot, placeSerpentine, serpentineSlot } from '@/utils/layout/serpentine'
 
 import { resolveFlowMapOrientation } from './flowMapSubsteps'
-
-export type FlowRowDirection = 'ltr' | 'rtl'
-
-export interface FlowStepSlot {
-  row: number
-  column: number
-  direction: FlowRowDirection
-}
 
 export interface FlowSerpentineBox {
   footprintWidth: number
@@ -31,7 +24,7 @@ export interface FlowSerpentineBox {
   belowHeight: number
 }
 
-export interface FlowSerpentinePlacement extends FlowStepSlot {
+export interface FlowSerpentinePlacement extends SerpentineSlot {
   centerX: number
   stepX: number
   stepY: number
@@ -51,12 +44,8 @@ const TOPIC_TO_FIRST_STEP: FlowEdgePorts = {
   targetHandle: 'left',
 }
 
-export function flowStepSlot(index: number, perRow = FLOW_MAP_STEPS_PER_ROW): FlowStepSlot {
-  const row = Math.floor(index / perRow)
-  const offset = index % perRow
-  const direction: FlowRowDirection = row % 2 === 0 ? 'ltr' : 'rtl'
-  const column = direction === 'ltr' ? offset : perRow - 1 - offset
-  return { row, column, direction }
+export function flowStepSlot(index: number, perRow = FLOW_MAP_STEPS_PER_ROW): SerpentineSlot {
+  return serpentineSlot(index, perRow)
 }
 
 /** Extra height under a step once its substeps are stacked. */
@@ -74,54 +63,30 @@ export function placeFlowSerpentine(
   columnGap = FLOW_MIN_STEP_SPACING,
   rowGap = FLOW_MAP_ROW_GAP
 ): FlowSerpentinePlacement[] {
-  if (groups.length === 0) return []
-
-  const columnCount = Math.min(FLOW_MAP_STEPS_PER_ROW, groups.length)
-  const columnWidth = Array.from({ length: columnCount }, () => 0)
-  groups.forEach((group, index) => {
-    const slot = flowStepSlot(index)
-    const column = Math.min(slot.column, columnCount - 1)
-    columnWidth[column] = Math.max(columnWidth[column], group.footprintWidth)
+  const cells = groups.map((group) => ({
+    width: group.footprintWidth,
+    above: group.stepHeight / 2,
+    below: group.stepHeight / 2 + group.belowHeight,
+  }))
+  return placeSerpentine(
+    cells,
+    FLOW_MAP_STEPS_PER_ROW,
+    originX,
+    firstRowCenterY,
+    columnGap,
+    rowGap
+  ).map((cell, index) => {
+    const group = groups[index]
+    const centerX = cell.columnLeft + cell.columnWidth / 2
+    return {
+      row: cell.row,
+      column: cell.column,
+      direction: cell.direction,
+      centerX,
+      stepX: centerX - group.stepWidth / 2,
+      stepY: cell.rowCenterY - group.stepHeight / 2,
+    }
   })
-
-  const centerX: number[] = []
-  let cursor = originX
-  for (let column = 0; column < columnCount; column += 1) {
-    centerX.push(cursor + columnWidth[column] / 2)
-    cursor += columnWidth[column] + columnGap
-  }
-
-  const placed: FlowSerpentinePlacement[] = []
-  let rowCenterY = firstRowCenterY
-  let index = 0
-  while (index < groups.length) {
-    const rowEnd = Math.min(index + FLOW_MAP_STEPS_PER_ROW, groups.length)
-    let rowBottom = rowCenterY
-    for (let stepIndex = index; stepIndex < rowEnd; stepIndex += 1) {
-      const group = groups[stepIndex]
-      const slot = flowStepSlot(stepIndex)
-      const column = Math.min(slot.column, columnCount - 1)
-      const stepY = rowCenterY - group.stepHeight / 2
-      rowBottom = Math.max(rowBottom, stepY + group.stepHeight + group.belowHeight)
-      placed.push({
-        row: slot.row,
-        column,
-        direction: slot.direction,
-        centerX: centerX[column],
-        stepX: centerX[column] - group.stepWidth / 2,
-        stepY,
-      })
-    }
-    index = rowEnd
-    if (index >= groups.length) break
-    const nextEnd = Math.min(index + FLOW_MAP_STEPS_PER_ROW, groups.length)
-    let nextMaxHeight = 0
-    for (let stepIndex = index; stepIndex < nextEnd; stepIndex += 1) {
-      nextMaxHeight = Math.max(nextMaxHeight, groups[stepIndex].stepHeight)
-    }
-    rowCenterY = rowBottom + rowGap + nextMaxHeight / 2
-  }
-  return placed
 }
 
 /** Ports for the arrow that joins two consecutive steps on a horizontal flow. */

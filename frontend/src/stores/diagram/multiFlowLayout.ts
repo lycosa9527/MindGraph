@@ -1,9 +1,8 @@
 import type { DiagramContext } from './types'
 
 /**
- * Multi-flow map layout width tracking slice.
- * Manages topic-node and per-node widths for visual balance,
- * triggering reactive layout recalculation.
+ * Multi-flow map event-pill width. The layout computed reads topicNodeWidth,
+ * so setting it relays the cause and effect columns out around the pill.
  */
 export function useMultiFlowLayoutSlice(ctx: DiagramContext) {
   function setTopicNodeWidth(width: number | null): void {
@@ -12,25 +11,7 @@ export function useMultiFlowLayoutSlice(ctx: DiagramContext) {
     if (width != null && !(width > 0)) return
     if (ctx.topicNodeWidth.value === width) return
     ctx.topicNodeWidth.value = width
-    if (ctx.type.value === 'multi_flow_map') {
-      ctx.multiFlowMapRecalcTrigger.value++
-    }
   }
 
-  function setNodeWidth(nodeId: string, width: number | null): void {
-    const widths = ctx.nodeWidths.value
-    if (width === null) {
-      if (!(nodeId in widths)) return
-      delete widths[nodeId]
-    } else if (widths[nodeId] === width) {
-      return
-    } else {
-      widths[nodeId] = width
-    }
-    if (ctx.type.value === 'multi_flow_map') {
-      ctx.multiFlowMapRecalcTrigger.value++
-    }
-  }
-
-  return { setTopicNodeWidth, setNodeWidth }
+  return { setTopicNodeWidth }
 }

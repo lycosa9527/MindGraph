@@ -4,7 +4,12 @@
  * A value that fits the script-aware column stays one line. A longer value wraps
  * at the map's own cap, and the first pair starts to the right of that box.
  */
-import { DEFAULT_PADDING, NODE_MIN_DIMENSIONS } from '@/composables/diagrams/layoutConfig'
+import {
+  DEFAULT_PADDING,
+  LABEL_NODE_PAD_X,
+  LABEL_NODE_PAD_Y,
+  NODE_MIN_DIMENSIONS,
+} from '@/composables/diagrams/layoutConfig'
 import { secondaryFontSize } from '@/diagramBilingual/measure'
 import { i18n } from '@/i18n'
 import type { DiagramNode } from '@/types'
@@ -23,9 +28,6 @@ export const BRIDGE_DIMENSION_LABEL_FONT_PX = 14
 /** Gap from the label's right edge to the first pair (bridge line start). */
 export const BRIDGE_LABEL_TO_PAIR_GAP = 10
 
-/** LabelNode padding: 4px 8px. */
-const LABEL_PAD_X = 16
-const LABEL_PAD_Y = 8
 /** Margin between the prefix line and the value line. */
 const LABEL_LINE_GAP = 2
 
@@ -157,13 +159,16 @@ export function measureBridgeDimensionLabel(
   const textWidth = Math.max(prefixBlock.width, valueBlock.width, glossWidth)
   const width = Math.max(
     NODE_MIN_DIMENSIONS.label.minWidth,
-    Math.min(Math.ceil(textWidth), Math.ceil(column)) + LABEL_PAD_X
+    Math.min(Math.ceil(textWidth), Math.ceil(column)) + LABEL_NODE_PAD_X
   )
-  const height = Math.max(NODE_MIN_DIMENSIONS.label.minHeight, Math.ceil(textHeight) + LABEL_PAD_Y)
+  const height = Math.max(
+    NODE_MIN_DIMENSIONS.label.minHeight,
+    Math.ceil(textHeight) + LABEL_NODE_PAD_Y
+  )
   return {
     prefixMaxPx,
     valueMaxPx,
-    boxMaxPx: Math.max(width, Math.ceil(column) + LABEL_PAD_X),
+    boxMaxPx: Math.max(width, Math.ceil(column) + LABEL_NODE_PAD_X),
     width,
     height,
   }

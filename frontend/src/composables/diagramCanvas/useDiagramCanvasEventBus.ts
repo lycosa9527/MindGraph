@@ -419,15 +419,6 @@ export function useDiagramCanvasEventBus(): {
       })
     )
 
-    unsubscribers.push(
-      viewBus.on('multi_flow_map:node_width_changed', ({ nodeId, width }) => {
-        if (diagramStore.type !== 'multi_flow_map' || !nodeId || width === null) {
-          return
-        }
-        diagramStore.setNodeWidth(nodeId, width)
-      })
-    )
-
     return () => {
       unsubscribers.forEach((unsub) => unsub())
       unsubscribers.length = 0

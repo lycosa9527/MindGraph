@@ -1,5 +1,4 @@
 import {
-  DEFAULT_CENTER_X,
   DEFAULT_MINDMAP_BRANCH_GAP,
   DEFAULT_MINDMAP_RANK_SEPARATION,
   DEFAULT_NODE_HEIGHT,
@@ -336,15 +335,4 @@ function correctYPositions(
     if (Math.abs(node.position.y - correctedY) < 0.5) return node
     return { ...node, position: { ...node.position, y: correctedY } }
   })
-}
-
-/**
- * Derive canvas center X from the current topic node.
- * Falls back to DEFAULT_CENTER_X when the topic position is unknown.
- */
-export function getMindMapCenterX(nodes: DiagramNode[]): number {
-  const topic = nodes.find((n) => n.id === 'topic')
-  if (!topic?.position) return DEFAULT_CENTER_X
-  const w = (topic.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH
-  return topic.position.x + w / 2
 }

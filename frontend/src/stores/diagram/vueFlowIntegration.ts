@@ -137,11 +137,9 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const multiFlowMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'multi_flow_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    void ctx.multiFlowMapRecalcTrigger.value
     return recalculateMultiFlowMapLayout(
       ctx.data.value.nodes,
       ctx.topicNodeWidth.value,
-      ctx.nodeWidths.value,
       ctx.nodeDimensions.value,
       thinkingMapImageNodeIds(ctx.data.value),
       readMindMapAdornments(ctx.data.value)

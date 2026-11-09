@@ -138,7 +138,6 @@ describe('multi-flow image layout', () => {
     const nodes = recalculateMultiFlowMapLayout(
       loaded.nodes,
       null,
-      {},
       { [cause?.id ?? '']: { width: 240, height: 160 } },
       new Set([cause?.id ?? ''])
     )

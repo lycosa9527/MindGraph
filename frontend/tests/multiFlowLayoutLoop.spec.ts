@@ -1,4 +1,4 @@
-import { createApp, defineComponent, h, nextTick, ref } from 'vue'
+import { createApp, defineComponent, h, nextTick, ref, watch } from 'vue'
 
 import { describe, expect, it } from 'vitest'
 
@@ -10,8 +10,6 @@ function layoutCtx(): DiagramContext {
   return {
     type: ref('multi_flow_map'),
     topicNodeWidth: ref<number | null>(null),
-    nodeWidths: ref<Record<string, number>>({}),
-    multiFlowMapRecalcTrigger: ref(0),
   } as DiagramContext
 }
 
@@ -24,26 +22,27 @@ describe('multi-flow layout does not rebuild on an unchanged measure', () => {
     setTopicNodeWidth(Number.NaN)
 
     expect(ctx.topicNodeWidth.value).toBeNull()
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(0)
 
     setTopicNodeWidth(128)
-    setTopicNodeWidth(128)
-
     expect(ctx.topicNodeWidth.value).toBe(128)
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(1)
   })
 
-  it('does not relayout when a cause reports the same width again', () => {
+  it('does not write the ref when the event reports the same width again', () => {
     const ctx = layoutCtx()
-    const { setNodeWidth } = useMultiFlowLayoutSlice(ctx)
+    const { setTopicNodeWidth } = useMultiFlowLayoutSlice(ctx)
+    let writes = 0
+    watch(
+      ctx.topicNodeWidth,
+      () => {
+        writes += 1
+      },
+      { flush: 'sync' }
+    )
 
-    setNodeWidth('cause-a', 160)
-    setNodeWidth('cause-a', 160)
-    setNodeWidth('cause-a', null)
-    setNodeWidth('cause-a', null)
+    setTopicNodeWidth(128)
+    setTopicNodeWidth(128)
 
-    expect(ctx.nodeWidths.value['cause-a']).toBeUndefined()
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(2)
+    expect(writes).toBe(1)
   })
 })
 

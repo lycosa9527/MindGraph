@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.217] - 2026-11-09
+
+> **Thinking-map layout runs one path for load and live edits, so a diagram opens where it will stay.**
+
+### Changed
+
+- **Thinking-map layout** — Flow, multi-flow, and tree maps place nodes on load with the same function that relays them out after an edit. Circle and bubble maps share one ring-placement helper. Flow and bridge maps share one serpentine row layout.
+- **Bilingual load** — After the second language is attached, flow and tree maps run a full layout pass. Stored positions now match what the canvas draws before the browser measures.
+- **Multi-flow maps** — Cause and effect widths reach the layout through measured node sizes only. The separate per-node width store and its extra relayout trigger are gone.
+
+### Fixed
+
+- **Vertical flow maps** — A first step with substeps no longer gets an extra gap under the title. A tall or wrapped title now pushes the steps down instead of overlapping the first one.
+- **Circle maps** — With the underline shape and a second language, ring sizes stay the same after an edit.
+
+### Removed
+
+- Unused layout helpers and constants: the bilingual flow offset patch, `getMindMapCenterX`, `getFlowTopicCenteredPosition`, and unused spacing values and helper functions in `layoutConfig`.
+
+### Tests
+
+- [`frontend/tests/diagramLayoutGolden.spec.ts`](frontend/tests/diagramLayoutGolden.spec.ts) snapshots load, estimated, and measured positions for every thinking-map type, including bilingual text, wrapped labels, and underline, rectangle, and rounded shapes. It also checks that a second layout pass moves nothing.
+
 ## [5.180.216] - 2026-11-09
 
 > **Mind maps measure with the font they will paint, a narrow canvas keeps the ribbon readable, and each teacher sees only their own rows.**

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_CENTER_X, DEFAULT_CENTER_Y } from '@/composables/diagrams/layoutConfig'
 import { recalculateCircleMapLayout } from '@/stores/specLoader/circleMap'
-import { calculateCircleMapLayout } from '@/stores/specLoader/utils'
+import { calculateCircleMapLayout, circleMapRingGeometry } from '@/stores/specLoader/utils'
 import type { DiagramNode } from '@/types'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 
@@ -45,19 +45,11 @@ describe('circle map default topic radius', () => {
 
   it('grows the ring for a rectangle context and keeps an oval square on the circle', () => {
     const plain = calculateCircleMapLayout(8, ['Context 1', 'Context 2'], 'Topic')
-    const oval = calculateCircleMapLayout(8, ['Context 1', 'Context 2'], 'Topic', {
-      contextPackR: plain.uniformContextR,
-      topicPackR: plain.topicR,
-    })
+    const oval = circleMapRingGeometry(8, plain.topicR, plain.uniformContextR)
     expect(oval.childrenRadius).toBe(plain.childrenRadius)
     expect(oval.outerCircleR).toBe(plain.outerCircleR)
-    expect(oval.uniformContextR).toBe(plain.uniformContextR)
 
-    const boxed = calculateCircleMapLayout(8, ['Context 1', 'Context 2'], 'Topic', {
-      contextPackR: plain.uniformContextR * Math.SQRT2,
-      topicPackR: plain.topicR,
-    })
-    expect(boxed.uniformContextR).toBe(plain.uniformContextR)
+    const boxed = circleMapRingGeometry(8, plain.topicR, plain.uniformContextR * Math.SQRT2)
     expect(boxed.childrenRadius).toBeGreaterThan(plain.childrenRadius)
     expect(boxed.outerCircleR).toBeGreaterThan(plain.outerCircleR)
   })

@@ -4,7 +4,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { attachRemainingSecondary } from '@/diagramBilingual/attachRest'
-import { offsetFlowLayoutForSecondary } from '@/diagramBilingual/flowLayout'
 import { loadFlowMapSpec, recalculateFlowMapLayout } from '@/stores/specLoader/flowMap'
 import type { DiagramNode } from '@/types'
 import {
@@ -50,7 +49,7 @@ function prepare(spec: FlowCase): DiagramNode[] {
     substeps: spec.substeps ?? [],
     ...(spec.secondary ? { secondary: spec.secondary } : {}),
   })
-  return offsetFlowLayoutForSecondary(loaded.nodes)
+  return recalculateFlowMapLayout(loaded.nodes)
 }
 
 function measuredLayout(nodes: DiagramNode[]): DiagramNode[] {

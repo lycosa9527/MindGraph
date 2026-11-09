@@ -121,10 +121,8 @@ export interface DiagramContext {
   nodeDimensions: Ref<Record<string, { width: number; height: number }>>
   layoutRecalcTrigger: Ref<number>
 
-  // Multi-flow layout state refs (Phase 4)
-  nodeWidths: Ref<Record<string, number>>
+  /** Multi-flow event-pill width measured from the DOM. */
   topicNodeWidth: Ref<number | null>
-  multiFlowMapRecalcTrigger: Ref<number>
   sessionEditCount: Ref<number>
   /** True when canvas WS collaboration session is active (unique new node ids). */
   collabSessionActive: Ref<boolean>
@@ -165,7 +163,6 @@ export interface DiagramContext {
   ) => boolean
   getDoubleBubbleSpecFromData: () => Record<string, unknown> | null
   buildFlowMapSpecFromNodes: () => Record<string, unknown> | null
-  setNodeWidth: (nodeId: string, width: number | null) => void
   setDiagramType: (newType: DiagramType) => boolean
   resetSessionEditCount: () => void
   getMindMapDescendantIds: (rootNodeId: string) => Set<string>

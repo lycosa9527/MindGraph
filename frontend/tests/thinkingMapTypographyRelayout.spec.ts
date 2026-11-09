@@ -14,7 +14,6 @@ function mockCtx(diagramType: string): DiagramContext {
     type: ref(diagramType),
     nodeDimensions: ref({}),
     layoutRecalcTrigger: ref(0),
-    multiFlowMapRecalcTrigger: ref(0),
     viewBus: { emit: vi.fn() },
   } as unknown as DiagramContext
 }
@@ -32,7 +31,6 @@ describe('thinkingMapTypographyRelayout', () => {
     const cause: DiagramNode = { id: 'cause-1', text: 'Cause', type: 'flow' }
     applyThinkingMapTypographyRelayout(ctx, 'cause-1', cause, { fontStyle: 'italic' })
     expect(ctx.nodeDimensions.value['cause-1']).toBeUndefined()
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(1)
     expect(ctx.layoutRecalcTrigger.value).toBe(1)
   })
 

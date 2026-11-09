@@ -63,6 +63,47 @@ function glossFields(raw: unknown): { textSecondary?: string } {
   return line ? { textSecondary: line } : {}
 }
 
+interface TreeMapGroupDims {
+  categoryWidth: number
+  categoryHeight: number
+  leafWidths: number[]
+  leafHeights: number[]
+  maxWidth: number
+}
+
+interface TreeMapColumnPlacement {
+  categoryX: number
+  leaves: { x: number; y: number }[]
+}
+
+/**
+ * Category columns side by side, centered on the canvas. Each column is as
+ * wide as its widest node; the category and its leaves center in the column
+ * and the leaves stack under the category.
+ */
+function placeTreeMapColumns(
+  groups: readonly TreeMapGroupDims[],
+  categoryY: number
+): TreeMapColumnPlacement[] {
+  const totalCategoriesWidth =
+    groups.reduce((sum, group) => sum + group.maxWidth, 0) +
+    Math.max(0, groups.length - 1) * TREE_MAP_CATEGORY_SPACING
+  let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
+  return groups.map((dims) => {
+    const groupCenterX = columnLeft + dims.maxWidth / 2
+    let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
+    const leaves = dims.leafWidths.map((leafWidth, leafIndex) => {
+      const position = { x: groupCenterX - leafWidth / 2, y: leafY }
+      leafY +=
+        (dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight) +
+        TREE_MAP_LEAF_SPACING
+      return position
+    })
+    columnLeft += dims.maxWidth + TREE_MAP_CATEGORY_SPACING
+    return { categoryX: groupCenterX - dims.categoryWidth / 2, leaves }
+  })
+}
+
 /**
  * Load tree map spec into diagram nodes and connections
  *
@@ -125,15 +166,8 @@ function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResul
     const categoryY = treeMapCategoryTopY(topicY, topicDims.height, labelBox)
 
     // Per-group: measure all node dimensions (width + height for wrapped lines)
-    interface GroupDims {
-      categoryWidth: number
-      categoryHeight: number
-      leafWidths: number[]
-      leafHeights: number[]
-      maxWidth: number
-    }
-    const groupDimsList: GroupDims[] = []
-    categories.forEach((category, _catIndex) => {
+    const groupDimsList: TreeMapGroupDims[] = []
+    categories.forEach((category) => {
       const catBox = measureTreeMapNodeBox(category.text, {
         role: 'category',
         fontSize: TREE_MAP_BRANCH_FONT_SIZE,
@@ -166,17 +200,12 @@ function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResul
       })
     })
 
-    const numCategories = categories.length
-    const totalCategoriesWidth =
-      groupDimsList.reduce((a, g) => a + g.maxWidth, 0) +
-      Math.max(0, numCategories - 1) * TREE_MAP_CATEGORY_SPACING
-    let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
+    const placements = placeTreeMapColumns(groupDimsList, categoryY)
 
     categories.forEach((category, catIndex) => {
       const categoryId = takeTreeMapStableId(claimedIds, category.id)
       const dims = groupDimsList[catIndex]
-      const groupCenterX = columnLeft + dims.maxWidth / 2
-      const categoryX = groupCenterX - dims.categoryWidth / 2
+      const placement = placements[catIndex]
       const groupColor = thinkingMapStampedBranchColor(catIndex)
 
       nodes.push({
@@ -184,7 +213,7 @@ function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResul
         text: category.text,
         ...glossFields(category.textSecondary),
         type: 'branch',
-        position: { x: categoryX, y: categoryY },
+        position: { x: placement.categoryX, y: categoryY },
         style: { width: dims.categoryWidth },
         data: stampTreeCategoryData(catIndex, { [TREE_MAP_UID_DATA_KEY]: categoryId }),
       })
@@ -200,20 +229,16 @@ function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResul
       })
 
       const leaves = category.children || []
-      let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
 
       leaves.forEach((leaf, leafIndex) => {
         const leafId = takeTreeMapStableId(claimedIds, leaf.id)
-        const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
-        const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
-        const leafX = groupCenterX - leafWidth / 2
         nodes.push({
           id: leafId,
           text: leaf.text,
           ...glossFields(leaf.textSecondary),
           type: 'branch',
-          position: { x: leafX, y: leafY },
-          style: { width: leafWidth },
+          position: placement.leaves[leafIndex],
+          style: { width: dims.leafWidths[leafIndex] },
           data: stampTreeLeafData(catIndex, leafIndex, categoryId, {
             [TREE_MAP_UID_DATA_KEY]: leafId,
           }),
@@ -229,11 +254,7 @@ function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResul
           targetPosition: 'top',
           style: { strokeColor: groupColor.border },
         })
-
-        leafY += leafHeight + TREE_MAP_LEAF_SPACING
       })
-
-      columnLeft += dims.maxWidth + TREE_MAP_CATEGORY_SPACING
     })
 
     // Add dimension label node if dimension field exists
@@ -272,14 +293,6 @@ function resolveTreeMapBox(
     width: measuredBoxExtent(pinia.width, measured.width, NODE_MIN_DIMENSIONS.branch.minWidth),
     height: measuredBoxExtent(pinia.height, measured.height, NODE_MIN_DIMENSIONS.branch.minHeight),
   }
-}
-
-interface TreeMapGroupDims {
-  categoryWidth: number
-  categoryHeight: number
-  leafWidths: number[]
-  leafHeights: number[]
-  maxWidth: number
 }
 
 /**
@@ -384,23 +397,17 @@ function recalculateTreeMapLayoutMeasured(
       )
     : null
   const categoryY = treeMapCategoryTopY(topicY, topicDims.height, labelBox)
-  const numCategories = columns.length
-  const totalCategoriesWidth =
-    groupDimsList.reduce((a, g) => a + g.maxWidth, 0) +
-    Math.max(0, numCategories - 1) * TREE_MAP_CATEGORY_SPACING
-  let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
+  const placements = placeTreeMapColumns(groupDimsList, categoryY)
 
   columns.forEach((column, catIndex) => {
     const dims = groupDimsList[catIndex]
-    if (!dims) return
-    const groupCenterX = columnLeft + dims.maxWidth / 2
-    const categoryX = groupCenterX - dims.categoryWidth / 2
+    const placement = placements[catIndex]
     const catId = column.category.id
     const catNode = catId ? byId.get(catId) : undefined
     if (catId && catNode) {
       byId.set(catId, {
         ...catNode,
-        position: { x: categoryX, y: categoryY },
+        position: { x: placement.categoryX, y: categoryY },
         style: {
           ...catNode.style,
           width: dims.categoryWidth,
@@ -409,26 +416,19 @@ function recalculateTreeMapLayoutMeasured(
       })
     }
 
-    let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
-
     column.leaves.forEach((leaf, leafIndex) => {
-      const leafId = leaf.id
-      if (!leafId) return
-      const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
-      const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
-      const leafX = groupCenterX - leafWidth / 2
-      const leafNode = byId.get(leafId)
-      if (leafNode) {
-        byId.set(leafId, {
-          ...leafNode,
-          position: { x: leafX, y: leafY },
-          style: { ...leafNode.style, width: leafWidth, height: leafHeight },
-        })
-      }
-      leafY += leafHeight + TREE_MAP_LEAF_SPACING
+      const leafNode = leaf.id ? byId.get(leaf.id) : undefined
+      if (!leafNode) return
+      byId.set(leafNode.id, {
+        ...leafNode,
+        position: placement.leaves[leafIndex],
+        style: {
+          ...leafNode.style,
+          width: dims.leafWidths[leafIndex],
+          height: dims.leafHeights[leafIndex],
+        },
+      })
     })
-
-    columnLeft += dims.maxWidth + TREE_MAP_CATEGORY_SPACING
   })
 
   if (dimLabel && labelBox) {

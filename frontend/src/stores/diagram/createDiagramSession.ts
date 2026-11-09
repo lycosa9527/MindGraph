@@ -113,8 +113,6 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   const topicNodeWidth = ref<number | null>(null)
   const mindMapCurveExtentBaseline = ref<MindMapCurveExtents | null>(null)
   const mindMapTopicActualWidth = ref<number | null>(null)
-  const nodeWidths = ref<Record<string, number>>({})
-  const multiFlowMapRecalcTrigger = ref(0)
   const mindMapNodeWidths = ref<Record<string, number>>({})
   const mindMapNodeHeights = ref<Record<string, number>>({})
   const mindMapRecalcTrigger = ref(0)
@@ -169,9 +167,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     copiedNodes,
     mindMapCurveExtentBaseline,
     mindMapTopicActualWidth,
-    nodeWidths,
     topicNodeWidth,
-    multiFlowMapRecalcTrigger,
     mindMapNodeWidths,
     mindMapNodeHeights,
     mindMapRecalcTrigger,
@@ -357,8 +353,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   ctx.setExpectedNodeCount = setExpectedNodeCount
 
   const multiFlowLayoutSlice = useMultiFlowLayoutSlice(ctx)
-  const { setTopicNodeWidth, setNodeWidth } = multiFlowLayoutSlice
-  ctx.setNodeWidth = setNodeWidth
+  const { setTopicNodeWidth } = multiFlowLayoutSlice
 
   const mindMapLayoutSlice = useMindMapLayoutSlice(ctx)
   const {
@@ -508,8 +503,6 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     historyIndex.value = -1
     copiedNodes.value = []
     topicNodeWidth.value = null
-    nodeWidths.value = {}
-    multiFlowMapRecalcTrigger.value = 0
     mindMapCurveExtentBaseline.value = null
     mindMapTopicActualWidth.value = null
     mindMapNodeWidths.value = {}
@@ -708,7 +701,6 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     resetTitle,
     shouldAutoUpdateTitle,
     setTopicNodeWidth,
-    setNodeWidth,
     setConceptMapFocusQuestion,
     setMindMapTopicWidth,
     setMindMapTopicMeasured,

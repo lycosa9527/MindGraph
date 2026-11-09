@@ -6,6 +6,8 @@
 import { translateDimension } from '@/composables/core/useLanguage'
 import {
   DEFAULT_CENTER_X,
+  LABEL_NODE_PAD_X,
+  LABEL_NODE_PAD_Y,
   NODE_MIN_DIMENSIONS,
   TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from '@/composables/diagrams/layoutConfig'
@@ -20,9 +22,6 @@ export const TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX = 220
 export const TREE_MAP_DIMENSION_LABEL_FONT_PX = 14
 /** Brace LabelNode text max-width (InlineEditableText). */
 export const BRACE_DIMENSION_LABEL_MAX_TEXT_PX = 200
-/** LabelNode padding: 4px 8px. */
-const LABEL_PAD_X = 16
-const LABEL_PAD_Y = 8
 /** Gap between the topic bottom and the label. */
 export const TREE_MAP_DIMENSION_GAP_ABOVE = 10
 /** Gap between the label bottom and the category row. */
@@ -97,7 +96,10 @@ export function resolveBraceMapDimensionLabelWidth(
     measureTextWidth(display, TREE_MAP_DIMENSION_LABEL_FONT_PX),
     BRACE_DIMENSION_LABEL_MAX_TEXT_PX
   )
-  const estimated = Math.max(NODE_MIN_DIMENSIONS.label.minWidth, Math.ceil(textWidth) + LABEL_PAD_X)
+  const estimated = Math.max(
+    NODE_MIN_DIMENSIONS.label.minWidth,
+    Math.ceil(textWidth) + LABEL_NODE_PAD_X
+  )
   if (measuredWidth == null || measuredWidth <= 0) return estimated
   return Math.max(estimated, measuredWidth)
 }
@@ -113,10 +115,13 @@ export function measureTreeMapDimensionLabelBox(
     TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX,
     { fontWeight: 'normal' }
   )
-  const width = Math.max(NODE_MIN_DIMENSIONS.label.minWidth, Math.ceil(block.width) + LABEL_PAD_X)
+  const width = Math.max(
+    NODE_MIN_DIMENSIONS.label.minWidth,
+    Math.ceil(block.width) + LABEL_NODE_PAD_X
+  )
   const height = Math.max(
     NODE_MIN_DIMENSIONS.label.minHeight,
-    Math.ceil(block.height) + LABEL_PAD_Y
+    Math.ceil(block.height) + LABEL_NODE_PAD_Y
   )
   const gloss = (secondary ?? '').trim()
   if (!gloss) return { width, height }
@@ -128,7 +133,7 @@ export function measureTreeMapDimensionLabelBox(
   const stacked = stackedTextBlock(
     width,
     height,
-    glossWidth + LABEL_PAD_X,
+    glossWidth + LABEL_NODE_PAD_X,
     TREE_MAP_DIMENSION_LABEL_FONT_PX,
     gloss
   )

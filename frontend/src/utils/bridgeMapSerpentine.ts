@@ -5,20 +5,18 @@
  */
 import { bridgeGapCenterY } from '@/utils/bridgeMapLabelLayout'
 import { bridgeSectionRight } from '@/utils/bridgeMapPairBox'
+import {
+  type SerpentineDirection,
+  type SerpentineSlot,
+  placeSerpentine,
+  serpentineSlot,
+} from '@/utils/layout/serpentine'
 
 export const BRIDGE_PAIRS_PER_ROW = 5
 export const BRIDGE_ROW_GAP = 72
 
 /** How far a bridge U-turn steps out past the outer pair before it drops. */
 export const BRIDGE_TURN_OUTSET_PX = 45
-
-export type BridgeRowDirection = 'ltr' | 'rtl'
-
-export interface BridgePairSlot {
-  row: number
-  column: number
-  direction: BridgeRowDirection
-}
 
 export interface BridgePairBox {
   upperWidth: number
@@ -27,7 +25,7 @@ export interface BridgePairBox {
   lowerHeight: number
 }
 
-export interface BridgePairPlacement extends BridgePairSlot {
+export interface BridgePairPlacement extends SerpentineSlot {
   x: number
   upperY: number
   lowerY: number
@@ -64,12 +62,8 @@ export interface BridgeSerpentineInk {
   along: BridgeAlongMarker[]
 }
 
-export function bridgePairSlot(index: number, perRow = BRIDGE_PAIRS_PER_ROW): BridgePairSlot {
-  const row = Math.floor(index / perRow)
-  const offset = index % perRow
-  const direction: BridgeRowDirection = row % 2 === 0 ? 'ltr' : 'rtl'
-  const column = direction === 'ltr' ? offset : perRow - 1 - offset
-  return { row, column, direction }
+export function bridgePairSlot(index: number, perRow = BRIDGE_PAIRS_PER_ROW): SerpentineSlot {
+  return serpentineSlot(index, perRow)
 }
 
 export function placeBridgeSerpentine(
@@ -80,55 +74,26 @@ export function placeBridgeSerpentine(
   columnGap: number,
   rowGap = BRIDGE_ROW_GAP
 ): BridgePairPlacement[] {
-  if (pairs.length === 0) return []
-
-  const columnCount = Math.min(BRIDGE_PAIRS_PER_ROW, pairs.length)
-  const columnWidth = Array.from({ length: columnCount }, () => 0)
-  pairs.forEach((pair, index) => {
-    const slot = bridgePairSlot(index)
-    const column = Math.min(slot.column, columnCount - 1)
-    columnWidth[column] = Math.max(columnWidth[column], pair.upperWidth, pair.lowerWidth)
-  })
-
-  const columnLeft: number[] = []
-  let cursor = originX
-  for (let column = 0; column < columnCount; column += 1) {
-    columnLeft.push(cursor)
-    cursor += columnWidth[column] + columnGap
-  }
-
-  const placed: BridgePairPlacement[] = []
-  let rowCenterY = firstRowCenterY
-  let index = 0
-  while (index < pairs.length) {
-    const rowEnd = Math.min(index + BRIDGE_PAIRS_PER_ROW, pairs.length)
-    let rowBottom = rowCenterY
-    for (let pairIndex = index; pairIndex < rowEnd; pairIndex += 1) {
-      const pair = pairs[pairIndex]
-      const slot = bridgePairSlot(pairIndex)
-      const column = Math.min(slot.column, columnCount - 1)
-      const upperY = rowCenterY - verticalGap - pair.upperHeight
-      const lowerY = rowCenterY + verticalGap
-      rowBottom = Math.max(rowBottom, lowerY + pair.lowerHeight)
-      placed.push({
-        row: slot.row,
-        column,
-        direction: slot.direction,
-        x: columnLeft[column],
-        upperY,
-        lowerY,
-      })
-    }
-    index = rowEnd
-    if (index >= pairs.length) break
-    const nextEnd = Math.min(index + BRIDGE_PAIRS_PER_ROW, pairs.length)
-    let nextMaxUpper = 0
-    for (let pairIndex = index; pairIndex < nextEnd; pairIndex += 1) {
-      nextMaxUpper = Math.max(nextMaxUpper, pairs[pairIndex].upperHeight)
-    }
-    rowCenterY = rowBottom + rowGap + verticalGap + nextMaxUpper
-  }
-  return placed
+  const cells = pairs.map((pair) => ({
+    width: Math.max(pair.upperWidth, pair.lowerWidth),
+    above: verticalGap + pair.upperHeight,
+    below: verticalGap + pair.lowerHeight,
+  }))
+  return placeSerpentine(
+    cells,
+    BRIDGE_PAIRS_PER_ROW,
+    originX,
+    firstRowCenterY,
+    columnGap,
+    rowGap
+  ).map((cell, index) => ({
+    row: cell.row,
+    column: cell.column,
+    direction: cell.direction,
+    x: cell.columnLeft,
+    upperY: cell.rowCenterY - verticalGap - pairs[index].upperHeight,
+    lowerY: cell.rowCenterY + verticalGap,
+  }))
 }
 
 function sectionLeft(pair: BridgeInkPair): number {
@@ -156,7 +121,7 @@ interface RowInk {
   left: number
   right: number
   y: number
-  direction: BridgeRowDirection
+  direction: SerpentineDirection
 }
 
 /** Bridge stroke and the "as" marks, including the vertical U-turn. */

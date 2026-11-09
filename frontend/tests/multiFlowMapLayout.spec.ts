@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
+import { nodeStylePatchHasTypography } from '@/stores/diagram/thinkingMapTypographyRelayout'
 import {
   estimateMultiFlowTopicWidth,
   loadMultiFlowMapSpec,
   recalculateMultiFlowMapLayout,
 } from '@/stores/specLoader/multiFlowMap'
-import { nodeStylePatchHasTypography } from '@/stores/diagram/thinkingMapTypographyRelayout'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 
 describe('multi-flow typography layout', () => {
@@ -16,7 +16,7 @@ describe('multi-flow typography layout', () => {
       causes: ['认知资源不足'],
       effects: ['Effect'],
     })
-    const plain = recalculateMultiFlowMapLayout(loaded.nodes, null, {}, {})
+    const plain = recalculateMultiFlowMapLayout(loaded.nodes, null, {})
     const styled = recalculateMultiFlowMapLayout(
       loaded.nodes.map((node) =>
         isMultiFlowCauseNode(node)
@@ -24,7 +24,6 @@ describe('multi-flow typography layout', () => {
           : node
       ),
       null,
-      {},
       {}
     )
     const plainCause = plain.find((node) => isMultiFlowCauseNode(node))
@@ -52,7 +51,7 @@ describe('multi-flow topic width after autocomplete', () => {
       effects: ['健康问题', '经济损失'],
     })
     const topicWidth = estimateMultiFlowTopicWidth('Air Pollution in Cities')
-    const nodes = recalculateMultiFlowMapLayout(loaded.nodes, topicWidth, {}, {})
+    const nodes = recalculateMultiFlowMapLayout(loaded.nodes, topicWidth, {})
     const event = nodes.find((node) => node.id === 'event')
     expect(event).toBeDefined()
     const topicLeft = event?.position.x ?? 0
@@ -72,9 +71,9 @@ describe('multi-flow topic width after autocomplete', () => {
       causes: ['A'],
       effects: ['B'],
     })
-    const stale = recalculateMultiFlowMapLayout(loaded.nodes, MULTI_FLOW_MAP_TOPIC_WIDTH, {}, {})
+    const stale = recalculateMultiFlowMapLayout(loaded.nodes, MULTI_FLOW_MAP_TOPIC_WIDTH, {})
     const measured = estimateMultiFlowTopicWidth('Air Pollution in Cities')
-    const fixed = recalculateMultiFlowMapLayout(loaded.nodes, measured, {}, {})
+    const fixed = recalculateMultiFlowMapLayout(loaded.nodes, measured, {})
     const staleEffect = stale.find((node) => isMultiFlowEffectNode(node))
     const fixedEffect = fixed.find((node) => isMultiFlowEffectNode(node))
     expect(fixedEffect?.position.x).toBeGreaterThan(staleEffect?.position.x ?? 0)

@@ -13,13 +13,13 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import type { Connection, DiagramNode } from '@/types'
+import { normalizeLabel } from '@/utils/cmapLabels'
 import {
   minRadiusForNoOverlap,
   pillHalfExtentForOverlap,
   polarToPosition,
-} from '@/composables/diagrams/useRadialLayout'
-import type { Connection, DiagramNode } from '@/types'
-import { normalizeLabel } from '@/utils/cmapLabels'
+} from '@/utils/layout/radial'
 
 import type { SpecLoaderResult } from './types'
 

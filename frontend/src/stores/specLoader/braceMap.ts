@@ -54,6 +54,21 @@ const BRACE_TOPIC_PADDING_X = 36 + 3 // 18px each side + 1.5px border
 const BRACE_PILL_PADDING_X = 36 + 3 // 18px each side + 1.5px border
 const BRACE_NODE_BASE_MAX_TEXT_WIDTH = 350
 const BRACE_TOPIC_BASE_MAX_TEXT_WIDTH = 300
+/** Gap between the topic's bottom edge and the dimension label under it. */
+const BRACE_DIMENSION_LABEL_GAP = 20
+
+function braceDimensionLabelPosition(
+  rootPos: { x: number; y: number } | undefined,
+  rootW: number,
+  rootH: number,
+  labelWidth: number
+): { x: number; y: number } {
+  const topicCenterX = (rootPos?.x ?? DEFAULT_PADDING) + rootW / 2
+  return {
+    x: topicCenterX - labelWidth / 2,
+    y: (rootPos?.y ?? DEFAULT_PADDING) + rootH + BRACE_DIMENSION_LABEL_GAP,
+  }
+}
 
 function getBraceFontSize(depth: number): number {
   if (depth === 0) return BRACE_TOPIC_FONT_SIZE
@@ -208,7 +223,6 @@ function flattenTree(
   parentId: string | null,
   nodes: FlatNode[],
   edges: { source: string; target: string }[],
-  counter: { value: number },
   claimedIds: Set<string>,
   mode: BraceFlattenMode = 'mint'
 ): string {
@@ -228,7 +242,7 @@ function flattenTree(
 
   if (node.parts && node.parts.length > 0) {
     node.parts.forEach((part) => {
-      flattenTree(part, depth + 1, nodeId, nodes, edges, counter, claimedIds, mode)
+      flattenTree(part, depth + 1, nodeId, nodes, edges, claimedIds, mode)
     })
   }
 
@@ -243,6 +257,24 @@ interface LayoutResult {
   positions: Map<string, { x: number; y: number }>
 }
 
+function braceChildrenMap(edges: readonly { source: string; target: string }[]) {
+  const childrenMap = new Map<string, string[]>()
+  for (const e of edges) {
+    const kids = childrenMap.get(e.source)
+    if (kids) kids.push(e.target)
+    else childrenMap.set(e.source, [e.target])
+  }
+  return childrenMap
+}
+
+function braceRootId(
+  flatNodes: readonly FlatNode[],
+  edges: readonly { source: string; target: string }[]
+): string | undefined {
+  const targetIds = new Set(edges.map((e) => e.target))
+  return flatNodes.find((n) => !targetIds.has(n.id))?.id
+}
+
 function computeColumnLayout(
   flatNodes: FlatNode[],
   edges: { source: string; target: string }[],
@@ -252,12 +284,7 @@ function computeColumnLayout(
   const nodeMap = new Map<string, FlatNode>()
   for (const n of flatNodes) nodeMap.set(n.id, n)
 
-  const childrenMap = new Map<string, string[]>()
-  for (const e of edges) {
-    const kids = childrenMap.get(e.source)
-    if (kids) kids.push(e.target)
-    else childrenMap.set(e.source, [e.target])
-  }
+  const childrenMap = braceChildrenMap(edges)
 
   const getW = (id: string): number =>
     measuredBoxExtent(
@@ -290,14 +317,16 @@ function computeColumnLayout(
 
   // --- Y: bottom-up recursive stacking ---
   const newY = new Map<string, number>()
+  const childrenTotals = new Map<string, number>()
 
   function computeSubtreeSpan(nodeId: string): number {
     const h = getH(nodeId)
     const kids = childrenMap.get(nodeId)
     if (!kids || kids.length === 0) return h
-    const childSpans = kids.map(computeSubtreeSpan)
     const childrenTotal =
-      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * BRACE_MAP_NODE_SPACING
+      kids.reduce((sum, kid) => sum + computeSubtreeSpan(kid), 0) +
+      (kids.length - 1) * BRACE_MAP_NODE_SPACING
+    childrenTotals.set(nodeId, childrenTotal)
     return Math.max(h, childrenTotal)
   }
 
@@ -310,9 +339,7 @@ function computeColumnLayout(
       return startY + h
     }
 
-    const childSpans = kids.map(computeSubtreeSpan)
-    const childrenTotal =
-      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * BRACE_MAP_NODE_SPACING
+    const childrenTotal = childrenTotals.get(nodeId) ?? 0
 
     if (childrenTotal >= h) {
       let y = startY
@@ -338,10 +365,9 @@ function computeColumnLayout(
     return startY + h
   }
 
-  // Find root (node with no incoming edge)
-  const targetIds = new Set(edges.map((e) => e.target))
-  const rootId = flatNodes.find((n) => !targetIds.has(n.id))?.id ?? flatNodes[0]?.id
+  const rootId = braceRootId(flatNodes, edges) ?? flatNodes[0]?.id
   if (rootId) {
+    computeSubtreeSpan(rootId)
     assignSubtreeY(rootId, DEFAULT_PADDING)
   }
 
@@ -378,15 +404,8 @@ function computeGroupIndices(
   flatNodes: FlatNode[],
   edges: { source: string; target: string }[]
 ): Map<string, number> {
-  const targetIds = new Set(edges.map((e) => e.target))
-  const rootId = flatNodes.find((n) => !targetIds.has(n.id))?.id
-
-  const childrenMap = new Map<string, string[]>()
-  for (const e of edges) {
-    const kids = childrenMap.get(e.source)
-    if (kids) kids.push(e.target)
-    else childrenMap.set(e.source, [e.target])
-  }
+  const rootId = braceRootId(flatNodes, edges)
+  const childrenMap = braceChildrenMap(edges)
 
   const groupIndexMap = new Map<string, number>()
   if (!rootId) return groupIndexMap
@@ -452,7 +471,6 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       null,
       flatNodes,
       edges,
-      { value: 0 },
       new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label'])
     )
 
@@ -492,15 +510,11 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       const rootPos = rootNode ? layout.positions.get(rootNode.id) : undefined
       const rootW = rootNode?.width ?? DEFAULT_NODE_WIDTH
       const rootH = rootNode?.height ?? DEFAULT_NODE_HEIGHT
-      const topicCenterX = (rootPos?.x ?? DEFAULT_PADDING) + rootW / 2
       nodes.push({
         id: 'dimension-label',
         text: dimension || '',
         type: 'label',
-        position: {
-          x: topicCenterX - labelWidth / 2,
-          y: (rootPos?.y ?? DEFAULT_PADDING) + rootH + 20,
-        },
+        position: braceDimensionLabelPosition(rootPos, rootW, rootH, labelWidth),
       })
     }
   }
@@ -548,18 +562,14 @@ export function recalculateBraceMapLayout(
   const rootNode = treeNodes.find((n) => !targetIds.has(n.id)) || treeNodes[0]
   const rootId = rootNode.id
 
-  // Build tree and flatten
-  const childrenMap = new Map<string, string[]>()
-  connections.forEach((conn) => {
-    if (!childrenMap.has(conn.source)) childrenMap.set(conn.source, [])
-    const children = childrenMap.get(conn.source)
-    if (children) {
-      children.push(conn.target)
-    }
-  })
+  const childrenMap = braceChildrenMap(connections)
+  const diagramById = new Map<string, DiagramNode>()
+  for (const n of treeNodes) {
+    if (n.id) diagramById.set(n.id, n)
+  }
 
   function buildTree(nodeId: string): BraceNode {
-    const node = treeNodes.find((n) => n.id === nodeId)
+    const node = diagramById.get(nodeId)
     const childIds = childrenMap.get(nodeId) ?? []
     const parts = childIds.map((id) => buildTree(id))
     return {
@@ -581,15 +591,10 @@ export function recalculateBraceMapLayout(
     null,
     flatNodes,
     edges,
-    { value: 0 },
     new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label']),
     'live'
   )
 
-  const diagramById = new Map<string, DiagramNode>()
-  for (const n of treeNodes) {
-    if (n.id) diagramById.set(n.id, n)
-  }
   refreshBraceFlatNodesFromDiagram(flatNodes, diagramById, adornments)
 
   const labelWidth = labelNode
@@ -632,15 +637,11 @@ export function recalculateBraceMapLayout(
       rootFlatNode?.height ?? DEFAULT_NODE_HEIGHT,
       NODE_MIN_DIMENSIONS.brace.minHeight
     )
-    const topicCenterX = (rootPos?.x ?? DEFAULT_PADDING) + rootW / 2
     result = [
       ...result,
       {
         ...labelNode,
-        position: {
-          x: topicCenterX - labelWidth / 2,
-          y: (rootPos?.y ?? DEFAULT_PADDING) + rootH + 20,
-        },
+        position: braceDimensionLabelPosition(rootPos, rootW, rootH, labelWidth),
       },
     ]
   }

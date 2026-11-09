@@ -52,7 +52,6 @@ import {
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
-  recalculateTreeMapLayout,
 } from '../specLoader'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
@@ -174,10 +173,6 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         updates.textSecondary !== undefined
       ) {
         delete ctx.nodeDimensions.value[nodeId]
-        ctx.data.value.nodes = recalculateTreeMapLayout(
-          ctx.data.value.nodes,
-          ctx.nodeDimensions.value
-        )
         ctx.layoutRecalcTrigger.value++
       }
     }
@@ -408,7 +403,6 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         ctx.data.value.nodes,
         null,
-        {},
         ctx.nodeDimensions.value
       )
       const recalculatedConnections: Connection[] = []
@@ -533,33 +527,11 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     }
 
     if (ctx.type.value === 'multi_flow_map') {
-      ctx.setNodeWidth(nodeId, null)
-
       ctx.data.value.nodes.splice(index, 1)
-
-      const oldCauseNodes = ctx.data.value.nodes.filter((n) => isMultiFlowCauseNode(n))
-      const oldEffectNodes = ctx.data.value.nodes.filter((n) => isMultiFlowEffectNode(n))
-
-      const newNodeWidths: Record<string, number> = {}
-      oldCauseNodes.forEach((oldNode) => {
-        const oldWidth = ctx.nodeWidths.value[oldNode.id]
-        if (oldWidth) {
-          newNodeWidths[oldNode.id] = oldWidth
-        }
-      })
-      oldEffectNodes.forEach((oldNode) => {
-        const oldWidth = ctx.nodeWidths.value[oldNode.id]
-        if (oldWidth) {
-          newNodeWidths[oldNode.id] = oldWidth
-        }
-      })
-
-      ctx.nodeWidths.value = newNodeWidths
 
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         ctx.data.value.nodes,
         ctx.topicNodeWidth.value,
-        ctx.nodeWidths.value,
         ctx.nodeDimensions.value
       )
       const recalculatedConnections: Connection[] = []
@@ -593,8 +565,6 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
         useConceptMapRelationshipStore().clearAll()
       }
-
-      ctx.multiFlowMapRecalcTrigger.value++
     } else if (ctx.type.value === 'flow_map') {
       const idsToRemove = new Set<string>([nodeId])
       if (isFlowMapStepNode(node)) {

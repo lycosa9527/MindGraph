@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { attachRemainingSecondary } from '@/diagramBilingual/attachRest'
-import { offsetFlowLayoutForSecondary } from '@/diagramBilingual/flowLayout'
-import { secondaryLineBoxHeight, stackedTextBlock } from '@/diagramBilingual/measure'
+import { stackedTextBlock } from '@/diagramBilingual/measure'
 import type { DiagramNode } from '@/types'
 
 describe('stackedTextBlock', () => {
@@ -160,43 +159,5 @@ describe('attachRemainingSecondary', () => {
     expect(nodes[0].textSecondary).toBe('Photosynthesis')
     expect(nodes[1].textSecondary).toBe('Chloroplast')
     expect(nodes[2].textSecondary).toBe('Sunlight')
-  })
-})
-
-describe('offsetFlowLayoutForSecondary', () => {
-  it('moves substeps down by the step gloss and leaves a mono flow in place', () => {
-    const nodes: DiagramNode[] = [
-      {
-        id: 'flow-topic',
-        text: '做蛋糕',
-        type: 'topic',
-        position: { x: 0, y: 0 },
-        data: { orientation: 'horizontal' },
-      },
-      {
-        id: 'step-0',
-        text: '搅拌',
-        textSecondary: 'Mix',
-        type: 'flow',
-        position: { x: 80, y: 40 },
-        data: { stepIndex: 0 },
-      },
-      {
-        id: 'sub-0',
-        text: '面粉',
-        type: 'flowSubstep',
-        position: { x: 80, y: 100 },
-        data: { parentStepId: 'step-0', substepIndex: 0 },
-      },
-    ]
-    const shifted = offsetFlowLayoutForSecondary(nodes)
-    expect(shifted[0]).toBe(nodes[0])
-    expect(shifted[1]).toBe(nodes[1])
-    expect(shifted[2].position?.y).toBe(100 + secondaryLineBoxHeight(16))
-    const mono: DiagramNode[] = [
-      { id: 'flow-topic', text: 'Cake', type: 'topic', position: { x: 0, y: 0 } },
-      { id: 'step-0', text: 'Mix', type: 'flow', position: { x: 1, y: 2 }, data: { stepIndex: 0 } },
-    ]
-    expect(offsetFlowLayoutForSecondary(mono)).toBe(mono)
   })
 })

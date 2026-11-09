@@ -11,7 +11,6 @@ import {
   DEFAULT_CONTEXT_RADIUS,
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
-import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
@@ -23,17 +22,21 @@ import {
   takeBubbleMapStableId,
 } from '@/utils/bubbleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  BUBBLE_TOPIC_TO_RING_GAP,
+  bubbleMapChildrenRadius,
+  polarToPosition,
+  ringNodeDiskRadius,
+  ringNodeOutlinePackR,
+  ringNodePlacement,
+} from '@/utils/layout/radial'
 import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
   MIND_MAP_TEXT_LINE_HEIGHT,
   measureThinkingMapLabelBlockPx,
 } from '@/utils/mindMapTextWrap'
-import {
-  CIRCLE_MAP_OVAL_WIDTH_RATIO,
-  type NodeShape,
-  shapePackHalfExtent,
-} from '@/utils/nodeShapeStyle'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
@@ -128,38 +131,13 @@ function defaultContextBubbleRadiusFromText(text: string, secondary?: string): n
   return attributeBubbleRadius(text, CONTEXT_FONT_SIZE, false, DIAGRAM_NODE_FONT_STACK, secondary)
 }
 
-/**
- * Context bubble radius from node text and typography (not DOM box), so font-only edits resize circles.
- */
 function bubbleShapePacksAsBox(shape: NodeShape | undefined): boolean {
   return shape === 'rectangle' || shape === 'rounded' || shape === 'underline'
 }
 
-function bubbleNodeHalfExtents(
-  shape: NodeShape | undefined,
-  visualR: number
-): { halfX: number; halfY: number } {
-  if (shape === 'oval') {
-    return { halfX: visualR * CIRCLE_MAP_OVAL_WIDTH_RATIO, halfY: visualR }
-  }
-  return { halfX: visualR, halfY: visualR }
-}
-
-function bubbleOutlinePackR(
-  shape: NodeShape | undefined,
-  visualR: number,
-  measured: { width: number; height: number } | undefined
-): number {
-  if (shape === 'underline' && measured && measured.width > 0 && measured.height > 0) {
-    return shapePackHalfExtent('underline', measured.width / 2, measured.height / 2)
-  }
-  if (shape === 'oval') return visualR * CIRCLE_MAP_OVAL_WIDTH_RATIO
-  if (shape === 'rectangle' || shape === 'rounded') {
-    return shapePackHalfExtent(shape, visualR, visualR)
-  }
-  return visualR
-}
-
+/**
+ * Context bubble radius from node text and typography (not DOM box), so font-only edits resize circles.
+ */
 function bubbleContextRadiusFromNode(
   node: DiagramNode,
   adornments: MindMapAdornmentsByPath
@@ -205,18 +183,10 @@ export function recalculateBubbleMapLayout(
     }
   )
   const topicMeasured = topicNode ? nodeDimensions[topicNode.id] : undefined
-  let domTopicR = 0
-  if (
-    topicMeasured &&
-    topicMeasured.width > 0 &&
-    topicMeasured.height > 0 &&
-    topicStyle?.nodeShape !== 'underline'
-  ) {
-    domTopicR =
-      topicStyle?.nodeShape === 'oval'
-        ? topicMeasured.height / 2
-        : Math.max(topicMeasured.width, topicMeasured.height) / 2
-  }
+  const domTopicR =
+    topicStyle?.nodeShape === 'underline'
+      ? 0
+      : (ringNodeDiskRadius(topicStyle?.nodeShape, topicMeasured) ?? 0)
   const topicR = Math.max(DEFAULT_TOPIC_RADIUS, textTopicR, domTopicR)
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
@@ -225,16 +195,12 @@ export function recalculateBubbleMapLayout(
   const uniformRadius =
     bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  const topicPackR = bubbleOutlinePackR(
-    topicStyle?.nodeShape,
-    topicR,
-    topicNode ? nodeDimensions[topicNode.id] : undefined
-  )
+  const topicPackR = ringNodeOutlinePackR(topicStyle?.nodeShape, topicR, topicMeasured)
   let childPackR = 0
   for (const node of bubbleNodes) {
     childPackR = Math.max(
       childPackR,
-      bubbleOutlinePackR(node.style?.nodeShape, uniformRadius, nodeDimensions[node.id])
+      ringNodeOutlinePackR(node.style?.nodeShape, uniformRadius, nodeDimensions[node.id])
     )
   }
   if (childPackR <= 0) childPackR = uniformRadius
@@ -248,7 +214,7 @@ export function recalculateBubbleMapLayout(
     topicR,
     uniformRadius,
     uniformRadius,
-    50,
+    BUBBLE_TOPIC_TO_RING_GAP,
     packCustom ? { packAsBox: true, topicPackR, childPackR } : undefined
   )
 
@@ -256,15 +222,11 @@ export function recalculateBubbleMapLayout(
 
   if (topicNode) {
     const { noWrap: _noWrap, size: _topicSize, ...restStyle } = topicNode.style ?? {}
-    const topicUnderline = topicStyle?.nodeShape === 'underline'
-    const topicMeasured = nodeDimensions[topicNode.id]
-    const topicPacked =
-      topicUnderline && topicMeasured != null && topicMeasured.width > 0 && topicMeasured.height > 0
-    const topicHalves = topicPacked
-      ? { halfX: topicMeasured.width / 2, halfY: topicMeasured.height / 2 }
-      : bubbleNodeHalfExtents(topicStyle?.nodeShape, topicR)
-    const topicHalfX = topicHalves.halfX
-    const topicHalfY = topicHalves.halfY
+    const {
+      halfX: topicHalfX,
+      halfY: topicHalfY,
+      packed: topicPacked,
+    } = ringNodePlacement(topicStyle?.nodeShape, topicR, topicMeasured)
     result.push({
       ...topicNode,
       position: { x: Math.round(centerX - topicHalfX), y: Math.round(centerY - topicHalfY) },
@@ -282,18 +244,11 @@ export function recalculateBubbleMapLayout(
   }
 
   bubbleNodes.forEach((node, index) => {
-    const bubbleUnderline = node.style?.nodeShape === 'underline'
-    const bubbleMeasured = nodeDimensions[node.id]
-    const bubblePacked =
-      bubbleUnderline &&
-      bubbleMeasured != null &&
-      bubbleMeasured.width > 0 &&
-      bubbleMeasured.height > 0
-    const bubbleHalves = bubblePacked
-      ? { halfX: bubbleMeasured.width / 2, halfY: bubbleMeasured.height / 2 }
-      : bubbleNodeHalfExtents(node.style?.nodeShape, uniformRadius)
-    const bubbleHalfX = bubbleHalves.halfX
-    const bubbleHalfY = bubbleHalves.halfY
+    const {
+      halfX: bubbleHalfX,
+      halfY: bubbleHalfY,
+      packed: bubblePacked,
+    } = ringNodePlacement(node.style?.nodeShape, uniformRadius, nodeDimensions[node.id])
     const { x, y } = polarToPosition(
       index,
       nodeCount,

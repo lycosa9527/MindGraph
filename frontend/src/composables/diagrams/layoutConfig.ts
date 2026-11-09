@@ -39,9 +39,6 @@ export const DEFAULT_PADDING = CANVAS.DEFAULT_PADDING
 /** Default topic/central node radius */
 export const DEFAULT_TOPIC_RADIUS = 60
 
-/** Default bubble node radius */
-export const DEFAULT_BUBBLE_RADIUS = 40
-
 /** Default node width for rectangular nodes */
 export const DEFAULT_NODE_WIDTH = 120
 
@@ -92,9 +89,6 @@ export const FLOW_TOPIC_TO_STEP_GAP = 60
 /** TopicNode height (pill-shape with py-4 padding) */
 export const TOPIC_NODE_HEIGHT = 52
 
-/** BraceNode height */
-export const BRACE_NODE_HEIGHT = 40
-
 /** Spacing between substep nodes (within a group) */
 export const FLOW_SUBSTEP_SPACING = 12
 
@@ -119,17 +113,12 @@ export const FLOW_TURN_OUTSET_PX = 45
 /** BranchNode height (mind-map default min-height baseline) */
 export const BRANCH_NODE_HEIGHT = 34
 
-/** Circle / bubble context node height */
-export const BUBBLE_NODE_HEIGHT = 50
-
-/** LabelNode height */
-export const LABEL_NODE_HEIGHT = 24
+/** LabelNode padding (4px 8px), summed over both sides. */
+export const LABEL_NODE_PAD_X = 16
+export const LABEL_NODE_PAD_Y = 8
 
 /** Context node radius for circle maps */
 export const DEFAULT_CONTEXT_RADIUS = 35
-
-/** Difference bubble radius for double bubble maps */
-export const DEFAULT_DIFF_RADIUS = 30
 
 /** 双气泡图胶囊形状高度上限（px），超过后高度不再增大，长度仍随文字变化 */
 export const DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT = 65
@@ -152,9 +141,6 @@ export const NODE_MIN_DIMENSIONS = {
 // ============================================================================
 // Spacing Defaults
 // ============================================================================
-
-/** Default horizontal spacing between nodes/levels */
-export const DEFAULT_HORIZONTAL_SPACING = 180
 
 /** Default vertical spacing between nodes */
 export const DEFAULT_VERTICAL_SPACING = 60
@@ -188,15 +174,6 @@ export const DEFAULT_MINDMAP_RANK_SEPARATION = 52
  * (e.g. after branch move), scale both sides up to this for consistent curve length. */
 export const MINDMAP_TARGET_EXTENT = 450
 
-/** Default step spacing for flow maps */
-export const DEFAULT_STEP_SPACING = 200
-
-/** Default level height for tree structures */
-export const DEFAULT_LEVEL_HEIGHT = 100
-
-/** Default level width for horizontal tree structures (brace maps) */
-export const DEFAULT_LEVEL_WIDTH = 200
-
 /** Brace map: tighter horizontal spacing between whole and parts */
 export const BRACE_MAP_LEVEL_WIDTH = 60
 
@@ -215,21 +192,6 @@ export const BRACE_NODE_CONTENT_MAX_WIDTH = BRACE_NODE_MAX_WIDTH - 18 * 2 - 3
 /** Default column spacing for double bubble maps (topic-to-similarity, similarity-to-topic) */
 export const DEFAULT_COLUMN_SPACING = 50
 
-/** Spacing between difference nodes and their topic in double bubble maps (left diff ↔ topic A, topic B ↔ right diff) */
-export const DEFAULT_DIFF_TO_TOPIC_SPACING = 80
-
-/** Default category spacing for tree maps */
-export const DEFAULT_CATEGORY_SPACING = 160
-
-/** Default leaf spacing for tree maps */
-export const DEFAULT_LEAF_SPACING = 60
-
-/** Topic to category gap for tree maps */
-export const DEFAULT_TOPIC_TO_CATEGORY_GAP = 100
-
-/** Category to leaf gap for tree maps */
-export const DEFAULT_CATEGORY_TO_LEAF_GAP = 80
-
 /** Tree map: reduced vertical spacing for tighter layout */
 export const TREE_MAP_TOPIC_TO_CATEGORY_GAP = 50
 
@@ -242,63 +204,5 @@ export const TREE_MAP_CATEGORY_TO_LEAF_GAP = 24
 /** Tree map: horizontal gap between category groups */
 export const TREE_MAP_CATEGORY_SPACING = 60
 
-/** Pair spacing for bridge maps */
-export const DEFAULT_PAIR_SPACING = 250
-
 /** Side spacing for multi-flow maps */
 export const DEFAULT_SIDE_SPACING = 200
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Calculate center position based on canvas dimensions
- */
-export function calculateCenter(
-  canvasWidth: number = DEFAULT_CANVAS_WIDTH,
-  canvasHeight: number = DEFAULT_CANVAS_HEIGHT
-): { centerX: number; centerY: number } {
-  return {
-    centerX: canvasWidth / 2,
-    centerY: canvasHeight / 2,
-  }
-}
-
-/**
- * Calculate start position for left-to-right layouts
- */
-export function calculateStartPosition(padding: number = DEFAULT_PADDING): {
-  startX: number
-  startY: number
-} {
-  return {
-    startX: padding + DEFAULT_NODE_WIDTH / 2,
-    startY: padding + DEFAULT_NODE_HEIGHT / 2,
-  }
-}
-
-/**
- * Calculate layout dimensions based on node count and spacing
- */
-export function calculateRequiredDimensions(
-  nodeCount: number,
-  orientation: 'horizontal' | 'vertical' = 'horizontal',
-  spacing: number = DEFAULT_STEP_SPACING,
-  nodeSize: number = DEFAULT_NODE_WIDTH
-): { width: number; height: number } {
-  const contentSize = nodeCount * nodeSize + (nodeCount - 1) * spacing
-  const padding = DEFAULT_PADDING * 2
-
-  if (orientation === 'horizontal') {
-    return {
-      width: contentSize + padding,
-      height: DEFAULT_CANVAS_HEIGHT,
-    }
-  } else {
-    return {
-      width: DEFAULT_CANVAS_WIDTH,
-      height: contentSize + padding,
-    }
-  }
-}

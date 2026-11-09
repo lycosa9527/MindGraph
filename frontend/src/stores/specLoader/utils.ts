@@ -9,6 +9,7 @@ import {
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode, DiagramType } from '@/types'
+import { minRadiusForNoOverlap } from '@/utils/layout/radial'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
@@ -339,10 +340,6 @@ export interface CircleMapLayoutRadiusOverrides {
   topicR?: number
   /** Uniform context circle radius (px), max over context nodes */
   uniformContextR?: number
-  /** Topic outline extent used for ring clearance. Defaults to topicR. */
-  topicPackR?: number
-  /** Context outline extent used for ring clearance. Defaults to uniformContextR. */
-  contextPackR?: number
   topicSecondary?: string
   contextSecondary?: string[]
 }
@@ -351,7 +348,8 @@ export interface CircleMapLayoutRadiusOverrides {
  * Calculate circle map layout: fixed font, circles from text, ring no-overlap.
  * Center = canvas center; context nodes evenly spaced on a ring (360/n deg).
  * Order: topic first → uniformContextR from texts → childrenRadius → outer circle.
- * Shared by loadCircleMapSpec and recalculateCircleMapLayout.
+ * Used by loadCircleMapSpec; recalculateCircleMapLayout composes the same two steps
+ * with shape-aware outline extents.
  *
  * @param nodeCount - Number of context nodes
  * @param contextTexts - Array of context node texts for adaptive sizing
@@ -365,9 +363,16 @@ export function calculateCircleMapLayout(
   topicText: string = '',
   overrides?: CircleMapLayoutRadiusOverrides | null
 ): CircleMapLayoutResult {
-  const centerX = DEFAULT_CENTER_X
-  const centerY = DEFAULT_CENTER_Y
+  const { topicR, uniformContextR } = resolveCircleMapRadii(contextTexts, topicText, overrides)
+  return { ...circleMapRingGeometry(nodeCount, topicR, uniformContextR), topicR, uniformContextR }
+}
 
+/** Topic radius and the uniform context radius, from overrides or text metrics. */
+export function resolveCircleMapRadii(
+  contextTexts: string[],
+  topicText: string,
+  overrides?: CircleMapLayoutRadiusOverrides | null
+): { topicR: number; uniformContextR: number } {
   // (g) Topic: DOM overrides win; else text-adaptive radius
   const topicR =
     overrides?.topicR != null && Number.isFinite(overrides.topicR) && overrides.topicR > 0
@@ -398,22 +403,28 @@ export function calculateCircleMapLayout(
     }
     uniformContextR = maxRadius
   }
+  return { topicR, uniformContextR }
+}
 
+/**
+ * Context ring and outer boundary from the topic and context outline extents.
+ * All layers share the canvas center.
+ */
+export function circleMapRingGeometry(
+  nodeCount: number,
+  topicPack: number,
+  contextPack: number
+): Pick<CircleMapLayoutResult, 'centerX' | 'centerY' | 'childrenRadius' | 'outerCircleR'> {
   // (c) Ring radius: no-overlap context–context (with small gap), no-overlap context–topic, minimum.
-  // All layers share the same center (centerX, centerY). Slightly lengthen childrenRadius so
-  // adjacent second-layer circles have a small edge-to-edge gap.
-  const topicPack = overrides?.topicPackR ?? topicR
-  const contextPack = overrides?.contextPackR ?? uniformContextR
-  const noOverlapContext =
-    nodeCount > 0 ? (contextPack + CIRCLE_MAP_CONTEXT_GAP / 2) / Math.sin(Math.PI / nodeCount) : 0
+  const noOverlapContext = minRadiusForNoOverlap(nodeCount, contextPack, CIRCLE_MAP_CONTEXT_GAP)
   const noOverlapTopic = topicPack + contextPack + CIRCLE_MAP_TOPIC_CONTEXT_GAP
   const childrenRadius = Math.max(noOverlapContext, noOverlapTopic, CIRCLE_MAP_MIN_CHILDREN_RADIUS)
 
-  // (d) Outer circle: just enclose context ring; margin avoids overlap with boundary stroke
-  // Round outerCircleR to snap grid so boundary position (centerX-R, centerY-R) lands on grid.
-  // This prevents Vue Flow snap-to-grid from shifting the outer circle off-center.
+  // (d) Outer circle: just enclose context ring; margin avoids overlap with boundary stroke.
+  // Round to the snap grid so the boundary's top-left (center - R) lands on grid and
+  // Vue Flow snap-to-grid does not shift the outer circle off-center.
   const rawOuterR = childrenRadius + contextPack + CIRCLE_MAP_OUTER_MARGIN
   const outerCircleR = Math.round(rawOuterR / CIRCLE_MAP_SNAP_GRID) * CIRCLE_MAP_SNAP_GRID
 
-  return { centerX, centerY, topicR, uniformContextR, childrenRadius, outerCircleR }
+  return { centerX: DEFAULT_CENTER_X, centerY: DEFAULT_CENTER_Y, childrenRadius, outerCircleR }
 }

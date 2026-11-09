@@ -10,7 +10,6 @@ import {
 } from '@/config/mindMapThemes'
 import { applyRainbowMindMapColors, isRainbowMindMapTheme } from '@/config/mindMapVibrantThemes'
 import { attachRemainingSecondary } from '@/diagramBilingual/attachRest'
-import { offsetFlowLayoutForSecondary } from '@/diagramBilingual/flowLayout'
 import { readDiagramLanguages } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramData, DiagramNode, DiagramType } from '@/types'
 import {
@@ -47,10 +46,7 @@ import {
   defaultTemplateForUi,
   estimateMultiFlowTopicWidth,
   loadSpecForDiagramType,
-  recalculateBraceMapLayout,
-  recalculateBridgeMapLayout,
   recalculateBubbleMapLayout,
-  recalculateMultiFlowMapLayout,
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { collectFlowMapSpecFromNodes } from '../specLoader/flowMapSubsteps'
@@ -58,6 +54,7 @@ import {
   learningSheetLayoutSecondary,
   learningSheetLayoutText,
 } from '../specLoader/mindMapLearningSheet'
+import { relayoutLoadedSpecNodes } from '../specLoader/relayoutLoadedSpec'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
 import {
@@ -164,22 +161,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     attachRemainingSecondary(diagramTypeValue, result.nodes, spec)
 
     const savedCanvas = Array.isArray(spec.nodes) && spec.nodes.length > 0
-    let nodesToStore = result.nodes
-    if (!savedCanvas && diagramTypeValue === 'flow_map') {
-      nodesToStore = offsetFlowLayoutForSecondary(nodesToStore)
-    }
-    if (!savedCanvas && diagramTypeValue === 'brace_map') {
-      nodesToStore = recalculateBraceMapLayout(result.nodes, result.connections, {})
-    }
-    if (!savedCanvas && diagramTypeValue === 'bridge_map') {
-      nodesToStore = recalculateBridgeMapLayout(result.nodes, {})
-    }
-    if (!savedCanvas && diagramTypeValue === 'multi_flow_map') {
-      nodesToStore = recalculateMultiFlowMapLayout(result.nodes, null, {}, {})
-    }
-    if (diagramTypeValue === 'bubble_map' && result.nodes.length > 0) {
-      nodesToStore = recalculateBubbleMapLayout(result.nodes)
-    }
+    let nodesToStore = relayoutLoadedSpecNodes(diagramTypeValue, result, savedCanvas)
 
     nodesToStore = mergeReloadedNodeFields(nodesToStore, prevNodesForStyleMerge, structural)
 

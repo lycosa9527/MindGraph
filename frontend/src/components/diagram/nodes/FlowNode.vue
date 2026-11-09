@@ -253,42 +253,21 @@ const layoutWidth = computed(() => {
 })
 
 /**
- * After display mode shows markdown/KaTeX, flush DOM size into Pinia and sync
- * multi-flow stored widths (same path as bubble/circle maps via nodeDimensions).
+ * After display mode shows markdown/KaTeX, flush the DOM size into Pinia
+ * nodeDimensions. Multi-flow waits one more frame for the column width it gets
+ * from the layout pass.
  */
-async function flushMultiFlowCauseEffectWidthFromPinia(): Promise<void> {
-  await nextTick()
-  if (typeof document !== 'undefined' && document.fonts?.ready) {
-    await document.fonts.ready
-  }
-  await nextTick()
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => resolve())
-  })
-  reportDimensions()
-  const fromStore = diagramStore.getNodeDimension(props.id)?.width
-  const fallback = flowNodeRef.value?.offsetWidth
-  const w = fromStore ?? fallback
-  if (w == null || w <= 0) {
-    return
-  }
-  diagramStore.setNodeWidth(props.id, w)
-  eventBus.emit('multi_flow_map:node_width_changed', {
-    nodeId: props.id,
-    width: w,
-  })
-}
-
 async function remeasureFlowNodeBox(): Promise<void> {
-  if (isMultiFlowMap.value) {
-    await flushMultiFlowCauseEffectWidthFromPinia()
-    return
-  }
   await nextTick()
   if (typeof document !== 'undefined' && document.fonts?.ready) {
     await document.fonts.ready
   }
   await nextTick()
+  if (isMultiFlowMap.value) {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve())
+    })
+  }
   reportDimensions()
 }
 
@@ -315,7 +294,7 @@ function handleTextSave(newText: string, textSecondary?: string) {
   })
 
   if (isMultiFlowMap.value) {
-    void flushMultiFlowCauseEffectWidthFromPinia()
+    void remeasureFlowNodeBox()
   }
 }
 

@@ -1,5 +1,4 @@
 import {
-  DEFAULT_CENTER_X,
   DEFAULT_MINDMAP_RANK_SEPARATION,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
@@ -954,15 +953,4 @@ function correctYPositions(
   // Multi-root packs: rigid-slide each side onto the topic. Sole roots already
   // match the topic connection anchor (and their fans moved with them).
   return centerMindMapSidePacksOnTopic(separated, connections, nodeHeights, diagramStyleId)
-}
-
-/**
- * Derive canvas center X from the current topic node.
- * Falls back to DEFAULT_CENTER_X when the topic position is unknown.
- */
-export function getMindMapCenterX(nodes: DiagramNode[]): number {
-  const topic = nodes.find((n) => n.id === 'topic')
-  if (!topic?.position) return DEFAULT_CENTER_X
-  const w = (topic.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH
-  return topic.position.x + w / 2
 }

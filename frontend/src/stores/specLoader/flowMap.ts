@@ -26,7 +26,6 @@ import {
   takeFlowMapStableId,
 } from '@/utils/flowMapIdentity'
 import {
-  FLOW_TOPIC_FONT_SIZE,
   type FlowPillFont,
   type FlowPillRole,
   flowSecondaryExtraHeight,
@@ -95,34 +94,22 @@ function effectiveFlowWidth(
   )
 }
 
-/**
- * Get centered position for flow map topic in vertical layout.
- * Used when topic text changes to keep it centered over the step column.
- */
-export function getFlowTopicCenteredPosition(
-  text: string,
-  currentY: number,
-  style?: DiagramNode['style']
-): { x: number; y: number } {
-  const stepCenterX = DEFAULT_CENTER_X
-  const fs = typeof style?.fontSize === 'number' ? style.fontSize : FLOW_TOPIC_FONT_SIZE
-  const fw = (style?.fontWeight as string | undefined) ?? 'bold'
-  const fontFamily = style?.fontFamily
-  const topicEstWidth = estimateFlowPill(text, 'topic', {
-    fontSize: fs,
-    fontWeight: fw,
-    fontFamily,
-  }).boxWidth
-  const x = Math.round(stepCenterX - topicEstWidth / 2)
-  return { x, y: currentY }
-}
+/** Vertical layout: the topic sits this far below the canvas top. */
+const FLOW_VERTICAL_TOPIC_Y = DEFAULT_PADDING + 40
+/** Vertical layout: left edge of the step column. */
+const FLOW_VERTICAL_STEP_X = DEFAULT_CENTER_X - FLOW_MAP_PILL_WIDTH / 2
 
 /**
  * Live layout for flow maps. Uses DOM-measured node dimensions from Pinia,
  * falling back to the text estimate for a node not measured yet, to:
- * - Horizontal layout: correct topic Y so its center matches step nodes' center Y.
- * - Vertical layout: restack step (and substep) nodes using measured heights to
- *   prevent overlaps when text wraps, then correct topic X to stay centered.
+ * - Horizontal layout: place steps on the serpentine after the topic and
+ *   correct topic Y so its center matches the first step's center Y.
+ * - Vertical layout: stack step (and substep) groups under the topic using
+ *   measured heights so wrapped text does not overlap, then center the topic
+ *   over the step column.
+ * The topic keeps its X (horizontal) or Y (vertical) and vertical steps keep
+ * their X; everything else is derived, so running the layout on its own output
+ * does not move any node.
  */
 export function recalculateFlowMapLayout(
   nodes: DiagramNode[],
@@ -147,208 +134,174 @@ export function recalculateFlowMapLayout(
   const orientation = resolveFlowMapOrientation(topicNode, stepNodes)
 
   const result = nodes.map((n) => ({ ...n }))
-  const topicIndex = result.findIndex((n) => n.id === FLOW_TOPIC_NODE_ID)
+  const indexById = new Map(result.map((n, index) => [n.id, index]))
+  const moveTo = (id: string, position: { x: number; y: number }): void => {
+    const index = indexById.get(id)
+    if (index !== undefined) result[index] = { ...result[index], position }
+  }
+  const substepNodes = result.filter((n) => n.type === 'flowSubstep')
+  const widthOf = (node: DiagramNode, role: FlowPillRole): number =>
+    effectiveFlowWidth(node.id, flowLabel(node), role, flowNodeTypography(node), nodeDimensions)
+  const heightOf = (node: DiagramNode, role: FlowPillRole): number =>
+    flowBoxHeight(node, role, nodeDimensions[node.id]?.height, flowLabel(node))
+  const topicH = heightOf(topicNode, 'topic')
 
   if (orientation === 'horizontal') {
-    const orderedSteps = orderFlowStepNodes(result)
-    const substepNodesH = result.filter((n) => n.type === 'flowSubstep')
-
-    const groupInfos = orderedSteps.map((stepNode) => {
-      const stepTyp = flowNodeTypography(stepNode)
-      const stepW = effectiveFlowWidth(
-        stepNode.id,
-        flowLabel(stepNode),
-        'step',
-        stepTyp,
-        nodeDimensions
-      )
-      const groupSubsteps = substepsForFlowStep(substepNodesH, stepNode)
-      const maxSubW = groupSubsteps.reduce((maxW, sub) => {
-        const subTyp = flowNodeTypography(sub)
-        const subW = effectiveFlowWidth(sub.id, flowLabel(sub), 'substep', subTyp, nodeDimensions)
-        return Math.max(maxW, subW)
-      }, 0)
-
-      return { stepNode, stepW, groupSubsteps, footprintWidth: Math.max(stepW, maxSubW) }
-    })
-
-    const topicTyp = flowNodeTypography(topicNode)
-    const topicEstW = estimateFlowPill(flowLabel(topicNode), 'topic', topicTyp).boxWidth
-    const effectiveTopicW = flowCenteringWidth(topicDims?.width, topicEstW)
-
-    const boxes = groupInfos.map((group) => {
-      const stepH = flowBoxHeight(
-        group.stepNode,
-        'step',
-        nodeDimensions[group.stepNode.id]?.height,
-        flowLabel(group.stepNode)
-      )
-      const subHeights = group.groupSubsteps.map((sub) =>
-        flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height, flowLabel(sub))
-      )
+    const groups = stepNodes.map((stepNode) => {
+      const groupSubsteps = substepsForFlowStep(substepNodes, stepNode).map((sub) => ({
+        node: sub,
+        width: widthOf(sub, 'substep'),
+        height: heightOf(sub, 'substep'),
+      }))
+      const stepW = widthOf(stepNode, 'step')
+      const maxSubW = groupSubsteps.reduce((maxW, sub) => Math.max(maxW, sub.width), 0)
       return {
-        footprintWidth: group.footprintWidth,
-        stepWidth: group.stepW,
-        stepHeight: stepH,
-        belowHeight: flowSubstepStackExtent(subHeights),
+        stepNode,
+        stepW,
+        stepH: heightOf(stepNode, 'step'),
+        groupSubsteps,
+        footprintWidth: Math.max(stepW, maxSubW),
       }
     })
+
+    const topicEstW = estimateFlowPill(
+      flowLabel(topicNode),
+      'topic',
+      flowNodeTypography(topicNode)
+    ).boxWidth
+    const effectiveTopicW = flowCenteringWidth(topicDims?.width, topicEstW)
+
     const placed = placeFlowSerpentine(
-      boxes,
+      groups.map((group) => ({
+        footprintWidth: group.footprintWidth,
+        stepWidth: group.stepW,
+        stepHeight: group.stepH,
+        belowHeight: flowSubstepStackExtent(group.groupSubsteps.map((sub) => sub.height)),
+      })),
       topicNode.position.x + effectiveTopicW + FLOW_TOPIC_TO_STEP_GAP,
       DEFAULT_CENTER_Y
     )
-    groupInfos.forEach((group, index) => {
+    groups.forEach((group, index) => {
       const place = placed[index]
-      const stepH = boxes[index].stepHeight
-      const stepX = Math.round(place.stepX)
       const stepY = Math.round(place.stepY)
-      const stepIdx = result.findIndex((n) => n.id === group.stepNode.id)
-      result[stepIdx] = {
-        ...result[stepIdx],
-        position: { x: stepX, y: stepY },
-      }
+      moveTo(group.stepNode.id, { x: Math.round(place.stepX), y: stepY })
 
-      let subY = stepY + stepH + FLOW_SUBSTEP_OFFSET_X
+      let subY = stepY + group.stepH + FLOW_SUBSTEP_OFFSET_X
       group.groupSubsteps.forEach((sub) => {
-        const subTyp = flowNodeTypography(sub)
-        const subW = effectiveFlowWidth(sub.id, flowLabel(sub), 'substep', subTyp, nodeDimensions)
-        const subX = Math.round(place.centerX - subW / 2)
-        const subH = flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height, flowLabel(sub))
-        const subIdx = result.findIndex((n) => n.id === sub.id)
-        result[subIdx] = {
-          ...result[subIdx],
-          position: { x: subX, y: subY },
-        }
-        subY += subH + FLOW_SUBSTEP_SPACING
+        moveTo(sub.node.id, { x: Math.round(place.centerX - sub.width / 2), y: subY })
+        subY += sub.height + FLOW_SUBSTEP_SPACING
       })
     })
 
-    const firstOrderedStep = orderedSteps[0]
-    if (firstOrderedStep) {
-      const firstStepResultNode = result.find((n) => n.id === firstOrderedStep.id)
-      const stepPos = firstStepResultNode?.position
-      if (stepPos) {
-        const stepH = flowBoxHeight(
-          firstOrderedStep,
-          'step',
-          nodeDimensions[firstOrderedStep.id]?.height,
-          flowLabel(firstOrderedStep)
-        )
-        const topicH = flowBoxHeight(topicNode, 'topic', topicDims?.height, flowLabel(topicNode))
-        const stepCenterY = stepPos.y + stepH / 2
-        const correctedY = Math.round(stepCenterY - topicH / 2)
-        result[topicIndex] = {
-          ...result[topicIndex],
-          position: { x: topicNode.position.x, y: correctedY },
-        }
-      }
-    }
-  } else {
-    // Restack step groups from top to bottom using measured heights so that
-    // text-wrapped (taller) nodes don't overlap the ones beneath them.
-    const substepNodes = result.filter((n) => n.type === 'flowSubstep')
-    const orderedSteps = orderFlowStepNodes(result)
-
-    let currentY = orderedSteps[0]?.position?.y ?? firstStep.position.y
-
-    orderedSteps.forEach((stepNode) => {
-      const stepDims = nodeDimensions[stepNode.id]
-      const stepH = flowBoxHeight(stepNode, 'step', stepDims?.height, flowLabel(stepNode))
-
-      const groupSubsteps = substepsForFlowStep(substepNodes, stepNode)
-
-      if (groupSubsteps.length > 0) {
-        let substepColumnH = 0
-        groupSubsteps.forEach((sub, i) => {
-          const subH = flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height, flowLabel(sub))
-          substepColumnH += subH + (i > 0 ? FLOW_SUBSTEP_SPACING : 0)
-        })
-
-        const groupH = Math.max(stepH, substepColumnH)
-        const stepY = Math.round(currentY + Math.max(0, (substepColumnH - stepH) / 2))
-        const stepResultIdx = result.findIndex((n) => n.id === stepNode.id)
-        const stepPrevPos = result[stepResultIdx].position
-        result[stepResultIdx] = {
-          ...result[stepResultIdx],
-          position: { x: stepPrevPos?.x ?? 0, y: stepY },
-        }
-
-        let subY = Math.round(currentY + Math.max(0, (stepH - substepColumnH) / 2))
-        groupSubsteps.forEach((sub) => {
-          const subH = flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height, flowLabel(sub))
-          const subResultIdx = result.findIndex((n) => n.id === sub.id)
-          const subPrevPos = result[subResultIdx].position
-          result[subResultIdx] = {
-            ...result[subResultIdx],
-            position: { x: subPrevPos?.x ?? 0, y: subY },
-          }
-          subY += subH + FLOW_SUBSTEP_SPACING
-        })
-
-        currentY += groupH + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
-      } else {
-        const stepResultIdx = result.findIndex((n) => n.id === stepNode.id)
-        const loneStepPrevPos = result[stepResultIdx].position
-        result[stepResultIdx] = {
-          ...result[stepResultIdx],
-          position: { x: loneStepPrevPos?.x ?? 0, y: currentY },
-        }
-        currentY += stepH + FLOW_MIN_STEP_SPACING
-      }
+    const firstGroup = groups[0]
+    const firstStepY = Math.round(placed[0].stepY)
+    moveTo(FLOW_TOPIC_NODE_ID, {
+      x: topicNode.position.x,
+      y: Math.round(firstStepY + firstGroup.stepH / 2 - topicH / 2),
     })
-
-    orderedSteps.forEach((stepNode) => {
-      const stepResultNode = result.find((n) => n.id === stepNode.id)
-      if (!stepResultNode) return
-      const stepTyp = flowNodeTypography(stepNode)
-      const stepW = effectiveFlowWidth(
-        stepNode.id,
-        flowLabel(stepNode),
-        'step',
-        stepTyp,
-        nodeDimensions
-      )
-      const substepBaseX = (stepResultNode.position?.x ?? 0) + stepW + FLOW_SUBSTEP_OFFSET_X
-
-      const groupSubs = substepsForFlowStep(substepNodes, stepNode)
-      groupSubs.forEach((sub) => {
-        const subResultIdx = result.findIndex((n) => n.id === sub.id)
-        const subHorizPrevPos = result[subResultIdx].position
-        result[subResultIdx] = {
-          ...result[subResultIdx],
-          position: { x: substepBaseX, y: subHorizPrevPos?.y ?? 0 },
-        }
-      })
-    })
-
-    const firstLaidOut = result.find((n) => n.id === firstStep.id)
-    const firstLaidOutX = firstLaidOut?.position?.x ?? firstStep.position.x
-    const stepW = effectiveFlowWidth(
-      firstStep.id,
-      flowLabel(firstStep),
-      'step',
-      flowNodeTypography(firstStep),
-      nodeDimensions
-    )
-    const topicW = effectiveFlowWidth(
-      topicNode.id,
-      flowLabel(topicNode),
-      'topic',
-      flowNodeTypography(topicNode),
-      nodeDimensions
-    )
-    const stepCenterX = firstLaidOutX + stepW / 2
-    const correctedX = Math.round(stepCenterX - topicW / 2)
-    result[topicIndex] = {
-      ...result[topicIndex],
-      position: { x: correctedX, y: topicNode.position.y },
-    }
+    return result
   }
 
+  // Vertical: steps on the left, substeps stacked to their right.
+  let currentY = topicNode.position.y + topicH + FLOW_TOPIC_TO_STEP_GAP
+  stepNodes.forEach((stepNode) => {
+    const stepX = stepNode.position?.x ?? 0
+    const stepH = heightOf(stepNode, 'step')
+    const groupSubsteps = substepsForFlowStep(substepNodes, stepNode)
+    if (groupSubsteps.length === 0) {
+      moveTo(stepNode.id, { x: stepX, y: currentY })
+      currentY += stepH + FLOW_MIN_STEP_SPACING
+      return
+    }
+    const subHeights = groupSubsteps.map((sub) => heightOf(sub, 'substep'))
+    const substepColumnH =
+      subHeights.reduce((sum, h) => sum + h, 0) + FLOW_SUBSTEP_SPACING * (subHeights.length - 1)
+    moveTo(stepNode.id, {
+      x: stepX,
+      y: Math.round(currentY + Math.max(0, (substepColumnH - stepH) / 2)),
+    })
+    const substepX = stepX + widthOf(stepNode, 'step') + FLOW_SUBSTEP_OFFSET_X
+    let subY = Math.round(currentY + Math.max(0, (stepH - substepColumnH) / 2))
+    groupSubsteps.forEach((sub, index) => {
+      moveTo(sub.id, { x: substepX, y: subY })
+      subY += subHeights[index] + FLOW_SUBSTEP_SPACING
+    })
+    currentY += Math.max(stepH, substepColumnH) + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
+  })
+
+  const stepCenterX = firstStep.position.x + widthOf(firstStep, 'step') / 2
+  moveTo(FLOW_TOPIC_NODE_ID, {
+    x: Math.round(stepCenterX - widthOf(topicNode, 'topic') / 2),
+    y: topicNode.position.y,
+  })
   return result
 }
 
+function flowStepEdge(
+  sourceId: string,
+  targetId: string,
+  stepIndex: number,
+  isVertical: boolean
+): Connection {
+  const ports = isVertical
+    ? {
+        sourcePosition: 'bottom' as const,
+        targetPosition: 'top' as const,
+        sourceHandle: 'bottom',
+        targetHandle: 'top',
+      }
+    : stepIndex === 0
+      ? {
+          sourcePosition: 'right' as const,
+          targetPosition: 'left' as const,
+          sourceHandle: 'right',
+          targetHandle: 'left',
+        }
+      : flowSerpentineStepPorts(stepIndex - 1, stepIndex)
+  return {
+    id: `edge-${sourceId}-${targetId}`,
+    source: sourceId,
+    target: targetId,
+    ...ports,
+    edgeType: 'straight',
+    style: { strokeColor: thinkingMapFamilyLine(stepIndex) },
+  }
+}
+
+function flowSubstepEdge(
+  stepId: string,
+  substepId: string,
+  stepIndex: number,
+  isVertical: boolean
+): Connection {
+  const routing = isVertical
+    ? {
+        sourcePosition: 'right' as const,
+        targetPosition: 'left' as const,
+        sourceHandle: 'substep-source',
+        targetHandle: 'left',
+        edgeType: 'curved' as const,
+      }
+    : {
+        sourcePosition: 'bottom' as const,
+        targetPosition: 'top' as const,
+        sourceHandle: 'center-source',
+        targetHandle: 'center-target',
+        edgeType: 'tree' as const,
+      }
+  return {
+    id: `edge-${stepId}-${substepId}`,
+    source: stepId,
+    target: substepId,
+    ...routing,
+    style: { strokeColor: thinkingMapFamilyLine(stepIndex) },
+  }
+}
+
+/**
+ * Build flow map nodes and connections from a spec, then place them with
+ * {@link recalculateFlowMapLayout} on text estimates.
+ */
 export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   // Steps can be strings or objects with text property
   const rawSteps = (spec.steps as Array<string | { id?: string; text: string }>) || []
@@ -370,323 +323,50 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  const pillWidth = FLOW_MAP_PILL_WIDTH
+  // Topic seed; the layout pass moves it once there is a step to align with.
+  const topicBox = estimateFlowPill(title, 'topic')
+  nodes.push({
+    id: FLOW_TOPIC_NODE_ID,
+    text: title,
+    type: 'topic',
+    position: isVertical
+      ? { x: Math.round(DEFAULT_CENTER_X - topicBox.boxWidth / 2), y: FLOW_VERTICAL_TOPIC_Y }
+      : { x: DEFAULT_PADDING, y: DEFAULT_CENTER_Y - topicBox.boxHeight / 2 },
+    data: { orientation: isVertical ? 'vertical' : 'horizontal' },
+  })
 
-  if (isVertical) {
-    // =========================================================================
-    // VERTICAL LAYOUT: Main topic at top, steps stacked vertically below
-    // =========================================================================
-    const stepX = DEFAULT_CENTER_X - pillWidth / 2
-    const topicBox = estimateFlowPill(title, 'topic')
-    const firstStepBox = steps[0] ? estimateFlowPill(steps[0].text, 'step') : null
-    const stepCenterX = stepX + (firstStepBox?.boxWidth ?? pillWidth) / 2
-    const topicX = Math.round(stepCenterX - topicBox.boxWidth / 2)
-    const topicY = DEFAULT_PADDING + 40
+  steps.forEach((step, stepIndex) => {
     nodes.push({
-      id: FLOW_TOPIC_NODE_ID,
-      text: title,
-      type: 'topic',
-      position: { x: topicX, y: topicY },
-      data: { orientation: 'vertical' },
+      id: step.id,
+      text: step.text,
+      type: 'flow',
+      position: { x: isVertical ? FLOW_VERTICAL_STEP_X : 0, y: 0 },
+      data: {
+        ...stampFlowMapStepData(stepIndex),
+        [FLOW_MAP_UID_DATA_KEY]: step.id,
+      },
     })
+    const sourceId = stepIndex === 0 ? FLOW_TOPIC_NODE_ID : steps[stepIndex - 1].id
+    connections.push(flowStepEdge(sourceId, step.id, stepIndex, isVertical))
 
-    interface SubstepGroup {
-      stepId: string
-      stepText: string
-      stepWidth: number
-      stepHeight: number
-      columnHeight: number
-      groupHeight: number
-      substepIds: string[]
-      substepTexts: string[]
-      substepPositions: { id: string; y: number }[]
-    }
-
-    const substepGroups: SubstepGroup[] = steps.map((step, stepIndex) => {
-      const substeps = substepsByStep[stepIndex] || []
-      const stepBox = estimateFlowPill(step.text, 'step')
-      const positions: { id: string; y: number }[] = []
-      let cursor = 0
-      substeps.forEach((item) => {
-        const box = estimateFlowPill(item.text, 'substep')
-        positions.push({ id: takeFlowMapStableId(claimedIds, item.id), y: cursor })
-        cursor += box.boxHeight + FLOW_SUBSTEP_SPACING
-      })
-      const columnHeight = positions.length === 0 ? 0 : cursor - FLOW_SUBSTEP_SPACING
-      return {
-        stepId: step.id,
-        stepText: step.text,
-        stepWidth: stepBox.boxWidth,
-        stepHeight: stepBox.boxHeight,
-        columnHeight,
-        groupHeight: Math.max(stepBox.boxHeight, columnHeight || stepBox.boxHeight),
-        substepIds: positions.map((pos) => pos.id),
-        substepTexts: substeps.map((item) => item.text),
-        substepPositions: positions,
-      }
-    })
-
-    // Position steps vertically: step on left, substeps on right.
-    let currentY = topicY + topicBox.boxHeight + FLOW_TOPIC_TO_STEP_GAP
-
-    substepGroups.forEach((group, groupIndex) => {
-      const hasSubsteps = group.substepIds.length > 0
-      const groupStartY = currentY
-
-      if (hasSubsteps) {
-        const stepY = groupStartY + Math.max(0, (group.columnHeight - group.stepHeight) / 2)
-        const substepOrigin = groupStartY + Math.max(0, (group.stepHeight - group.columnHeight) / 2)
-        const substepX = stepX + group.stepWidth + FLOW_SUBSTEP_OFFSET_X
-
-        // Create step node with groupIndex for mindmapColors
-        nodes.push({
-          id: group.stepId,
-          text: group.stepText,
-          type: 'flow',
-          position: { x: stepX, y: stepY },
-          data: {
-            ...stampFlowMapStepData(groupIndex),
-            [FLOW_MAP_UID_DATA_KEY]: group.stepId,
-          },
-        })
-
-        // Substeps on the right of step, stacked vertically
-        group.substepPositions.forEach((pos, i) => {
-          const text = group.substepTexts[i] ?? ''
-          nodes.push({
-            id: pos.id,
-            text,
-            type: 'flowSubstep',
-            position: { x: substepX, y: substepOrigin + pos.y },
-            data: {
-              ...stampFlowMapSubstepData(groupIndex, i, group.stepId),
-              [FLOW_MAP_UID_DATA_KEY]: pos.id,
-            },
-          })
-        })
-
-        currentY += group.groupHeight + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
-      } else {
-        // No substeps - just place step with groupIndex for mindmapColors
-        nodes.push({
-          id: group.stepId,
-          text: group.stepText,
-          type: 'flow',
-          position: { x: stepX, y: groupStartY },
-          data: {
-            ...stampFlowMapStepData(groupIndex),
-            [FLOW_MAP_UID_DATA_KEY]: group.stepId,
-          },
-        })
-
-        currentY += group.stepHeight + FLOW_MIN_STEP_SPACING
-      }
-
-      // Main flow: straight vertical line (topic -> step1 -> step2 -> step3)
-      const stepColor = thinkingMapFamilyLine(groupIndex)
-      if (groupIndex === 0) {
-        connections.push({
-          id: `edge-${FLOW_TOPIC_NODE_ID}-${group.stepId}`,
-          source: FLOW_TOPIC_NODE_ID,
-          target: group.stepId,
-          sourcePosition: 'bottom',
-          targetPosition: 'top',
-          sourceHandle: 'bottom',
-          targetHandle: 'top',
-          edgeType: 'straight',
-          style: { strokeColor: stepColor },
-        })
-      } else {
-        const prevGroup = substepGroups[groupIndex - 1]
-        const prevStepId = prevGroup?.stepId
-        if (prevStepId) {
-          connections.push({
-            id: `edge-${prevStepId}-${group.stepId}`,
-            source: prevStepId,
-            target: group.stepId,
-            sourcePosition: 'bottom',
-            targetPosition: 'top',
-            sourceHandle: 'bottom',
-            targetHandle: 'top',
-            edgeType: 'straight',
-            style: { strokeColor: stepColor },
-          })
-        }
-      }
-
-      // Substeps: curved branches to the right (mindmap-style)
-      if (hasSubsteps) {
-        group.substepPositions.forEach((pos, i) => {
-          const substepId = group.substepIds[i]
-          if (!substepId) {
-            return
-          }
-          connections.push({
-            id: `edge-${group.stepId}-${substepId}`,
-            source: group.stepId,
-            target: substepId,
-            sourcePosition: 'right',
-            targetPosition: 'left',
-            sourceHandle: 'substep-source',
-            targetHandle: 'left',
-            edgeType: 'curved',
-            style: { strokeColor: stepColor },
-          })
-        })
-      }
-    })
-  } else {
-    // =========================================================================
-    // HORIZONTAL LAYOUT: Main topic at left, steps left-to-right
-    // Each step-substep group is sized independently to prevent overlaps
-    // =========================================================================
-
-    const topicBox = estimateFlowPill(title, 'topic')
-    const topicEstWidth = topicBox.boxWidth
-    const topicX = DEFAULT_PADDING
-    const topicY = DEFAULT_CENTER_Y - topicBox.boxHeight / 2
-    nodes.push({
-      id: FLOW_TOPIC_NODE_ID,
-      text: title,
-      type: 'topic',
-      position: { x: topicX, y: topicY },
-      data: { orientation: 'horizontal' },
-    })
-
-    // Phase 1: Calculate each step-substep group's footprint width
-    interface HGroupInfo {
-      stepId: string
-      stepText: string
-      substepEntries: {
-        id?: string
-        text: string
-        estimatedWidth: number
-        estimatedHeight: number
-      }[]
-      stepEstimatedWidth: number
-      stepEstimatedHeight: number
-      footprintWidth: number
-    }
-
-    const hGroups: HGroupInfo[] = steps.map((step, stepIndex) => {
-      const subs = substepsByStep[stepIndex] || []
-      const stepBox = estimateFlowPill(step.text, 'step')
-
-      const substepEntries = subs.map((item) => {
-        const box = estimateFlowPill(item.text, 'substep')
-        return {
-          id: item.id,
-          text: item.text,
-          estimatedWidth: box.boxWidth,
-          estimatedHeight: box.boxHeight,
-        }
-      })
-
-      const maxSubW = substepEntries.reduce((m, s) => Math.max(m, s.estimatedWidth), 0)
-      return {
-        stepId: step.id,
-        stepText: step.text,
-        substepEntries,
-        stepEstimatedWidth: stepBox.boxWidth,
-        stepEstimatedHeight: stepBox.boxHeight,
-        footprintWidth: Math.max(stepBox.boxWidth, maxSubW),
-      }
-    })
-
-    // Phase 2: Five steps per row, then a U-turn onto the next row.
-    const stepStartX = DEFAULT_PADDING + topicEstWidth + FLOW_TOPIC_TO_STEP_GAP
-    const hPositions = placeFlowSerpentine(
-      hGroups.map((group) => ({
-        footprintWidth: group.footprintWidth,
-        stepWidth: group.stepEstimatedWidth,
-        stepHeight: group.stepEstimatedHeight,
-        belowHeight: flowSubstepStackExtent(
-          group.substepEntries.map((substep) => substep.estimatedHeight)
-        ),
-      })),
-      stepStartX,
-      DEFAULT_CENTER_Y
-    )
-
-    // Phase 3: Place step nodes, substep nodes, and connections
-    hGroups.forEach((group, stepIndex) => {
-      const place = hPositions[stepIndex]
-      const groupCenterX = place.centerX
-      const stepX = place.stepX
-      const groupStepY = place.stepY
-
+    ;(substepsByStep[stepIndex] || []).forEach((item, substepIndex) => {
+      const substepId = takeFlowMapStableId(claimedIds, item.id)
       nodes.push({
-        id: group.stepId,
-        text: group.stepText,
-        type: 'flow',
-        position: { x: stepX, y: groupStepY },
+        id: substepId,
+        text: item.text,
+        type: 'flowSubstep',
+        position: { x: 0, y: 0 },
         data: {
-          ...stampFlowMapStepData(stepIndex),
-          [FLOW_MAP_UID_DATA_KEY]: group.stepId,
+          ...stampFlowMapSubstepData(stepIndex, substepIndex, step.id),
+          [FLOW_MAP_UID_DATA_KEY]: substepId,
         },
       })
-
-      const stepColor = thinkingMapFamilyLine(stepIndex)
-      if (stepIndex === 0) {
-        connections.push({
-          id: `edge-${FLOW_TOPIC_NODE_ID}-${group.stepId}`,
-          source: FLOW_TOPIC_NODE_ID,
-          target: group.stepId,
-          sourcePosition: 'right',
-          targetPosition: 'left',
-          sourceHandle: 'right',
-          targetHandle: 'left',
-          edgeType: 'straight',
-          style: { strokeColor: stepColor },
-        })
-      } else {
-        const prevId = hGroups[stepIndex - 1].stepId
-        const ports = flowSerpentineStepPorts(stepIndex - 1, stepIndex)
-        connections.push({
-          id: `edge-${prevId}-${group.stepId}`,
-          source: prevId,
-          target: group.stepId,
-          ...ports,
-          edgeType: 'straight',
-          style: { strokeColor: stepColor },
-        })
-      }
-
-      let subY = groupStepY + group.stepEstimatedHeight + FLOW_SUBSTEP_OFFSET_X
-      group.substepEntries.forEach((substep, substepIndex) => {
-        const substepId = takeFlowMapStableId(claimedIds, substep.id)
-        const substepY = subY
-        subY += substep.estimatedHeight + FLOW_SUBSTEP_SPACING
-        const substepX = groupCenterX - substep.estimatedWidth / 2
-
-        nodes.push({
-          id: substepId,
-          text: substep.text,
-          type: 'flowSubstep',
-          position: { x: substepX, y: substepY },
-          data: {
-            ...stampFlowMapSubstepData(stepIndex, substepIndex, group.stepId),
-            [FLOW_MAP_UID_DATA_KEY]: substepId,
-          },
-        })
-
-        connections.push({
-          id: `edge-${group.stepId}-${substepId}`,
-          source: group.stepId,
-          target: substepId,
-          sourcePosition: 'bottom',
-          targetPosition: 'top',
-          sourceHandle: 'center-source',
-          targetHandle: 'center-target',
-          edgeType: 'tree',
-          style: { strokeColor: stepColor },
-        })
-      })
+      connections.push(flowSubstepEdge(step.id, substepId, stepIndex, isVertical))
     })
-  }
+  })
 
   return {
-    nodes,
+    nodes: recalculateFlowMapLayout(nodes),
     connections,
     metadata: { orientation },
   }

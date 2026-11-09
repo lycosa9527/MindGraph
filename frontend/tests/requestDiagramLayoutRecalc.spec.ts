@@ -11,7 +11,6 @@ function makeCtx(overrides: Partial<DiagramContext> = {}): DiagramContext {
     type: ref('bubble_map'),
     isReadonly: ref(false),
     layoutRecalcTrigger: ref(0),
-    multiFlowMapRecalcTrigger: ref(0),
     scheduleMindMapRecalc: vi.fn(),
     ...overrides,
   } as DiagramContext
@@ -33,7 +32,6 @@ describe('requestDiagramLayoutRecalc', () => {
 
     expect(scheduleMindMapRecalc).toHaveBeenCalledTimes(1)
     expect(ctx.layoutRecalcTrigger.value).toBe(0)
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(0)
   })
 
   it('bumps the generic layout trigger for thinking maps', () => {
@@ -43,16 +41,14 @@ describe('requestDiagramLayoutRecalc', () => {
 
     expect(ctx.scheduleMindMapRecalc).not.toHaveBeenCalled()
     expect(ctx.layoutRecalcTrigger.value).toBe(1)
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(0)
   })
 
-  it('bumps both multi-flow triggers', () => {
+  it('uses the generic layout trigger for multi-flow maps', () => {
     const ctx = makeCtx({ type: ref('multi_flow_map') })
 
     requestDiagramLayoutRecalc(ctx)
 
     expect(ctx.layoutRecalcTrigger.value).toBe(1)
-    expect(ctx.multiFlowMapRecalcTrigger.value).toBe(1)
   })
 
   it('no-ops when the session is readonly', () => {

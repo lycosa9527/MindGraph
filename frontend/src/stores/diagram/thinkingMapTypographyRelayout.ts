@@ -127,7 +127,7 @@ function thinkingMapTypographyRelayoutEligible(
 
 /**
  * Drop cached DOM size and schedule layout when thinking-map inline typography changes.
- * Multi-flow and double-bubble keep their dedicated relayout channels.
+ * Double-bubble keeps its dedicated relayout channel.
  */
 export function applyThinkingMapTypographyRelayout(
   ctx: DiagramContext,
@@ -147,12 +147,6 @@ export function applyThinkingMapTypographyRelayout(
   }
 
   delete ctx.nodeDimensions.value[nodeId]
-
-  if (diagramType === 'multi_flow_map') {
-    ctx.multiFlowMapRecalcTrigger.value++
-    ctx.layoutRecalcTrigger.value++
-    return
-  }
 
   if (diagramType === 'double_bubble_map') {
     ctx.viewBus.emit('diagram:double_bubble_relayout_requested', {})

@@ -107,7 +107,7 @@ describe('thinking map layout keeps live ids', () => {
       'multi_flow_map'
     )
     const zeroed = zeroPositions(loaded.nodes)
-    const after = recalculateMultiFlowMapLayout(zeroed, 160, {}, dimensionsOf(zeroed))
+    const after = recalculateMultiFlowMapLayout(zeroed, 160, dimensionsOf(zeroed))
     expectIdsKeptAndMoved(zeroed, after)
   })
 })

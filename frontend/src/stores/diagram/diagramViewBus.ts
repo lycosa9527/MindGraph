@@ -27,7 +27,6 @@ export type DiagramViewEventKey =
   | 'diagram:loaded'
   | 'diagram:loaded_from_library'
   | 'multi_flow_map:topic_width_changed'
-  | 'multi_flow_map:node_width_changed'
 
 type ViewEventMap = {
   [K in DiagramViewEventKey]: EventTypes[K]
