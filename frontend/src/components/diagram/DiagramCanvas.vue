@@ -53,11 +53,13 @@ import {
   useConceptMapCmapMeasuredLayoutRelax,
   useDiagramCanvasConceptMapLink,
   useDiagramCanvasContextMenu,
+  useDiagramCanvasDragSnap,
   useDiagramCanvasEventBus,
   useDiagramCanvasExport,
   useDiagramCanvasFit,
   useDiagramCanvasMobileTouch,
   useDiagramCanvasNodeExplain,
+  useDiagramCanvasNodeSync,
   useDiagramCanvasNodesEdges,
   useDiagramCanvasVueFlowHandlers,
   useDiagramCanvasVueFlowUi,
@@ -270,6 +272,7 @@ const {
   screenToFlowCoordinate,
   selectionKeyCode: vueFlowSelectionKeyCode,
 } = useVueFlow(diagramStore.vueFlowId)
+useDiagramCanvasDragSnap(diagramStore.vueFlowId)
 
 function getVueFlowNodesForOverlays(): GraphNode[] {
   return unref(getVueFlowNodes) as GraphNode[]
@@ -376,6 +379,7 @@ const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
   mindMapSlideFocusNodeId: () => props.mindMapSlideFocusNodeId,
   mindMapSlideDimFocusNodeIds: () => props.mindMapSlideDimFocusNodeIds,
 })
+useDiagramCanvasNodeSync(diagramStore.vueFlowId, nodes)
 
 provide(
   MIND_MAP_CANVAS_VARIANT_KEY,
@@ -926,7 +930,6 @@ defineExpose({
         :default-viewport="{ x: 0, y: 0, zoom: diagramCanvasZoomConfig.default }"
         :min-zoom="diagramCanvasZoomConfig.min"
         :max-zoom="diagramCanvasZoomConfig.max"
-        :snap-to-grid="true"
         :snap-grid="diagramCanvasGridConfig.snapSize"
         :nodes-draggable="nodesDraggable"
         :nodes-connectable="false"

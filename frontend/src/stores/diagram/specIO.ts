@@ -12,7 +12,7 @@ import { applyRainbowMindMapColors, isRainbowMindMapTheme } from '@/config/mindM
 import { attachRemainingSecondary } from '@/diagramBilingual/attachRest'
 import { offsetFlowLayoutForSecondary } from '@/diagramBilingual/flowLayout'
 import { readDiagramLanguages } from '@/diagramBilingual/mirror'
-import type { Connection, DiagramNode, DiagramType } from '@/types'
+import type { Connection, DiagramData, DiagramNode, DiagramType } from '@/types'
 import {
   remapCollabConnectionEndpoints,
   spliceCollabConnection,
@@ -30,6 +30,7 @@ import {
   readLlmExportAttribution,
 } from '@/utils/llmExportWatermark'
 import { isMindMapV2FamilyMode, resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { scheduleMindMapRelayoutWhenFontsLoad } from '@/utils/mindMapFontRelayout'
 import {
   collapseDuplicateMindMapNodes,
   migrateMindMapIdentityIds,
@@ -63,10 +64,15 @@ import {
   hydrateMindMapCanvasStylesOnLoad,
   snapshotMindMapCanvasBucket,
 } from './mindMapCanvasModeSwitch'
+import { restackLoadedMindMapV2Nodes } from './mindMapDisplayLayout'
 import { cancelMindMapPendingInlineEdit, clearMindMapEditingNodeId } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import { rematerializeMindMapSummaryNodes } from './mindMapSummaryLayout'
-import { mergeReloadedNodeFields, structuralSessionCarry } from './structuralSpecReload'
+import {
+  mergeReloadedNodeFields,
+  nodeLabelSignature,
+  structuralSessionCarry,
+} from './structuralSpecReload'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
 function seedMindMapMeasuresFromEstimates(
@@ -115,6 +121,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     // Restoring their known dimensions allows reactive layout correction to fire immediately.
     const prevDimensions: Record<string, { width: number; height: number }> =
       ctx.type.value === diagramTypeValue ? { ...ctx.nodeDimensions.value } : {}
+    // A box is only valid for the label it measured; a changed label resizes and re-reports.
+    const prevLabels = new Map<string, string>()
+    if (ctx.type.value === diagramTypeValue) {
+      for (const node of ctx.data.value?.nodes ?? []) {
+        if (node.id) prevLabels.set(node.id, nodeLabelSignature(node))
+      }
+    }
 
     const prevNodesForStyleMerge =
       (options?.mergePreviousNodeStyles === true || structural) &&
@@ -130,6 +143,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const preservedMindMapHeights = preserveMindMapMeasures
       ? { ...ctx.mindMapNodeHeights.value }
       : null
+    const previousTopicText = ctx.data.value?.nodes?.find((node) => node.id === 'topic')?.text
     const preservedTopicWidth = preserveMindMapMeasures ? ctx.mindMapTopicActualWidth.value : null
 
     ctx.nodeDimensions.value = {}
@@ -183,10 +197,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         seedMindMapMeasuresFromEstimates(nodesToStore, nextWidths, nextHeights)
         ctx.mindMapNodeWidths.value = nextWidths
         ctx.mindMapNodeHeights.value = nextHeights
+        const nextTopicText = nodesToStore.find((node) => node.id === 'topic')?.text
+        // A DOM width is only valid for the label it measured. A new generation
+        // replaces the topic text, and the old width would place both columns.
+        const topicUnchanged = nextTopicText === previousTopicText
+        if (!topicUnchanged) delete nextWidths.topic
         ctx.mindMapTopicActualWidth.value =
-          nextNodeIds.has('topic') && preservedTopicWidth != null
-            ? preservedTopicWidth
-            : (nextWidths.topic ?? null)
+          topicUnchanged && preservedTopicWidth != null ? preservedTopicWidth : null
       } else {
         const nextWidths: Record<string, number> = {}
         const nextHeights: Record<string, number> = {}
@@ -225,6 +242,26 @@ export function useSpecIOSlice(ctx: DiagramContext) {
             layered ? themeFromSpec.borderColor : themeFromSpec.topicBorderColor
           )
         }
+      }
+
+      if (isMindMapV2FamilyMode(sessionCanvasMode)) {
+        const restacked = restackLoadedMindMapV2Nodes(
+          nodesToStore,
+          { ...(spec as DiagramData), type: diagramTypeValue },
+          result.connections,
+          {
+            preserveMeasures: preserveMindMapMeasures,
+            widths: ctx.mindMapNodeWidths.value,
+            heights: ctx.mindMapNodeHeights.value,
+            topicWidth: ctx.mindMapTopicActualWidth.value,
+          }
+        )
+        nodesToStore = restacked.nodes
+        ctx.mindMapNodeWidths.value = restacked.widths
+        ctx.mindMapNodeHeights.value = restacked.heights
+        ctx.mindMapTopicActualWidth.value = restacked.topicWidth
+        ctx.mindMapTopicBranchGaps.value = restacked.gaps
+        scheduleMindMapRelayoutWhenFontsLoad(() => ctx.scheduleMindMapRecalc())
       }
 
       if (nodesToStore.length > 0) {
@@ -279,7 +316,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       const eh = node.data?.estimatedHeight as number | undefined
       if (ew && eh && node.id) {
         ctx.nodeDimensions.value[node.id] = { width: ew, height: eh }
-      } else if (node.id && prevDimensions[node.id] && !ctx.nodeDimensions.value[node.id]) {
+      } else if (
+        node.id &&
+        prevDimensions[node.id] &&
+        !ctx.nodeDimensions.value[node.id] &&
+        prevLabels.get(node.id) === nodeLabelSignature(node)
+      ) {
         // Restore previously measured dimensions for reused nodes (no estimatedWidth in data)
         ctx.nodeDimensions.value[node.id] = prevDimensions[node.id]
       }

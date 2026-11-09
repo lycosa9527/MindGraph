@@ -1,9 +1,10 @@
-"""One API-side renderer for submitted homework thumbnails.
+"""Catch-up renderer for submitted homework thumbnails.
 
-The submission row is the queue. ``thumb_pending`` stays set until the PNG is
-stored, so a restarted worker draws the same homework again. A Redis lock keeps
-the four API workers from launching Chromium at once, and a row lease keeps a
-second pass off the card this process is already drawing.
+Submit enqueues a Celery job. This loop draws a row only after that grace, or
+after a failed render's retry time. ``thumb_pending`` stays set until the PNG
+is stored, so a restart draws the same homework again. A Redis lock keeps the
+API workers from launching Chromium at once, and a row lease keeps a second
+pass off the card already being drawn.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from services.learning_space.thumbnail_backfill_scan import SUBMIT_THUMBNAIL_DUE
 from services.learning_space.thumbnail_submit import (
     THUMB_PENDING,
     THUMB_TOKEN,
+    SUBMIT_THUMBNAIL_LEASE_SECONDS,
     SubmitThumbnailJob,
     hold_thumbnail_claim,
     run_submit_thumbnail_job,
@@ -39,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 _IDLE_SECONDS = 3.0
 _LOCK_KEY = redis_keys.LOCK.format(resource="learning-space:submit-thumbnail")
-_LOCK_TTL_SECONDS = 180
+_LOCK_TTL_SECONDS = SUBMIT_THUMBNAIL_LEASE_SECONDS
 _WORKER_ERRORS = DATABASE_ERRORS + BACKGROUND_INFRA_ERRORS + (LookupError,)
 
 

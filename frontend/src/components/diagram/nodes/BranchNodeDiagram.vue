@@ -24,7 +24,7 @@ import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
-import { BRIDGE_PAIR_TEXT_CAP } from '@/utils/bridgeMapPairBox'
+import { bridgePairTextCapPx } from '@/utils/bridgeMapPairBox'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
@@ -235,13 +235,8 @@ const bridgeFontPx = computed(
   () => parseFloat(String(nodeStyle.value.fontSize ?? '')) || MIND_MAP_GEOMETRY.branchFontSize
 )
 
-function bridgePaintCapPx(): number {
-  const viewport = typeof window === 'undefined' ? BRIDGE_PAIR_TEXT_CAP : window.innerWidth * 0.88
-  return Math.min(BRIDGE_PAIR_TEXT_CAP, viewport)
-}
-
 function bridgeLineMaxWidth(text: string, fontSize: number): string {
-  const px = resolveThinkingMapDisplayMaxWidthPx(text, fontSize, bridgePaintCapPx(), {
+  const px = resolveThinkingMapDisplayMaxWidthPx(text, fontSize, bridgePairTextCapPx(), {
     fontWeight: String(nodeStyle.value.fontWeight || 'normal'),
     fontFamily: String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK),
   })

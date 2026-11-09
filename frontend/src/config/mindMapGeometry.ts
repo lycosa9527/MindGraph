@@ -96,13 +96,10 @@ export function mindMapNodeHorizontalExtra(
   shape: 'rounded' | 'rectangle' | 'oval' | 'underline'
 ): number {
   const px = mindMapHorizontalPadding(shape)
+  // Underline paints borderWidth 0. The measured box is the text padding only.
+  if (shape === 'underline') return px * 2
   const border = MIND_MAP_GEOMETRY.borderWidth
   return px * 2 + border * 2
-}
-
-export function mindMapNodeVerticalExtra(): number {
-  const { paddingY, borderWidth } = MIND_MAP_GEOMETRY
-  return paddingY * 2 + borderWidth * 2
 }
 
 /** Underline shape: line width matches mind-map edge stroke for seamless joins. */

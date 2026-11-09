@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -127,6 +127,9 @@ async def test_distinct_mindbot_endpoints_dedupes_same_app(
         lambda _db: _Usage(),
     )
 
-    endpoints = await distinct_mindbot_endpoints_for_org(MagicMock(), org)
+    db = MagicMock()
+    db.info = {}
+    db.execute = AsyncMock()
+    endpoints = await distinct_mindbot_endpoints_for_org(db, org)
     assert len(endpoints) == 1
     assert endpoints[0].mindbot_config_id == 1

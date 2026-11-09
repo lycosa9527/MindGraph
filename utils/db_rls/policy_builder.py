@@ -12,6 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 from utils.db_rls.gap_policies import iter_gap_table_policies
+from utils.db_rls.split_policies import iter_split_policies, split_policy_tables
 
 
 def _public_table_exists(table: str) -> bool:
@@ -47,27 +48,31 @@ def _create_all_policy(table: str, name: str, using_expr: str, check_expr: str |
 
 # Group A — user_id column (or diagram/knowledge helpers)
 USER_OWNED_EXPR = "rls_diagram_visible(user_id)"
-DEVICE_EXPR = (
-    "(student_id IS NULL AND (rls_is_panel_mode() OR rls_is_system_mode())) OR rls_diagram_visible(student_id)"
-)
+DEVICE_EXPR = "(student_id IS NULL AND rls_platform_admin_only()) OR rls_diagram_visible(student_id)"
 CANVAS_INPUT_DEVICE_EXPR = (
-    "rls_is_system_mode() OR rls_is_panel_mode() OR ("
+    "rls_platform_admin_only() OR ("
     "rls_current_user_id() IS NOT NULL AND "
     "device_id = rls_setting_text('app.canvas_device_id'))"
 )
 CLIENT_SHELL_DEVICE_EXPR = (
-    "rls_is_system_mode() OR rls_is_panel_mode() OR ("
+    "rls_platform_admin_only() OR ("
     "rls_current_user_id() IS NOT NULL AND "
     "device_id = rls_setting_text('app.client_shell_device_id'))"
 )
+# Login and usage events. Panel and system read across users; a teacher session
+# reads only its own rows.
+USER_ACTIVITY_LOG_TABLE = "user_activity_log"
+USER_ACTIVITY_LOG_EXPR = (
+    "rls_is_system_mode() "
+    "OR (rls_is_panel_mode() AND rls_diagram_visible(user_id)) "
+    "OR (NOT rls_is_deny_mode() AND user_id = rls_current_user_id())"
+)
 USER_OWNED_TABLES = [
-    "diagrams",
     "diagram_snapshots",
     "knowledge_spaces",
     "pinned_conversations",
     "user_api_tokens",
     "user_usage_stats",
-    "user_activity_log",
     "user_usage_activities",
     "kitty_one_sentence_sessions",
     "kitty_one_sentence_turns",
@@ -91,15 +96,14 @@ GEWE_TABLES = [
 ]
 GEWE_EXPR = "rls_platform_admin_only()"
 
-EMBEDDINGS_EXPR = "rls_is_system_mode() OR rls_community_read_allowed()"
-DIRECT_MESSAGE_EXPR = "rls_user_visible(sender_id) OR rls_user_visible(recipient_id)"
+_DM_PARTY = "rls_current_user_id() IN ({sender}, {recipient})"
+DIRECT_MESSAGE_EXPR = "rls_is_system_mode() OR " + _DM_PARTY.format(sender="sender_id", recipient="recipient_id")
 COMMUNITY_POST_WRITE = "author_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
 
 KNOWLEDGE_DOCUMENT_EXPR = "rls_knowledge_document_visible(id)"
 KNOWLEDGE_SPACE_CHILD_TABLES = [
     ("knowledge_documents", "rls_knowledge_space_visible(space_id)"),
     ("document_chunks", "rls_knowledge_document_visible(document_id)"),
-    ("embeddings", EMBEDDINGS_EXPR),
     (
         "chunk_attachments",
         (
@@ -195,11 +199,18 @@ SHARED_DIAGRAM_CHILD = [
 ]
 
 ORG_EXPR = "rls_org_visible(organization_id)"
+# Teachers see their own usage rows; school totals are for panel and the data center.
 TOKEN_USAGE_EXPR = (
-    "rls_org_visible(organization_id) OR ("
-    "organization_id IS NULL AND user_id IS NOT NULL AND user_id = rls_current_user_id())"
+    "rls_is_system_mode() OR rls_is_dashboard_mode() "
+    "OR ((rls_is_panel_mode() OR rls_is_mindbot_service_mode()) AND rls_org_visible(organization_id)) "
+    "OR (NOT rls_is_deny_mode() AND user_id IS NOT NULL AND user_id = rls_current_user_id())"
 )
-MINDBOT_CONFIG_EXPR = "rls_org_visible(organization_id) OR rls_mindbot_callback_token_visible(public_callback_token)"
+# Rows hold the school's DingTalk and Dify secrets. Teachers never read them.
+MINDBOT_CONFIG_EXPR = (
+    "rls_platform_admin_only() "
+    "OR (rls_is_mindbot_service_mode() AND rls_org_visible(organization_id)) "
+    "OR rls_mindbot_callback_token_visible(public_callback_token)"
+)
 MINDBOT_USAGE_EXPR = "rls_org_visible(organization_id)"
 
 WORKSHOP_ROOT = "chat_channels"
@@ -213,16 +224,17 @@ WORKSHOP_REACTION_EXPR = (
     "JOIN chat_channels c ON c.id = m.channel_id "
     "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
 )
-WORKSHOP_STAR_EXPR = f"rls_user_visible(user_id) AND {WORKSHOP_REACTION_EXPR}"
+_OWN_ROW = "(user_id = rls_current_user_id() OR rls_is_system_mode())"
+WORKSHOP_STAR_EXPR = f"{_OWN_ROW} AND {WORKSHOP_REACTION_EXPR}"
 WORKSHOP_TOPIC_PREF_EXPR = (
-    "rls_user_visible(user_id) AND EXISTS ("
+    f"{_OWN_ROW} AND EXISTS ("
     "SELECT 1 FROM chat_topics t "
     "JOIN chat_channels c ON c.id = t.channel_id "
     "WHERE t.id = topic_id AND rls_chat_channel_visible(c.organization_id)"
     ")"
 )
 WORKSHOP_ATTACHMENT_EXPR = (
-    "("
+    "rls_is_system_mode() OR ("
     "message_id IS NOT NULL AND EXISTS ("
     "SELECT 1 FROM chat_messages m "
     "JOIN chat_channels c ON c.id = m.channel_id "
@@ -231,14 +243,9 @@ WORKSHOP_ATTACHMENT_EXPR = (
     ") OR ("
     "dm_id IS NOT NULL AND EXISTS ("
     "SELECT 1 FROM direct_messages d "
-    "WHERE d.id = dm_id AND ("
-    "rls_user_visible(d.sender_id) OR rls_user_visible(d.recipient_id)"
-    ")"
-    ")"
+    "WHERE d.id = dm_id AND " + _DM_PARTY.format(sender="d.sender_id", recipient="d.recipient_id") + ")"
     ") OR ("
-    "message_id IS NULL AND dm_id IS NULL AND ("
-    "uploader_id = rls_current_user_id() OR rls_is_system_mode()"
-    ")"
+    "message_id IS NULL AND dm_id IS NULL AND uploader_id = rls_current_user_id()"
     ")"
 )
 WORKSHOP_CHILD = [
@@ -365,8 +372,7 @@ MINDMATE_COLLAB_LEGACY_TABLES = [
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
 # Bound experts are readable as people (roster, message sender). This stays off
-# rls_user_visible: that helper is also the direct-message policy, and widening
-# it would show every DM the expert sends, including other schools.
+# rls_user_visible, which other policies use as "same school".
 USERS_EXPR = (
     "rls_user_visible(id) "
     "OR (rls_is_panel_mode() AND organization_id IS NOT NULL AND rls_org_visible(organization_id)) "
@@ -379,8 +385,6 @@ USERS_EXPR = (
 ORGS_EXPR = (
     "(rls_mode() = 'public' AND rls_allow_public_org_list()) "
     "OR rls_org_visible(id) "
-    "OR (rls_is_panel_mode() AND (rls_panel_global_read() OR rls_org_id_in_readable_list(id) "
-    "OR rls_panel_legacy_org_visible(id))) "
     "OR rls_panel_org_invited_by_actor(invited_by_user_id)"
 )
 
@@ -389,6 +393,8 @@ COMMUNITY_READ = "rls_community_read_allowed()"
 COMMUNITY_WRITE = "user_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
 LIBRARY_DOC_READ = "rls_community_read_allowed()"
 LIBRARY_DOC_WRITE = "rls_platform_admin_only()"
+DANMAKU_WRITE = "user_id = rls_current_user_id() OR rls_platform_admin_only()"
+NOTIFICATION_DISMISSED_EXPR = "user_id = rls_current_user_id() OR rls_platform_admin_only()"
 
 # Group E
 PLATFORM_ADMIN = "rls_platform_admin_only()"
@@ -480,6 +486,8 @@ def upgrade_group_a() -> None:
     for table in USER_OWNED_TABLES + DEBATE_SESSION_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", USER_OWNED_EXPR)
+    _enable_force(USER_ACTIVITY_LOG_TABLE)
+    _create_all_policy(USER_ACTIVITY_LOG_TABLE, f"{USER_ACTIVITY_LOG_TABLE}_tenant", USER_ACTIVITY_LOG_EXPR)
     upgrade_devices_policy()
     upgrade_gewe_policies()
     for table, expr in KNOWLEDGE_SPACE_CHILD_TABLES:
@@ -550,9 +558,9 @@ def upgrade_group_cde() -> None:
 
     library_tables = [
         ("library_documents", LIBRARY_DOC_READ, LIBRARY_DOC_WRITE),
-        ("library_danmaku", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
-        ("library_danmaku_likes", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
-        ("library_danmaku_replies", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
+        ("library_danmaku", LIBRARY_DOC_READ, DANMAKU_WRITE),
+        ("library_danmaku_likes", LIBRARY_DOC_READ, DANMAKU_WRITE),
+        ("library_danmaku_replies", LIBRARY_DOC_READ, DANMAKU_WRITE),
     ]
     for table, read_expr, write_expr in library_tables:
         if not _public_table_exists(table):
@@ -570,7 +578,6 @@ def upgrade_group_cde() -> None:
         "update_notifications",
         "feature_access_rules",
         "feature_access_user_grants",
-        "teacher_usage_config",
         "dashboard_activities",
         "market_listings",
     ]
@@ -582,7 +589,7 @@ def upgrade_group_cde() -> None:
     _create_all_policy(
         "update_notification_dismissed",
         "update_notification_dismissed_tenant",
-        "user_id = rls_current_user_id() OR rls_is_panel_mode()",
+        NOTIFICATION_DISMISSED_EXPR,
     )
 
 
@@ -620,7 +627,7 @@ def _org_table_expr(table: str) -> str:
     if table == "mindbot_usage_events":
         return MINDBOT_USAGE_EXPR
     if table == "feature_access_org_grants":
-        return f"{ORG_EXPR} OR rls_platform_admin_only()"
+        return PLATFORM_ADMIN
     if table == "token_usage":
         return TOKEN_USAGE_EXPR
     return ORG_EXPR
@@ -630,6 +637,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     """Every (table, policy expression) pair for schema validation tests."""
     rows: list[tuple[str, str]] = []
     rows.extend((table, USER_OWNED_EXPR) for table in USER_OWNED_TABLES)
+    rows.append((USER_ACTIVITY_LOG_TABLE, USER_ACTIVITY_LOG_EXPR))
     rows.extend((table, USER_OWNED_EXPR) for table in DEBATE_SESSION_TABLES)
     rows.append(("devices", DEVICE_EXPR))
     rows.append(("canvas_input_devices", CANVAS_INPUT_DEVICE_EXPR))
@@ -657,9 +665,9 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     rows.append(("community_post_comments", COMMUNITY_WRITE))
     for table, read_expr, write_expr in (
         ("library_documents", LIBRARY_DOC_READ, LIBRARY_DOC_WRITE),
-        ("library_danmaku", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
-        ("library_danmaku_likes", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
-        ("library_danmaku_replies", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
+        ("library_danmaku", LIBRARY_DOC_READ, DANMAKU_WRITE),
+        ("library_danmaku_likes", LIBRARY_DOC_READ, DANMAKU_WRITE),
+        ("library_danmaku_replies", LIBRARY_DOC_READ, DANMAKU_WRITE),
     ):
         rows.append((table, read_expr))
         rows.append((table, write_expr))
@@ -668,17 +676,11 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
         "update_notifications",
         "feature_access_rules",
         "feature_access_user_grants",
-        "teacher_usage_config",
         "dashboard_activities",
         "market_listings",
     ):
         rows.append((table, PLATFORM_ADMIN))
-    rows.append(
-        (
-            "update_notification_dismissed",
-            "user_id = rls_current_user_id() OR rls_is_panel_mode()",
-        )
-    )
+    rows.append(("update_notification_dismissed", NOTIFICATION_DISMISSED_EXPR))
     rows.append(
         (
             "mindmate_export_jobs",
@@ -687,12 +689,14 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     )
     rows.extend(LEARNING_SPACE_POLICIES)
     rows.extend(iter_gap_table_policies())
+    rows.extend(iter_split_policies())
     return rows
 
 
 def all_rls_tables() -> list[str]:
     """Return every table name that greenfield RLS policies cover."""
     tables = list(USER_OWNED_TABLES)
+    tables.append(USER_ACTIVITY_LOG_TABLE)
     tables.extend(DEBATE_SESSION_TABLES)
     tables.extend(GEWE_TABLES)
     tables.append("devices")
@@ -720,11 +724,11 @@ def all_rls_tables() -> list[str]:
             "feature_access_rules",
             "feature_access_user_grants",
             "feature_access_org_grants",
-            "teacher_usage_config",
             "dashboard_activities",
             "market_listings",
             "mindmate_export_jobs",
         ]
     )
     tables.extend(name for name, _expr in LEARNING_SPACE_POLICIES)
+    tables.extend(split_policy_tables())
     return tables

@@ -219,6 +219,24 @@ describe('useTrainingFollow', () => {
     host.remove()
   })
 
+  it('absorbs a failed command pull and pulls again on the next seq', async () => {
+    const { app, host, store } = mountFollow()
+    await flushTurns()
+    fetchCommand.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    fetchCommand.mockResolvedValueOnce({
+      snapshot: snapshot({ seq: 6 }),
+      etag: '"6"',
+      notModified: false,
+    })
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    expect(store.snapshot.seq).toBe(6)
+    app.unmount()
+    host.remove()
+  })
+
   it('refetches when the tab becomes visible', async () => {
     const { app, host } = mountFollow()
     await flushTurns()

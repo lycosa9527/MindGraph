@@ -1,7 +1,5 @@
 /**
- * DOM-based text measurement for circle map nodes
- * Finds fontSize so text fits inside a circle (no truncation).
- * Wrap vs no-wrap uses prefersNoWrapWidthFitForCircleMap (Latin/Cyrillic vs CJK/Arabic/Thai…).
+ * DOM-based text measurement for diagram node labels.
  *
  * Multi-flow / diagram labels with `$...$` math: use {@link measureRenderedDiagramLabelWidth}
  * so width matches KaTeX output (plain `measureTextWidth` measures LaTeX source as text).
@@ -24,20 +22,19 @@ import {
   plainTextNowrapKey,
 } from './plainTextMeasureBatch'
 import {
-  estimateTextWidthFallbackPx,
-  prefersNoWrapWidthFitForCircleMap,
-} from './textMeasurementFallback'
+  cachedMeasuredBox,
+  cachedMeasuredWidth,
+  containedMeasureRoot,
+  rememberMeasuredBox,
+  rememberMeasuredWidth,
+} from './textMeasureCache'
+import { estimateTextWidthFallbackPx } from './textMeasurementFallback'
 
 export { diagramLabelLikelyNeedsRenderedMeasure }
 
 const MEASURE_FONT_FAMILY = DIAGRAM_NODE_FONT_STACK
-const MIN_FONT_SIZE = 6
-const TOPIC_DEFAULT_FONT_SIZE = 18
 const CONTEXT_DEFAULT_FONT_SIZE = 16
-const FONT_SIZE_STEP = 0.5
-const MAX_WIDTH_OFFSET = 16
 const BORDER_TOPIC = 1.5
-const BORDER_CONTEXT = 1.5
 
 /** Fixed font size for circle map context nodes (L1). Grow the circle instead of shrinking type. */
 export const CONTEXT_FONT_SIZE = 16
@@ -54,13 +51,14 @@ const TOPIC_CIRCLE_INNER_PADDING = 10
 let measureEl: HTMLDivElement | null = null
 /** Separate from {@link measureEl} so KaTeX innerHTML does not break plain-text measurement. */
 let diagramLabelHtmlMeasureEl: HTMLDivElement | null = null
+let wrappedBlockEl: HTMLDivElement | null = null
 
 function applyMeasureFontFamily(el: HTMLDivElement, fontFamily?: string): void {
   el.style.fontFamily = diagramPaintFontFamily(fontFamily, MEASURE_FONT_FAMILY)
 }
 
 function getMeasureEl(fontFamily?: string): HTMLDivElement {
-  if (measureEl && document.body.contains(measureEl)) {
+  if (measureEl?.isConnected) {
     applyMeasureFontFamily(measureEl, fontFamily)
     return measureEl
   }
@@ -68,7 +66,7 @@ function getMeasureEl(fontFamily?: string): HTMLDivElement {
   measureEl.setAttribute('aria-hidden', 'true')
   measureEl.style.cssText = [
     'position:absolute',
-    'left:-9999px',
+    'left:0',
     'top:0',
     'visibility:hidden',
     'pointer-events:none',
@@ -81,53 +79,37 @@ function getMeasureEl(fontFamily?: string): HTMLDivElement {
     'box-sizing:border-box',
   ].join(';')
   applyMeasureFontFamily(measureEl, fontFamily)
-  document.body.appendChild(measureEl)
+  containedMeasureRoot()?.appendChild(measureEl)
   return measureEl
 }
 
-/**
- * Await `document.fonts.ready` so Canvas/TextMeasure uses loaded @font-face metrics.
- * Prefer {@link ensureFontsForLanguageCode} from `@/fonts/promptLanguageFonts` for diagram work:
- * it loads script Fontsource chunks for the prompt language and already awaits `fonts.ready` at the end.
- * Use this helper only when you need `fonts.ready` without a language-specific load (rare).
- */
-export async function prepareDiagramTextMeasurement(): Promise<void> {
-  if (typeof document === 'undefined' || !document.fonts?.ready) {
-    return
+/** Own element: balance and content-box must not leak into the plain measurer. */
+function getWrappedBlockMeasureEl(fontFamily?: string): HTMLDivElement {
+  if (!wrappedBlockEl?.isConnected) {
+    wrappedBlockEl = document.createElement('div')
+    wrappedBlockEl.setAttribute('aria-hidden', 'true')
+    wrappedBlockEl.style.cssText = [
+      'position:absolute',
+      'left:0',
+      'top:0',
+      'visibility:hidden',
+      'pointer-events:none',
+      'box-sizing:content-box',
+      'width:max-content',
+      'padding:0',
+      'white-space:pre-wrap',
+      'word-break:normal',
+      'overflow-wrap:break-word',
+      'line-break:auto',
+      'text-wrap:balance',
+      'text-align:center',
+      'line-height:1.4',
+    ].join(';')
+    containedMeasureRoot()?.appendChild(wrappedBlockEl)
   }
-  try {
-    await document.fonts.ready
-  } catch {
-    /* ignore */
-  }
+  applyMeasureFontFamily(wrappedBlockEl, fontFamily)
+  return wrappedBlockEl
 }
-
-export interface MeasureTextFitOptions {
-  /** Circle diameter in px */
-  diameterPx: number
-  /** Topic (bold) vs context (normal) */
-  isTopic: boolean
-  /** Font size to try (default: theme default) */
-  fontSize?: number
-  /** Optional override; defaults to diagram multiscript stack */
-  fontFamily?: string
-}
-
-/**
- * True when text is mostly ASCII (English, digits, common punct.); use no-wrap + width-based fit.
- * @deprecated Prefer prefersNoWrapWidthFitForCircleMap for circle-map routing; kept for callers/tests.
- */
-export function isMostlyAscii(text: string): boolean {
-  const t = (text || '').trim()
-  if (!t.length) return false
-  let ascii = 0
-  for (let i = 0; i < t.length; i++) {
-    if (t.charCodeAt(i) < 128) ascii++
-  }
-  return ascii / t.length >= 0.8
-}
-
-export { prefersNoWrapWidthFitForCircleMap }
 
 /**
  * Single-line labels: nowrap when measured width (+ padding) fits within maxWidthPx. Uses diagram font stack.
@@ -148,39 +130,6 @@ export function shouldPreferSingleLineNoWrap(
     fontFamily: options?.fontFamily,
   })
   return w + pad <= maxWidthPx
-}
-
-/**
- * Measure if text fits in circle at given fontSize.
- * Uses effective box: width = diameter - 16 - 2*border, height limit = diameter - 2*border.
- */
-export function measureTextFitsInCircle(
-  text: string,
-  options: MeasureTextFitOptions
-): { fits: boolean; height: number } {
-  if (typeof document === 'undefined') {
-    return { fits: true, height: 0 }
-  }
-  const {
-    diameterPx,
-    isTopic,
-    fontSize = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE,
-    fontFamily,
-  } = options
-  const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const effectiveHeight = diameterPx - 2 * border
-  const maxW = Math.max(1, diameterPx - MAX_WIDTH_OFFSET - 2 * border)
-  const t = (text || '').trim() || ' '
-  const el = getMeasureEl(fontFamily)
-  el.style.width = `${maxW}px`
-  el.style.whiteSpace = 'pre-wrap'
-  el.style.padding = isTopic ? '8px 12px' : '4px 8px'
-  el.style.fontSize = `${fontSize}px`
-  el.style.fontWeight = isTopic ? 'bold' : 'normal'
-  el.textContent = t
-  const height = el.offsetHeight
-  const fits = height <= effectiveHeight
-  return { fits, height }
 }
 
 export interface MeasureTextWidthOptions {
@@ -204,7 +153,7 @@ export function measureTextWidth(
   const fontWeight = options?.fontWeight ?? 'normal'
   const fontFamily = options?.fontFamily ?? MEASURE_FONT_FAMILY
   const key = plainTextNowrapKey(t, fontSize, fontWeight, fontFamily)
-  const cached = cachedPlainTextWidth(key)
+  const cached = cachedPlainTextWidth(key) ?? cachedMeasuredWidth(key)
   if (cached !== undefined) return cached
   const el = getMeasureEl(fontFamily)
   el.style.width = 'max-content'
@@ -214,11 +163,44 @@ export function measureTextWidth(
   el.style.fontSize = `${fontSize}px`
   el.style.fontWeight = fontWeight
   el.textContent = t
-  return el.offsetWidth
+  const width = el.offsetWidth
+  rememberMeasuredWidth(key, width)
+  return width
+}
+
+/**
+ * Width of a label after the same wrap the node paints.
+ * One read: max-width, pre-wrap, and text-wrap balance. Without layout (jsdom)
+ * the box reads 0 and this returns null, so callers keep the em fallback.
+ */
+export function measureCssWrappedBlockPx(
+  text: string,
+  fontSize: number,
+  maxWidth: number,
+  options?: MeasureTextWidthOptions
+): { width: number; height: number } | null {
+  if (typeof document === 'undefined') return null
+  if (!Number.isFinite(maxWidth) || maxWidth <= 0) return null
+  const label = (text || '').trim()
+  if (!label) return null
+  const fontWeight = options?.fontWeight ?? 'normal'
+  const fontFamily = options?.fontFamily ?? MEASURE_FONT_FAMILY
+  const key = `w${plainTextBoxKey(label, fontSize, fontWeight, fontFamily, maxWidth, 0, 0)}`
+  const cached = cachedMeasuredBox(key)
+  if (cached) return cached
+  const el = getWrappedBlockMeasureEl(fontFamily)
+  el.style.maxWidth = `${maxWidth}px`
+  el.style.fontSize = `${fontSize}px`
+  el.style.fontWeight = fontWeight
+  el.textContent = label
+  const box = { width: el.offsetWidth, height: el.offsetHeight }
+  if (box.width <= 0) return null
+  rememberMeasuredBox(key, box)
+  return box
 }
 
 function getDiagramLabelHtmlMeasureEl(fontFamily?: string): HTMLDivElement {
-  if (diagramLabelHtmlMeasureEl && document.body.contains(diagramLabelHtmlMeasureEl)) {
+  if (diagramLabelHtmlMeasureEl?.isConnected) {
     applyMeasureFontFamily(diagramLabelHtmlMeasureEl, fontFamily)
     return diagramLabelHtmlMeasureEl
   }
@@ -233,7 +215,7 @@ function getDiagramLabelHtmlMeasureEl(fontFamily?: string): HTMLDivElement {
     'box-sizing:content-box',
   ].join(';')
   applyMeasureFontFamily(diagramLabelHtmlMeasureEl, fontFamily)
-  document.body.appendChild(diagramLabelHtmlMeasureEl)
+  containedMeasureRoot()?.appendChild(diagramLabelHtmlMeasureEl)
   return diagramLabelHtmlMeasureEl
 }
 
@@ -406,7 +388,7 @@ export function measureTextDimensions(
     paddingX,
     paddingY
   )
-  const cachedBox = cachedPlainTextBox(boxKey)
+  const cachedBox = cachedPlainTextBox(boxKey) ?? cachedMeasuredBox(boxKey)
   if (cachedBox) return finishMeasuredBox(cachedBox, fontSize, options)
   const el = getMeasureEl(fontFamily)
   el.style.fontSize = `${fontSize}px`
@@ -424,7 +406,9 @@ export function measureTextDimensions(
     el.style.maxWidth = 'none'
   }
   el.textContent = t
-  return finishMeasuredBox({ width: el.offsetWidth, height: el.offsetHeight }, fontSize, options)
+  const box = { width: el.offsetWidth, height: el.offsetHeight }
+  rememberMeasuredBox(boxKey, box)
+  return finishMeasuredBox(box, fontSize, options)
 }
 
 function finishMeasuredBox(
@@ -444,155 +428,6 @@ function finishMeasuredBox(
         })
   const paddingX = options?.paddingX ?? 16
   return stackedTextBlock(box.width, box.height, glossWidth + paddingX * 2, fontSize, gloss)
-}
-
-function measureTextWidthNoWrap(
-  text: string,
-  options: { isTopic: boolean; fontSize: number; fontFamily?: string; fontWeight?: string }
-): number {
-  if (typeof document === 'undefined') return 0
-  const t = (text || '').trim() || ' '
-  const el = getMeasureEl(options.fontFamily)
-  el.style.width = 'max-content'
-  el.style.whiteSpace = 'nowrap'
-  el.style.padding = options.isTopic ? '8px 12px' : '4px 8px'
-  el.style.fontSize = `${options.fontSize}px`
-  const fw = options.fontWeight ?? (options.isTopic ? 'bold' : 'normal')
-  el.style.fontWeight = fw
-  el.textContent = t
-  return el.offsetWidth
-}
-
-/**
- * Minimum diameter (px) so that text fits in one line at fixed fontSize (no-wrap).
- * Used by circle map: fixed font, grow circle to fit. Padding matches layout (MAX_WIDTH_OFFSET, BORDER_*).
- */
-export function computeMinDiameterForNoWrap(
-  text: string,
-  fontSize: number,
-  isTopic: boolean,
-  options?: { fontWeight?: string; fontFamily?: string }
-): number {
-  if (typeof document === 'undefined') {
-    return fallbackMinDiameterForNoWrap(text, fontSize, isTopic)
-  }
-  const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const w = measureTextWidthNoWrap(text, {
-    isTopic,
-    fontSize,
-    fontFamily: options?.fontFamily,
-    fontWeight: options?.fontWeight,
-  })
-  return Math.ceil(w + MAX_WIDTH_OFFSET + 2 * border)
-}
-
-function fallbackMinDiameterForNoWrap(text: string, fontSize: number, isTopic: boolean): number {
-  const len = (text || '').trim().length
-  if (len === 0) return isTopic ? 120 : 70
-  const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const w = estimateTextWidthFallbackPx(text, fontSize, { isTopic }) + (isTopic ? 24 : 16)
-  return Math.ceil(w + MAX_WIDTH_OFFSET + 2 * border)
-}
-
-/**
- * Find max fontSize such that no-wrap text fits in circle (width-based).
- */
-export function computeFontSizeToFitCircleNoWrap(
-  text: string,
-  diameterPx: number,
-  isTopic: boolean
-): number {
-  if (typeof document === 'undefined') {
-    return fallbackFontSizeToFitNoWrap(text, diameterPx, isTopic)
-  }
-  const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const effectiveWidth = Math.max(1, diameterPx - MAX_WIDTH_OFFSET - 2 * border)
-  const maxFs = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
-  let low = MIN_FONT_SIZE
-  let high = maxFs
-  let best = MIN_FONT_SIZE
-  const step = FONT_SIZE_STEP
-  while (high - low >= step) {
-    const mid = (low + high) / 2
-    const w = measureTextWidthNoWrap(text, { isTopic, fontSize: mid })
-    if (w <= effectiveWidth) {
-      best = mid
-      low = mid + step
-    } else {
-      high = mid - step
-    }
-  }
-  return Math.round(best * 10) / 10
-}
-
-/**
- * Find max fontSize such that text fits in circle (DOM measurement).
- * Wrap mode: fit by height. Use computeFontSizeToFitCircleNoWrap for word-separated scripts.
- */
-export function computeFontSizeToFitCircle(
-  text: string,
-  diameterPx: number,
-  isTopic: boolean
-): number {
-  if (typeof document === 'undefined') {
-    return fallbackFontSizeToFit(text, diameterPx, isTopic)
-  }
-  const maxFs = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
-  let low = MIN_FONT_SIZE
-  let high = maxFs
-  let best = MIN_FONT_SIZE
-  const step = FONT_SIZE_STEP
-  while (high - low >= step) {
-    const mid = (low + high) / 2
-    const { fits } = measureTextFitsInCircle(text, { diameterPx, isTopic, fontSize: mid })
-    if (fits) {
-      best = mid
-      low = mid + step
-    } else {
-      high = mid - step
-    }
-  }
-  return Math.round(best * 10) / 10
-}
-
-/**
- * Uniform context fontSize: min over all context texts so longest fits.
- * No-wrap width fit for Latin/Cyrillic/ASCII; wrap height fit for CJK, Arabic, Hebrew, Thai…
- */
-export function computeContextFontSize(texts: string[], uniformContextDiameterPx: number): number {
-  if (!texts.length) return CONTEXT_DEFAULT_FONT_SIZE
-  let minFs = CONTEXT_DEFAULT_FONT_SIZE
-  for (const t of texts) {
-    const fs = prefersNoWrapWidthFitForCircleMap(t)
-      ? computeFontSizeToFitCircleNoWrap(t, uniformContextDiameterPx, false)
-      : computeFontSizeToFitCircle(t, uniformContextDiameterPx, false)
-    minFs = Math.min(minFs, fs)
-  }
-  return Math.max(MIN_FONT_SIZE, minFs)
-}
-
-function fallbackFontSizeToFit(text: string, diameterPx: number, isTopic: boolean): number {
-  const inner = Math.max(1, diameterPx - MAX_WIDTH_OFFSET - 24)
-  const lineHeight = 1.4
-  const t = (text || '').trim() || ' '
-  const approxW = estimateTextWidthFallbackPx(t, 14, { isTopic })
-  const approxLines = Math.max(1, Math.ceil(approxW / inner))
-  const maxFontSizeByHeight = (diameterPx - 24) / (approxLines * lineHeight)
-  const maxFs = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
-  const fs = Math.min(maxFs, maxFontSizeByHeight)
-  return Math.max(MIN_FONT_SIZE, Math.floor(fs))
-}
-
-function fallbackFontSizeToFitNoWrap(text: string, diameterPx: number, isTopic: boolean): number {
-  const trimmed = (text || '').trim()
-  if (!trimmed.length) return isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
-  const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const effectiveWidth = diameterPx - MAX_WIDTH_OFFSET - 2 * border - (isTopic ? 24 : 16)
-  const maxFs = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
-  const wAtMax = estimateTextWidthFallbackPx(trimmed, maxFs, { isTopic })
-  if (wAtMax <= 0) return maxFs
-  const fs = (effectiveWidth / wAtMax) * maxFs
-  return Math.max(MIN_FONT_SIZE, Math.min(maxFs, Math.floor(fs)))
 }
 
 function measureTextWithSVG(
@@ -622,6 +457,7 @@ function measureTextWithSVG(
 
   const width = el.offsetWidth || 0
   const height = el.offsetHeight || fontSize * 1.4
+  el.style.boxSizing = 'border-box'
 
   return {
     width,

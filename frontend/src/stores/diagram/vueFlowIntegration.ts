@@ -28,10 +28,10 @@ import {
   withMindMapAssociationHandles,
 } from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { clearFreshMindMapWrapStamp, peekFreshMindMapWrapStamp } from '@/utils/mindMapFontRelayout'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
-import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
 import { nodeIdsWithImage, thinkingMapImageNodeIds } from '@/utils/nodeImageFrame'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
@@ -49,13 +49,12 @@ import {
 import { recalculateDoubleBubbleMapLayout } from '../specLoader/doubleBubbleMapMeasuredLayout'
 import { withFlowSerpentineHandles } from '../specLoader/flowMapSerpentine'
 import { getEdgeTypeForDiagram } from './events'
-import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import {
   type MindMapDisplayLayoutResult,
   computeMindMapDisplayLayout,
+  layoutMindMapV2WithWrapBoxes,
   mergeMindMapLayoutPositions,
 } from './mindMapDisplayLayout'
-import { mergeLaidOutTreeWithSummaries } from './mindMapSummaryLayout'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
@@ -178,8 +177,10 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       return null
     }
 
-    // Hold stamped XY while measure-batch accumulates — live width/height maps
-    // must not reshape Vue Flow node-by-node before flush.
+    // Hold the load-time wrap layout while measure-batch accumulates — live
+    // width/height maps must not reshape Vue Flow node-by-node before flush.
+    // Those held positions are the wrap layout written in loadFromSpec, so the
+    // first paint is not the file's saved columns.
     if (ctx.mindMapBulkLoading.value) {
       return {
         nodes: ctx.data.value.nodes,
@@ -187,43 +188,39 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       }
     }
 
-    // Layout deps only — not selectedNodes, not recalc trigger (trigger remaps VF only).
-    // Numbering changes node box width; track the flags so columns reflow with prefixes.
+    // One layout per scheduled frame. DOM width/height writes must not re-enter
+    // this computed: each ResizeObserver would otherwise restack the whole tree
+    // and generation stalls. The recalc trigger is the invalidation.
+    void ctx.mindMapRecalcTrigger.value
     void ctx.data.value._mindmap_branch_numbering
     void ctx.data.value._mindmap_branch_numbering_prefix
     void ctx.data.value._mindmap_branch_numbering_nested
     void ctx.data.value._mindmap_adornments
-    const connections = ctx.data.value.connections ?? []
-    const treeNodes = filterTreeMindMapNodes(ctx.data.value.nodes)
-    const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
-    const collapsedNodeIds = getMindMapCollapsedNodeIds(treeNodes, connections, collapsedPaths)
+    const freshWrapStamp = peekFreshMindMapWrapStamp()
     const preserveIncomingY = ctx.mindMapPreserveIncomingY.value
-    const imageNodeIds = nodeIdsWithImage(treeNodes, ctx.data.value, connections)
-    const laidOut = computeMindMapDisplayLayout(
-      'v2',
-      treeNodes,
-      connections,
-      ctx.mindMapTopicActualWidth.value,
-      ctx.mindMapNodeWidths.value,
-      ctx.mindMapNodeHeights.value,
-      collapsedNodeIds,
-      ctx.data.value._mindmap_diagram_style as string | undefined,
+    pauseTracking()
+    let topicWidth: number | null
+    let nodeWidths: Record<string, number>
+    let nodeHeights: Record<string, number>
+    try {
+      topicWidth = ctx.mindMapTopicActualWidth.value
+      nodeWidths = { ...ctx.mindMapNodeWidths.value }
+      nodeHeights = { ...ctx.mindMapNodeHeights.value }
+    } finally {
+      resetTracking()
+    }
+    const laidOut = layoutMindMapV2WithWrapBoxes(
+      ctx.data.value.nodes,
+      ctx.data.value,
+      topicWidth,
+      nodeWidths,
+      nodeHeights,
       {
-        ...(preserveIncomingY ? { preserveIncomingY: true } : {}),
-        imageNodeIds,
+        preserveIncomingY,
+        reuseStoredWrapBox: !freshWrapStamp,
       }
     )
-    return {
-      nodes: mergeLaidOutTreeWithSummaries(
-        laidOut.nodes,
-        ctx.data.value.nodes,
-        connections,
-        ctx.data.value,
-        ctx.mindMapNodeWidths.value,
-        ctx.mindMapNodeHeights.value
-      ),
-      gaps: laidOut.gaps,
-    }
+    return laidOut
   })
 
   const mindMapV2LayoutNodes = computed(() => mindMapV2LayoutResult.value?.nodes ?? [])
@@ -236,6 +233,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (merged !== ctx.data.value.nodes) {
       ctx.data.value.nodes = merged
     }
+    if (peekFreshMindMapWrapStamp()) clearFreshMindMapWrapStamp()
     // Re-poke inline edit after position write-back when open-phase pending or
     // store session is active but the input lost focus / remounted.
     const editId = ctx.mindMapPendingEditNodeId.value ?? ctx.mindMapEditingNodeId.value

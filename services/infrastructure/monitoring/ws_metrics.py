@@ -40,6 +40,7 @@ from typing import Any, Dict
 
 from services.features.workshop_ws_registry import ACTIVE_CONNECTIONS
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -580,7 +581,7 @@ async def get_ws_metrics_snapshot() -> Dict[str, Any]:
                 snap["ws_active_total_redis"] = int(raw)
     except (ValueError, TypeError) as exc:
         logger.debug("[WSMetrics] Redis gauge parse failed: %s", exc)
-    except (OSError, RuntimeError, AttributeError) as exc:
+    except (*REDIS_ERRORS, AttributeError) as exc:
         logger.debug("[WSMetrics] Redis gauge read failed: %s", exc)
 
     snap["ws_room_sizes"] = {code: len(handles) for code, handles in ACTIVE_CONNECTIONS.items()}
@@ -662,5 +663,5 @@ async def redis_increment_active_total(delta: int) -> None:
             pipe.incrby(key, delta)
             pipe.expire(key, 86400)
             await pipe.execute()
-    except (OSError, RuntimeError, AttributeError, TypeError) as exc:
+    except (*REDIS_ERRORS, AttributeError) as exc:
         logger.debug("[WSMetrics] Redis increment failed: %s", exc)

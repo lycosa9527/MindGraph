@@ -152,6 +152,21 @@ def cleanup_orphan_staging_schemas(db_url: str) -> int:
     return dropped
 
 
+def staging_restore_cmd(pg_restore: str, dump_path: str) -> list[str]:
+    """pg_restore argv for staging. Staging is read by the BYPASSRLS migrate role only."""
+    return [
+        pg_restore,
+        "--no-owner",
+        "--no-acl",
+        "--no-policies",
+        "-n",
+        _PUBLIC_SCHEMA,
+        "-f",
+        "-",
+        dump_path,
+    ]
+
+
 def _write_rewritten_restore_sql(
     dump_path: str,
     schema: str,
@@ -160,16 +175,7 @@ def _write_rewritten_restore_sql(
 ) -> Tuple[bool, str, int]:
     """Run pg_restore and write schema-remapped SQL to *sql_path*."""
     with subprocess.Popen(
-        [
-            pg_restore,
-            "--no-owner",
-            "--no-acl",
-            "-n",
-            _PUBLIC_SCHEMA,
-            "-f",
-            "-",
-            dump_path,
-        ],
+        staging_restore_cmd(pg_restore, dump_path),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

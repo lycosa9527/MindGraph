@@ -16,7 +16,6 @@ from services.mind_classroom.progress_log import (
 from services.mind_classroom.tour_progress import patch_tour_progress
 
 _REQUEST_TYPE = "mind_classroom_canvas_tour"
-_STREAM_END = object()
 
 
 def stream_chunk_text(chunk: Any) -> tuple[str, Optional[dict[str, Any]]]:
@@ -39,12 +38,48 @@ def stream_chunk_text(chunk: Any) -> tuple[str, Optional[dict[str, Any]]]:
     return "", None
 
 
-async def _anext_or_end(iterator: Any) -> Any:
-    """Next chunk, or a sentinel when the generator is finished."""
+async def _next_chunk(
+    iterator: Any,
+    *,
+    job_id: Optional[str],
+    branch: Optional[int],
+    branch_total: Optional[int],
+    branch_label: str,
+    started: float,
+    chars: int,
+    last_at: list[float],
+) -> Any:
+    """Next item from this task.
+
+    ``chat_stream`` pins ``llm_call`` with a ``ContextVar`` token. A fresh
+    ``asyncio.Task`` per chunk resets that token in another context and
+    raises ``ValueError``, which fails the tour. The idle heartbeat is a
+    loop timer so the generator never changes tasks.
+    """
+    loop = asyncio.get_running_loop()
+    timer: dict[str, Optional[asyncio.TimerHandle]] = {"handle": None}
+
+    def _fire() -> None:
+        now = time.monotonic()
+        _log_stream(
+            job_id,
+            branch=branch,
+            branch_total=branch_total,
+            branch_label=branch_label,
+            chars=chars,
+            elapsed_s=now - started,
+            idle=True,
+        )
+        last_at[0] = now
+        timer["handle"] = loop.call_later(STREAM_HEARTBEAT_SEC, _fire)
+
+    timer["handle"] = loop.call_later(STREAM_HEARTBEAT_SEC, _fire)
     try:
         return await anext(iterator)
-    except StopAsyncIteration:
-        return _STREAM_END
+    finally:
+        handle = timer["handle"]
+        if handle is not None:
+            handle.cancel()
 
 
 async def stream_tour_script_text(
@@ -67,7 +102,7 @@ async def stream_tour_script_text(
     parts: list[str] = []
     usage: Optional[dict[str, Any]] = None
     last_chars = 0
-    last_at = started
+    last_at = [started]
     saw_token = False
     iterator = aiter(
         llm_service.chat_stream(
@@ -83,29 +118,20 @@ async def stream_tour_script_text(
             yield_structured=True,
         )
     )
-    pending: Optional[asyncio.Task[Any]] = None
     try:
         while True:
-            if pending is None:
-                pending = asyncio.create_task(_anext_or_end(iterator))
-            done, _waiting = await asyncio.wait({pending}, timeout=STREAM_HEARTBEAT_SEC)
-            if not done:
-                elapsed = time.monotonic() - started
-                _log_stream(
-                    job_id,
+            try:
+                chunk = await _next_chunk(
+                    iterator,
+                    job_id=job_id,
                     branch=branch,
                     branch_total=branch_total,
                     branch_label=branch_label,
+                    started=started,
                     chars=sum(len(part) for part in parts),
-                    elapsed_s=elapsed,
-                    idle=True,
+                    last_at=last_at,
                 )
-                last_at = time.monotonic()
-                continue
-            finished = pending
-            pending = None
-            chunk = finished.result()
-            if chunk is _STREAM_END:
+            except StopAsyncIteration:
                 break
             text, usage_chunk = stream_chunk_text(chunk)
             if usage_chunk is not None:
@@ -128,7 +154,7 @@ async def stream_tour_script_text(
             if job_id and should_log_llm_stream(
                 chars=chars,
                 last_chars=last_chars,
-                last_at=last_at,
+                last_at=last_at[0],
                 now=now,
                 first_token=first_token,
             ):
@@ -142,20 +168,14 @@ async def stream_tour_script_text(
                     first_token=first_token,
                 )
                 last_chars = chars
-                last_at = now
+                last_at[0] = now
     finally:
-        await _close_stream(iterator, pending)
+        await _close_stream(iterator)
     return "".join(parts), usage
 
 
-async def _close_stream(iterator: Any, pending: Optional[asyncio.Task[Any]]) -> None:
-    """Stop a leftover next-chunk task, then close the generator once."""
-    if pending is not None and not pending.done():
-        pending.cancel()
-        try:
-            await pending
-        except asyncio.CancelledError:
-            pass
+async def _close_stream(iterator: Any) -> None:
+    """Close the generator in the task that has been pulling it."""
     aclose = getattr(iterator, "aclose", None)
     if aclose is None:
         return

@@ -221,6 +221,9 @@ Rules:
 - **topic**: Short label for the document's overall subject (prefer provided title; never dump a filename or path).
 - Exactly **4, 6, or 8** main branches (even count). Prefer the document's own structure when clear:
   chapters, major sections, or themes as main branches. If structure is weak, invent MECE teaching branches.
+- Never exceed 8 main branches. When the document has more than 8 sections (or many short items such as
+  lessons, questions, or slides), group them into 4–8 themes and put the sections under those themes.
+- Every main branch must have at least one sub-item.
 - Cover the **whole** document — do not overweight the opening pages; balance early, middle, and late sections.
 - Sub-items should be concise instructional phrases (key ideas, not long quotes).
 - Each node needs **text** only (no invented ids).
@@ -249,6 +252,8 @@ MIND_MAP_DOCUMENT_CONTENT_GENERATION_ZH = """你是面向教师的高级思维�
 - 只输出有效 JSON — 不要解释，不要用代码块包裹，不要额外文字。
 - **topic**：用文档整体主题的简短标签（优先使用提供的标题；不要用文件名或路径当作 topic）。
 - 主分支必须为 **4、6 或 8** 个（偶数）。结构清晰时优先按章节、大节或主题作主分支；结构不清时再概括为 MECE 教学分支。
+- 主分支绝不能超过 8 个。文档的章节多于 8 个（或包含大量课时、题目、幻灯片等短条目）时，先归纳为 4～8 个主题，再把各章节放到对应主题下。
+- 每个主分支至少包含一个子项。
 - 覆盖**全文**——不要偏重开头，兼顾前、中、后部分的要点。
 - 子项用简洁、有教学价值的短语（关键观点，不要长段原文）。
 - 每个节点只需 **text**（不要自造 id）。

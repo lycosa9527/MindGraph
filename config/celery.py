@@ -308,6 +308,7 @@ celery_app = Celery(
         "tasks.showcase_cover_tasks",
         "tasks.zhihui_lesson_tasks",
         "tasks.mind_classroom_tasks",
+        "tasks.learning_space_thumbnail_tasks",
     ],
 )
 
@@ -334,6 +335,7 @@ celery_app.conf.update(
         "showcase.*": {"queue": "default"},
         "zhihui.*": {"queue": "default"},
         "mind_classroom.*": {"queue": "default"},
+        "learning_space.*": {"queue": "default"},
     },
     # Default queue
     task_default_queue="default",

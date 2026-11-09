@@ -3,6 +3,7 @@
  * The painted string includes the locale prefix, and a long value wraps.
  * Categories start below that box so the label never sits on a node.
  */
+import { translateDimension } from '@/composables/core/useLanguage'
 import {
   DEFAULT_CENTER_X,
   NODE_MIN_DIMENSIONS,
@@ -17,6 +18,8 @@ import { safeI18nTranslate } from '@/utils/safeI18nTranslate'
 /** Wrap cap for the classification label (script-aware column scales this). */
 export const TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX = 220
 export const TREE_MAP_DIMENSION_LABEL_FONT_PX = 14
+/** Brace LabelNode text max-width (InlineEditableText). */
+export const BRACE_DIMENSION_LABEL_MAX_TEXT_PX = 200
 /** LabelNode padding: 4px 8px. */
 const LABEL_PAD_X = 16
 const LABEL_PAD_Y = 8
@@ -71,6 +74,32 @@ export function thinkingMapDimensionLabelDisplayText(
           : 'diagram.dimension.classificationEn'
       )
   return t('diagram.labelNode.placeholderBracket', { prefix, hint: raw })
+}
+
+/** Brace LabelNode text. A known English dimension shows in Chinese under a Chinese UI. */
+export function braceMapDimensionLabelDisplayText(raw: string, uiLanguage: string): string {
+  const value = raw && uiLanguage === 'zh' ? translateDimension(raw, true) : raw
+  return thinkingMapDimensionLabelDisplayText(value, 'brace')
+}
+
+/**
+ * Painted width of the brace label centered under the topic. The label stays on one line
+ * and its text stops at the editor cap. The larger of the estimate and the DOM box is
+ * what the topic column clears, so a measure report never narrows it.
+ */
+export function resolveBraceMapDimensionLabelWidth(
+  dimensionValue: string,
+  measuredWidth?: number
+): number {
+  const locale = String((i18n.global.locale as { value: string }).value)
+  const display = braceMapDimensionLabelDisplayText(dimensionValue, locale)
+  const textWidth = Math.min(
+    measureTextWidth(display, TREE_MAP_DIMENSION_LABEL_FONT_PX),
+    BRACE_DIMENSION_LABEL_MAX_TEXT_PX
+  )
+  const estimated = Math.max(NODE_MIN_DIMENSIONS.label.minWidth, Math.ceil(textWidth) + LABEL_PAD_X)
+  if (measuredWidth == null || measuredWidth <= 0) return estimated
+  return Math.max(estimated, measuredWidth)
 }
 
 export function measureTreeMapDimensionLabelBox(

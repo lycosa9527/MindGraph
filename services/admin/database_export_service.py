@@ -318,8 +318,10 @@ def _run_alembic_after_pg_restore() -> None:
 
     ``pg_restore`` replays DDL from the backup file. Older dumps predate columns
     such as ``users.email``; the running app still issues SELECTs for those
-    columns. ``alembic upgrade head`` only **adds** missing schema (indexes,
-    columns, constraints). It does **not** delete user rows or truncate tables.
+    columns. ``alembic upgrade head`` adds missing schema (indexes, columns,
+    constraints) and, from revision ``0167``, installs row-level security
+    policies when the dump predates them. It does not delete user rows or
+    truncate tables.
 
     Organization seeding is **disabled** here so an import stays faithful to the
     dump: we do not inject demo organizations when the restored ``organizations``

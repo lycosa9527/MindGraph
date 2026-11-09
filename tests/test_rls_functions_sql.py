@@ -41,12 +41,36 @@ def test_seminar_policies_use_the_visibility_function() -> None:
     assert "rls_seminar_session_visible" not in MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR
 
 
+def _function_sql(name: str) -> str:
+    return next(statement for statement in rls_functions_upgrade_statements() if f"FUNCTION {name}(" in statement)
+
+
 def test_users_policy_shows_bound_experts_without_opening_dms():
     """Teachers can read a bound expert's profile, not that expert's other DMs."""
     assert "rls_user_bound_to_org(id, rls_current_org_id())" in USERS_EXPR
     assert "rls_users_share_bound_org" in USERS_EXPR
     assert "rls_user_bound_to_org" not in DIRECT_MESSAGE_EXPR
-    assert DIRECT_MESSAGE_EXPR == "rls_user_visible(sender_id) OR rls_user_visible(recipient_id)"
+    assert DIRECT_MESSAGE_EXPR == "rls_is_system_mode() OR rls_current_user_id() IN (sender_id, recipient_id)"
+
+
+def test_platform_admin_needs_global_panel():
+    """School admin and expert panel sessions are not platform admins."""
+    body = _function_sql("rls_platform_admin_only")
+    assert "rls_is_panel_mode() AND rls_panel_global_read()" in body
+    assert "SELECT rls_is_panel_mode()\n" not in body
+
+
+def test_org_visible_has_no_legacy_branch():
+    """A scoped panel session sees its readable list, not every uninvited school."""
+    assert "rls_panel_legacy_org_visible" not in " ".join(rls_functions_upgrade_statements())
+    assert "rls_panel_legacy_org_visible" not in USERS_EXPR
+
+
+def test_diagram_visible_is_owner_only_for_teachers():
+    """Authenticated sessions fall through to false, not the same-school check."""
+    body = _function_sql("rls_diagram_visible")
+    assert "ELSE false" in body
+    assert "rls_same_org_users" not in body
 
 
 def test_grant_sql_targets_rls_helpers_only():

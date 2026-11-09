@@ -32,7 +32,7 @@ Built by [`admin_scope_to_session_vars()`](../utils/db/rls_admin_scope.py) and a
 | Superadmin | `panel` | `panel_global_read=1`, `user_id`, `role` | `rls_panel_global_read()`, `rls_org_visible()` |
 | `scope.global` (platform_bd) | `panel` | `panel_global_read=1` | Global admin reads short-circuit to true |
 | `scope.org` (school_admin) | `panel` | `readable_org_ids`, `organization_id` | `rls_org_id_in_readable_list()`, `rls_user_visible()` |
-| Expert / invited-only | `panel` | `readable_org_ids`, `role=expert` | Legacy orgs blocked in `rls_panel_legacy_org_visible()` |
+| Expert / invited-only | `panel` | `readable_org_ids`, `role=expert` | `rls_org_id_in_readable_list()` only; `rls_org_visible()` has no legacy-org branch (rev 0169) |
 | `require_admin` routes | `panel_superadmin` | `panel_global_read=1` | Same effective access as global panel |
 | Normal API user | `authenticated` | `user_id`, `organization_id` | Same-org and owner checks |
 | Anonymous | `deny` | `rls_mode=deny` | Deny all |
@@ -59,11 +59,22 @@ Built by [`admin_scope_to_session_vars()`](../utils/db/rls_admin_scope.py) and a
 
 - Owner always visible; `panel_global_read` → all rows.
 - Panel mode without global read → org-scoped via `rls_lookup_user_organization_id` (rev 0052, `SECURITY DEFINER`).
-- Authenticated → same-org via `rls_same_org_users`.
+- Authenticated → owner only (rev 0169; before that, anyone in the same school).
 
-Legacy org checks use `rls_lookup_org_invited_by_user_id` (rev 0053) to avoid `organizations` policy recursion.
+Applies to diagrams, knowledge spaces, devices, and child policies referencing `rls_diagram_visible`.
 
-Applies to diagrams, knowledge spaces, and child policies referencing `rls_diagram_visible`.
+`diagrams` has split policies (rev 0169, [`split_policies.py`](../utils/db_rls/split_policies.py)). Reads also allow a `diagram_shares` grantee (`rls_diagram_shared_with_current_user`) and a non-private workshop the viewer can join (`rls_diagram_workshop_visible`). Insert, update, and delete stay on `rls_diagram_visible`, so a share or workshop never grants write access.
+
+## 5a. Platform-admin rows (rev 0169)
+
+`rls_platform_admin_only()` is true for system mode, `panel_superadmin`, and a panel session with `panel_global_read`. School admins and experts do not pass it. It guards:
+
+- `organization_oauth_configs` (DingTalk login secret), `feature_access_org_grants`, Zhihui and share-grant tables, `teacher_usage_config` writes, `library_*` documents.
+- The admin branch of `mindbot_config`, devices with no student, and staff edits of danmaku and dismissed notifications.
+
+Teacher rows are owner-only: `token_usage` (school totals need a panel or MindBot service session), stars and topic preferences, and `direct_messages` plus DM attachments (sender or recipient only).
+
+When an authorized request must touch one of these rows from an authenticated session, use `scoped_rls_context(session, ctx)` from [`rls_context.py`](../utils/db/rls_context.py). It switches the session to `ctx` for the block and puts the caller's context back afterwards. Current uses include library view and comment counters, the danmaku moderation routes, user FK cleanup, the embedding cache write, OAuth bind config reads, and MindBot endpoint lookup.
 
 ## 6. Verification checklist
 

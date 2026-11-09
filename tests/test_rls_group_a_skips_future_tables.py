@@ -17,7 +17,7 @@ class _Inspector:
 def test_upgrade_group_a_skips_tables_created_after_0044(monkeypatch) -> None:
     """user_usage_activities and kitty tables receive RLS in their own revisions."""
     executed: list[str] = []
-    present = {"diagrams"}
+    present = {"diagram_snapshots"}
     inspector = _Inspector(present)
 
     def _bind() -> object:
@@ -36,7 +36,7 @@ def test_upgrade_group_a_skips_tables_created_after_0044(monkeypatch) -> None:
     policy_builder.upgrade_group_a()
 
     sql = "\n".join(executed)
-    assert 'ALTER TABLE "diagrams" ENABLE ROW LEVEL SECURITY' in sql
+    assert 'ALTER TABLE "diagram_snapshots" ENABLE ROW LEVEL SECURITY' in sql
     assert "user_usage_activities" not in sql
     assert "kitty_one_sentence_sessions" not in sql
     assert "kitty_one_sentence_turns" not in sql

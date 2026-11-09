@@ -288,7 +288,12 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     invalidateMindMapBranchNumberMapCache()
     ctx.beginMindMapNumberingLayoutHold()
     const numberMap = mindMapBranchNumberMapFromData(data.value)
-    const sizes = estimateMindMapBranchSizes(nodes, numberMap)
+    const sizes = estimateMindMapBranchSizes(
+      nodes,
+      numberMap,
+      data.value?.connections,
+      data.value?._mindmap_diagram_style as string | undefined
+    )
     const nextWidths = { ...ctx.mindMapNodeWidths.value }
     const nextHeights = { ...ctx.mindMapNodeHeights.value }
     const nextDimensions = { ...ctx.nodeDimensions.value }

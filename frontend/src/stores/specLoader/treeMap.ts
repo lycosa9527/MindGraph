@@ -99,7 +99,11 @@ function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResul
 
     // Custom layout: center-aligned vertical groups with reduced spacing
     const topicY = DEFAULT_PADDING
-    const topicDims = measureTreeMapTopicDimensions(root.text)
+    const topicDims = measureTreeMapTopicDimensions(
+      root.text,
+      undefined,
+      glossFields(root.textSecondary).textSecondary
+    )
     const topicPos = treeMapTopicPositionFromLayout(topicDims.width, topicY)
 
     nodes.push({

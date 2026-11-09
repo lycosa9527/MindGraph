@@ -1,13 +1,16 @@
 <script setup lang="ts">
 /**
  * BranchNode — routes mind maps to legacy/v2 shells; other diagram types use BranchNodeDiagram.
- * V2 shell is eager so library/autocomplete paint does not show empty slots before labels.
+ * V2 and diagram shells are eager. An async shell mounts frames after its siblings,
+ * so layout places the rest of the map around unmeasured branches, then moves it.
  */
 import { computed, defineAsyncComponent } from 'vue'
 
 import MindMapV2BranchNode from '@/components/diagram/nodes/mindMap/MindMapV2BranchNode.vue'
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import type { MindGraphNodeProps } from '@/types'
+
+import BranchNodeDiagram from './BranchNodeDiagram.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -20,7 +23,6 @@ const useMindMapV2 = useMindMapCanvasVisuals()
 const MindMapLegacyBranchNode = defineAsyncComponent(
   () => import('./mindMap/MindMapLegacyBranchNode.vue')
 )
-const BranchNodeDiagram = defineAsyncComponent(() => import('./BranchNodeDiagram.vue'))
 </script>
 
 <template>

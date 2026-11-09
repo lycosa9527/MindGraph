@@ -5,6 +5,8 @@ export {
   getDropTargetStyle,
 } from './diagramCanvasZoomPaneStyles'
 export { useDiagramCanvasConceptMapLink } from './useDiagramCanvasConceptMapLink'
+export { useDiagramCanvasDragSnap } from './useDiagramCanvasDragSnap'
+export { useDiagramCanvasNodeSync } from './useDiagramCanvasNodeSync'
 export {
   useDiagramCanvasContextMenu,
   type DiagramCanvasContextMenuStore,

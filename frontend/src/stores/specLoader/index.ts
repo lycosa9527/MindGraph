@@ -14,7 +14,7 @@ import {
 } from '@/utils/mindMapIdentityMigrate'
 import { migrateThinkingMapIdentityIds } from '@/utils/thinkingMapIdentity'
 
-import { loadBraceMapSpec } from './braceMap'
+import { loadBraceMapSpec, stripBraceMapSizeStamps } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
 import { loadBubbleMapSpec } from './bubbleMap'
 import { loadCircleMapSpec } from './circleMap'
@@ -167,6 +167,8 @@ export function loadSpecForDiagramType(
     }
     if (diagramType === 'tree_map') {
       result = { ...result, nodes: ensureTreeMapTopicLayout(result.nodes) }
+    } else if (diagramType === 'brace_map') {
+      result = { ...result, nodes: stripBraceMapSizeStamps(result.nodes) }
     }
     result = applyThinkingMapIdentityMigrate(spec, result, diagramType)
   } else if (diagramType === 'mindmap' || diagramType === 'mind_map') {

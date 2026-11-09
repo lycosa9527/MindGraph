@@ -29,6 +29,7 @@ from models.domain.knowledge_space import Embedding
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
+from utils.db.rls_context import RlsContext, scoped_rls_context
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +127,10 @@ class EmbeddingCache:
             embedding_record = Embedding(model_name=model_name, provider_name=provider_name, hash=text_hash)
             embedding_record.set_embedding(embedding)
 
-            db.add(embedding_record)
-            await db.commit()
+            await db.flush()
+            async with scoped_rls_context(db, RlsContext.system_bootstrap()):
+                db.add(embedding_record)
+                await db.commit()
             hash_preview = text_hash[:8] + "..."
             logger.debug("[EmbeddingCache] Cached document embedding for hash %s", hash_preview)
 

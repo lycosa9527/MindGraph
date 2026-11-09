@@ -6,6 +6,7 @@ import re
 
 from models.domain.registry import Base
 from utils.db.alembic_migration import load_rls_policy_builder
+from utils.db_rls.split_policies import EMBEDDINGS_READ_EXPR, EMBEDDINGS_WRITE_EXPR
 
 _RLS_FUNC_ARG = re.compile(r"rls_\w+\((\w+)\)")
 _EXISTS_FK = re.compile(r"\.\w+\s*=\s*([a-z_][a-z0-9_]*)(?!\.)\b")
@@ -63,13 +64,13 @@ def test_all_rls_policy_expressions_reference_real_columns():
     assert not errors, "RLS policy column mismatches:\n" + "\n".join(errors)
 
 
-def test_token_usage_allows_null_organization_for_current_user():
-    """Personal accounts can insert token_usage when organization_id is null."""
+def test_token_usage_is_own_rows_for_teachers():
+    """Teachers read and write their own usage rows; school totals need a panel session."""
     builder = load_rls_policy_builder()
     expr = dict(builder.iter_all_table_policies())["token_usage"]
-    assert "organization_id IS NULL" in expr
     assert "user_id = rls_current_user_id()" in expr
-    assert "rls_org_visible(organization_id)" in expr
+    assert "(rls_is_panel_mode() OR rls_is_mindbot_service_mode()) AND rls_org_visible(organization_id)" in expr
+    assert not expr.startswith("rls_org_visible(organization_id) OR")
 
 
 def test_seminar_file_policy_does_not_treat_hidden_members_as_open():
@@ -82,8 +83,7 @@ def test_seminar_file_policy_does_not_treat_hidden_members_as_open():
 
 
 def test_knowledge_embeddings_not_document_scoped():
-    """Test knowledge embeddings not document scoped."""
-    builder = load_rls_policy_builder()
-    embedding_expr = dict(builder.KNOWLEDGE_SPACE_CHILD_TABLES)["embeddings"]
-    assert "document_id" not in embedding_expr
-    assert builder.EMBEDDINGS_EXPR in embedding_expr
+    """The shared embedding cache is readable when signed in and written only by system mode."""
+    assert "document_id" not in EMBEDDINGS_READ_EXPR
+    assert "rls_community_read_allowed()" in EMBEDDINGS_READ_EXPR
+    assert EMBEDDINGS_WRITE_EXPR == "rls_is_system_mode()"

@@ -21,6 +21,7 @@ import {
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
+import { loadDiagramFontsForSpec } from '@/fonts/diagramSpecFonts'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
@@ -136,6 +137,7 @@ export function useCanvasPageLibrarySnapshots(options: {
     if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
+    await loadDiagramFontsForSpec(specForLoad)
     if (loadGen !== libraryLoadGeneration) {
       return false
     }
@@ -215,6 +217,7 @@ export function useCanvasPageLibrarySnapshots(options: {
     if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
+    await loadDiagramFontsForSpec(spec)
     diagramAutoSave.setSuppressFromLibrary()
     const loadOpts = mindMapLibraryLoadOptions(diagramType, spec)
     const loaded = diagramStore.loadFromSpec(spec, diagramType, loadOpts)

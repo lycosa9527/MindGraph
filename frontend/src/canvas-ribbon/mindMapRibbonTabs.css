@@ -230,3 +230,13 @@
   color: #f9fafb;
   -webkit-text-fill-color: #f9fafb;
 }
+
+.mm-ribbon-tabs--text-only .mm-ribbon-tabs__inner {
+  gap: 0;
+}
+
+.mm-ribbon-tabs--text-only.mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab {
+  min-width: 0;
+  padding-inline: 8px;
+  gap: 0;
+}

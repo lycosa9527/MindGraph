@@ -9,7 +9,7 @@ import { estimateMindMapBranchSizes } from '@/stores/specLoader/mindMapNumbering
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 import { buildMindMapBranchNumberMap } from '@/utils/mindMapBranchNumbering'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { mindMapBranchPaintBox } from '@/utils/mindMapBranchPaintBox'
 
 function node(
   id: string,
@@ -43,19 +43,20 @@ describe('estimateMindMapBranchSizes', () => {
       edge('e5', 'topic', 'e'),
     ]
     const numberMap = buildMindMapBranchNumberMap(nodes, connections, 'decimal', 'outline')
-    const sizes = estimateMindMapBranchSizes(nodes, numberMap)
+    const sizes = estimateMindMapBranchSizes(nodes, numberMap, connections)
 
     expect(sizes.has('topic')).toBe(false)
     for (const branch of nodes) {
       if (branch.id === 'topic') continue
       const prefix = numberMap.get(branch.id) ?? ''
-      const shape = resolveNodeShape(branch.style, true)
+      const box = mindMapBranchPaintBox(branch, connections)
+      const style = { ...branch.style, fontSize: box.fontSize }
       const height =
-        shape === 'underline'
-          ? measureNumberedBranchUnderlineHeight(branch.text, prefix, branch.id, branch.style)
-          : measureNumberedBranchHeight(branch.text, prefix, branch.id, branch.style)
+        box.shape === 'underline'
+          ? measureNumberedBranchUnderlineHeight(branch.text, prefix, branch.id, style)
+          : measureNumberedBranchHeight(branch.text, prefix, branch.id, style)
       expect(sizes.get(branch.id)).toEqual({
-        width: estimateNumberedBranchWidth(branch.text, prefix, branch.id, branch.style),
+        width: estimateNumberedBranchWidth(branch.text, prefix, branch.id, style, box.shape),
         height,
       })
     }

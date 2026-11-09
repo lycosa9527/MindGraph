@@ -3,9 +3,14 @@
  * Two layout reads for the whole map (nowrap widths, then wrapped heights).
  * The existing per-node estimators run once and read those results.
  */
-import { MIND_MAP_GEOMETRY, mindMapBranchFontSize } from '@/config/mindMapGeometry'
-import type { DiagramNode } from '@/types'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  type MindMapBranchPaintBox,
+  createMindMapBranchPaintIndex,
+} from '@/utils/mindMapBranchPaintBox'
 import { resolveMindMapBranchBodyMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
@@ -51,17 +56,23 @@ function isTopic(node: DiagramNode): boolean {
   return node.id === 'topic' || node.type === 'topic' || node.type === 'center'
 }
 
-function measureFont(node: DiagramNode): MeasureFont {
-  const custom = node.style?.fontSize
-  let fontSize: number | undefined
-  if (custom != null) {
-    const parsed = typeof custom === 'number' ? custom : parseFloat(String(custom))
-    if (Number.isFinite(parsed) && parsed > 0) fontSize = parsed
-  }
+type PaintOf = (node: DiagramNode) => MindMapBranchPaintBox
+
+function measureFont(node: DiagramNode, paintOf: PaintOf): MeasureFont {
+  const box = paintOf(node)
+  const fontFamily = diagramPaintFontFamily(node.style?.fontFamily, MIND_MAP_GEOMETRY.fontFamily)
   return {
-    fontSize: fontSize ?? mindMapBranchFontSize(node.id),
+    fontSize: box.fontSize,
     fontWeight: node.style?.fontWeight != null ? String(node.style.fontWeight) : 'normal',
-    fontFamily: node.style?.fontFamily,
+    fontFamily,
+  }
+}
+
+function paintedStyle(node: DiagramNode, box: MindMapBranchPaintBox): NodeStyle {
+  return {
+    ...node.style,
+    fontSize: box.fontSize,
+    fontFamily: diagramPaintFontFamily(node.style?.fontFamily, MIND_MAP_GEOMETRY.fontFamily),
   }
 }
 
@@ -86,14 +97,18 @@ function rememberNowrap(
   })
 }
 
-function nowrapSpecs(nodes: DiagramNode[], numberMap: Map<string, string>): NowrapMeasureSpec[] {
+function nowrapSpecs(
+  nodes: DiagramNode[],
+  numberMap: Map<string, string>,
+  paintOf: PaintOf
+): NowrapMeasureSpec[] {
   const specs: NowrapMeasureSpec[] = []
   const seen = new Set<string>()
   for (const node of nodes) {
     if (isTopic(node)) continue
     const text = learningSheetLayoutText(node)
     const prefix = numberMap.get(node.id) ?? ''
-    const font = measureFont(node)
+    const font = measureFont(node, paintOf)
     if (prefix) {
       const family = font.fontFamily ?? MIND_MAP_GEOMETRY.fontFamily
       const measured = { ...font, fontWeight: labelMeasureWeight(font.fontWeight) }
@@ -117,7 +132,10 @@ function wrapMaxWidth(text: string, prefix: string, node: DiagramNode, font: Mea
   }
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_TEXT_MAX)
   if (typeof document === 'undefined') return wrapThreshold
-  const measured = measureTextWidth(text, font.fontSize, { fontWeight: font.fontWeight })
+  const measured = measureTextWidth(text, font.fontSize, {
+    fontWeight: font.fontWeight,
+    fontFamily: font.fontFamily,
+  })
   if (hasCustomMindMapTypography(node.style)) {
     return measured > wrapThreshold ? BRANCH_TEXT_MAX : wrapThreshold
   }
@@ -126,7 +144,11 @@ function wrapMaxWidth(text: string, prefix: string, node: DiagramNode, font: Mea
   return Math.min(Math.ceil(measured / lineCount) + BALANCE_PADDING, BRANCH_TEXT_MAX)
 }
 
-function boxSpecs(nodes: DiagramNode[], numberMap: Map<string, string>): BoxMeasureSpec[] {
+function boxSpecs(
+  nodes: DiagramNode[],
+  numberMap: Map<string, string>,
+  paintOf: PaintOf
+): BoxMeasureSpec[] {
   const specs: BoxMeasureSpec[] = []
   const seen = new Set<string>()
   for (const node of nodes) {
@@ -139,7 +161,7 @@ function boxSpecs(nodes: DiagramNode[], numberMap: Map<string, string>): BoxMeas
       resolveNodeShape(node.style, true) === 'underline' &&
       hasCustomMindMapTypography(node.style)
     if (underlineCustom) continue
-    const font = measureFont(node)
+    const font = measureFont(node, paintOf)
     const maxWidth = wrapMaxWidth(text, prefix, node, font)
     const fontFamily = font.fontFamily ?? DIAGRAM_NODE_FONT_STACK
     const key = plainTextBoxKey(text, font.fontSize, font.fontWeight, fontFamily, maxWidth, 0, 0)
@@ -159,20 +181,29 @@ function boxSpecs(nodes: DiagramNode[], numberMap: Map<string, string>): BoxMeas
   return specs
 }
 
-function branchHeight(node: DiagramNode, text: string, prefix: string): number {
-  if (resolveNodeShape(node.style, true) === 'underline') {
-    return measureNumberedBranchUnderlineHeight(text, prefix, node.id, node.style)
+function branchHeight(
+  node: DiagramNode,
+  text: string,
+  prefix: string,
+  box: MindMapBranchPaintBox
+): number {
+  const style = paintedStyle(node, box)
+  if (box.shape === 'underline') {
+    return measureNumberedBranchUnderlineHeight(text, prefix, node.id, style)
   }
-  return measureNumberedBranchHeight(text, prefix, node.id, node.style)
+  return measureNumberedBranchHeight(text, prefix, node.id, style)
 }
 
 export function estimateMindMapBranchSizes(
   nodes: DiagramNode[],
-  numberMap: Map<string, string>
+  numberMap: Map<string, string>,
+  connections?: Connection[] | null,
+  diagramStyleId?: string | null
 ): Map<string, MindMapBranchSize> {
-  const widths = measureNowrapBatch(nowrapSpecs(nodes, numberMap))
+  const paintOf = createMindMapBranchPaintIndex(connections, diagramStyleId)
+  const widths = measureNowrapBatch(nowrapSpecs(nodes, numberMap, paintOf))
   const boxes = withPlainTextMeasureLookup(widths, new Map(), () =>
-    measureBoxBatch(boxSpecs(nodes, numberMap))
+    measureBoxBatch(boxSpecs(nodes, numberMap, paintOf))
   )
   const sizes = new Map<string, MindMapBranchSize>()
   withPlainTextMeasureLookup(widths, boxes, () => {
@@ -180,9 +211,16 @@ export function estimateMindMapBranchSizes(
       if (isTopic(node)) continue
       const text = learningSheetLayoutText(node)
       const prefix = numberMap.get(node.id) ?? ''
+      const box = paintOf(node)
       sizes.set(node.id, {
-        width: estimateNumberedBranchWidth(text, prefix, node.id, node.style),
-        height: branchHeight(node, text, prefix),
+        width: estimateNumberedBranchWidth(
+          text,
+          prefix,
+          node.id,
+          paintedStyle(node, box),
+          box.shape
+        ),
+        height: branchHeight(node, text, prefix, box),
       })
     }
   })

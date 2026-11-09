@@ -26,6 +26,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { eventBus, getDefaultDiagramName, useDiagramSpecForSave } from '@/composables'
 import { useLanguage } from '@/composables'
+import { useCanvasTitleRowFit } from '@/composables/canvas/useCanvasTitleRowFit'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import {
@@ -38,67 +39,16 @@ import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
-import {
-  type LabelCollapseSnapshot,
-  createLabelCollapseSnapshot,
-  nextLabelCollapse,
-} from '@/utils/toolbarLabelCollapse'
 
 const topBarRootRef = ref<HTMLElement | null>(null)
 const titleRowRef = ref<HTMLElement | null>(null)
 const docClusterRef = ref<HTMLElement | null>(null)
+const backClusterRef = ref<HTMLElement | null>(null)
+const docMetaRef = ref<HTMLElement | null>(null)
 const globalClusterRef = ref<HTMLElement | null>(null)
 const tabsHostRef = ref<HTMLElement | null>(null)
-/** Ribbon tab titles overlap the filename or collab cluster. */
-const ribbonTabsIconLabels = ref(false)
-let ribbonTabCollapse: LabelCollapseSnapshot = createLabelCollapseSnapshot()
-const RIBBON_TAB_GAP_PX = 8
 /** Icon-only editing toolbar labels. */
 const compactCanvasToolbar = ref(false)
-
-let topBarResizeObserver: ResizeObserver | null = null
-
-function updateCompactFromTopBarWidth(width: number): void {
-  if (inBuilder.value) {
-    compactCanvasToolbar.value = false
-    return
-  }
-  const w = width > 0 ? width : 0
-  compactCanvasToolbar.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_TOOLBAR_BREAKPOINT_PX
-}
-
-function ribbonTabRoomPx(): number {
-  const row = titleRowRef.value
-  if (!row || row.clientWidth <= 0) return -1
-  const style = getComputedStyle(row)
-  const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)
-  const columnGap = parseFloat(style.columnGap) || 0
-  const docWidth = docClusterRef.value?.offsetWidth ?? 0
-  const globalWidth = globalClusterRef.value?.offsetWidth ?? 0
-  const room = row.clientWidth - padX - columnGap * 2 - docWidth - globalWidth - RIBBON_TAB_GAP_PX
-  return Math.max(0, room)
-}
-
-function resetRibbonTabCollapse(): void {
-  ribbonTabCollapse = createLabelCollapseSnapshot()
-  ribbonTabsIconLabels.value = false
-}
-
-function updateRibbonTabLabels(): void {
-  if (inBuilder.value) {
-    ribbonTabsIconLabels.value = false
-    return
-  }
-  const tabs = tabsHostRef.value
-  if (!isMindMapEditor.value || !tabs) return
-  const next = nextLabelCollapse(ribbonTabCollapse, ribbonTabRoomPx(), tabs.offsetWidth)
-  const changed = next.collapsed !== ribbonTabCollapse.collapsed
-  ribbonTabCollapse = next
-  ribbonTabsIconLabels.value = next.collapsed
-  if (changed && !next.collapsed) {
-    void nextTick(() => updateRibbonTabLabels())
-  }
-}
 
 const props = defineProps<{
   autoSavedStatus?: string | null
@@ -152,6 +102,34 @@ const { inBuilder, quietCanvasTabs, onRibbonTab } = useBuilderCanvasRibbonMerge(
   setActiveTab,
   setClassic,
 })
+const { titleRowTight, titleRowShortLabels } = useCanvasTitleRowFit({
+  topBarRoot: topBarRootRef,
+  titleRow: titleRowRef,
+  docCluster: docClusterRef,
+  backCluster: backClusterRef,
+  docMeta: docMetaRef,
+  tabsHost: tabsHostRef,
+  collabCluster: globalClusterRef,
+  enabled: computed(() => isMindMapEditor.value && !inBuilder.value),
+  resetKey: computed(
+    () =>
+      [
+        currentLanguage.value,
+        classic.value,
+        authStore.user?.role,
+        isMindMapEditor.value,
+        lsCanvas.isActive,
+        lsCanvas.aiAssistOn,
+      ] as const
+  ),
+  onBarWidth(width: number) {
+    if (inBuilder.value) {
+      compactCanvasToolbar.value = false
+      return
+    }
+    compactCanvasToolbar.value = width > 0 && width < CANVAS_TOP_BAR.COMPACT_TOOLBAR_BREAKPOINT_PX
+  },
+})
 
 function generateDefaultName(): string {
   return getDefaultDiagramName(diagramTypeForName.value, currentLanguage.value)
@@ -170,8 +148,6 @@ const fileName = computed({
 const showSlotFullModal = ref(false)
 
 onUnmounted(() => {
-  topBarResizeObserver?.disconnect()
-  topBarResizeObserver = null
   eventBus.removeAllListenersForOwner('CanvasTopBar')
 })
 
@@ -207,32 +183,7 @@ onMounted(() => {
       diagramStore.initTitle(generateDefaultName())
     }
   }
-
-  const root = topBarRootRef.value
-  if (root) {
-    topBarResizeObserver = new ResizeObserver((entries) => {
-      const rootEntry = entries.find((entry) => entry.target === root)
-      const w = rootEntry?.contentRect.width ?? root.getBoundingClientRect().width
-      updateCompactFromTopBarWidth(w)
-      updateRibbonTabLabels()
-    })
-    updateCompactFromTopBarWidth(root.getBoundingClientRect().width)
-    topBarResizeObserver.observe(root)
-    if (titleRowRef.value) topBarResizeObserver.observe(titleRowRef.value)
-    if (docClusterRef.value) topBarResizeObserver.observe(docClusterRef.value)
-    if (globalClusterRef.value) topBarResizeObserver.observe(globalClusterRef.value)
-    void nextTick(() => updateRibbonTabLabels())
-  }
 })
-
-watch(
-  () =>
-    [currentLanguage.value, classic.value, authStore.user?.role, isMindMapEditor.value] as const,
-  () => {
-    resetRibbonTabCollapse()
-    void nextTick(() => updateRibbonTabLabels())
-  }
-)
 
 // Watch for topic node text changes and auto-update title
 // Only if user hasn't manually edited the name
@@ -296,6 +247,10 @@ function handleFileNameBlur() {
   // If there's a value, isUserEditedTitle is already set by the computed setter
 }
 
+watch(titleRowTight, (tight) => {
+  if (tight && isFileNameEditing.value) handleFileNameBlur()
+})
+
 function handleFileNameKeyPress(e: KeyboardEvent) {
   if (e.key === 'Enter') {
     handleFileNameBlur()
@@ -352,7 +307,10 @@ function handleSlotModalCancel(): void {
     <div
       ref="titleRowRef"
       class="canvas-top-bar__title-row"
-      :class="{ 'canvas-top-bar__title-row--mindmap': isMindMapEditor }"
+      :class="{
+        'canvas-top-bar__title-row--mindmap': isMindMapEditor,
+        'canvas-top-bar__title-row--tight': titleRowTight,
+      }"
     >
       <div
         ref="docClusterRef"
@@ -360,74 +318,85 @@ function handleSlotModalCancel(): void {
         :class="{ 'canvas-top-bar__doc': isMindMapEditor }"
         :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
       >
-        <I18nTooltip
-          :k="isHomeworkCanvas ? 'learningSpace.backToLearningSpace' : 'canvas.topBar.back'"
-          placement="bottom"
+        <div
+          ref="backClusterRef"
+          class="shrink-0"
         >
-          <ElButton
-            text
-            circle
-            size="small"
-            @click="handleBack"
-          >
-            <ArrowLeft class="w-4.5 h-4.5 mg-icon-flip-rtl" />
-          </ElButton>
-        </I18nTooltip>
-
-        <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1 shrink-0" />
-
-        <div class="flex items-center gap-1.5 sm:gap-2 ml-1 min-w-0 flex-1 overflow-hidden">
-          <ElInput
-            v-if="isFileNameEditing"
-            ref="fileNameInputRef"
-            v-model="fileName"
-            size="small"
-            class="file-name-input"
-            :style="{ maxWidth: CANVAS_TOP_BAR.FILE_NAME_INPUT_MAX_WIDTH }"
-            @blur="handleFileNameBlur"
-            @keypress="handleFileNameKeyPress"
-          />
-          <ElTooltip
-            v-else
-            :content="fileName"
+          <I18nTooltip
+            :k="isHomeworkCanvas ? 'learningSpace.backToLearningSpace' : 'canvas.topBar.back'"
             placement="bottom"
           >
-            <span
-              class="file-name-label text-xs font-medium cursor-pointer transition-colors px-1.5 sm:px-2 py-1 rounded truncate"
-              :class="
-                isMindMapEditor
-                  ? 'text-gray-800 hover:text-blue-600 hover:bg-white/70'
-                  : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              "
-              :style="{ maxWidth: CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH }"
-              @click="handleFileNameClick"
+            <ElButton
+              text
+              circle
+              size="small"
+              @click="handleBack"
             >
-              {{ fileName }}
-            </span>
-          </ElTooltip>
+              <ArrowLeft class="w-4.5 h-4.5 mg-icon-flip-rtl" />
+            </ElButton>
+          </I18nTooltip>
+        </div>
 
-          <span
-            v-if="props.autoSavedStatus && !props.isViewer"
-            class="auto-saved-status text-xs shrink-0 min-w-0 cursor-pointer transition-colors truncate"
-            :style="{ maxWidth: CANVAS_TOP_BAR.AUTOSAVE_STATUS_MAX_WIDTH }"
-            :title="autoSaveHoverTitle"
-            :class="[
-              props.isSaving
-                ? isMindMapEditor
-                  ? 'text-blue-500'
-                  : 'text-blue-500 dark:text-blue-400'
-                : props.isDirty
+        <div
+          v-show="!titleRowTight"
+          ref="docMetaRef"
+          class="flex min-w-0 flex-1 items-center overflow-hidden"
+        >
+          <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1 shrink-0" />
+
+          <div class="flex items-center gap-1.5 sm:gap-2 ml-1 min-w-0 flex-1 overflow-hidden">
+            <ElInput
+              v-if="isFileNameEditing"
+              ref="fileNameInputRef"
+              v-model="fileName"
+              size="small"
+              class="file-name-input"
+              :style="{ maxWidth: CANVAS_TOP_BAR.FILE_NAME_INPUT_MAX_WIDTH }"
+              @blur="handleFileNameBlur"
+              @keypress="handleFileNameKeyPress"
+            />
+            <ElTooltip
+              v-else
+              :content="fileName"
+              placement="bottom"
+            >
+              <span
+                class="file-name-label text-xs font-medium cursor-pointer transition-colors px-1.5 sm:px-2 py-1 rounded truncate"
+                :class="
+                  isMindMapEditor
+                    ? 'text-gray-800 hover:text-blue-600 hover:bg-white/70'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                "
+                :style="{ maxWidth: CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH }"
+                @click="handleFileNameClick"
+              >
+                {{ fileName }}
+              </span>
+            </ElTooltip>
+
+            <span
+              v-if="props.autoSavedStatus && !props.isViewer"
+              class="auto-saved-status text-xs shrink-0 min-w-0 cursor-pointer transition-colors truncate"
+              :style="{ maxWidth: CANVAS_TOP_BAR.AUTOSAVE_STATUS_MAX_WIDTH }"
+              :title="autoSaveHoverTitle"
+              :class="[
+                props.isSaving
                   ? isMindMapEditor
-                    ? 'text-amber-500'
-                    : 'text-amber-500 dark:text-amber-400'
-                  : isMindMapEditor
-                    ? 'text-gray-500 hover:text-gray-700'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-            ]"
-            @click="handleAutoSaveStatusClick"
-          >
-            {{ props.autoSavedStatus }}
-          </span>
+                    ? 'text-blue-500'
+                    : 'text-blue-500 dark:text-blue-400'
+                  : props.isDirty
+                    ? isMindMapEditor
+                      ? 'text-amber-500'
+                      : 'text-amber-500 dark:text-amber-400'
+                    : isMindMapEditor
+                      ? 'text-gray-500 hover:text-gray-700'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
+              ]"
+              @click="handleAutoSaveStatusClick"
+            >
+              {{ props.autoSavedStatus }}
+            </span>
+          </div>
         </div>
       </div>
       <Teleport
@@ -442,7 +411,8 @@ function handleSlotModalCancel(): void {
           <MindMapRibbonTabs
             :active-tab="activeTab"
             :expanded="classic"
-            :short-labels="ribbonTabsIconLabels"
+            :text-only="titleRowTight"
+            :short-labels="titleRowShortLabels"
             :quiet="quietCanvasTabs"
             @update:active-tab="onRibbonTab"
           />
@@ -450,6 +420,7 @@ function handleSlotModalCancel(): void {
       </Teleport>
       <div
         v-if="isMindMapEditor && !inBuilder"
+        v-show="!titleRowTight"
         ref="globalClusterRef"
         class="canvas-top-bar__global"
       >
@@ -535,6 +506,10 @@ function handleSlotModalCancel(): void {
 
 .canvas-top-bar--collapsed .canvas-top-bar__title-row--mindmap {
   padding-bottom: 2px;
+}
+
+.canvas-top-bar__title-row--mindmap.canvas-top-bar__title-row--tight {
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .canvas-top-bar--mindmap {

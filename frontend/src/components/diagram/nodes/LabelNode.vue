@@ -8,7 +8,6 @@ import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { translateDimension } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
@@ -31,8 +30,10 @@ import {
   thinkingMapStructureColor,
 } from '@/utils/thinkingMapConnectionStroke'
 import {
+  BRACE_DIMENSION_LABEL_MAX_TEXT_PX,
   TREE_MAP_DIMENSION_LABEL_FONT_PX,
   TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX,
+  braceMapDimensionLabelDisplayText,
   thinkingMapDimensionLabelDisplayText,
 } from '@/utils/treeMapLabelLayout'
 
@@ -119,11 +120,11 @@ const displayText = computed(() => {
     return props.data.label || ''
   }
 
-  const braceMap = props.data.diagramType === 'brace_map'
   const raw = props.data.label || ''
-  const dimensionValue =
-    braceMap && raw && uiStore.language === 'zh' ? translateDimension(raw, true) : raw
-  return thinkingMapDimensionLabelDisplayText(dimensionValue, braceMap ? 'brace' : 'tree')
+  if (props.data.diagramType === 'brace_map') {
+    return braceMapDimensionLabelDisplayText(raw, uiStore.language)
+  }
+  return thinkingMapDimensionLabelDisplayText(raw, 'tree')
 })
 
 const treeLabelMaxWidth = computed(() => {
@@ -216,7 +217,9 @@ function handleEditCancel() {
         :text="displayText"
         :node-id="id"
         :is-editing="isEditing"
-        :max-width="isTreeMapDimension ? treeLabelMaxWidth : '200px'"
+        :max-width="
+          isTreeMapDimension ? treeLabelMaxWidth : `${BRACE_DIMENSION_LABEL_MAX_TEXT_PX}px`
+        "
         text-align="center"
         :text-decoration="data.style?.textDecoration || 'none'"
         :text-class="isTreeMapDimension ? '' : 'whitespace-nowrap'"

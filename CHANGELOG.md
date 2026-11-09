@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.216] - 2026-11-09
+
+> **Mind maps measure with the font they will paint, a narrow canvas keeps the ribbon readable, and each teacher sees only their own rows.**
+
+### Changed
+
+- **Mind maps** — The first layout loads the faces the diagram paints, then measures text in one cache. When a font finishes loading, the map restacks once so nodes do not jump. Branch boxes use the same font, shape, and horizontal chrome on the canvas and in the estimators.
+- **Canvas title row** — On a narrow mind-map editor, the filename, save status, and collab control hide, and the ribbon drops its icons, before tab labels shorten.
+- **Document and web mind maps** — A first answer with more than eight main branches, or a branch with no children, is generated once more with that failure as feedback. Long documents are grouped into 4–8 themes.
+- **Homework thumbnails** — Submit queues a Celery job. The API sweep draws a card only after that job's grace period, or after a failed render's retry time.
+- **Database dumps** — `pg_dump` keeps row-level security policies in the archive. An admin merge restores staging without those policies. Alembic `0167` installs the current catalog when a dump is still at `0166`.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Fixed
+
+- **Canvas tour** — Streaming the tour script no longer fails when the idle heartbeat pulled the next model chunk from a new task.
+- **Training** — A failed presence ping does not fail the action that sent it. Follow-along keeps pulling the next command after one pull fails.
+- **Slides remote** — The controller and watch sockets join the managed session before the first snapshot is sent.
+
+### Security
+
+- **Row-level security** — Alembic `0168` limits `user_activity_log` to the teacher's own rows. Admins and system jobs still read across users. Alembic `0169` tightens the catalog: a teacher sees their own personal rows, not schoolmates'; diagrams stay readable by the owner, a share recipient, and a workshop participant, and only the owner can write; direct messages are visible to the sender and recipient; MindBot and OAuth config rows stay hidden from teachers; platform-admin tables need a superadmin or global panel session. Danmaku moderation, library counters, embedding writes, OAuth bind, and user deletion run in a scoped system or platform-admin session so those writes still succeed.
+
+### Tests
+
+- [`tests/test_rls_catalog_reapply.py`](tests/test_rls_catalog_reapply.py), [`tests/db/test_rls_scope_tightening.py`](tests/db/test_rls_scope_tightening.py), [`tests/test_rls_split_policies.py`](tests/test_rls_split_policies.py), [`tests/test_content_mind_map_retry.py`](tests/test_content_mind_map_retry.py), [`tests/test_learning_space_thumbnail_enqueue.py`](tests/test_learning_space_thumbnail_enqueue.py)
+- [`frontend/tests/canvasTitleRowFit.spec.ts`](frontend/tests/canvasTitleRowFit.spec.ts), [`frontend/tests/realDiagramRenderings.spec.ts`](frontend/tests/realDiagramRenderings.spec.ts), [`frontend/tests/trainingApiActivity.spec.ts`](frontend/tests/trainingApiActivity.spec.ts)
+- [`scripts/render_check/`](scripts/render_check/) compares real diagrams in headless Chromium. The vitest suite skips when no local fixtures are present.
+
 ## [5.180.215] - 2026-11-08
 
 > **Satisfy the bilingual template check on Learning Space org-import status cells.**

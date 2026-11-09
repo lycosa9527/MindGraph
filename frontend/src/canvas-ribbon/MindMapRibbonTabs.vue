@@ -21,12 +21,14 @@ const props = withDefaults(
   defineProps<{
     activeTab: MindMapRibbonTabId
     expanded?: boolean
-    /** Short tab titles until hover when the strip overlaps the filename or collab controls. */
+    /** Drop tab icons so the labels fit a narrow title row. */
+    textOnly?: boolean
+    /** Short tab titles until hover when text-only labels still overflow. */
     shortLabels?: boolean
     /** Shared course-builder bar: canvas tabs stay visible but none look selected. */
     quiet?: boolean
   }>(),
-  { expanded: true, shortLabels: false, quiet: false }
+  { expanded: true, textOnly: false, shortLabels: false, quiet: false }
 )
 
 const emit = defineEmits<{
@@ -81,6 +83,7 @@ function tabTitle(tab: MindMapRibbonTabId): string | undefined {
     class="mm-ribbon-tabs mm-ribbon-tabs--topbar"
     :class="{
       'mm-ribbon-tabs--collapsed': !expanded,
+      'mm-ribbon-tabs--text-only': textOnly,
       'mm-ribbon-tabs--short-labels': shortLabels,
     }"
     role="tablist"
@@ -105,6 +108,7 @@ function tabTitle(tab: MindMapRibbonTabId): string | undefined {
     >
       <span class="mm-ribbon-tabs__inner">
         <span
+          v-if="!textOnly"
           class="mm-ribbon-tabs__glyph"
           :class="`mm-ribbon-tabs__glyph--${tab}`"
           aria-hidden="true"

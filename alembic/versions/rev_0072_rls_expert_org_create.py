@@ -23,6 +23,19 @@ _ORGS_EXPR_BEFORE = (
     "OR (rls_is_panel_mode() AND (rls_panel_global_read() OR rls_org_id_in_readable_list(id) "
     "OR rls_panel_legacy_org_visible(id)))"
 )
+# Revision 0169 drops this helper; the pre-0072 policy still calls it.
+_LEGACY_ORG_VISIBLE_SQL = """
+CREATE OR REPLACE FUNCTION rls_panel_legacy_org_visible(target_org_id bigint)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+PARALLEL SAFE
+AS $$
+    SELECT coalesce(rls_setting_text('app.role'), '') <> 'expert'
+        AND target_org_id IS NOT NULL
+        AND rls_lookup_org_invited_by_user_id(target_org_id) IS NULL
+$$;
+"""
 
 
 def upgrade() -> None:
@@ -36,6 +49,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.execute(_LEGACY_ORG_VISIBLE_SQL)
     bind = op.get_bind()
     if sa.inspect(bind).has_table("organizations"):
         _drop_policy("organizations", "organizations_tenant")

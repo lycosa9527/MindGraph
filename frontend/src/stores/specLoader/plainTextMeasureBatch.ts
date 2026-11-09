@@ -5,6 +5,12 @@
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
+import {
+  containedMeasureRoot,
+  rememberMeasuredBox,
+  rememberMeasuredWidth,
+} from './textMeasureCache'
+
 /** Text styles copied from the shared single-node measurer. Position stays on the host. */
 const MEASURE_TEXT_CSS = [
   'white-space:pre-wrap',
@@ -89,19 +95,20 @@ export function withPlainTextMeasureLookup<T>(
 }
 
 function hostElement(): HTMLDivElement | null {
-  if (typeof document === 'undefined') return null
-  if (measureHost && document.body.contains(measureHost)) return measureHost
+  const root = containedMeasureRoot()
+  if (!root) return null
+  if (measureHost?.isConnected) return measureHost
   measureHost = document.createElement('div')
   measureHost.setAttribute('aria-hidden', 'true')
   measureHost.style.cssText = [
     'position:absolute',
-    'left:-9999px',
+    'left:0',
     'top:0',
     'width:max-content',
     'visibility:hidden',
     'pointer-events:none',
   ].join(';')
-  document.body.appendChild(measureHost)
+  root.appendChild(measureHost)
   return measureHost
 }
 
@@ -140,6 +147,7 @@ export function measureNowrapBatch(specs: readonly NowrapMeasureSpec[]): Map<str
   specs.forEach((spec, index) => {
     const width = sizes[index]?.width ?? 0
     if (width > 0) widths.set(spec.key, width)
+    rememberMeasuredWidth(spec.key, width)
   })
   return widths
 }
@@ -174,6 +182,7 @@ export function measureBoxBatch(specs: readonly BoxMeasureSpec[]): Map<string, T
   specs.forEach((spec, index) => {
     const size = sizes[index]
     if (size && size.width > 0 && size.height > 0) boxes.set(spec.key, size)
+    if (size) rememberMeasuredBox(spec.key, size)
   })
   return boxes
 }

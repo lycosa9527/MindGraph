@@ -1,4 +1,4 @@
-"""pg_dump command builder — RLS-safe flags and migrate URL for all backup paths."""
+"""pg_dump command builder — custom format, policies included, migrate URL."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from services.utils.pg_client_binaries import (
 )
 
 
-def test_build_pg_dump_cmd_includes_rls_safe_flags() -> None:
-    """Test build pg dump cmd includes rls safe flags."""
+def test_build_pg_dump_cmd_keeps_policies() -> None:
+    """Archives include policies so a head restore does not depend on a no-op upgrade."""
     cmd = build_pg_dump_cmd(
         "/usr/bin/pg_dump",
         Path("/tmp/mindgraph.dump"),
@@ -23,7 +23,7 @@ def test_build_pg_dump_cmd_includes_rls_safe_flags() -> None:
     assert cmd[0] == "/usr/bin/pg_dump"
     assert "-Fc" in cmd
     assert "--no-owner" in cmd
-    assert "--no-policies" in cmd
+    assert "--no-policies" not in cmd
     assert "-f" in cmd
     assert str(Path("/tmp/mindgraph.dump")) in cmd
 

@@ -5,11 +5,11 @@ import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
   MINDMAP_UNDERLINE_STROKE_WIDTH,
   MIND_MAP_GEOMETRY,
-  mindMapBranchFontSize,
   mindMapHorizontalPadding,
 } from '@/config/mindMapGeometry'
 import type { NodeStyle } from '@/types'
 import { renderMindMapSvgText } from '@/utils/diagramMindMapVectorText'
+import type { MindMapBranchPaintBox } from '@/utils/mindMapBranchPaintBox'
 import { OUTLINE_WIREFRAME_FILL, OUTLINE_WIREFRAME_INK } from '@/utils/mindMapOutlineWireframeStyle'
 
 export type MindMapVectorNodeDraw = {
@@ -29,12 +29,8 @@ export type MindMapVectorNodeDraw = {
 function resolveColors(
   node: MindMapVectorNodeDraw,
   outlineWireframe: boolean,
-  diagramStyleId?: string | null
+  shape: ReturnType<typeof resolveMindMapNodeShape>
 ): { fill: string; stroke: string; textColor: string; strokeWidth: number } {
-  const shape = resolveMindMapNodeShape(
-    { id: node.id, type: node.type as 'topic' | 'branch', style: node.style },
-    diagramStyleId
-  )
   if (outlineWireframe) {
     return {
       fill: shape === 'underline' ? 'none' : OUTLINE_WIREFRAME_FILL,
@@ -83,13 +79,19 @@ function shapePath(
 
 export function renderMindMapVectorNode(
   node: MindMapVectorNodeDraw,
-  options: { diagramStyleId?: string | null; outlineWireframe: boolean }
+  options: {
+    diagramStyleId?: string | null
+    outlineWireframe: boolean
+    paint?: MindMapBranchPaintBox
+  }
 ): string {
-  const shape = resolveMindMapNodeShape(
-    { id: node.id, type: node.type as 'topic' | 'branch', style: node.style },
-    options.diagramStyleId
-  )
-  const colors = resolveColors(node, options.outlineWireframe, options.diagramStyleId)
+  const shape =
+    options.paint?.shape ??
+    resolveMindMapNodeShape(
+      { id: node.id, type: node.type as 'topic' | 'branch', style: node.style },
+      options.diagramStyleId
+    )
+  const colors = resolveColors(node, options.outlineWireframe, shape)
   const radius = node.style.borderRadius ?? 4.5
   const chunks: string[] = []
 
@@ -104,8 +106,9 @@ export function renderMindMapVectorNode(
 
   const isTopic = node.id === 'topic' || node.type === 'topic' || node.type === 'center'
   const fontSize =
+    options.paint?.fontSize ??
     node.style.fontSize ??
-    (isTopic ? MIND_MAP_GEOMETRY.topicFontSize : mindMapBranchFontSize(node.id))
+    (isTopic ? MIND_MAP_GEOMETRY.topicFontSize : MIND_MAP_GEOMETRY.branchFontSize)
   const fontWeight =
     node.style.fontWeight ?? (isTopic || /\*\*|__/.test(node.text) ? 'bold' : 'normal')
   const paddingX = mindMapHorizontalPadding(shape)

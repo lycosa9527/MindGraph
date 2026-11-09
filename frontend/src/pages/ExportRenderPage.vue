@@ -18,6 +18,7 @@ import { nextTick, onMounted, provide } from 'vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
+import { loadDiagramFontsForSpec } from '@/fonts/diagramSpecFonts'
 import { type DiagramSession, useDiagramStore } from '@/stores'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
@@ -92,6 +93,7 @@ onMounted(async () => {
       return
     }
 
+    await loadDiagramFontsForSpec(spec)
     const loaded = diagramStore.loadFromSpec(spec, diagramType)
     if (!loaded) {
       window.__MINDGRAPH_RENDER_ERROR = 'loadFromSpec returned false'

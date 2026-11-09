@@ -52,11 +52,9 @@ from models.domain.user_usage_stats import UserUsageStats
 from models.domain.workshop_chat import ChatTopic
 from services.online_collab.core.purge_user_collab import purge_user_from_active_collab
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.db.rls_context import RlsContext, apply_rls_context_async
+from utils.db.rls_context import RlsContext, scoped_rls_context
 
 logger = logging.getLogger(__name__)
-
-_SESSION_RLS_KEY = "rls_context"
 
 
 async def _null_token_usage_user_id(db: AsyncSession, user_id: int) -> None:
@@ -222,28 +220,32 @@ async def _delete_generation_preview_links_for_user(db: AsyncSession, user_id: i
 
 
 async def _delete_thinking_coins_for_user(db: AsyncSession, user_id: int) -> None:
-    """Delete thinking-coin rows under system RLS (owner-or-system policy)."""
-    previous = db.info.get(_SESSION_RLS_KEY)
-    await apply_rls_context_async(db, RlsContext.system_bootstrap())
-    try:
-        await db.execute(delete(ThinkingCoinLedger).where(ThinkingCoinLedger.user_id == user_id))
-        await db.execute(delete(ThinkingCoinCheckin).where(ThinkingCoinCheckin.user_id == user_id))
-        await db.execute(delete(ThinkingCoinDailyActivity).where(ThinkingCoinDailyActivity.user_id == user_id))
-        await db.execute(delete(ThinkingCoinWallet).where(ThinkingCoinWallet.user_id == user_id))
-    finally:
-        if isinstance(previous, RlsContext):
-            await apply_rls_context_async(db, previous)
+    """Delete thinking-coin rows."""
+    await db.execute(delete(ThinkingCoinLedger).where(ThinkingCoinLedger.user_id == user_id))
+    await db.execute(delete(ThinkingCoinCheckin).where(ThinkingCoinCheckin.user_id == user_id))
+    await db.execute(delete(ThinkingCoinDailyActivity).where(ThinkingCoinDailyActivity.user_id == user_id))
+    await db.execute(delete(ThinkingCoinWallet).where(ThinkingCoinWallet.user_id == user_id))
 
 
 async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     """
     Delete child rows and null FKs that would block ``DELETE FROM users`` for this id.
+
+    The caller has already authorized deleting this user. The cleanup runs in
+    system mode: many of these rows are owner-only or platform-admin-only under
+    RLS, so an admin panel session would match zero rows and the user delete
+    would then fail on a foreign key. The caller's context is restored after.
     """
     try:
         purge_user_from_active_collab(user_id)
     except BACKGROUND_INFRA_ERRORS:
         pass
 
+    async with scoped_rls_context(db, RlsContext.system_bootstrap()):
+        await _delete_user_rows(db, user_id)
+
+
+async def _delete_user_rows(db: AsyncSession, user_id: int) -> None:
     await _null_token_usage_user_id(db, user_id)
     await _null_mindbot_linked_user(db, user_id)
 

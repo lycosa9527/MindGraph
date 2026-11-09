@@ -31,6 +31,7 @@ import { measuredBoxExtent } from '@/utils/measuredBoxExtent'
 import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
+import { resolveBraceMapDimensionLabelWidth } from '@/utils/treeMapLabelLayout'
 
 import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
@@ -92,10 +93,9 @@ function estimateBraceNodeWidth(text: string, depth: number, typo?: BraceTypogra
     columnCeiling: BRACE_NODE_CONTENT_MAX_WIDTH,
   })
   const width = Math.ceil(block.width + paddingX)
-  return Math.max(
-    NODE_MIN_DIMENSIONS.brace.minWidth,
-    Math.min(BRACE_NODE_MAX_WIDTH, width || DEFAULT_NODE_WIDTH)
-  )
+  const minWidth =
+    depth === 0 ? NODE_MIN_DIMENSIONS.topic.minWidth : NODE_MIN_DIMENSIONS.brace.minWidth
+  return Math.max(minWidth, Math.min(BRACE_NODE_MAX_WIDTH, width || DEFAULT_NODE_WIDTH))
 }
 
 /**
@@ -246,7 +246,8 @@ interface LayoutResult {
 function computeColumnLayout(
   flatNodes: FlatNode[],
   edges: { source: string; target: string }[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  topicColumnMinWidth = 0
 ): LayoutResult {
   const nodeMap = new Map<string, FlatNode>()
   for (const n of flatNodes) nodeMap.set(n.id, n)
@@ -273,7 +274,8 @@ function computeColumnLayout(
 
   // --- X: column positions (left-aligned per depth) ---
   const maxDepth = flatNodes.reduce((m, n) => Math.max(m, n.depth), 0)
-  const maxWidthByDepth = new Map<number, number>()
+  // The dimension label sits under the topic, so the topic column clears it.
+  const maxWidthByDepth = new Map<number, number>([[0, topicColumnMinWidth]])
   for (const n of flatNodes) {
     const w = getW(n.id)
     maxWidthByDepth.set(n.depth, Math.max(maxWidthByDepth.get(n.depth) ?? 0, w))
@@ -345,14 +347,14 @@ function computeColumnLayout(
 
   // Build final positions
   // Leaf (children) nodes → left-aligned within their column
-  // Non-leaf (brace/part) nodes → center-aligned within their column
+  // Non-leaf (brace/part) nodes and the topic → center-aligned within their column
   const positions = new Map<string, { x: number; y: number }>()
   for (const n of flatNodes) {
     const baseX = columnX.get(n.depth) ?? DEFAULT_PADDING
     const kids = childrenMap.get(n.id)
     const isLeaf = !kids || kids.length === 0
     let nodeX: number
-    if (isLeaf) {
+    if (isLeaf && n.depth > 0) {
       nodeX = baseX
     } else {
       const w = getW(n.id)
@@ -420,6 +422,7 @@ function computeGroupIndices(
 export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
+  const dimension = spec.dimension as string | undefined
 
   let wholeNode: BraceNode | undefined
 
@@ -453,7 +456,9 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label'])
     )
 
-    const layout = computeColumnLayout(flatNodes, edges)
+    const labelWidth =
+      dimension !== undefined ? resolveBraceMapDimensionLabelWidth(dimension || '') : 0
+    const layout = computeColumnLayout(flatNodes, edges, {}, labelWidth)
     const groupIndexMap = computeGroupIndices(flatNodes, edges)
 
     for (const fn of flatNodes) {
@@ -464,11 +469,7 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
         text: fn.text || '',
         type: fn.depth === 0 ? 'topic' : 'brace',
         position: pos ?? { x: DEFAULT_PADDING, y: DEFAULT_PADDING },
-        data: {
-          estimatedWidth: fn.width,
-          estimatedHeight: fn.height,
-          ...(fn.depth > 0 ? { [BRACE_MAP_UID_DATA_KEY]: fn.id } : {}),
-        },
+        data: fn.depth > 0 ? { [BRACE_MAP_UID_DATA_KEY]: fn.id } : {},
       }
       if (groupIndex !== undefined) {
         const color = thinkingMapStampedBranchColor(groupIndex)
@@ -486,14 +487,12 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       })
     }
 
-    const dimension = spec.dimension as string | undefined
     if (dimension !== undefined) {
       const rootNode = flatNodes.find((n) => n.depth === 0)
       const rootPos = rootNode ? layout.positions.get(rootNode.id) : undefined
       const rootW = rootNode?.width ?? DEFAULT_NODE_WIDTH
       const rootH = rootNode?.height ?? DEFAULT_NODE_HEIGHT
       const topicCenterX = (rootPos?.x ?? DEFAULT_PADDING) + rootW / 2
-      const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
       nodes.push({
         id: 'dimension-label',
         text: dimension || '',
@@ -506,7 +505,6 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
     }
   }
 
-  const dimension = spec.dimension as string | undefined
   return {
     nodes,
     connections,
@@ -515,6 +513,21 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       alternativeDimensions: spec.alternative_dimensions as string[] | undefined,
     },
   }
+}
+
+/**
+ * Drop size stamps from saved brace nodes. Load seeds node dimensions from
+ * them as if measured, but the layout sizes every box from its text, so a
+ * stamp from an older font or estimator moves the columns after first paint.
+ */
+export function stripBraceMapSizeStamps(nodes: DiagramNode[]): DiagramNode[] {
+  return nodes.map((node) => {
+    if (!node.data || !('estimatedWidth' in node.data || 'estimatedHeight' in node.data)) {
+      return node
+    }
+    const { estimatedWidth: _width, estimatedHeight: _height, ...data } = node.data
+    return { ...node, data }
+  })
 }
 
 /**
@@ -579,7 +592,10 @@ export function recalculateBraceMapLayout(
   }
   refreshBraceFlatNodesFromDiagram(flatNodes, diagramById, adornments)
 
-  const layout = computeColumnLayout(flatNodes, edges, nodeDimensions)
+  const labelWidth = labelNode
+    ? resolveBraceMapDimensionLabelWidth(labelNode.text || '', nodeDimensions[labelNode.id]?.width)
+    : 0
+  const layout = computeColumnLayout(flatNodes, edges, nodeDimensions, labelWidth)
   const groupIndexMap = computeGroupIndices(flatNodes, edges)
 
   const nodeMap = new Map(treeNodes.map((n) => [n.id, { ...n }]))
@@ -617,7 +633,6 @@ export function recalculateBraceMapLayout(
       NODE_MIN_DIMENSIONS.brace.minHeight
     )
     const topicCenterX = (rootPos?.x ?? DEFAULT_PADDING) + rootW / 2
-    const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
     result = [
       ...result,
       {

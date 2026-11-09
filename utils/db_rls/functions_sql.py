@@ -196,17 +196,6 @@ AS $$
     SELECT invited_by_user_id FROM organizations WHERE id = target_org_id
 $$;
 
-CREATE OR REPLACE FUNCTION rls_panel_legacy_org_visible(target_org_id bigint)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-PARALLEL SAFE
-AS $$
-    SELECT coalesce(rls_setting_text('app.role'), '') <> 'expert'
-        AND target_org_id IS NOT NULL
-        AND rls_lookup_org_invited_by_user_id(target_org_id) IS NULL
-$$;
-
 CREATE OR REPLACE FUNCTION rls_panel_org_invited_by_actor(invited_by bigint)
 RETURNS boolean
 LANGUAGE sql
@@ -235,7 +224,6 @@ AS $$
         WHEN rls_is_panel_mode() THEN (
             rls_panel_global_read()
             OR (target_org_id IS NOT NULL AND rls_org_id_in_readable_list(target_org_id))
-            OR (target_org_id IS NOT NULL AND rls_panel_legacy_org_visible(target_org_id))
             OR (target_org_id IS NOT NULL AND target_org_id = rls_current_org_id())
         )
         WHEN rls_mode() = 'public' AND rls_allow_public_org_list() THEN true
@@ -363,8 +351,60 @@ AS $$
             owner_user_id IS NOT NULL
             AND rls_org_visible(rls_lookup_user_organization_id(owner_user_id))
         )
-        ELSE rls_same_org_users(owner_user_id)
+        ELSE false
     END
+$$;
+
+CREATE OR REPLACE FUNCTION rls_diagram_shared_with_current_user(target_diagram_id text)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+PARALLEL SAFE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    viewer_id integer := rls_current_user_id();
+BEGIN
+    IF viewer_id IS NULL OR target_diagram_id IS NULL OR rls_is_deny_mode() THEN
+        RETURN false;
+    END IF;
+    IF to_regclass('public.diagram_shares') IS NULL THEN
+        RETURN false;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1
+        FROM diagram_shares
+        WHERE diagram_id = target_diagram_id
+          AND grantee_user_id = viewer_id
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION rls_diagram_workshop_visible(
+    owner_user_id bigint,
+    workshop_code text,
+    workshop_visibility text
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+PARALLEL SAFE
+AS $$
+    SELECT rls_mode() = 'authenticated'
+        AND rls_current_user_id() IS NOT NULL
+        AND workshop_code IS NOT NULL
+        AND coalesce(workshop_visibility, 'organization') <> 'private'
+        AND (
+            workshop_visibility = 'network'
+            OR rls_lookup_user_organization_id(owner_user_id) IS NULL
+            OR rls_same_org_users(owner_user_id)
+            OR rls_user_bound_to_org(
+                rls_current_user_id(),
+                rls_lookup_user_organization_id(owner_user_id)
+            )
+            OR rls_user_bound_to_org(owner_user_id, rls_current_org_id())
+        )
 $$;
 
 CREATE OR REPLACE FUNCTION rls_knowledge_space_visible(space_id integer)
@@ -437,9 +477,9 @@ LANGUAGE sql
 STABLE
 PARALLEL SAFE
 AS $$
-    SELECT rls_is_panel_mode()
+    SELECT rls_is_system_mode()
         OR rls_mode() = 'panel_superadmin'
-        OR rls_is_system_mode()
+        OR (rls_is_panel_mode() AND rls_panel_global_read())
 $$;
 """
 
@@ -450,6 +490,8 @@ DROP FUNCTION IF EXISTS rls_chat_channel_visible(bigint);
 DROP FUNCTION IF EXISTS rls_mindbot_callback_token_visible(text);
 DROP FUNCTION IF EXISTS rls_knowledge_document_visible(integer);
 DROP FUNCTION IF EXISTS rls_knowledge_space_visible(integer);
+DROP FUNCTION IF EXISTS rls_diagram_workshop_visible(bigint, text, text);
+DROP FUNCTION IF EXISTS rls_diagram_shared_with_current_user(text);
 DROP FUNCTION IF EXISTS rls_diagram_visible(bigint);
 DROP FUNCTION IF EXISTS rls_user_visible(bigint);
 DROP FUNCTION IF EXISTS rls_panel_org_invited_by_actor(bigint);

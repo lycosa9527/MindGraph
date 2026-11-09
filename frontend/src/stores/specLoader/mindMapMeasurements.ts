@@ -11,16 +11,21 @@ import {
   mindMapUnderlineVerticalExtra,
 } from '@/config/mindMapGeometry'
 import { MIND_MAP_LEGACY_GEOMETRY } from '@/config/mindMapLegacyGeometry'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  MIND_MAP_TEXT_LINE_HEIGHT,
+  MIND_MAP_UNDERLINE_TEXT_LINE_HEIGHT,
   estimateMindMapNumberedContentWidthPx,
+  measureMindMapBranchPaintedBlockPx,
   resolveMindMapBranchBodyMaxWidthPx,
 } from '@/utils/mindMapTextWrap'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
+  measureCssWrappedBlockPx,
   measureRenderedDiagramLabelHeight,
   measureTextDimensions,
   measureTextWidth,
@@ -98,21 +103,9 @@ export function estimateNodeWidthForCanvasMode(
   const nodeHorizontalExtra = mindMapNodeHorizontalExtra(resolveMindMapMeasureShape(shape))
   const minNodeWidth = MIND_MAP_GEOMETRY.minWidth
 
-  if (typeof document === 'undefined') {
-    return Math.max(minNodeWidth, text.length * 8 + nodeHorizontalExtra)
-  }
-
-  const fullWidth = measureTextWidth(text, branchFontSize)
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  let effectiveTextWidth = fullWidth
-  if (fullWidth > wrapThreshold) {
-    const numLines = Math.ceil(fullWidth / BRANCH_BASE_MAX_TEXT_WIDTH)
-    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
-    effectiveTextWidth = Math.min(effectiveTextWidth, BRANCH_BASE_MAX_TEXT_WIDTH)
-  }
-
+  const block = measureMindMapBranchPaintedBlockPx(text, branchFontSize)
   void nodeId
-  return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
+  return Math.max(minNodeWidth, block.width + nodeHorizontalExtra)
 }
 
 /**
@@ -125,26 +118,14 @@ export function measureMindMapUnderlineTextBlockHeight(text: string, nodeId?: st
     return branchFontSize * 1.35
   }
   if (!text) return branchFontSize
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(
-    text,
-    wrapThreshold,
-    BRANCH_BASE_MAX_TEXT_WIDTH,
-    branchFontSize
-  )
-  // Plain labels: cheap canvas measure (same as rounded branches). Reserve the
-  // markdown/KaTeX pipeline for labels that actually need it — full-tree reloads
-  // call this once per node and the rendered path forces layout each time.
+  const block = measureMindMapBranchPaintedBlockPx(text, branchFontSize)
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    return measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+    return measureRenderedDiagramLabelHeight(text, branchFontSize, Math.max(block.width, 1))
   }
-  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
-    maxWidth: maxTextWidth,
-    paddingX: 0,
-    paddingY: 0,
-  })
-  // measureTextDimensions uses line-height 1.4; underline display is 1.35.
-  return Math.max(branchFontSize, textHeight * (1.35 / 1.4))
+  return Math.max(
+    branchFontSize,
+    block.lineCount * branchFontSize * MIND_MAP_UNDERLINE_TEXT_LINE_HEIGHT
+  )
 }
 
 /** Full underline box metrics — height and line midline offset from the same text measure. */
@@ -277,6 +258,9 @@ export function estimateTopicNodeWidthForCanvasMode(
     )
   }
 
+  const painted = measurePaintedTopicBlock(text, topicFontSize, 'bold')
+  if (painted) return Math.max(minTopicWidth, painted.width + topicHorizontalExtra)
+
   const fullWidth = measureTextWidth(text, topicFontSize, { fontWeight: 'bold' })
   let effectiveTextWidth = fullWidth
   if (fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH) {
@@ -286,6 +270,27 @@ export function estimateTopicNodeWidthForCanvasMode(
   }
 
   return Math.max(minTopicWidth, effectiveTextWidth + topicHorizontalExtra)
+}
+
+/**
+ * Topic text block as the topic node paints it: a 300px column with
+ * balanced lines. Balance shortens the lines, not the box, so a wrapped
+ * topic is the full column wide. Null outside a real browser.
+ */
+export function measurePaintedTopicBlock(
+  text: string,
+  fontSize: number,
+  fontWeight: string,
+  fontFamily?: string
+): { width: number; height: number } | null {
+  const painted = measureCssWrappedBlockPx(text, fontSize, TOPIC_BASE_MAX_TEXT_WIDTH, {
+    fontWeight,
+    fontFamily: diagramPaintFontFamily(fontFamily, MIND_MAP_GEOMETRY.fontFamily),
+  })
+  if (!painted) return null
+  const lineHeightPx = fontSize * MIND_MAP_TEXT_LINE_HEIGHT
+  const lines = Math.max(1, Math.round(painted.height / lineHeightPx) || 1)
+  return { width: painted.width, height: lines * lineHeightPx }
 }
 
 export function estimateTopicNodeHeightForCanvasMode(
@@ -325,6 +330,14 @@ export function estimateTopicNodeHeightForCanvasMode(
 
   if (!text) return MIND_MAP_GEOMETRY.minHeight
   const topicFontSize = MIND_MAP_GEOMETRY.topicFontSize
+  const paddingY = MIND_MAP_GEOMETRY.paddingY * 2
+  const borderY = MIND_MAP_GEOMETRY.borderWidth * 2
+  const painted = diagramLabelLikelyNeedsRenderedMeasure(text)
+    ? null
+    : measurePaintedTopicBlock(text, topicFontSize, 'bold')
+  if (painted) {
+    return Math.max(MIND_MAP_GEOMETRY.minHeight, Math.round(painted.height + paddingY + borderY))
+  }
   const maxTextWidth = computeBalancedMaxWidth(
     text,
     TOPIC_BASE_MAX_TEXT_WIDTH,
@@ -332,8 +345,6 @@ export function estimateTopicNodeHeightForCanvasMode(
     topicFontSize,
     'bold'
   )
-  const paddingY = MIND_MAP_GEOMETRY.paddingY * 2
-  const borderY = MIND_MAP_GEOMETRY.borderWidth * 2
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
     const contentH = measureRenderedDiagramLabelHeight(text, topicFontSize, maxTextWidth, {

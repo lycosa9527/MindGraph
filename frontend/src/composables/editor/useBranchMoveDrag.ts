@@ -33,13 +33,13 @@ import {
   usesHierarchicalMove,
 } from '@/composables/editor/branchMoveGroups'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
+import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { ANIMATION } from '@/config/uiConfig'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
-import type { MindGraphNode } from '@/types'
+import type { MindGraphNode, NodeStyle } from '@/types'
+import { mindMapBranchPaintBox } from '@/utils/mindMapBranchPaintBox'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { isPositionalMindMapBranchId } from '@/utils/mindMapLocation'
 import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
@@ -219,20 +219,21 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const v2Visuals = isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
     const branchIndex = (node.data?.branchIndex as number | undefined) ?? 0
     const branchPalette = getMindmapBranchColor(branchIndex, v2Visuals ? 'v2' : 'legacy')
-    const nodeShape = v2Visuals
-      ? resolveMindMapNodeShape(
+    const paintBox = v2Visuals
+      ? mindMapBranchPaintBox(
           {
             id: nodeId,
             type: 'branch',
-            style: dataStyle as never,
+            style: dataStyle as NodeStyle,
+            data: node.data as Record<string, unknown> | undefined,
           },
+          diagramStore.data?.connections,
           diagramStore.data?._mindmap_diagram_style as string | undefined
         )
-      : 'oval'
-    const isUnderline = v2Visuals && nodeShape === 'underline'
-    const fontSizePx =
-      dataStyle.fontSize ??
-      (v2Visuals ? mindMapBranchFontSize(nodeId, node, diagramStore.data?.connections) : 16)
+      : null
+    const nodeShape = paintBox?.shape ?? 'oval'
+    const isUnderline = paintBox?.shape === 'underline'
+    const fontSizePx = paintBox?.fontSize ?? dataStyle.fontSize ?? 16
     const fontSize =
       typeof fontSizePx === 'number' ? `${fontSizePx}px` : String(fontSizePx ?? '16px')
     const shapeClass = getDropTargetShapeClass(node as MindGraphNode)

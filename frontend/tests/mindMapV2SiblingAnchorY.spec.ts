@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MINDMAP_BRANCH_GAP,
   DEFAULT_MINDMAP_RANK_SEPARATION,
+  MINDMAP_UNDERLINE_BRANCH_GAP,
 } from '@/composables/diagrams/layoutConfig'
 import { MINDMAP_UNDERLINE_STROKE_WIDTH, mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import { mergeMindMapLayoutPositions } from '@/stores/diagram/mindMapDisplayLayout'
@@ -297,7 +298,8 @@ describe('v2 sibling Enter anchor Y stability', () => {
     const upperBottom =
       requirePosition(requireNode(separated, 'branch-r-2-2'), 'branch-r-2-2').y + 34
     const lowerTop = requirePosition(requireNode(separated, 'branch-r-2-3'), 'branch-r-2-3').y
-    expect(lowerTop).toBeGreaterThanOrEqual(upperBottom + DEFAULT_MINDMAP_BRANCH_GAP - 0.5)
+    // Classic L2 paints as underline, so the facing fans clear by the underline branch gap.
+    expect(lowerTop).toBeGreaterThanOrEqual(upperBottom + MINDMAP_UNDERLINE_BRANCH_GAP - 0.5)
     // Lower L1 stays below upper L1; order preserved.
     expect(
       requirePosition(requireNode(separated, 'branch-r-1-1'), 'branch-r-1-1').y
@@ -486,6 +488,44 @@ describe('v2 sibling Enter anchor Y stability', () => {
     // Column is max L1 width from the topic's left edge.
     const expectedX = topicX - DEFAULT_MINDMAP_RANK_SEPARATION - 140
     expect(wide?.position?.x).toBeCloseTo(expectedX, 5)
+  })
+
+  it('right-aligns left leaves on the wrap estimate when DOM width is still one line', () => {
+    const nodes: DiagramNode[] = [
+      node('topic', 0, { height: 40, width: 120, x: 400 }),
+      node('branch-l-1-0', 0, { height: 43, width: 95, x: 200 }),
+      node('branch-l-2-0', -20, { height: 73, width: 184, x: 0 }),
+      node('branch-l-2-1', 20, { height: 30, width: 299, x: 40 }),
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'c1', source: 'branch-l-1-0', target: 'branch-l-2-0' },
+      { id: 'c2', source: 'branch-l-1-0', target: 'branch-l-2-1' },
+    ]
+    const { nodes: laidOut } = recalculateMindMapV2ColumnPositions(
+      nodes,
+      120,
+      {
+        'branch-l-1-0': 95,
+        'branch-l-2-0': 290,
+        'branch-l-2-1': 262,
+      },
+      {
+        topic: 40,
+        'branch-l-1-0': 43,
+        'branch-l-2-0': 30,
+        'branch-l-2-1': 30,
+      },
+      connections
+    )
+    const wrapped = laidOut.find((item) => item.id === 'branch-l-2-0')
+    const single = laidOut.find((item) => item.id === 'branch-l-2-1')
+    expect(wrapped?.position).toBeDefined()
+    expect(single?.position).toBeDefined()
+    const wrappedPos = requirePosition(requireDefined(wrapped, 'wrapped'), 'branch-l-2-0')
+    const singlePos = requirePosition(requireDefined(single, 'single'), 'branch-l-2-1')
+    expect(wrappedPos.x + 184).toBeCloseTo(singlePos.x + 299, 5)
+    expect(singlePos.y).toBeGreaterThanOrEqual(wrappedPos.y + 73 - 0.5)
   })
 
   it('pushes same-side L1 roots below when an L1 height grows under preserve', () => {

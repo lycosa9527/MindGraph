@@ -266,6 +266,20 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(rail).not.toContain('top: 56px')
   })
 
+  it('drops filename, save, and collab and shows text-only tabs when the title row is tight', () => {
+    const topBar = readSrc('src/components/canvas/CanvasTopBar.vue')
+    const tabs = readSrc('src/canvas-ribbon/MindMapRibbonTabs.vue')
+    const css = readSrc('src/canvas-ribbon/mindMapRibbonTabs.css')
+    expect(topBar).toContain('useCanvasTitleRowFit')
+    expect(topBar).toContain('v-show="!titleRowTight"')
+    expect(topBar).toContain(':text-only="titleRowTight"')
+    expect(topBar).toContain(':short-labels="titleRowShortLabels"')
+    expect(topBar).toContain('canvas-top-bar__title-row--tight')
+    expect(tabs).toContain('mm-ribbon-tabs--text-only')
+    expect(tabs).toContain('v-if="!textOnly"')
+    expect(css).toContain('.mm-ribbon-tabs--text-only.mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab')
+  })
+
   it('uses V2 chrome on CanvasPage and keeps the V2 diagram shell', () => {
     const page = readSrc('src/pages/CanvasPage.vue')
     const router = readSrc('src/components/diagram/MindMapCanvasRouter.vue')

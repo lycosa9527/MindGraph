@@ -100,9 +100,14 @@ export function useDiagramCanvasVueFlowHandlers(
     changes.forEach((change) => {
       if (change.type === 'position' && change.position) {
         if (diagramStore.isReadonly) return
-        // Tree map positions are derived. Echoing Vue Flow's snapped positions
-        // back into the store reruns layout once per node as they initialize.
-        if (diagramStore.type === 'tree_map' && change.dragging !== true) return
+        // Tree and mind maps own X/Y. Echoing Vue Flow's init or snap positions
+        // back into the store puts the file's saved columns back on screen and
+        // they stay there until a full remount.
+        const derivedLayout =
+          diagramStore.type === 'tree_map' ||
+          diagramStore.type === 'mindmap' ||
+          diagramStore.type === 'mind_map'
+        if (derivedLayout && change.dragging !== true) return
         diagramStore.updateNodePosition(change.id, change.position, false)
         if (diagramStore.type === 'concept_map') {
           conceptMapPositionNodeIds.add(change.id)

@@ -1,12 +1,15 @@
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramData, DiagramNode } from '@/types'
 import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { collapseDuplicateMindMapNodes } from '@/utils/mindMapIdentityMigrate'
+import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
 import { nodeIdsWithImage } from '@/utils/nodeImageFrame'
 
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import { type MindMapV2LayoutOptions, recalculateMindMapV2ColumnPositions } from './mindMapLayout'
 import { recalculateMindMapLegacyColumnPositions } from './mindMapLayoutLegacy'
+import { mergeLaidOutTreeWithSummaries } from './mindMapSummaryLayout'
+import { nodesWithMindMapWrapBoxes } from './mindMapTextEditSize'
 import type { DiagramContext } from './types'
 
 export interface MindMapDisplayLayoutResult {
@@ -27,14 +30,24 @@ export function mergeMindMapLayoutPositions(
   const next = storeNodes.map((node) => {
     const laid = byId.get(node.id)
     if (!laid?.position || !node.position) return node
-    if (
-      Math.abs(laid.position.x - node.position.x) < 0.5 &&
-      Math.abs(laid.position.y - node.position.y) < 0.5
-    ) {
-      return node
-    }
+    const laidWidth = laid.data?.estimatedWidth
+    const laidHeight = laid.data?.estimatedHeight
+    const positionMoved =
+      Math.abs(laid.position.x - node.position.x) >= 0.5 ||
+      Math.abs(laid.position.y - node.position.y) >= 0.5
+    const widthMoved = typeof laidWidth === 'number' && laidWidth !== node.data?.estimatedWidth
+    const heightMoved = typeof laidHeight === 'number' && laidHeight !== node.data?.estimatedHeight
+    if (!positionMoved && !widthMoved && !heightMoved) return node
     changed = true
-    return { ...node, position: { x: laid.position.x, y: laid.position.y } }
+    return {
+      ...node,
+      position: { x: laid.position.x, y: laid.position.y },
+      data: {
+        ...node.data,
+        ...(typeof laidWidth === 'number' ? { estimatedWidth: laidWidth } : {}),
+        ...(typeof laidHeight === 'number' ? { estimatedHeight: laidHeight } : {}),
+      },
+    }
   })
   return changed ? next : storeNodes
 }
@@ -122,6 +135,125 @@ function dropCrossSideMindMapAssociations(ctx: DiagramContext): void {
   }
 }
 
+/**
+ * v2 column layout from the wrap box the label paints.
+ * Saved `estimatedWidth` can still be a collapsed or one-line number. Stamp
+ * first so rank X uses the same measurement as the node, including on file open
+ * before Vue Flow has measured anything.
+ */
+export function layoutMindMapV2WithWrapBoxes(
+  nodes: DiagramNode[],
+  data: DiagramData,
+  topicWidth: number | null,
+  nodeWidths: Record<string, number>,
+  nodeHeights: Record<string, number>,
+  options?: { preserveIncomingY?: boolean; reuseStoredWrapBox?: boolean }
+): MindMapDisplayLayoutResult {
+  const connections = data.connections ?? []
+  const treeNodes = nodesWithMindMapWrapBoxes(filterTreeMindMapNodes(nodes), data, {
+    reuseStored: options?.reuseStoredWrapBox === true,
+  })
+  const collapsedPaths = getMindMapCollapsedPaths(data)
+  const collapsedNodeIds = getMindMapCollapsedNodeIds(treeNodes, connections, collapsedPaths)
+  const imageNodeIds = nodeIdsWithImage(treeNodes, data, connections)
+  const diagramStyleId =
+    typeof data._mindmap_diagram_style === 'string' ? data._mindmap_diagram_style : undefined
+  const laidOut = computeMindMapDisplayLayout(
+    'v2',
+    treeNodes,
+    connections,
+    topicWidth,
+    nodeWidths,
+    nodeHeights,
+    collapsedNodeIds,
+    diagramStyleId,
+    {
+      ...(options?.preserveIncomingY ? { preserveIncomingY: true } : {}),
+      imageNodeIds,
+    }
+  )
+  return {
+    nodes: mergeLaidOutTreeWithSummaries(
+      laidOut.nodes,
+      nodes,
+      connections,
+      data,
+      nodeWidths,
+      nodeHeights
+    ),
+    gaps: laidOut.gaps,
+  }
+}
+
+function seedWrapMeasureMaps(
+  nodes: DiagramNode[],
+  widths: Record<string, number>,
+  heights: Record<string, number>
+): void {
+  for (const node of nodes) {
+    if (!node.id || node.type === 'boundary') continue
+    const width = node.data?.estimatedWidth
+    const height = node.data?.estimatedHeight
+    if (typeof width === 'number' && width > 0) widths[node.id] = width
+    if (typeof height === 'number' && height > 0) heights[node.id] = height
+  }
+}
+
+/**
+ * Replace saved rank positions with the wrap layout before the canvas paints.
+ * The measure batch holds store positions, so the file's columns would stay
+ * on screen until a full page remount.
+ */
+export function restackLoadedMindMapV2Nodes(
+  nodes: DiagramNode[],
+  spec: DiagramData,
+  connections: Connection[],
+  options: {
+    preserveMeasures: boolean
+    widths: Record<string, number>
+    heights: Record<string, number>
+    topicWidth: number | null
+  }
+): {
+  nodes: DiagramNode[]
+  widths: Record<string, number>
+  heights: Record<string, number>
+  topicWidth: number | null
+  gaps: { left: number; right: number }
+} {
+  const layoutData: DiagramData = {
+    ...spec,
+    nodes,
+    connections,
+  }
+  const laidOut = layoutMindMapV2WithWrapBoxes(
+    nodes,
+    layoutData,
+    options.preserveMeasures ? options.topicWidth : null,
+    options.preserveMeasures ? { ...options.widths } : {},
+    options.preserveMeasures ? { ...options.heights } : {}
+  )
+  if (options.preserveMeasures) {
+    return {
+      nodes: laidOut.nodes,
+      widths: options.widths,
+      heights: options.heights,
+      topicWidth: options.topicWidth,
+      gaps: laidOut.gaps,
+    }
+  }
+  const widths: Record<string, number> = {}
+  const heights: Record<string, number> = {}
+  seedWrapMeasureMaps(laidOut.nodes, widths, heights)
+  return {
+    nodes: laidOut.nodes,
+    widths,
+    heights,
+    topicWidth: widths.topic ?? null,
+    gaps: laidOut.gaps,
+  }
+}
+
 export function computeMindMapDisplayLayout(
   canvasMode: 'legacy' | 'v2',
   nodes: DiagramNode[],
@@ -153,28 +285,4 @@ export function computeMindMapDisplayLayout(
     connections,
     options?.imageNodeIds
   )
-}
-
-export function computeMindMapDisplayNodes(
-  canvasMode: 'legacy' | 'v2',
-  nodes: DiagramNode[],
-  connections: Connection[],
-  topicWidth: number | null,
-  nodeWidths: Record<string, number>,
-  nodeHeights: Record<string, number>,
-  collapsedNodeIds: ReadonlySet<string> = new Set<string>(),
-  diagramStyleId?: string | null,
-  options?: MindMapV2LayoutOptions
-): DiagramNode[] {
-  return computeMindMapDisplayLayout(
-    canvasMode,
-    nodes,
-    connections,
-    topicWidth,
-    nodeWidths,
-    nodeHeights,
-    collapsedNodeIds,
-    diagramStyleId,
-    options
-  ).nodes
 }

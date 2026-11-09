@@ -14,6 +14,7 @@ import {
 import type { Connection, DiagramNode } from '@/types'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { logMindMapProcess } from '@/utils/mindMapConnectorDebugVerbose'
+import { scheduleMindMapRelayoutWhenFontsLoad } from '@/utils/mindMapFontRelayout'
 import {
   markMindMapLoadFirstMeasure,
   markMindMapLoadStage,
@@ -135,6 +136,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
     markMindMapLoadStage('measure:batch:flush', { reason, reported })
     if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
       ctx.scheduleMindMapRecalc()
+      scheduleMindMapRelayoutWhenFontsLoad(() => ctx.scheduleMindMapRecalc())
     }
     scheduleMindMapLoadSettle(`batch:${reason}`)
   }
@@ -326,18 +328,36 @@ function parseLayoutSide(
   return side ? mindMapSideToChar(side) : null
 }
 
-function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
-  const measured = nodeWidths[node.id]
-  if (measured !== undefined) return measured
-  return (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
+function positiveLayoutSize(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 ? value : undefined
 }
 
 /**
- * Resolve the node's vertical size for layout restack.
- * Prefer Pinia DOM-measured height; otherwise the build-time / text-edit estimate.
- * Never sync-measure text here — `correctYPositions` calls this many times per node
- * and DOM measure would stall the main thread after every branch edit.
- * Shape-correct estimates are written at load / text / style change sites instead.
+ * Horizontal box for rank placement.
+ * The wrap estimate is the box the label paints. A DOM width from a different
+ * measure (one-line canvas vs the wrapped cap) shifts the inner edge. Picture
+ * nodes keep the larger frame written into `nodeWidths`.
+ */
+function getNodeWidth(
+  node: DiagramNode,
+  nodeWidths: Record<string, number>,
+  imageNodeIds?: ReadonlySet<string>
+): number {
+  const measured = nodeWidths[node.id]
+  const estimate = positiveLayoutSize(node.data?.estimatedWidth)
+  if (imageNodeIds?.has(node.id)) {
+    const box = Math.max(measured ?? 0, estimate ?? 0)
+    return box > 0 ? box : DEFAULT_NODE_WIDTH
+  }
+  return estimate ?? measured ?? DEFAULT_NODE_WIDTH
+}
+
+/**
+ * Vertical box for restack.
+ * The wrap estimate and a DOM height can disagree when one path still has the
+ * one-line size. Use the larger so a wrapped label is not stacked on a one-line
+ * pitch, and a measured picture frame is not shrunk.
+ * Never sync-measure text here — `correctYPositions` calls this many times per node.
  */
 function getNodeHeight(
   nodeId: string,
@@ -346,9 +366,9 @@ function getNodeHeight(
   _diagramStyleId?: string | null
 ): number {
   const measured = nodeHeights[nodeId]
-  if (measured !== undefined) return measured
-  const node = nodeMap.get(nodeId)
-  return (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
+  const estimate = positiveLayoutSize(nodeMap.get(nodeId)?.data?.estimatedHeight)
+  if (measured !== undefined && estimate !== undefined) return Math.max(measured, estimate)
+  return measured ?? estimate ?? DEFAULT_NODE_HEIGHT
 }
 
 function getNodeAnchorY(
@@ -419,7 +439,8 @@ export interface MindMapV2LayoutOptions {
  * Recalculate mind-map node positions using subtree-relative X and balanced Y.
  *
  * X: Each node is placed one rankSeparation beyond its parent (not a global depth column).
- * Y: DOM-measured heights re-stack siblings and re-center parents on their children.
+ *    Branch width is the wrap estimate, not a DOM width from a different measure.
+ * Y: The larger of the wrap estimate and the DOM height re-stacks siblings.
  */
 /** V2 mind map column layout (underline anchors, sequential side stacking). */
 export function recalculateMindMapV2ColumnPositions(
@@ -477,7 +498,10 @@ export function recalculateMindMapV2ColumnPositions(
     if (mindMapNodeSide(rootId, { nodes, connections }) !== 'left') continue
     const root = nodeMap.get(rootId)
     if (!root) continue
-    leftL1ColumnWidth = Math.max(leftL1ColumnWidth, getNodeWidth(root, nodeWidths))
+    leftL1ColumnWidth = Math.max(
+      leftL1ColumnWidth,
+      getNodeWidth(root, nodeWidths, options?.imageNodeIds)
+    )
   }
 
   const newX = new Map<string, number>()
@@ -485,7 +509,7 @@ export function recalculateMindMapV2ColumnPositions(
   function assignSubtreeX(nodeId: string, parentId: string, side: 'r' | 'l'): void {
     const node = nodeMap.get(nodeId)
     if (!node) return
-    const w = getNodeWidth(node, nodeWidths)
+    const w = getNodeWidth(node, nodeWidths, options?.imageNodeIds)
 
     let x: number
     if (parentId === 'topic') {
@@ -499,7 +523,7 @@ export function recalculateMindMapV2ColumnPositions(
     } else {
       const parent = nodeMap.get(parentId)
       if (!parent?.position) return
-      const parentW = getNodeWidth(parent, nodeWidths)
+      const parentW = getNodeWidth(parent, nodeWidths, options?.imageNodeIds)
       const parentX = newX.get(parentId) ?? parent.position.x
       x = side === 'r' ? parentX + parentW + gap : parentX - gap - w
     }

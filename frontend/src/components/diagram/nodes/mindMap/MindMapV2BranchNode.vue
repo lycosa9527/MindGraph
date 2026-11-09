@@ -29,12 +29,9 @@ import {
   wrapMindMapNodeStyleForExport,
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
   MINDMAP_UNDERLINE_STROKE_WIDTH,
   MIND_MAP_GEOMETRY,
-  mindMapBranchDepth,
-  mindMapBranchFontSize,
   mindMapHorizontalPadding,
   mindMapUnderlineContentPadding,
 } from '@/config/mindMapGeometry'
@@ -45,6 +42,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { stripMatchingBranchNumberPrefix } from '@/utils/mindMapBranchNumbering'
+import { mindMapBranchPaintBox } from '@/utils/mindMapBranchPaintBox'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
 import {
@@ -74,12 +72,14 @@ const resolvedStyle = computed(() => ({
   ...(props.data.style || {}),
 }))
 
-const nodeShape = computed(() =>
-  resolveMindMapNodeShape(
-    { id: props.id, type: 'branch', style: resolvedStyle.value },
+const paintBox = computed(() =>
+  mindMapBranchPaintBox(
+    { id: props.id, type: 'branch', style: resolvedStyle.value, data: props.data },
+    diagramStore.data?.connections,
     diagramStore.data?._mindmap_diagram_style as string | undefined
   )
 )
+const nodeShape = computed(() => paintBox.value.shape)
 const isUnderlineShape = computed(() => nodeShape.value === 'underline')
 
 function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
@@ -93,9 +93,7 @@ const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
 
-const isChild = computed(
-  () => mindMapBranchDepth(props.id, { data: props.data }, diagramStore.data?.connections) >= 2
-)
+const isChild = computed(() => paintBox.value.depth >= 2)
 const themeNodeType = computed(() => (isChild.value ? 'child' : 'branch'))
 const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
@@ -158,7 +156,7 @@ const nodeStyle = computed((): CSSProperties => {
     color:
       style.textColor || mindMapThemeColors.value.text || defaultStyle.value.textColor || '#333333',
     fontFamily: diagramPaintFontFamily(style.fontFamily, MIND_MAP_GEOMETRY.fontFamily),
-    fontSize: `${style.fontSize || defaultStyle.value.fontSize || mindMapBranchFontSize(props.id, { data: props.data }, diagramStore.data?.connections)}px`,
+    fontSize: `${paintBox.value.fontSize}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
@@ -237,9 +235,7 @@ const textMaxWidth = computed(() => {
     diagramStore.data?.connections
   )
   if (!label && !numberPrefix.value) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
-  const fontSize =
-    parseFloat(nodeStyle.value.fontSize as string) ||
-    mindMapBranchFontSize(props.id, { data: props.data }, diagramStore.data?.connections)
+  const fontSize = paintBox.value.fontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   return `${resolveMindMapBranchBodyMaxWidthPx(label, numberPrefix.value, fontSize, {
     fontWeight,

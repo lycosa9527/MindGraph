@@ -14,7 +14,7 @@ Marked complete for the codebase implementation pass. Staging must still run man
 
 ## K. PostgreSQL 18.3
 
-- [x] `pg_dump --no-policies` in dump import + admin export
+- [x] `pg_dump` keeps policies in dump import, admin export, and scheduled backup
 - [x] `docs/db-tuning.md`, `docs/db-rls-rollout.md`
 - [x] `tests/db/test_rls_explain_hot_paths.py`
 

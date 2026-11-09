@@ -59,6 +59,11 @@ function carriedHold(node: DiagramNode): Record<string, number> {
   return hold
 }
 
+/** Text that decides a node's painted size; equal signatures can reuse a measured box. */
+export function nodeLabelSignature(node: DiagramNode): string {
+  return `${node.text ?? ''}\u0001${node.textSecondary ?? ''}`
+}
+
 /** Keep typography and worksheet answers on nodes whose ids survive a structure reload. */
 export function mergeReloadedNodeFields(
   nodes: DiagramNode[],

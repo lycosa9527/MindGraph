@@ -62,22 +62,22 @@ async def slides_remote_websocket(websocket: WebSocket) -> None:
     await websocket.accept()
     user_id = int(user.id)
     watch = _is_watch_client(websocket)
-    slides_remote_ws_manager.connect(user_id, websocket, watch=watch)
-    await websocket.send_text(
-        slides_snapshot_frame(public_snapshot(await get_session(user_id))),
-    )
     rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
-    touch_stop: asyncio.Event | None = None
-    touch_task: asyncio.Task[None] | None = None
-    if not watch:
-        touch_stop = asyncio.Event()
-        touch_task = asyncio.create_task(
-            run_desktop_session_touch(user_id, touch_stop),
-            name=f"slides-remote-ttl-{user_id}",
-        )
 
     async with ws_managed_session(websocket, user_id=user_id, endpoint="slides-remote"):
+        slides_remote_ws_manager.connect(user_id, websocket, watch=watch)
+        touch_stop: asyncio.Event | None = None
+        touch_task: asyncio.Task[None] | None = None
+        if not watch:
+            touch_stop = asyncio.Event()
+            touch_task = asyncio.create_task(
+                run_desktop_session_touch(user_id, touch_stop),
+                name=f"slides-remote-ttl-{user_id}",
+            )
         try:
+            await websocket.send_text(
+                slides_snapshot_frame(public_snapshot(await get_session(user_id))),
+            )
             while True:
                 raw = await websocket.receive_text()
                 if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):

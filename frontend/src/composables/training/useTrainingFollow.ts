@@ -59,18 +59,16 @@ export function useTrainingFollow(): void {
 
   function pullCommand(): Promise<void> {
     pullQueued = true
-    const scheduled = pullChain.then(async () => {
-      if (!pullQueued) return
-      do {
-        pullQueued = false
-        await runPullCommand()
-      } while (pullQueued)
-    })
-    pullChain = scheduled.then(
-      () => undefined,
-      () => undefined
-    )
-    return scheduled
+    pullChain = pullChain
+      .then(async () => {
+        if (!pullQueued) return
+        do {
+          pullQueued = false
+          await runPullCommand()
+        } while (pullQueued)
+      })
+      .catch(() => undefined)
+    return pullChain
   }
 
   function canOpenEvents(): boolean {

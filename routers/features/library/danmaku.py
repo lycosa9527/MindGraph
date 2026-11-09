@@ -11,7 +11,8 @@ Proprietary License
 """
 
 import logging
-from typing import Optional
+from contextlib import asynccontextmanager
+from typing import AsyncIterator, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,12 +24,23 @@ from services.monitoring.module_activity import schedule_module_activity
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
+from utils.db.rls_context import RlsContext, scoped_rls_context
 
 from .models import DanmakuCreate, DanmakuUpdate, ReplyCreate
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@asynccontextmanager
+async def _moderation_rls(db: AsyncSession, user: User) -> AsyncIterator[None]:
+    """Admins edit other people's danmaku; RLS lets only the author or a platform admin write."""
+    if not is_admin(user):
+        yield
+        return
+    async with scoped_rls_context(db, RlsContext.panel_superadmin(user)):
+        yield
 
 
 @router.get("/documents/{document_id}/danmaku")
@@ -259,12 +271,13 @@ async def update_danmaku_position(
     Only the creator or admin can update position.
     """
     service = LibraryService(db, user_id=current_user.id)
-    updated = await service.update_danmaku_position(
-        danmaku_id=danmaku_id,
-        position_x=data.position_x,
-        position_y=data.position_y,
-        is_admin=is_admin(current_user),
-    )
+    async with _moderation_rls(db, current_user):
+        updated = await service.update_danmaku_position(
+            danmaku_id=danmaku_id,
+            position_x=data.position_x,
+            position_y=data.position_y,
+            is_admin=is_admin(current_user),
+        )
 
     if not updated:
         raise HTTPException(
@@ -287,7 +300,8 @@ async def delete_danmaku(
     Only the creator or admin can delete.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = await service.delete_danmaku(danmaku_id, is_admin=is_admin(current_user))
+    async with _moderation_rls(db, current_user):
+        deleted = await service.delete_danmaku(danmaku_id, is_admin=is_admin(current_user))
 
     if not deleted:
         raise HTTPException(
@@ -310,7 +324,8 @@ async def delete_reply(
     Only the creator or admin can delete.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = await service.delete_reply(reply_id, is_admin=is_admin(current_user))
+    async with _moderation_rls(db, current_user):
+        deleted = await service.delete_reply(reply_id, is_admin=is_admin(current_user))
 
     if not deleted:
         raise HTTPException(

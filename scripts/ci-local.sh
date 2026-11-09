@@ -396,7 +396,8 @@ run_frontend() {
     tests/registerKittyDiagramMutationBusCollab.spec.ts \
     tests/collabRemoteEchoFilter.spec.ts \
     tests/applyCollabEditorPresence.spec.ts \
-    tests/adminDatabaseMergeOrphans.spec.ts
+    tests/adminDatabaseMergeOrphans.spec.ts \
+    tests/realDiagramRenderings.spec.ts
 }
 
 run_chrome_extension() {

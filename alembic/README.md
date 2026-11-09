@@ -53,7 +53,7 @@ Migrations import them directly — no PyPI ``alembic`` namespace shim.
 
 Never enable RLS without policies in the same migration. See [`docs/db-rls-rollout.md`](../docs/db-rls-rollout.md).
 
-`pg_dump` backups use `--no-policies`; restore as migrate, then `alembic upgrade head`.
+`pg_dump` backups include policies. Restore as migrate, then `alembic upgrade head`. Revision `0167` installs the current catalog when the restored version is `0166`.
 
 ## Fresh Install
 

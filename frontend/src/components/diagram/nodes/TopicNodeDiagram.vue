@@ -474,7 +474,7 @@ function handleWidthChange(width: number) {
         type="source"
         :position="Position.Bottom"
         class="bg-blue-500!"
-        :style="underlineBottomHandleStyle"
+        :style="underlineBottomHandleStyle ?? { left: '50%', transform: 'translateX(-50%)' }"
       />
 
       <Handle

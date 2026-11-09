@@ -29,6 +29,7 @@ import type { useInlineRecommendationsCoordinator } from '@/composables/editor/u
 import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import { IMPORT_SPEC_KEY } from '@/config'
+import { loadDiagramFontsForSpec } from '@/fonts/diagramSpecFonts'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import type { LocaleCode } from '@/i18n/locales'
 import type { useAuthStore } from '@/stores/auth'
@@ -173,6 +174,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
+    await loadDiagramFontsForSpec(specForLoad)
     if (loadGen !== libraryLoadGeneration) {
       return false
     }
@@ -255,6 +257,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
             if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
               await loadDiagramMarkdownPipeline({ bumpLayout: false })
             }
+            await loadDiagramFontsForSpec(specForLoad)
             const loaded = diagramStore.loadFromSpec(
               specForLoad,
               loadedType,

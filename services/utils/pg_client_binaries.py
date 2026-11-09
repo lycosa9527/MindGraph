@@ -69,9 +69,9 @@ def pg_tools_libpq_url() -> str:
     Libpq URI for pg_dump and pg_restore.
 
     Uses a migrate-capable PostgreSQL role (``mindgraph_migrate``, BYPASSRLS).
-    ``--no-policies`` only excludes policies from the archive; pg_dump still
-    runs queries as the connection role and must bypass RLS to copy protected
-    tables such as ``api_keys``.
+    The archive includes row-level security policies. pg_dump still runs COPY
+    as the connection role and must bypass RLS to read protected tables such
+    as ``api_keys``.
     """
     dump_url = DATABASE_MIGRATION_URL
     if (make_url(dump_url).username or "") == ROLE_APP:
@@ -84,15 +84,14 @@ def build_pg_dump_cmd(pg_dump: str, output_path: Path, db_url: str) -> List[str]
     """
     Build pg_dump argv aligned with admin export and Alembic RLS backup policy.
 
-    Uses custom format, no owner/oids, and --no-policies. Callers must pass a
-    migrate-capable URL (see ``pg_tools_libpq_url()``); the app runtime role
-    cannot read RLS-protected tables during COPY.
+    Uses custom format and omits ownership. Policies stay in the archive.
+    Callers must pass a migrate-capable URL (see ``pg_tools_libpq_url()``);
+    the app runtime role cannot read RLS-protected tables during COPY.
     """
     return [
         pg_dump,
         "-Fc",
         "--no-owner",
-        "--no-policies",
         "-f",
         str(output_path),
         libpq_database_url(db_url),

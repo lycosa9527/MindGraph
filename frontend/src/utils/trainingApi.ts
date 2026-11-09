@@ -161,11 +161,12 @@ export async function postTrainingActivity(body: {
   option_label?: string | null
   generate_state?: string
 }): Promise<void> {
+  // Best-effort presence ping: it must never block generation or reject unhandled.
   await apiRequest(`${API}/activity`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  })
+  }).catch(() => undefined)
 }
 
 export async function fetchTrainingRoster(

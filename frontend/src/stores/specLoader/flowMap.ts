@@ -118,8 +118,8 @@ export function getFlowTopicCenteredPosition(
 }
 
 /**
- * Post-render layout correction for flow maps.
- * Uses actual DOM-measured node dimensions from Pinia to:
+ * Live layout for flow maps. Uses DOM-measured node dimensions from Pinia,
+ * falling back to the text estimate for a node not measured yet, to:
  * - Horizontal layout: correct topic Y so its center matches step nodes' center Y.
  * - Vertical layout: restack step (and substep) nodes using measured heights to
  *   prevent overlaps when text wraps, then correct topic X to stay centered.
@@ -137,16 +137,12 @@ export function recalculateFlowMapLayout(
   if (!topicNode) return nodes
 
   const topicDims = nodeDimensions[FLOW_TOPIC_NODE_ID]
-  if (!topicDims) return nodes
 
   const stepNodes = orderFlowStepNodes(nodes)
   if (stepNodes.length === 0) return nodes
 
   const firstStep = stepNodes[0]
   if (!firstStep.position || !topicNode.position) return nodes
-
-  const firstStepDims = nodeDimensions[firstStep.id]
-  if (!firstStepDims) return nodes
 
   const orientation = resolveFlowMapOrientation(topicNode, stepNodes)
 
@@ -178,7 +174,7 @@ export function recalculateFlowMapLayout(
 
     const topicTyp = flowNodeTypography(topicNode)
     const topicEstW = estimateFlowPill(flowLabel(topicNode), 'topic', topicTyp).boxWidth
-    const effectiveTopicW = flowCenteringWidth(topicDims.width, topicEstW)
+    const effectiveTopicW = flowCenteringWidth(topicDims?.width, topicEstW)
 
     const boxes = groupInfos.map((group) => {
       const stepH = flowBoxHeight(
@@ -229,18 +225,17 @@ export function recalculateFlowMapLayout(
     })
 
     const firstOrderedStep = orderedSteps[0]
-    const firstOrderedStepDims = firstOrderedStep ? nodeDimensions[firstOrderedStep.id] : undefined
-    if (firstOrderedStep && firstOrderedStepDims) {
+    if (firstOrderedStep) {
       const firstStepResultNode = result.find((n) => n.id === firstOrderedStep.id)
       const stepPos = firstStepResultNode?.position
       if (stepPos) {
         const stepH = flowBoxHeight(
           firstOrderedStep,
           'step',
-          firstOrderedStepDims.height,
+          nodeDimensions[firstOrderedStep.id]?.height,
           flowLabel(firstOrderedStep)
         )
-        const topicH = flowBoxHeight(topicNode, 'topic', topicDims.height, flowLabel(topicNode))
+        const topicH = flowBoxHeight(topicNode, 'topic', topicDims?.height, flowLabel(topicNode))
         const stepCenterY = stepPos.y + stepH / 2
         const correctedY = Math.round(stepCenterY - topicH / 2)
         result[topicIndex] = {

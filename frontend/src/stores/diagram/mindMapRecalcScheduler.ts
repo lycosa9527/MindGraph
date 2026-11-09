@@ -7,8 +7,8 @@ import { markMindMapLoadRecalc } from '@/utils/mindMapLoadDebug'
  * Coalesce burst mind-map layout invalidations (e.g. many ResizeObservers on load)
  * into at most one recalc per animation frame.
  *
- * Optional `syncStorePositions` runs once per frame before the trigger bump so
- * Pinia node X/Y match the display layout (single position SoT).
+ * The trigger bump refreshes the v2 layout computed. Write-back then copies
+ * that result into Pinia, so store X/Y match the canvas (single position SoT).
  */
 export function createMindMapRecalcScheduler(
   type: Ref<DiagramType | null>,
@@ -19,8 +19,8 @@ export function createMindMapRecalcScheduler(
 
   function runRecalc(): void {
     markMindMapLoadRecalc()
-    syncStorePositions?.()
     mindMapRecalcTrigger.value++
+    syncStorePositions?.()
   }
 
   return function scheduleMindMapRecalc(): void {

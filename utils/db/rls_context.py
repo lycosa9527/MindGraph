@@ -214,6 +214,27 @@ async def apply_rls_context_async(session: AsyncSession, ctx: Optional[RlsContex
         )
 
 
+@asynccontextmanager
+async def scoped_rls_context(session: AsyncSession, ctx: RlsContext) -> AsyncIterator[AsyncSession]:
+    """Run part of an open session under ``ctx``, then put the caller's context back.
+
+    The caller must already have authorized the work. Commits inside the block
+    keep ``ctx`` because ``after_begin`` reads the pinned session context. When
+    the block raises, only the pin is restored: the aborted transaction cannot
+    run ``set_config``, and the caller's rollback starts a fresh one.
+    """
+    pinned = session.info.get(_SESSION_RLS_KEY)
+    await apply_rls_context_async(session, ctx)
+    try:
+        yield session
+    finally:
+        if isinstance(pinned, RlsContext):
+            bind_session_rls_context(session, pinned)
+        else:
+            session.info.pop(_SESSION_RLS_KEY, None)
+    await apply_rls_context_async(session)
+
+
 def apply_rls_context_sync(connection: Any, ctx: Optional[RlsContext] = None) -> None:
     """Apply rls context sync."""
     effective = ctx if ctx is not None else resolve_rls_context_for_transaction()

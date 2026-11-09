@@ -21,7 +21,8 @@ THINKING_CATALOG_READ = "rls_community_read_allowed()"
 THINKING_CATALOG_WRITE = "rls_is_system_mode() OR (rls_is_panel_mode() AND rls_panel_global_read())"
 
 OAUTH_CONFIG_TABLE = "organization_oauth_configs"
-OAUTH_CONFIG_READ = "rls_is_system_mode() OR rls_org_visible(organization_id)"
+# Rows hold the school's DingTalk login secret. Bind and login read them in system mode.
+OAUTH_CONFIG_READ = "rls_platform_admin_only()"
 OAUTH_CONFIG_WRITE = "rls_is_system_mode() OR (rls_is_panel_mode() AND rls_panel_global_read())"
 
 OAUTH_LINK_TABLE = "oauth_user_links"

@@ -9,6 +9,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
@@ -18,7 +19,9 @@ from prompts import get_prompt
 from prompts.ai_content_level import append_audience_instructions
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
-from utils.prompt_locale import build_extracted_content_user_block
+from utils.prompt_locale import build_extracted_content_user_block, is_chinese_prompt_shell_language
+
+logger = logging.getLogger(__name__)
 
 ContentSourceKind = Literal["web", "document"]
 
@@ -26,6 +29,26 @@ _PROMPT_TYPE_BY_SOURCE: dict[str, str] = {
     "web": "web_content_generation",
     "document": "document_content_generation",
 }
+
+
+def _with_validation_feedback(
+    generation_instructions: Optional[str],
+    validation_msg: str,
+    language: str,
+) -> str:
+    """Append the failed validation rule so the retry can correct its structure."""
+    if is_chinese_prompt_shell_language(language):
+        feedback = (
+            f"重要：上一次生成未通过校验：{validation_msg}。"
+            "请重新生成：主分支必须为 4～8 个，内容较多时先归纳为主题再分组；每个主分支至少包含一个子项。"
+        )
+    else:
+        feedback = (
+            f"IMPORTANT: The previous answer failed validation: {validation_msg}. "
+            "Regenerate with 4 to 8 main branches, grouping detailed sections under broader themes, "
+            "and give every main branch at least one sub-item."
+        )
+    return append_audience_instructions(generation_instructions or "", feedback)
 
 
 class WebContentMindMapAgent(MindMapAgent):
@@ -46,20 +69,26 @@ class WebContentMindMapAgent(MindMapAgent):
         source_kind: ContentSourceKind = "web",
         generation_instructions: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Generate a mind map from extracted page or document content."""
+        """Generate a mind map from extracted page or document content.
+
+        An invalid first answer gets one retry with the validation message as feedback.
+        """
+        llm_kwargs: Dict[str, Any] = {
+            "page_content": page_content,
+            "language": language,
+            "content_format": content_format,
+            "page_title": page_title,
+            "page_url": page_url,
+            "user_id": user_id,
+            "organization_id": organization_id,
+            "request_type": request_type,
+            "endpoint_path": endpoint_path,
+            "http_request_id": http_request_id,
+            "source_kind": source_kind,
+        }
         try:
             spec, recovery_warnings = await self._spec_from_extracted_content(
-                page_content=page_content,
-                language=language,
-                content_format=content_format,
-                page_title=page_title,
-                page_url=page_url,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                http_request_id=http_request_id,
-                source_kind=source_kind,
+                **llm_kwargs,
                 generation_instructions=generation_instructions,
             )
             if not spec:
@@ -70,6 +99,23 @@ class WebContentMindMapAgent(MindMapAgent):
 
             spec = canonicalize_mind_map_spec(spec)
             is_valid, validation_msg = self.validate_output(spec)
+            if not is_valid:
+                logger.warning("ContentMindMapAgent: validation failed, retrying once: %s", validation_msg)
+                retry_spec, retry_warnings = await self._spec_from_extracted_content(
+                    **llm_kwargs,
+                    generation_instructions=_with_validation_feedback(
+                        generation_instructions,
+                        validation_msg,
+                        language,
+                    ),
+                )
+                if retry_spec:
+                    retry_spec = canonicalize_mind_map_spec(retry_spec)
+                    retry_valid, retry_msg = self.validate_output(retry_spec)
+                    if retry_valid:
+                        spec, recovery_warnings, is_valid = retry_spec, retry_warnings, True
+                    else:
+                        validation_msg = retry_msg
             if not is_valid:
                 if recovery_warnings:
                     err = (

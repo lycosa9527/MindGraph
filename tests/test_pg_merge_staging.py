@@ -7,7 +7,16 @@ from services.admin.pg_merge_staging import (
     _format_psql_error,
     _rewrite_restore_line,
     _skip_restore_line,
+    staging_restore_cmd,
 )
+
+
+def test_staging_restore_skips_policies() -> None:
+    """Dumps carry policies; the scratch schema does not need them."""
+    cmd = staging_restore_cmd("/usr/bin/pg_restore", "/tmp/mindgraph.dump")
+    assert "--no-policies" in cmd
+    assert "--no-owner" in cmd
+    assert cmd[-1] == "/tmp/mindgraph.dump"
 
 
 def test_skip_public_schema_bootstrap_lines() -> None:

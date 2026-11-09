@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -26,6 +27,13 @@ def _request() -> MagicMock:
     request.state = MagicMock()
     request.state.request_id = "req-test"
     return request
+
+
+@pytest.fixture(autouse=True)
+def _allow_student_ai() -> Iterator[None]:
+    """The Learning Space AI gate is covered elsewhere; these tests start after it."""
+    with patch.object(mod, "assert_student_ai_capability", new=AsyncMock()):
+        yield
 
 
 @pytest.mark.asyncio
@@ -72,7 +80,7 @@ async def test_package_generate_exits_rls_before_cos_and_llm() -> None:
         ingest_cls.return_value.list_completed_extract_candidates = AsyncMock(return_value=candidates)
         ingest_cls.read_candidates_markdown = AsyncMock(return_value="# hello")
 
-        result = await mod.canvas_generate_mindmap_from_package(req, _request(), _user())
+        result = await mod.canvas_generate_mindmap_from_package(req, _request(), _user(), MagicMock())
 
     assert result["diagram_type"] == "mind_map"
     assert generate_saw_closed == [True]
@@ -90,7 +98,7 @@ async def test_package_generate_db_error_on_resolve_is_503() -> None:
 
     with patch.object(mod, "actor_rls_session", return_value=fake_cm):
         with pytest.raises(HTTPException) as exc_info:
-            await mod.canvas_generate_mindmap_from_package(req, _request(), _user())
+            await mod.canvas_generate_mindmap_from_package(req, _request(), _user(), MagicMock())
 
     assert exc_info.value.status_code == 503
     assert "package context" not in str(exc_info.value.detail).lower()
@@ -114,7 +122,7 @@ async def test_package_generate_domain_miss_is_404() -> None:
             side_effect=ValueError("Package not found")
         )
         with pytest.raises(HTTPException) as exc_info:
-            await mod.canvas_generate_mindmap_from_package(req, _request(), _user())
+            await mod.canvas_generate_mindmap_from_package(req, _request(), _user(), MagicMock())
 
     assert exc_info.value.status_code == 404
     assert "Package not found" in str(exc_info.value.detail)
@@ -147,7 +155,7 @@ async def test_package_generate_llm_access_denied_maps_to_502() -> None:
             side_effect=LLMAccessDeniedError("Invalid API-key provided.")
         )
         with pytest.raises(HTTPException) as exc_info:
-            await mod.canvas_generate_mindmap_from_package(req, _request(), _user())
+            await mod.canvas_generate_mindmap_from_package(req, _request(), _user(), MagicMock())
 
     assert exc_info.value.status_code == 502
     assert "Invalid API-key" in str(exc_info.value.detail)

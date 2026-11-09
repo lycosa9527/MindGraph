@@ -12,8 +12,10 @@ import {
   mindMapUnderlineVerticalExtra,
 } from '@/config/mindMapGeometry'
 import type { NodeStyle } from '@/types'
+import { measureMindMapBranchPaintedBlockPx } from '@/utils/mindMapTextWrap'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
+import { measurePaintedTopicBlock } from './mindMapMeasurements'
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
   measureRenderedDiagramLabelHeight,
@@ -108,16 +110,12 @@ export function estimateNodeWidthWithTypography(
   const minNodeWidth = MIND_MAP_GEOMETRY.minWidth
   const weight = resolveMeasureFontWeight(typography, 'normal')
 
-  if (typeof document === 'undefined') {
-    return Math.max(minNodeWidth, text.length * 8 + nodeHorizontalExtra)
-  }
-
-  const fullWidth = measureTextWidth(text, branchFontSize, measureOpts(typography, weight))
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const effectiveTextWidth = fullWidth > wrapThreshold ? BRANCH_BASE_MAX_TEXT_WIDTH : fullWidth
-
+  const block = measureMindMapBranchPaintedBlockPx(text, branchFontSize, {
+    fontWeight: weight,
+    fontFamily: typography?.fontFamily,
+  })
   void nodeId
-  return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
+  return Math.max(minNodeWidth, block.width + nodeHorizontalExtra)
 }
 
 export function measureBranchNodeHeightWithTypography(
@@ -153,14 +151,6 @@ export function measureBranchNodeHeightWithTypography(
     fontFamily: typography?.fontFamily,
   })
   return Math.max(BRANCH_NODE_HEIGHT, textHeight + BRANCH_PADDING_Y + BRANCH_BORDER_Y)
-}
-
-export function measureBranchNodeUnderlineHeightWithTypography(
-  text: string,
-  nodeId?: string,
-  typography?: MindMapMeasureTypography
-): number {
-  return measureMindMapUnderlineBoxMetricsWithTypography(text, nodeId, typography).totalHeight
 }
 
 /** Underline box metrics with optional typography overrides. */
@@ -230,6 +220,9 @@ export function estimateTopicNodeWidthWithTypography(
     )
   }
 
+  const painted = measurePaintedTopicBlock(text, topicFontSize, fontWeight, typography?.fontFamily)
+  if (painted) return Math.max(minTopicWidth, painted.width + topicHorizontalExtra)
+
   const fullWidth = measureTextWidth(text, topicFontSize, measureOpts(typography, fontWeight))
   const effectiveTextWidth =
     fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH ? TOPIC_BASE_MAX_TEXT_WIDTH : fullWidth
@@ -244,6 +237,14 @@ export function estimateTopicNodeHeightWithTypography(
   if (!text) return MIND_MAP_GEOMETRY.minHeight
   const topicFontSize = resolveTopicFontSize(typography)
   const fontWeight = resolveMeasureFontWeight(typography, 'bold')
+  const paddingY = MIND_MAP_GEOMETRY.paddingY * 2
+  const borderY = MIND_MAP_GEOMETRY.borderWidth * 2
+  const painted = diagramLabelLikelyNeedsRenderedMeasure(text)
+    ? null
+    : measurePaintedTopicBlock(text, topicFontSize, fontWeight, typography?.fontFamily)
+  if (painted) {
+    return Math.max(MIND_MAP_GEOMETRY.minHeight, Math.round(painted.height + paddingY + borderY))
+  }
   const maxTextWidth = computeWrapMaxWidth(
     text,
     TOPIC_BASE_MAX_TEXT_WIDTH,
@@ -251,8 +252,6 @@ export function estimateTopicNodeHeightWithTypography(
     topicFontSize,
     fontWeight
   )
-  const paddingY = MIND_MAP_GEOMETRY.paddingY * 2
-  const borderY = MIND_MAP_GEOMETRY.borderWidth * 2
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
     const contentH = measureRenderedDiagramLabelHeight(text, topicFontSize, maxTextWidth, {

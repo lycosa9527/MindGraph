@@ -7,8 +7,14 @@ import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { BILINGUAL_SECONDARY_LINE_HEIGHT, secondaryFontSize } from '@/diagramBilingual/measure'
 import { MIND_MAP_TEXT_LINE_HEIGHT, measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
-/** Same cap the pair node paints: `min(420px, 88vw)`, before the viewport clamp. */
+/** Pair wrap cap before the viewport clamp. */
 export const BRIDGE_PAIR_TEXT_CAP = 420
+
+/** Wrap cap the pair node paints and layout measures: `min(420px, 88vw)`. */
+export function bridgePairTextCapPx(): number {
+  const viewport = typeof window === 'undefined' ? BRIDGE_PAIR_TEXT_CAP : window.innerWidth * 0.88
+  return Math.min(BRIDGE_PAIR_TEXT_CAP, viewport)
+}
 
 /** Matches `.branch-node` min-height. A shorter line still occupies this box. */
 export const BRIDGE_PAIR_MIN_HEIGHT = 36
@@ -22,7 +28,7 @@ export type BridgePairBox = {
 }
 
 function lineBlock(text: string, fontSize: number, lineHeight: number): BridgePairBox {
-  const block = measureThinkingMapLabelBlockPx(text, fontSize, BRIDGE_PAIR_TEXT_CAP)
+  const block = measureThinkingMapLabelBlockPx(text, fontSize, bridgePairTextCapPx())
   return {
     width: block.width,
     height: Math.max(block.lineCount, 1) * fontSize * lineHeight,

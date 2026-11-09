@@ -4,6 +4,7 @@
 import { renderMindMapVectorEdges } from '@/utils/diagramMindMapVectorEdges'
 import type { MindMapVectorSnapshot } from '@/utils/diagramMindMapVectorModel'
 import { renderMindMapVectorNode } from '@/utils/diagramMindMapVectorNodes'
+import { createMindMapBranchPaintIndex } from '@/utils/mindMapBranchPaintBox'
 import { layoutMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 const VIEW_PADDING = 24
@@ -51,11 +52,13 @@ export function buildMindMapVectorSvg(snapshot: MindMapVectorSnapshot): MindMapV
     outlineWireframe: snapshot.outlineWireframe,
     topicActualWidth: snapshot.topicActualWidth,
   })
+  const paintOf = createMindMapBranchPaintIndex(snapshot.connections, snapshot.diagramStyleId)
   const nodes = snapshot.nodes
     .map((node) =>
       renderMindMapVectorNode(node, {
         diagramStyleId: snapshot.diagramStyleId,
         outlineWireframe: snapshot.outlineWireframe,
+        paint: paintOf(node),
       })
     )
     .join('')

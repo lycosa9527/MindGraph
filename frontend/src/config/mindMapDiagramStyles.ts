@@ -1,5 +1,5 @@
 import { mindMapBranchDepth } from '@/config/mindMapGeometry'
-import type { DiagramNode } from '@/types'
+import type { Connection, DiagramNode } from '@/types'
 import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
@@ -122,9 +122,11 @@ export function mindMapNodeShapeFromPreset(
 
 /** Diagram-level default shape when the node has no explicit nodeShape. */
 export function resolveMindMapNodeShape(
-  node: Pick<DiagramNode, 'id' | 'type' | 'style'>,
-  diagramStyleId?: string | null
+  node: Pick<DiagramNode, 'id' | 'type' | 'style'> & { data?: Record<string, unknown> },
+  diagramStyleId?: string | null,
+  connections?: Connection[] | null
 ): NodeShape {
   if (node.style?.nodeShape) return node.style.nodeShape
-  return mindMapNodeShapeFromPreset(node, getMindMapDiagramStyleById(diagramStyleId))
+  const depth = connections ? mindMapBranchDepth(node.id, node, connections) : undefined
+  return mindMapNodeShapeFromPreset(node, getMindMapDiagramStyleById(diagramStyleId), depth)
 }

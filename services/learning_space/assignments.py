@@ -59,7 +59,14 @@ from services.learning_space.thumbnail_storage import (
     submission_thumbnail_src,
     template_thumbnail_ref_ready,
 )
-from services.learning_space.thumbnail_submit import THUMB_PENDING, THUMB_TOKEN
+from services.learning_space.thumbnail_enqueue import enqueue_submit_thumbnail
+from services.learning_space.thumbnail_submit import (
+    SUBMIT_THUMBNAIL_GRACE_SECONDS,
+    THUMB_PENDING,
+    THUMB_RETRY_AT,
+    THUMB_TOKEN,
+    thumbnail_not_before,
+)
 from services.learning_space.students import count_class_students
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -619,6 +626,7 @@ async def submit_assignment(
             "language": diagram.get("language", "zh"),
             THUMB_TOKEN: token,
             THUMB_PENDING: token,
+            THUMB_RETRY_AT: thumbnail_not_before(datetime.now(UTC), SUBMIT_THUMBNAIL_GRACE_SECONDS),
         }
         if kept:
             snapshot["thumbnail"] = kept
@@ -658,6 +666,9 @@ async def submit_assignment(
     stale_keys = [key for key in previous_keys if key not in fresh_keys]
     if stale_keys:
         await asyncio.to_thread(delete_stored_images_sync, stale_keys)
+    pending = snapshot.get(THUMB_PENDING) if isinstance(snapshot, dict) else None
+    if isinstance(pending, str) and pending.strip() and submission.id is not None:
+        enqueue_submit_thumbnail(int(submission.id), pending.strip())
     logger.info(
         "[LearningSpace] Submitted assignment=%s class=%s student=%s submission=%s",
         assignment.id,

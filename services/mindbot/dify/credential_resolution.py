@@ -24,6 +24,7 @@ from repositories.mindbot_repo import MindbotConfigRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
 from services.dify.dify_global_servers import effective_configured_dify_servers
 from services.dify.org_mindmate_client import global_mindmate_dify_credentials
+from utils.db.rls_context import RlsContext, scoped_rls_context
 from utils.dify_user_key import parse_mindbot_dify_key
 
 __all__ = [
@@ -137,19 +138,23 @@ async def distinct_mindbot_endpoints_for_org(
 
     When *staff_id* is set, narrow to configs that appear in usage events for
     that staff (falls back to all enabled configs when no events exist).
-    """
-    config_repo = MindbotConfigRepository(db)
-    configs = await config_repo.list_by_organization_id(int(org.id))
-    enabled = [row for row in configs if bool(getattr(row, "is_enabled", True))]
-    if not enabled:
-        return []
 
-    allowed_config_ids: Optional[set[int]] = None
-    if staff_id:
-        usage_repo = MindbotUsageRepository(db)
-        config_ids = await usage_repo.distinct_config_ids_for_staff(int(org.id), staff_id)
-        if config_ids:
-            allowed_config_ids = config_ids
+    The caller has already chosen *org* for this user or admin. Config rows
+    carry school secrets that RLS hides from teacher sessions, so they are
+    read in system mode here.
+    """
+    async with scoped_rls_context(db, RlsContext.system_bootstrap()):
+        configs = await MindbotConfigRepository(db).list_by_organization_id(int(org.id))
+        enabled = [row for row in configs if bool(getattr(row, "is_enabled", True))]
+        if not enabled:
+            return []
+
+        allowed_config_ids: Optional[set[int]] = None
+        if staff_id:
+            usage_repo = MindbotUsageRepository(db)
+            config_ids = await usage_repo.distinct_config_ids_for_staff(int(org.id), staff_id)
+            if config_ids:
+                allowed_config_ids = config_ids
 
     resolved: List[MindbotDifyEndpoint] = []
     for cfg in enabled:

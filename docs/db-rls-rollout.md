@@ -47,9 +47,10 @@
 
 ## Dump / restore (PG 18.3)
 
-- `pg_dump` uses `--no-policies` (policies come from Alembic, not dumps).
-- Restore as `mindgraph_migrate`, then `alembic upgrade head`.
-- Admin PG merge (`services/admin/pg_merge_service.py`, `services/admin/pg_merge_staging.py`) restores into a temporary schema and writes to live via `mindgraph_migrate` (BYPASSRLS); never rely on dumped policies or extensions.
+- `pg_dump` includes `ENABLE ROW LEVEL SECURITY` and `CREATE POLICY`.
+- Restore as `mindgraph_migrate`, then `alembic upgrade head`. Revision `0167` installs the current catalog when the dump is still at `0166`. A dump taken at `0167` or later already contains the policies.
+- Revision `0169` reinstalls the helper functions and the whole catalog again with the tightened scope (owner-only diagrams, DM parties only, platform-admin-only secrets; see [`db-rls-admin-scope.md`](db-rls-admin-scope.md) §5a). Its downgrade is a no-op; restore a backup to go back.
+- Admin PG merge (`services/admin/pg_merge_service.py`, `services/admin/pg_merge_staging.py`) restores into a temporary schema with `pg_restore --no-policies` and writes to live via `mindgraph_migrate` (BYPASSRLS); never rely on dumped policies or extensions there.
 
 ## Staging smoke (manual, before prod)
 

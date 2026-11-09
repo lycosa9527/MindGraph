@@ -32,6 +32,7 @@ from services.library.library_path_utils import (
 )
 from services.library.redis_cache import LibraryRedisCache
 from services.utils.error_types import REDIS_ERRORS
+from utils.db.rls_context import RlsContext, scoped_rls_context
 
 logger = logging.getLogger(__name__)
 
@@ -275,11 +276,12 @@ class LibraryDocumentMixin:
             document_id: Document ID
         """
         try:
-            await self.db.execute(
-                update(LibraryDocument)
-                .where(LibraryDocument.id == document_id)
-                .values(views_count=LibraryDocument.views_count + 1)
-            )
+            async with scoped_rls_context(self.db, RlsContext.system_bootstrap()):
+                await self.db.execute(
+                    update(LibraryDocument)
+                    .where(LibraryDocument.id == document_id)
+                    .values(views_count=LibraryDocument.views_count + 1)
+                )
             await self.db.commit()
             logger.debug(
                 "[Library] Document view incremented",

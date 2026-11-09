@@ -26,6 +26,7 @@ from models.domain.library import (
 from services.library.redis_cache import LibraryRedisCache
 from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import count_pairs_by_key
+from utils.db.rls_context import RlsContext, scoped_rls_context
 
 logger = logging.getLogger(__name__)
 
@@ -309,11 +310,8 @@ class LibraryDanmakuMixin:
         )
 
         self.db.add(danmaku)
-        await self.db.execute(
-            update(LibraryDocument)
-            .where(LibraryDocument.id == document_id)
-            .values(comments_count=LibraryDocument.comments_count + 1)
-        )
+        await self.db.flush()
+        await self._bump_comments_count(document_id, LibraryDocument.comments_count + 1)
         try:
             await self.db.commit()
             await self.db.refresh(danmaku)
@@ -510,11 +508,10 @@ class LibraryDanmakuMixin:
 
         danmaku.is_active = False
         danmaku.updated_at = datetime.now(UTC)
-
-        await self.db.execute(
-            update(LibraryDocument)
-            .where(LibraryDocument.id == danmaku.document_id)
-            .values(comments_count=func.greatest(LibraryDocument.comments_count - 1, 0))
+        await self.db.flush()
+        await self._bump_comments_count(
+            danmaku.document_id,
+            func.greatest(LibraryDocument.comments_count - 1, 0),
         )
         try:
             await self.db.commit()
@@ -578,6 +575,13 @@ class LibraryDanmakuMixin:
             },
         )
         return True
+
+    async def _bump_comments_count(self, document_id: int, new_value: Any) -> None:
+        """Write the document's comment counter. Documents are platform-admin rows under RLS."""
+        async with scoped_rls_context(self.db, RlsContext.system_bootstrap()):
+            await self.db.execute(
+                update(LibraryDocument).where(LibraryDocument.id == document_id).values(comments_count=new_value)
+            )
 
     def sanitize_content(self, content: Optional[str]) -> Optional[str]:
         """

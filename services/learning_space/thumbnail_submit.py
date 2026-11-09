@@ -1,8 +1,8 @@
 """Homework submit thumbnails, stored on the submission row until the PNG lands.
 
-Submit writes the diagram spec and a ``thumb_pending`` token into Postgres.
-The API worker renders that row, including after a restart. A failed render
-keeps the token and records when to try again.
+Submit writes the diagram spec and a ``thumb_pending`` token into Postgres, then
+enqueues Celery. The API sweep renders a row the job did not finish. A failed
+render keeps the token and records when to try again.
 """
 
 from __future__ import annotations
@@ -34,6 +34,10 @@ THUMB_TOKEN = "thumb_token"
 THUMB_PENDING = "thumb_pending"
 THUMB_ATTEMPTS = "thumb_attempts"
 THUMB_RETRY_AT = "thumb_retry_at"
+# Poller waits this long so the Celery job queued at submit can claim the row.
+SUBMIT_THUMBNAIL_GRACE_SECONDS = 20
+# How long a renderer owns the row. Matches the Redis lock on the API sweep.
+SUBMIT_THUMBNAIL_LEASE_SECONDS = 180
 _RETRY_DELAYS_SECONDS = (15, 60, 300, 900)
 
 RenderRef = Callable[[object, object, int], Awaitable[str]]
@@ -114,6 +118,15 @@ def clear_thumbnail_work(snapshot: dict[str, Any]) -> None:
 def _pending_is(snapshot: dict[str, Any], token: str) -> bool:
     pending = snapshot.get(THUMB_PENDING)
     return isinstance(pending, str) and pending == token
+
+
+def thumbnail_render_lease_active(snapshot: dict[str, Any], now: datetime) -> bool:
+    """True when a renderer already reserved this row past the submit grace."""
+    retry_at = snapshot.get(THUMB_RETRY_AT)
+    retry_text = retry_at.strip() if isinstance(retry_at, str) else ""
+    if not retry_text:
+        return False
+    return retry_text > thumbnail_not_before(now, SUBMIT_THUMBNAIL_GRACE_SECONDS)
 
 
 def hold_thumbnail_claim(snapshot: dict[str, Any], token: str, now: datetime, delay_seconds: int) -> bool:
@@ -263,6 +276,49 @@ async def _save_submit_thumbnail_row(submission_id: int, token: str, ref: str) -
             await db.rollback()
             raise
     return True
+
+
+async def claim_submit_thumbnail(
+    submission_id: int,
+    token: str,
+    now: datetime | None = None,
+) -> SubmitThumbnailJob | None:
+    """Lease this submit for rendering. None when another renderer holds it or the token moved on."""
+    if submission_id <= 0 or not token:
+        return None
+    clock = now if now is not None else datetime.now(UTC)
+    async with system_rls_session() as db:
+        row = await _load_for_thumbnail_update(db, submission_id)
+        if row is None or row.id is None or not isinstance(row.snapshot_spec, dict):
+            return None
+        snap = dict(row.snapshot_spec)
+        spec = snap.get("spec")
+        if not isinstance(spec, dict) or not _pending_is(snap, token):
+            return None
+        if thumbnail_render_lease_active(snap, clock):
+            return None
+        if not hold_thumbnail_claim(snap, token, clock, SUBMIT_THUMBNAIL_LEASE_SECONDS):
+            return None
+        owner_id = int(row.student_user_id)
+        diagram_type = snap.get("diagram_type")
+        previous_ref = snap.get("thumbnail")
+        spec_copy = dict(spec)
+        row.snapshot_spec = snap
+        flag_modified(row, "snapshot_spec")
+        try:
+            await db.commit()
+        except DATABASE_ERRORS:
+            await db.rollback()
+            raise
+    return SubmitThumbnailJob(
+        submission_id=submission_id,
+        owner_id=owner_id,
+        token=token,
+        spec=spec_copy,
+        diagram_type=diagram_type,
+        fallback_thumb=None,
+        previous_ref=previous_ref,
+    )
 
 
 async def run_submit_thumbnail_job(

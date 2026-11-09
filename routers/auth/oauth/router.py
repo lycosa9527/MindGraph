@@ -43,6 +43,7 @@ from services.auth.oauth.oauth_post_login import (
 from services.auth.oauth.oauth_state_redis import consume_oauth_state, mint_oauth_state
 from services.auth.oauth.org_resolve import resolve_org_by_invitation_code
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.rls_context import RlsContext, scoped_rls_context
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 logger = logging.getLogger(__name__)
@@ -257,6 +258,7 @@ async def wechat_login_start(
 @router.get("/wechat/bind/start", response_model=OauthStartResponse)
 async def wechat_bind_start(
     current_user: User = Depends(get_current_user),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Authenticated: start WeChat bind flow."""
@@ -388,6 +390,7 @@ async def dingtalk_login_start(
 @router.get("/dingtalk/bind/start", response_model=OauthStartResponse)
 async def dingtalk_bind_start(
     current_user: User = Depends(get_current_user),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Authenticated: start DingTalk bind flow."""
@@ -563,7 +566,8 @@ async def get_oauth_links(
     if not org_id:
         return OauthLinksResponse()
     service = OauthLoginService(db)
-    row = await service.get_org_config(org_id)
+    async with scoped_rls_context(db, RlsContext.system_bootstrap()):
+        row = await service.get_org_config(org_id)
     flags = resolve_provider_flags(row)
     repo = OauthUserLinkRepository(db)
     links = await repo.list_for_user(org_id, current_user.id)

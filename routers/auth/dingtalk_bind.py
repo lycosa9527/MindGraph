@@ -45,6 +45,7 @@ from services.auth.quick_register_room_code import (
 from services.mindbot.bind.code_parse import format_bind_code_display
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from utils.auth import get_current_user
+from utils.db.rls_context import RlsContext, scoped_rls_context
 
 router = APIRouter()
 _BIND_MINT_MAX = 10
@@ -107,6 +108,7 @@ def _mask_staff_id(staff_id: str) -> str:
 
 
 async def _org_has_mindbot(db: AsyncSession, organization_id: int) -> bool:
+    """MindBot config rows hold school secrets, so teachers cannot read them under RLS."""
     if not config.FEATURE_MINDBOT:
         return False
     stmt = (
@@ -117,7 +119,8 @@ async def _org_has_mindbot(db: AsyncSession, organization_id: int) -> bool:
             OrganizationMindbotConfig.is_enabled.is_(True),
         )
     )
-    count = (await db.execute(stmt)).scalar_one()
+    async with scoped_rls_context(db, RlsContext.system_bootstrap()):
+        count = (await db.execute(stmt)).scalar_one()
     return int(count or 0) > 0
 
 

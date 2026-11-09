@@ -45,8 +45,8 @@ def test_every_orm_table_is_covered_by_rls_sql() -> None:
 
 
 def test_oauth_secret_writes_are_global_panel_or_system() -> None:
-    """School members may read their own login config; they cannot change the secret."""
-    assert "rls_org_visible(organization_id)" in OAUTH_CONFIG_READ
+    """Teachers cannot read or change the school's DingTalk login secret."""
+    assert OAUTH_CONFIG_READ == "rls_platform_admin_only()"
     assert "rls_panel_global_read()" in OAUTH_CONFIG_WRITE
     assert "rls_org_visible" not in OAUTH_CONFIG_WRITE
 

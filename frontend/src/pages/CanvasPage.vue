@@ -177,6 +177,7 @@ import {
   type PresentationSpotlightSize,
 } from '@/config/presentationSpotlight'
 import { ANIMATION, FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
+import { loadDiagramFontsForSpec } from '@/fonts/diagramSpecFonts'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
@@ -1381,6 +1382,7 @@ onMounted(async () => {
           if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
             await loadDiagramMarkdownPipeline({ bumpLayout: false })
           }
+          await loadDiagramFontsForSpec(specForLoad)
           const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
           if (loaded) {
             if (llmResults) {
