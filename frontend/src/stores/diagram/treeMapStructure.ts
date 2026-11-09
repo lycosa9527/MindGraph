@@ -3,6 +3,7 @@
  * Ids stay put. Category and leaf indexes are rewritten dense, and the
  * vertical connector chain is rebuilt to match the spec loader.
  */
+import { type InsertLabelInput, insertLabelFields } from '@/diagramBilingual/insertLabel'
 import type { Connection, DiagramNode } from '@/types'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import {
@@ -92,7 +93,7 @@ export function materializeTreeMapGraph(nodes: readonly DiagramNode[]): TreeMapG
 
 export function appendTreeMapCategory(
   nodes: readonly DiagramNode[],
-  text: string
+  label: InsertLabelInput
 ): TreeMapGraphEdit | null {
   if (!nodes.some((node) => node.id === TREE_TOPIC_NODE_ID)) return null
   const claimed = claimedIds(nodes)
@@ -106,7 +107,7 @@ export function appendTreeMapCategory(
     ...nodes,
     {
       id,
-      text,
+      ...insertLabelFields(label),
       type: 'branch',
       position: { x: 0, y: 0 },
       data: stampTreeCategoryData(sortLast, { [TREE_MAP_UID_DATA_KEY]: id }),
@@ -118,7 +119,7 @@ export function appendTreeMapCategory(
 export function appendTreeMapChild(
   nodes: readonly DiagramNode[],
   categoryId: string,
-  text: string
+  label: InsertLabelInput
 ): TreeMapGraphEdit | null {
   const category = nodes.find((node) => node.id === categoryId && isTreeMapCategoryNode(node))
   if (!category?.id) return null
@@ -132,7 +133,7 @@ export function appendTreeMapChild(
     ...nodes,
     {
       id,
-      text,
+      ...insertLabelFields(label),
       type: 'branch',
       position: { x: 0, y: 0 },
       data: stampTreeLeafData(catIndex, leafIndex, category.id, {

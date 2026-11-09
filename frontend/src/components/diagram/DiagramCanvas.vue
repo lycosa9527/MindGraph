@@ -726,7 +726,6 @@ const contextMenu = useDiagramCanvasContextMenu({
   presentationDiagramEditLocked: diagramPresentationReadOnlyRef,
   emitPaneClick: () => emit('paneClick'),
   diagramStore,
-  t,
   shouldSuppressPaneClear: () => Date.now() < suppressPaneClearUntil.value,
 })
 

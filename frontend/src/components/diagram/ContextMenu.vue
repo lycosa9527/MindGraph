@@ -14,6 +14,11 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  type InsertLabel,
+  diagramInsertLabel,
+  insertLabelFields,
+} from '@/diagramBilingual/insertLabel'
 import { useUIStore } from '@/stores'
 import { doubleBubbleDeleteKeepWarningKey } from '@/stores/diagram/doubleBubbleMapOps'
 import { isProtectedClipboardNode } from '@/stores/diagram/hierarchicalClipboardExtract'
@@ -65,6 +70,10 @@ const uiStore = useUIStore()
 const { t } = useLanguage()
 const notify = useNotifications()
 const menuRef = ref<HTMLElement | null>(null)
+
+function nodeLabel(key: string, named?: Record<string, unknown>): InsertLabel {
+  return diagramInsertLabel(diagramStore.data?.languages, key, named)
+}
 
 function getDoubleBubbleGroupFromNode(
   node: { id?: string; data?: Record<string, unknown> } | undefined
@@ -154,7 +163,7 @@ const menuItems = computed<MenuItem[]>(() => {
             )
             diagramStore.addNode({
               id: takeMultiFlowMapStableId(claimed),
-              text: t('diagram.flow.newCause'),
+              ...insertLabelFields(nodeLabel('diagram.flow.newCause')),
               type: 'flow',
               position: { x: 0, y: 0 },
               category: 'causes',
@@ -173,7 +182,7 @@ const menuItems = computed<MenuItem[]>(() => {
             )
             diagramStore.addNode({
               id: takeMultiFlowMapStableId(claimed),
-              text: t('diagram.flow.newEffect'),
+              ...insertLabelFields(nodeLabel('diagram.flow.newEffect')),
               type: 'flow',
               position: { x: 0, y: 0 },
               category: 'effects',
@@ -195,12 +204,12 @@ const menuItems = computed<MenuItem[]>(() => {
           const similarities = (spec.similarities as string[]) || []
           const leftDifferences = (spec.leftDifferences as string[]) || []
           const rightDifferences = (spec.rightDifferences as string[]) || []
-          const newSimText = t('diagram.doubleBubble.similarityN', {
+          const newSimText = nodeLabel('diagram.doubleBubble.similarityN', {
             n: similarities.length + 1,
           })
           const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
-          const newLeftText = t('diagram.doubleBubble.differenceAn', { n: pairIndex })
-          const newRightText = t('diagram.doubleBubble.differenceBn', { n: pairIndex })
+          const newLeftText = nodeLabel('diagram.doubleBubble.differenceAn', { n: pairIndex })
+          const newRightText = nodeLabel('diagram.doubleBubble.differenceBn', { n: pairIndex })
           const text = group === 'similarity' ? newSimText : newLeftText
           const pairText = group === 'similarity' ? undefined : newRightText
           items.push({
@@ -224,7 +233,7 @@ const menuItems = computed<MenuItem[]>(() => {
           label: t('diagram.contextMenu.addChild'),
           labelKey: 'diagram.contextMenu.addChild',
           action: () => {
-            if (diagramStore.addMindMapChild(node.id, t('diagram.newChild'))) {
+            if (diagramStore.addMindMapChild(node.id, nodeLabel('diagram.newChild'))) {
               diagramStore.pushHistory(t('diagram.history.addChild'))
             }
             emit('close')
@@ -235,8 +244,8 @@ const menuItems = computed<MenuItem[]>(() => {
         label: t('diagram.contextMenu.addBranch'),
         labelKey: 'diagram.contextMenu.addBranch',
         action: () => {
-          const childText = t('diagram.newChild')
-          if (diagramStore.addMindMapBranch(undefined, t('diagram.newBranch'), childText)) {
+          const childText = nodeLabel('diagram.newChild')
+          if (diagramStore.addMindMapBranch(undefined, nodeLabel('diagram.newBranch'), childText)) {
             diagramStore.pushHistory(t('diagram.history.addBranch'))
           }
           emit('close')
@@ -303,7 +312,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
             id: takeMultiFlowMapStableId(claimed),
-            text: t('diagram.flow.newCause'),
+            ...insertLabelFields(nodeLabel('diagram.flow.newCause')),
             type: 'flow',
             position: { x: 0, y: 0 },
             category: 'causes',
@@ -320,7 +329,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
             id: takeMultiFlowMapStableId(claimed),
-            text: t('diagram.flow.newEffect'),
+            ...insertLabelFields(nodeLabel('diagram.flow.newEffect')),
             type: 'flow',
             position: { x: 0, y: 0 },
             category: 'effects',
@@ -342,7 +351,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
             id: takeBubbleMapStableId(claimed),
-            text: t('diagram.newAttribute'),
+            ...insertLabelFields(nodeLabel('diagram.newAttribute')),
             type: 'bubble',
             position: { x: 0, y: 0 },
           })
@@ -363,7 +372,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
             id: takeCircleMapStableId(claimed),
-            text: t('diagram.contextMenu.circleNewIdea'),
+            ...insertLabelFields(nodeLabel('diagram.contextMenu.circleNewIdea')),
             type: 'bubble',
             position: { x: 0, y: 0 },
           })
@@ -421,7 +430,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const rightNodeY = centerY + verticalGap
           const leftNode: DiagramNode = {
             id: takeBridgeMapStableId(claimed),
-            text: t('diagram.contextMenu.bridgeItemA'),
+            ...insertLabelFields(nodeLabel('diagram.contextMenu.bridgeItemA')),
             type: 'branch',
             position: { x: nextX, y: leftNodeY },
             data: {
@@ -432,7 +441,7 @@ const menuItems = computed<MenuItem[]>(() => {
           }
           const rightNode: DiagramNode = {
             id: takeBridgeMapStableId(claimed),
-            text: t('diagram.contextMenu.bridgeItemB'),
+            ...insertLabelFields(nodeLabel('diagram.contextMenu.bridgeItemB')),
             type: 'branch',
             position: { x: nextX, y: rightNodeY },
             data: {
@@ -470,12 +479,12 @@ const menuItems = computed<MenuItem[]>(() => {
           const similarities = (spec.similarities as string[]) || []
           const leftDifferences = (spec.leftDifferences as string[]) || []
           const rightDifferences = (spec.rightDifferences as string[]) || []
-          const newSimText = t('diagram.doubleBubble.similarityN', {
+          const newSimText = nodeLabel('diagram.doubleBubble.similarityN', {
             n: similarities.length + 1,
           })
           const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
-          const newLeftText = t('diagram.doubleBubble.differenceAn', { n: pairIndex })
-          const newRightText = t('diagram.doubleBubble.differenceBn', { n: pairIndex })
+          const newLeftText = nodeLabel('diagram.doubleBubble.differenceAn', { n: pairIndex })
+          const newRightText = nodeLabel('diagram.doubleBubble.differenceBn', { n: pairIndex })
           const text = group === 'similarity' ? newSimText : newLeftText
           const pairText = group === 'similarity' ? undefined : newRightText
           if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {

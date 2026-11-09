@@ -25,6 +25,7 @@ export function useMindMapRibbonActions() {
   const { resetToDefaultTemplate } = useCanvasReset()
   const {
     handleAddChild,
+    handleAddBraceNextLevel,
     handleAddSibling,
     handleAddBranch,
     handleAddNode,
@@ -70,6 +71,10 @@ export function useMindMapRibbonActions() {
     }
     if (id === 'substep' || id === 'leaf' || id === 'subpart' || id === 'difference') {
       handleAddChild()
+      return
+    }
+    if (id === 'nextLevel') {
+      handleAddBraceNextLevel()
       return
     }
     if (id === 'cause') {

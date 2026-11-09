@@ -6,6 +6,7 @@ import {
   CANVAS_RASTER_EXPORT_COMMANDS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
   CANVAS_WORKSHEET_TEXT_MENU_ITEM,
+  isA4DocumentExport,
   isCanvasShownImageExport,
 } from '@/config/canvasExportMenu'
 import {
@@ -70,6 +71,16 @@ describe('canvasExportMenu', () => {
     expect(isCanvasShownImageExport('svg')).toBe(true)
     expect(isCanvasShownImageExport('pdf')).toBe(false)
     expect(isCanvasShownImageExport('clipboard')).toBe(false)
+  })
+
+  it('treats pdf variants and the worksheet docx as A4 documents', () => {
+    expect(isA4DocumentExport('pdf')).toBe(true)
+    expect(isA4DocumentExport('pdf_landscape')).toBe(true)
+    expect(isA4DocumentExport('pdf_portrait')).toBe(true)
+    expect(isA4DocumentExport('worksheet_docx')).toBe(true)
+    expect(isA4DocumentExport('png')).toBe(false)
+    expect(isA4DocumentExport('svg')).toBe(false)
+    expect(isA4DocumentExport('clipboard')).toBe(false)
   })
 })
 

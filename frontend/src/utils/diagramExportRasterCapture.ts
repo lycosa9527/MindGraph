@@ -1,4 +1,7 @@
-import { cropExportedDiagramCanvas } from '@/utils/diagramExportContentBounds'
+import {
+  cropCanvasToContentBounds,
+  measureDiagramExportContentBounds,
+} from '@/utils/diagramExportContentBounds'
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import { diagramRasterExportBudget, scaleExportSvgDataUrl } from '@/utils/diagramExportRasterScale'
 import type { HtmlToImageOptions } from '@/utils/diagramHtmlToImage'
@@ -40,13 +43,19 @@ export async function captureDiagramRasterCanvas(
   options: HtmlToImageOptions
 ): Promise<HTMLCanvasElement> {
   const { toSvg } = await loadHtmlToImageModule()
+  // Read the crop when html-to-image clones the DOM. Font embedding and decode
+  // yield to the page, and a later read can see the camera or nodes elsewhere.
+  const cropBounds = measureDiagramExportContentBounds(container)
+  const containerWidth = container.clientWidth
+  const containerHeight = container.clientHeight
   const svgDataUrl = await toSvg(container, options)
   const canvas = await rasterizeExportSvgDataUrl(
     svgDataUrl,
     options.pixelRatio ?? 2,
     options.backgroundColor
   )
-  return cropExportedDiagramCanvas(container, canvas)
+  if (!cropBounds) return canvas
+  return cropCanvasToContentBounds(canvas, containerWidth, containerHeight, cropBounds)
 }
 
 export async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {

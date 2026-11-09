@@ -211,6 +211,7 @@ export default {
   'canvas.toolbar.addTreeItem': '添加子项',
   'canvas.toolbar.addPart': '添加部分',
   'canvas.toolbar.addSubpart': '添加子部分',
+  'canvas.toolbar.addNextLevel': '添加下一级',
   'canvas.toolbar.addSimilarity': '添加相似点',
   'canvas.toolbar.addDifference': '添加不同点',
   'canvas.toolbar.addNode': '增加节点',
@@ -598,6 +599,7 @@ export default {
   'canvas.toolbar.nodeStyleFollowHint': '开启后，节点样式条跟随选中节点；关闭后隐藏。',
   'canvas.toolbar.selectNodesToDelete': '请先选择要删除的节点',
   'canvas.toolbar.selectPartForSubpart': '请先选择要添加子部分的节点',
+  'canvas.toolbar.selectNodeForNextLevel': '请先选择要添加下一级的节点',
   'canvas.toolbar.selectPartThenEnter': '请选择部分节点后按 Enter 添加子部分',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     '请选择相似点或不同点节点（主题节点不可删除）',
@@ -612,6 +614,7 @@ export default {
   'canvas.toolbar.stylePresetSimple': '简约风格',
   'canvas.toolbar.stylePresetVibrant': '活力风格',
   'canvas.toolbar.subpartAdded': '已添加子部分',
+  'canvas.toolbar.nextLevelAdded': '已添加下一级',
   'canvas.toolbar.subpartLabel1': '子部分1',
   'canvas.toolbar.subpartLabel2': '子部分2',
   'canvas.toolbar.substepAdded': '已添加子步骤',

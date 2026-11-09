@@ -2,6 +2,16 @@ import { toValue } from 'vue'
 
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { inferMindMapThemeIdFromNodes, resolveActiveMindMapThemeId } from '@/config/mindMapThemes'
+import {
+  type InsertLabel,
+  type InsertLabelInput,
+  diagramInsertLabel,
+  insertLabelFields,
+  insertLabelGloss,
+  insertLabelText,
+  mapInsertLabel,
+  suffixInsertLabel,
+} from '@/diagramBilingual/insertLabel'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
@@ -115,34 +125,32 @@ function loadCtxMindMapSpec(ctx: DiagramContext, spec: Record<string, unknown>) 
   return loadMindMapSpec(withTopic, { canvasMode: ctxCanvasMode(ctx) })
 }
 
-function defaultNewNodeText(): string {
-  return String(i18n.global.t('diagram.editable.placeholder')).replace(/[….]{1,3}$/u, '')
+function defaultNewNodeLabel(languages: unknown): InsertLabel {
+  return mapInsertLabel(diagramInsertLabel(languages, 'diagram.editable.placeholder'), (line) =>
+    line.replace(/[….]{1,3}$/u, '')
+  )
 }
 
-function defaultNewChildText(): string {
-  return String(i18n.global.t('diagram.newChild'))
+function defaultNewChildLabel(languages: unknown): InsertLabel {
+  return diagramInsertLabel(languages, 'diagram.newChild')
 }
 
-function defaultLegacyBranchWithChildren(
-  text: string,
-  childText = defaultNewChildText()
-): { text: string; children: { text: string }[] } {
-  return {
-    text,
-    children: [{ text: `${childText} 1` }, { text: `${childText} 2` }],
-  }
-}
+type NewMindMapBranchSpec = InsertLabel & { children?: InsertLabel[] }
 
 /** Legacy canvas: new top-level branches include two default children; v2: text only. */
 function newTopLevelMindMapBranchSpec(
-  text: string,
+  label: InsertLabelInput,
   v2Visuals: boolean,
-  childText = defaultNewChildText()
-): { text: string; children?: { text: string }[] } {
+  childLabel: InsertLabelInput
+): NewMindMapBranchSpec {
+  const branch = insertLabelFields(label)
   if (v2Visuals) {
-    return { text }
+    return branch
   }
-  return defaultLegacyBranchWithChildren(text, childText)
+  return {
+    ...branch,
+    children: [suffixInsertLabel(childLabel, ' 1'), suffixInsertLabel(childLabel, ' 2')],
+  }
 }
 
 function resolvePathKeyForBranchSpec(
@@ -817,11 +825,13 @@ function commitMindMapReload(
 
 export function useMindMapOpsSlice(ctx: DiagramContext) {
   const { type, data, selectedNodes, mindMapCurveExtentBaseline } = ctx
+  const newNodeLabel = (): InsertLabel => defaultNewNodeLabel(data.value?.languages)
+  const newChildLabel = (): InsertLabel => defaultNewChildLabel(data.value?.languages)
 
   function addMindMapBranch(
     side?: 'left' | 'right' | null,
-    text = defaultNewNodeText(),
-    childText = defaultNewChildText(),
+    text: InsertLabelInput = newNodeLabel(),
+    childText: InsertLabelInput = newChildLabel(),
     options?: MindMapAddNodeOptions
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
@@ -832,8 +842,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function addMindMapBranchClockwise(
-    text = defaultNewNodeText(),
-    childText = defaultNewChildText(),
+    text: InsertLabelInput = newNodeLabel(),
+    childText: InsertLabelInput = newChildLabel(),
     options?: MindMapAddNodeOptions
   ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
@@ -858,14 +868,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   function addMindMapBranchOnSide(
     side: 'left' | 'right',
-    text = defaultNewNodeText(),
+    text: InsertLabelInput = newNodeLabel(),
     options?: MindMapAddNodeOptions
   ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
-    const newBranch = { text }
+    const newBranch = insertLabelFields(text)
     const pathKey =
       side === 'left' ? `l/${spec.leftBranches.length}` : `r/${spec.rightBranches.length}`
 
@@ -886,7 +896,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   function addMindMapChild(
     parentNodeId: string,
-    text = defaultNewNodeText(),
+    text: InsertLabelInput = newNodeLabel(),
     options?: MindMapAddNodeOptions
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
@@ -906,7 +916,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (!branch.children) {
       branch.children = []
     }
-    branch.children.push({ text })
+    branch.children.push(insertLabelFields(text))
     const parentPath = mindMapNodePathKey(parentNodeId, connections)
     const pathKey = parentPath ? `${parentPath}/${branch.children.length - 1}` : null
 
@@ -1299,7 +1309,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
    */
   function addMindMapSibling(
     nodeId: string,
-    text = defaultNewNodeText(),
+    label: InsertLabelInput = newNodeLabel(),
     position: 'above' | 'below' = 'below',
     at?: {
       insertIndex?: number
@@ -1308,6 +1318,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       openInlineEdit?: boolean
     }
   ): boolean {
+    const text = insertLabelText(label)
     recordMindMapSiblingInsertAttempt({
       nodeId,
       text,
@@ -1366,6 +1377,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       )
       const inserted = insertMindMapSiblingInPlace(data.value.nodes, data.value.connections, {
         text,
+        textSecondary: insertLabelGloss(label),
         anchorNodeId,
         position,
         insertIndex: at?.insertIndex,
@@ -1422,7 +1434,9 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const insertIndex = position === 'above' ? found.indexInParent : found.indexInParent + 1
     const parentId = getMindMapParentId(connections, nodeId)
     const isTopLevel = parentId === 'topic'
-    const newSibling = isTopLevel ? newTopLevelMindMapBranchSpec(text, ctxV2Visuals(ctx)) : { text }
+    const newSibling = isTopLevel
+      ? newTopLevelMindMapBranchSpec(label, ctxV2Visuals(ctx), newChildLabel())
+      : insertLabelFields(label)
     const newSiblingUid = ensureMindMapBranchUid(newSibling)
     found.parentArray.splice(insertIndex, 0, newSibling)
 
@@ -1588,7 +1602,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return ok ? labels.length : 0
   }
 
-  function insertMindMapParentBranch(nodeId: string, text = defaultNewNodeText()): boolean {
+  function insertMindMapParentBranch(
+    nodeId: string,
+    label: InsertLabelInput = newNodeLabel()
+  ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (nodeId === 'topic') return false
@@ -1602,7 +1619,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (!pathKey) return false
 
     const { branch, parentArray, indexInParent } = found
-    parentArray.splice(indexInParent, 1, { text, children: [branch] })
+    parentArray.splice(indexInParent, 1, { ...insertLabelFields(label), children: [branch] })
 
     return applyMindMapSpecReload(
       spec.topic,
@@ -1647,8 +1664,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const outward: 'left' | 'right' = isLeftBranch ? 'left' : 'right'
     const inward: 'left' | 'right' = isLeftBranch ? 'right' : 'left'
 
-    if (direction === 'top') return addMindMapSibling(nodeId, defaultNewNodeText(), 'above')
-    if (direction === 'bottom') return addMindMapSibling(nodeId, defaultNewNodeText(), 'below')
+    if (direction === 'top') return addMindMapSibling(nodeId, newNodeLabel(), 'above')
+    if (direction === 'bottom') return addMindMapSibling(nodeId, newNodeLabel(), 'below')
     if (direction === outward) return addMindMapChild(nodeId)
     if (direction === inward) return insertMindMapParentBranch(nodeId)
     return false

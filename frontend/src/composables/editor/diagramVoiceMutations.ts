@@ -8,6 +8,12 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  type InsertLabel,
+  type InsertLabelInput,
+  diagramInsertLabel,
+  insertLabelFields,
+} from '@/diagramBilingual/insertLabel'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
@@ -207,13 +213,15 @@ function braceMapResolveChildIdByIndex(
   return null
 }
 
-function voiceFlowMapDefaultSubsteps(store: ReturnType<typeof useDiagramStore>): [string, string] {
-  const t = i18n.global.t
+function voiceFlowMapDefaultSubsteps(
+  store: ReturnType<typeof useDiagramStore>
+): [InsertLabel, InsertLabel] {
+  const languages = store.data?.languages
   const stepCount = store.data?.nodes?.filter((n) => n.type === 'flow').length ?? 0
   const stepNum = stepCount + 1
   return [
-    t('canvas.toolbar.substepDefault1', { n: stepNum }),
-    t('canvas.toolbar.substepDefault2', { n: stepNum }),
+    diagramInsertLabel(languages, 'canvas.toolbar.substepDefault1', { n: stepNum }),
+    diagramInsertLabel(languages, 'canvas.toolbar.substepDefault2', { n: stepNum }),
   ]
 }
 
@@ -229,7 +237,7 @@ function nextConceptMapFreeNumericId(nodes: DiagramNode[]): number {
 function voiceAddBridgeMapAnalogyPair(
   store: ReturnType<typeof useDiagramStore>,
   leftText: string,
-  rightText: string
+  rightText: InsertLabelInput
 ): boolean {
   const nodes = store.data?.nodes
   if (!nodes) return false
@@ -262,7 +270,7 @@ function voiceAddBridgeMapAnalogyPair(
   })
   store.addNode({
     id: takeBridgeMapStableId(claimed),
-    text: rightText,
+    ...insertLabelFields(rightText),
     type: 'branch',
     position: { x: nextX, y: centerY + verticalGap },
     data: { pairIndex: newPairIndex, position: 'right', diagramType: 'bridge_map' },
@@ -538,9 +546,12 @@ export function applyVoiceDiagramAddNodes(
       const labelR = (typeof p.right === 'string' ? p.right : '').trim()
       const body = text.trim()
       if (!labelL && !labelR && !body) continue
-      const fallback = i18n.global.t('canvas.toolbar.newItemB')
       const pairLeft = labelL || body || labelR
-      const pairRight = labelR || labelL || body || fallback
+      const pairRight =
+        labelR ||
+        labelL ||
+        body ||
+        diagramInsertLabel(store.data?.languages, 'canvas.toolbar.newItemB')
       if (voiceAddBridgeMapAnalogyPair(store, pairLeft, pairRight)) count++
       continue
     }

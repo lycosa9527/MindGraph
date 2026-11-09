@@ -616,10 +616,9 @@ export function updateSummaryChildText(
 export function insertSummaryChildAt(
   children: MindMapSummaryChildSpec[] | undefined,
   parentPath: readonly number[],
-  text: string,
+  nextChild: MindMapSummaryChildSpec,
   siblingOffset?: 'above' | 'below' | 'end'
 ): MindMapSummaryChildSpec[] {
-  const nextChild: MindMapSummaryChildSpec = { text }
   if (parentPath.length === 0) {
     const list = [...(children ?? [])]
     if (siblingOffset === 'above') list.unshift(nextChild)
@@ -640,7 +639,7 @@ export function insertSummaryChildAt(
   }
   list[head] = {
     ...target,
-    children: insertSummaryChildAt(target.children, rest, text, siblingOffset ?? 'end'),
+    children: insertSummaryChildAt(target.children, rest, nextChild, siblingOffset ?? 'end'),
   }
   return list
 }

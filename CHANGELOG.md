@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.218] - 2026-11-09
+
+> **Dual-language mind maps size each node for its second line, inserted nodes get both languages, and brace maps add a level under any node.**
+
+### Added
+
+- **Brace maps** — **Add Next Level** in the insert ribbon puts children directly under the selected node, at any depth below the whole.
+- **Dual-language inserts** — A node added from the ribbon, context menu, outline, or keyboard gets its placeholder label in both diagram languages, so it shows two lines like its neighbors.
+
+### Fixed
+
+- **Dual-language mind maps** — Each branch box now fits its second line. The gloss is measured at its painted size, in the same wrap column as the label and beside any number prefix. A short Chinese label with a long English line no longer runs into its children or into its parent on the left side, and a wrapped gloss no longer overlaps the sibling below.
+- **Image and PDF export** — The crop box is read when the diagram is captured, not after fonts embed. A camera move or relayout during export no longer shifts the crop. PDF and worksheet Word exports capture the fitted window instead of framing the diagram at full size, since the A4 page caps the resolution anyway.
+
+### Changed
+
+- **Voice diagram edits** — Voice-agent add, delete, and update events use the same store operations as the editor. The separate spec-mutation path and its gloss helpers are gone.
+
+### Removed
+
+- Unused `useConceptMap` composable, `diagramOperationGloss` helpers, and `cropExportedDiagramCanvas`.
+
+### Tests
+
+- [`frontend/tests/mindMapBilingualBranchBox.spec.ts`](frontend/tests/mindMapBilingualBranchBox.spec.ts) covers branch boxes that widen for a long gloss and grow for a wrapped one.
+- [`frontend/tests/bilingualLayout.audit.spec.ts`](frontend/tests/bilingualLayout.audit.spec.ts) audits live-generated dual-language mind maps and thinking maps for missing glosses, text that overflows its shape, and overlapping nodes. Generate fixtures with [`scripts/audit_bilingual_layout_live.py`](scripts/audit_bilingual_layout_live.py). The audit skips when they are absent.
+- [`frontend/tests/bilingualInsertLabel.spec.ts`](frontend/tests/bilingualInsertLabel.spec.ts) and [`frontend/tests/braceMapNextLevelAdd.spec.ts`](frontend/tests/braceMapNextLevelAdd.spec.ts) cover dual-language insert labels and brace-map next-level adds.
+
 ## [5.180.217] - 2026-11-09
 
 > **Thinking-map layout runs one path for load and live edits, so a diagram opens where it will stay.**

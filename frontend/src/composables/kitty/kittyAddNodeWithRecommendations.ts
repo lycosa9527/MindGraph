@@ -8,6 +8,12 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  type InsertLabel,
+  type InsertLabelInput,
+  diagramInsertLabel,
+  insertLabelFields,
+} from '@/diagramBilingual/insertLabel'
 import type { useDiagramStore } from '@/stores/diagram'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
@@ -86,13 +92,16 @@ function addNodeForDiagramType(
   const diagramType = store.type
   if (!diagramType || !store.data?.nodes) return false
 
-  const placeholder = optionalText?.trim() || translate('canvas.toolbar.newAttribute', '…')
+  const label = (key: string, params?: Record<string, unknown>) =>
+    diagramInsertLabel(store.data?.languages, key, params)
+  const placeholder: InsertLabelInput = optionalText?.trim() || label('canvas.toolbar.newAttribute')
+  const placeholderFields = insertLabelFields(placeholder)
 
   if (diagramType === 'bubble_map') {
     const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     store.addNode({
       id: takeBubbleMapStableId(claimed),
-      text: placeholder,
+      ...placeholderFields,
       type: 'bubble',
       position: { x: 0, y: 0 },
     })
@@ -104,7 +113,7 @@ function addNodeForDiagramType(
     const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     store.addNode({
       id: takeCircleMapStableId(claimed),
-      text: placeholder,
+      ...placeholderFields,
       type: 'bubble',
       position: { x: 0, y: 0 },
     })
@@ -118,11 +127,7 @@ function addNodeForDiagramType(
     if (selectedId && selectedId !== 'topic') {
       return store.addMindMapChild(selectedId, placeholder)
     }
-    return store.addMindMapBranch(
-      undefined,
-      placeholder,
-      translate('canvas.toolbar.newChild', 'New child')
-    )
+    return store.addMindMapBranch(undefined, placeholder, label('canvas.toolbar.newChild'))
   }
 
   if (diagramType === 'flow_map') {
@@ -143,9 +148,9 @@ function addNodeForDiagramType(
     }
     const stepCount = store.data.nodes.filter((node) => node.type === 'flow').length
     const stepNum = stepCount + 1
-    const subs: [string, string] = [
-      translate('canvas.toolbar.substepDefault1', `Substep ${stepNum}.1`),
-      translate('canvas.toolbar.substepDefault2', `Substep ${stepNum}.2`),
+    const subs: [InsertLabel, InsertLabel] = [
+      label('canvas.toolbar.substepDefault1', { n: stepNum }),
+      label('canvas.toolbar.substepDefault2', { n: stepNum }),
     ]
     return store.addFlowMapStep(placeholder, subs)
   }
@@ -179,7 +184,7 @@ function addNodeForDiagramType(
     const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     store.addNode({
       id: takeMultiFlowMapStableId(claimed),
-      text: placeholder,
+      ...placeholderFields,
       type: 'flow',
       position: { x: 0, y: 0 },
       ...(isEffect ? { category: 'effects' } : { category: 'causes' }),
@@ -196,9 +201,9 @@ function addNodeForDiagramType(
     const selectedId = store.selectedNodes[0]
     const connections = store.data.connections ?? []
     const rootId = braceMapRootId(store.data.nodes, connections)
-    const defaultSubparts: [string, string] = [
-      translate('canvas.toolbar.subpartLabel1', 'Part A'),
-      translate('canvas.toolbar.subpartLabel2', 'Part B'),
+    const defaultSubparts: [InsertLabel, InsertLabel] = [
+      label('canvas.toolbar.subpartLabel1'),
+      label('canvas.toolbar.subpartLabel2'),
     ]
     if (!rootId) return false
     if (
@@ -232,7 +237,7 @@ function addNodeForDiagramType(
     }
     store.addNode({
       id: takeBridgeMapStableId(claimed),
-      text: placeholder,
+      ...placeholderFields,
       type: 'branch',
       position: { x: nextX, y: centerY - verticalGap - nodeHeight },
       data: { pairIndex: newPairIndex, position: 'left', diagramType: 'bridge_map' },
@@ -250,7 +255,7 @@ function addNodeForDiagramType(
     const nextNum = existing.length
     store.addNode({
       id: `concept-${nextNum}`,
-      text: placeholder,
+      ...placeholderFields,
       type: 'branch',
       position: { x: 0, y: 0 },
     })

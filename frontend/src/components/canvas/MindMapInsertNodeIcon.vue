@@ -162,6 +162,40 @@ defineProps<{
         class="mm-insert-node-icon__added"
       />
     </template>
+    <template v-else-if="kind === 'nextLevel'">
+      <path
+        d="M3.45 0.85 Q2.75 0.85 2.75 1.45 L2.75 2.05 L1.85 2.5 L2.75 2.95 L2.75 3.55 Q2.75 4.15 3.45 4.15"
+        class="mm-insert-node-icon__line"
+      />
+      <rect
+        x="4.4"
+        y="0.75"
+        width="10.5"
+        height="3.55"
+        rx="1.05"
+        class="mm-insert-node-icon__existing"
+      />
+      <path
+        d="M8.35 7.55 Q7.4 7.55 7.4 8.3 L7.4 9.55 L6.1 10.2 L7.4 10.85 L7.4 12.1 Q7.4 12.85 8.35 12.85"
+        class="mm-insert-node-icon__line"
+      />
+      <rect
+        x="9.7"
+        y="5.85"
+        width="5.2"
+        height="3.4"
+        rx="0.95"
+        class="mm-insert-node-icon__existing"
+      />
+      <rect
+        x="9.7"
+        y="11.15"
+        width="5.2"
+        height="3.4"
+        rx="0.95"
+        class="mm-insert-node-icon__added"
+      />
+    </template>
     <template v-else-if="kind === 'similarity'">
       <rect
         x="1.15"

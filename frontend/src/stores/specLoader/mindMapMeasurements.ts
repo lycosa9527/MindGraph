@@ -11,6 +11,7 @@ import {
   mindMapUnderlineVerticalExtra,
 } from '@/config/mindMapGeometry'
 import { MIND_MAP_LEGACY_GEOMETRY } from '@/config/mindMapLegacyGeometry'
+import { BILINGUAL_SECONDARY_LINE_HEIGHT, secondaryFontSize } from '@/diagramBilingual/measure'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import {
@@ -19,6 +20,8 @@ import {
   MIND_MAP_UNDERLINE_TEXT_LINE_HEIGHT,
   estimateMindMapNumberedContentWidthPx,
   measureMindMapBranchPaintedBlockPx,
+  measureMindMapLabelWidthPx,
+  measureMindMapNumberPrefixAdvancePx,
   resolveMindMapBranchBodyMaxWidthPx,
 } from '@/utils/mindMapTextWrap'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
@@ -439,6 +442,49 @@ export function measureNumberedBranchHeightForCanvasMode(
     fontFamily,
   })
   return Math.max(BRANCH_NODE_HEIGHT, textHeight + branchPaddingY + branchBorderY)
+}
+
+/**
+ * Grow a branch box for the bilingual second line. The gloss paints inside the
+ * label's wrap column at 0.75em / line-height 1.2, beside any number prefix, so
+ * a short CJK label can carry a much wider English line and a wrapped label
+ * wraps its gloss onto several lines.
+ */
+export function withMindMapBranchSecondaryBox(
+  box: { width: number; height: number },
+  label: string,
+  prefix: string,
+  secondary: string | undefined,
+  options: { nodeId?: string; shape?: NodeShape | null; font?: MindMapNumberedFont }
+): { width: number; height: number } {
+  const gloss = (secondary ?? '').trim()
+  if (!gloss) return box
+  const fontSize = resolveNumberedFontSize(options.nodeId, options.font)
+  const fontFamily = diagramPaintFontFamily(options.font?.fontFamily, MIND_MAP_GEOMETRY.fontFamily)
+  const primaryOptions = { fontWeight: options.font?.fontWeight ?? 'normal', fontFamily }
+  const column = resolveMindMapBranchBodyMaxWidthPx(
+    (label || '').trim(),
+    prefix,
+    fontSize,
+    primaryOptions
+  )
+  const glossFontSize = secondaryFontSize(fontSize)
+  const glossOptions = { fontWeight: 'normal', fontFamily }
+  const single = measureMindMapLabelWidthPx(gloss, glossFontSize, glossOptions)
+  let lineCount = 1
+  if (single > column) {
+    const painted = measureCssWrappedBlockPx(gloss, glossFontSize, column, glossOptions)
+    lineCount = painted
+      ? Math.max(1, Math.round(painted.height / (glossFontSize * MIND_MAP_TEXT_LINE_HEIGHT)))
+      : Math.ceil(single / column)
+  }
+  const contentWidth =
+    Math.min(single, column) + measureMindMapNumberPrefixAdvancePx(prefix, fontSize, primaryOptions)
+  const horizontalExtra = mindMapNodeHorizontalExtra(resolveMindMapMeasureShape(options.shape))
+  return {
+    width: Math.max(box.width, Math.ceil(contentWidth + horizontalExtra)),
+    height: box.height + Math.ceil(lineCount * glossFontSize * BILINGUAL_SECONDARY_LINE_HEIGHT),
+  }
 }
 
 /** Underline box metrics using the body wrap column beside prefix chrome. */

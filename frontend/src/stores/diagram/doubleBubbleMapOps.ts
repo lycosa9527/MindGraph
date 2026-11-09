@@ -1,4 +1,9 @@
 import {
+  type InsertLabelInput,
+  insertLabelGloss,
+  insertLabelText,
+} from '@/diagramBilingual/insertLabel'
+import {
   type DoubleBubbleRole,
   isDoubleBubbleRoleNode,
   readDoubleBubbleIndex,
@@ -16,10 +21,10 @@ function secondaryRecord(spec: Record<string, unknown>): Record<string, unknown>
   return raw as Record<string, unknown>
 }
 
-function appendGlossSlot(spec: Record<string, unknown>, key: string): void {
+function appendGlossSlot(spec: Record<string, unknown>, key: string, gloss: string): void {
   const secondary = secondaryRecord(spec)
   if (!secondary || !Array.isArray(secondary[key])) return
-  secondary[key] = [...secondary[key], '']
+  secondary[key] = [...secondary[key], gloss]
 }
 
 function dropGlossSlots(spec: Record<string, unknown>, key: string, drop: Set<number>): void {
@@ -85,8 +90,8 @@ export function doubleBubbleDeleteKeepWarningKey(outcome: {
 export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
   function addDoubleBubbleMapNode(
     group: DoubleBubbleRole,
-    defaultText: string,
-    pairText?: string
+    defaultLabel: InsertLabelInput,
+    pairLabel?: InsertLabelInput
   ): boolean {
     const spec = ctx.getDoubleBubbleSpecFromData()
     if (!spec) return false
@@ -96,13 +101,14 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
     const rightDifferences = asItems(spec.rightDifferences)
 
     if (group === 'similarity') {
-      spec.similarities = [...similarities, { text: defaultText }]
-      appendGlossSlot(spec, 'similarities')
+      spec.similarities = [...similarities, { text: insertLabelText(defaultLabel) }]
+      appendGlossSlot(spec, 'similarities', insertLabelGloss(defaultLabel))
     } else {
-      spec.leftDifferences = [...leftDifferences, { text: defaultText }]
-      spec.rightDifferences = [...rightDifferences, { text: pairText ?? defaultText }]
-      appendGlossSlot(spec, 'leftDifferences')
-      appendGlossSlot(spec, 'rightDifferences')
+      const rightLabel = pairLabel ?? defaultLabel
+      spec.leftDifferences = [...leftDifferences, { text: insertLabelText(defaultLabel) }]
+      spec.rightDifferences = [...rightDifferences, { text: insertLabelText(rightLabel) }]
+      appendGlossSlot(spec, 'leftDifferences', insertLabelGloss(defaultLabel))
+      appendGlossSlot(spec, 'rightDifferences', insertLabelGloss(rightLabel))
     }
 
     return ctx.loadFromSpec(spec, 'double_bubble_map', STRUCTURAL_SPEC_RELOAD)

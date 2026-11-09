@@ -21,6 +21,7 @@ import {
   measureNumberedBranchHeight,
   measureNumberedBranchUnderlineHeight,
 } from '../specLoader/mindMap'
+import { withMindMapBranchSecondaryBox } from '../specLoader/mindMapMeasurements'
 import { isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import type { DiagramContext } from './types'
 
@@ -118,13 +119,13 @@ export function applyMindMapTextEditBox(
 
   const numberMap = mindMapBranchNumberMapFromData(data)
   const prefix = numberMap.get(nodeId) ?? ''
-  const freshWidth = estimateNumberedBranchWidth(newText, prefix, nodeId, nodeStyle, shape)
-  const gloss = (currentNode.textSecondary ?? '').trim()
-  const glossExtra = gloss ? Math.ceil(14 * 0.75 * 1.2) : 0
-  const freshHeight =
-    (shape === 'underline'
-      ? measureNumberedBranchUnderlineHeight(newText, prefix, nodeId, nodeStyle)
-      : measureNumberedBranchHeight(newText, prefix, nodeId, nodeStyle)) + glossExtra
+  const { width: freshWidth, height: freshHeight } = branchWrapBox(
+    currentNode,
+    newText,
+    prefix,
+    nodeStyle,
+    shape
+  )
   data.nodes[nodeIndex] = {
     ...currentNode,
     data: {
@@ -177,14 +178,34 @@ export function nodesWithMindMapWrapBoxes(
     const text = node.text ?? ''
     const prefix = numberMap.get(node.id) ?? ''
     if (keepStoredWrapBox(node, text, prefix, nodeStyle)) return node
-    const width = estimateNumberedBranchWidth(text, prefix, node.id, nodeStyle, shape)
-    const gloss = (node.textSecondary ?? '').trim()
-    const glossExtra = gloss ? Math.ceil(14 * 0.75 * 1.2) : 0
-    const height =
-      (shape === 'underline'
-        ? measureNumberedBranchUnderlineHeight(text, prefix, node.id, nodeStyle)
-        : measureNumberedBranchHeight(text, prefix, node.id, nodeStyle)) + glossExtra
+    const { width, height } = branchWrapBox(node, text, prefix, nodeStyle, shape)
     return withWrapBox(node, width, height)
+  })
+}
+
+/** Branch layout box: label wrap plus the bilingual gloss painted under it. */
+function branchWrapBox(
+  node: DiagramNode,
+  text: string,
+  prefix: string,
+  nodeStyle: NodeStyle,
+  shape: MindMapBranchPaintBox['shape']
+): { width: number; height: number } {
+  const primary = {
+    width: estimateNumberedBranchWidth(text, prefix, node.id, nodeStyle, shape),
+    height:
+      shape === 'underline'
+        ? measureNumberedBranchUnderlineHeight(text, prefix, node.id, nodeStyle)
+        : measureNumberedBranchHeight(text, prefix, node.id, nodeStyle),
+  }
+  return withMindMapBranchSecondaryBox(primary, text, prefix, node.textSecondary, {
+    nodeId: node.id,
+    shape,
+    font: {
+      fontSize: estimatorFontSize(nodeStyle),
+      fontWeight: nodeStyle.fontWeight != null ? String(nodeStyle.fontWeight) : undefined,
+      fontFamily: nodeStyle.fontFamily,
+    },
   })
 }
 

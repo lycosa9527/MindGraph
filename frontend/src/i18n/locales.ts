@@ -264,6 +264,11 @@ export function matchedPromptLanguageForUiLocale(ui: LocaleCode): PromptOutputLa
   return isPromptOutputLanguageCode(ui) ? ui : null
 }
 
+/** UI catalog for a prompt-registry code (`zh-hant` → `zh-tw`), or null when none ships. */
+export function uiLocaleForPromptLanguage(code: string): LocaleCode | null {
+  return UI_LOCALE_CODES.find((ui) => matchedPromptLanguageForUiLocale(ui) === code) ?? null
+}
+
 /** Any registered generation language code (prefer isPromptOutputLanguageCode for validation). */
 export type PromptOutputLanguageCode = string
 

@@ -17,6 +17,7 @@ import {
   mindMapExportPlainText,
   mindMapSvgTextBaselineY,
   parseMindMapExportText,
+  renderMindMapSvgText,
   wrapMindMapExportLines,
 } from '@/utils/diagramMindMapVectorText'
 import { must } from '@/utils/must'
@@ -350,5 +351,44 @@ describe('diagramMindMapVectorRaster', () => {
     toBlob.mockRestore()
     getContext.mockRestore()
     vi.unstubAllGlobals()
+  })
+})
+
+describe('mind-map vector secondary line', () => {
+  const box = {
+    x: 0,
+    y: 0,
+    width: 160,
+    height: 48,
+    fontSize: 16,
+    textColor: '#111',
+    paddingX: 8,
+    paddingY: 4,
+  }
+
+  it('omits the gloss element when the second line is empty', () => {
+    const svg = renderMindMapSvgText({ ...box, rawText: '动物' })
+    expect(svg).not.toContain('opacity="0.7"')
+    expect(svg).toContain('动物')
+  })
+
+  it('draws the second line smaller and stacked under the primary line', () => {
+    const mono = renderMindMapSvgText({ ...box, rawText: '动物' })
+    const bilingual = renderMindMapSvgText({ ...box, rawText: '动物', rawSecondary: 'Animals' })
+    expect(bilingual).toContain('opacity="0.7"')
+    expect(bilingual).toContain('font-size="12"')
+    expect(bilingual).toContain('Animals')
+    expect(bilingual).not.toBe(mono)
+  })
+
+  it('wraps a long second line inside the node', () => {
+    const svg = renderMindMapSvgText({
+      ...box,
+      width: 80,
+      rawText: '动物',
+      rawSecondary: 'photosynthesis process',
+    })
+    const gloss = svg.split('opacity="0.7"')[1] ?? ''
+    expect(gloss.match(/<tspan/g)?.length ?? 0).toBeGreaterThan(1)
   })
 })

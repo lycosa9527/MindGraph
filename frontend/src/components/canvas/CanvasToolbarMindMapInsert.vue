@@ -21,6 +21,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapAssociationLine } from '@/composables/mindMap/useMindMapAssociationLine'
+import { diagramInsertLabel } from '@/diagramBilingual/insertLabel'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { summaryInsertFailureReason } from '@/stores/diagram/mindMapSummaryOps'
 import {
@@ -110,7 +111,9 @@ function insertSummary(): void {
     notify.warningKey('canvas.ribbon.summaryNeedSiblings')
     return
   }
-  const ok = diagramStore.insertMindMapSummary(t('canvas.ribbon.summary'))
+  const ok = diagramStore.insertMindMapSummary(
+    diagramInsertLabel(data.languages, 'canvas.ribbon.summary')
+  )
   if (!ok) {
     notify.warningKey('canvas.ribbon.summaryNeedSiblings')
   }

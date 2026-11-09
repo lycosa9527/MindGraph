@@ -21,8 +21,12 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { createThinkingMapLevelAdds } from '@/composables/editor/thinkingMapLevelAdd'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
+import {
+  type InsertLabel,
+  diagramInsertLabel,
+  insertLabelFields,
+} from '@/diagramBilingual/insertLabel'
 import { doubleBubbleDeleteKeepWarningKey } from '@/stores/diagram/doubleBubbleMapOps'
-import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { orderFlowStepNodes, substepsForFlowStep } from '@/stores/specLoader/flowMapSubsteps'
 import type { MindMapCanvasMode } from '@/stores/ui'
@@ -35,6 +39,7 @@ import {
 } from '@/utils/bridgeMapIdentity'
 import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode, takeCircleMapStableId } from '@/utils/circleMapIdentity'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { findFlowMapParentStep, readFlowStepIndex } from '@/utils/flowMapIdentity'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
@@ -106,16 +111,20 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   const diagramStore = useDiagramSession()
   const { t } = useLanguage()
   const notify = useNotifications()
+  const label = (key: string, named?: Record<string, unknown>): InsertLabel =>
+    diagramInsertLabel(diagramStore.data?.languages, key, named)
   const {
     addTreeCategoryNode,
     addTreeItemNode,
     addBracePartNode,
     addBraceSubpartNode,
+    addBraceNextLevelNode,
     addDoubleBubbleSimilarityNode,
     addDoubleBubbleDifferenceNode,
   } = createThinkingMapLevelAdds(
     diagramStore,
     (key, named) => (named ? t(key, named) : t(key)),
+    label,
     notify
   )
 
@@ -127,7 +136,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
   /** Enter and the Add Step button add one step, with no bundled substeps. */
   function addFlowStepNode(): boolean {
-    if (!diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'))) return false
+    if (!diagramStore.addFlowMapStep(label('canvas.toolbar.newStep'))) return false
     const ordered = orderFlowStepNodes(diagramStore.data?.nodes ?? [])
     selectFlowNode(ordered[ordered.length - 1]?.id)
     notify.successKey('canvas.toolbar.stepAdded')
@@ -156,7 +165,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     const addStepIndex = readFlowStepIndex(stepNode)
     const added = diagramStore.addFlowMapSubstep(
       stepNode.text ?? '',
-      t('canvas.toolbar.newSubstep'),
+      label('canvas.toolbar.newSubstep'),
       addStepIndex >= 0 ? addStepIndex : undefined,
       stepNode.id
     )
@@ -197,8 +206,8 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (
       diagramStore.addMindMapBranch(
         undefined,
-        t('canvas.toolbar.newBranch'),
-        t('canvas.toolbar.newChild')
+        label('canvas.toolbar.newBranch'),
+        label('canvas.toolbar.newChild')
       ) &&
       shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)
     ) {
@@ -246,13 +255,19 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       handleAddBranch()
       return
     }
-    if (diagramStore.addMindMapChild(selectedId, t('canvas.toolbar.newChild'))) {
+    if (diagramStore.addMindMapChild(selectedId, label('canvas.toolbar.newChild'))) {
       if (shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)) {
         notify.successKey('canvas.toolbar.childAdded')
       }
     } else {
       notify.warningKey('canvas.toolbar.cannotAddChild')
     }
+  }
+
+  function handleAddBraceNextLevel(): void {
+    if (isDiagramPresentationReadOnly(diagramStore)) return
+    if (diagramStore.type !== 'brace_map') return
+    addBraceNextLevelNode()
   }
 
   function handleAddSibling(): void {
@@ -284,7 +299,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       notify.warningKey('canvas.toolbar.selectBranchForSibling')
       return
     }
-    if (diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))) {
+    if (diagramStore.addMindMapSibling(anchorId, label('canvas.toolbar.newBranch'))) {
       if (shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)) {
         notify.successKey('canvas.toolbar.siblingAdded')
       }
@@ -313,7 +328,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
       diagramStore.addNode({
         id: takeBubbleMapStableId(claimed),
-        text: t('canvas.toolbar.newAttribute'),
+        ...insertLabelFields(label('canvas.toolbar.newAttribute')),
         type: 'bubble',
         position: { x: 0, y: 0 },
       })
@@ -326,7 +341,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
       diagramStore.addNode({
         id: takeCircleMapStableId(claimed),
-        text: t('canvas.toolbar.newAssociation'),
+        ...insertLabelFields(label('canvas.toolbar.newAssociation')),
         type: 'bubble',
         position: { x: 0, y: 0 },
       })
@@ -359,14 +374,14 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
       diagramStore.addNode({
         id: takeBridgeMapStableId(claimed),
-        text: t('canvas.toolbar.newItemA'),
+        ...insertLabelFields(label('canvas.toolbar.newItemA')),
         type: 'branch',
         position: { x: nextX, y: centerY - verticalGap - nodeHeight },
         data: { pairIndex: newPairIndex, position: 'left', diagramType: 'bridge_map' },
       })
       diagramStore.addNode({
         id: takeBridgeMapStableId(claimed),
-        text: t('canvas.toolbar.newItemB'),
+        ...insertLabelFields(label('canvas.toolbar.newItemB')),
         type: 'branch',
         position: { x: nextX, y: centerY + verticalGap },
         data: { pairIndex: newPairIndex, position: 'right', diagramType: 'bridge_map' },
@@ -431,7 +446,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     const claimedCause = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
     diagramStore.addNode({
       id: takeMultiFlowMapStableId(claimedCause),
-      text: t('canvas.toolbar.newCause'),
+      ...insertLabelFields(label('canvas.toolbar.newCause')),
       type: 'flow',
       position: { x: 0, y: 0 },
       category: 'causes',
@@ -449,7 +464,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     const claimedEffect = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
     diagramStore.addNode({
       id: takeMultiFlowMapStableId(claimedEffect),
-      text: t('canvas.toolbar.newEffect'),
+      ...insertLabelFields(label('canvas.toolbar.newEffect')),
       type: 'flow',
       position: { x: 0, y: 0 },
       category: 'effects',
@@ -677,6 +692,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     handleDeleteNode,
     handleAddBranch,
     handleAddChild,
+    handleAddBraceNextLevel,
     handleAddSibling,
     handleAddCause,
     handleAddEffect,

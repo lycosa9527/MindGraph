@@ -51,6 +51,19 @@ export function isCanvasShownImageExport(format: string): boolean {
   return format === 'png' || format === 'svg'
 }
 
+/**
+ * PDF and the worksheet Word file print on A4. The PDF is downsampled to 150 DPI,
+ * so a capture larger than a fitted window adds nothing to the page.
+ */
+export function isA4DocumentExport(format: string): boolean {
+  return (
+    format === 'pdf' ||
+    format === 'pdf_landscape' ||
+    format === 'pdf_portrait' ||
+    format === 'worksheet_docx'
+  )
+}
+
 /** Open 智绘 图示生图 — hidden from the mind-map export menu for now. */
 export const CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM = {
   command: 'zhihui_diagram' as CanvasZhihuiDiagramCommand,

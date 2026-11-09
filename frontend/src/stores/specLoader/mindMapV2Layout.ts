@@ -6,7 +6,6 @@ import {
   getMindMapDiagramStyleById,
   mindMapNodeShapeFromPreset,
 } from '@/config/mindMapDiagramStyles'
-import { stackedTextBlock } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
 import {
   type MindMapNumberingGlyphStyle,
@@ -26,6 +25,7 @@ import {
   estimateNumberedBranchBoxWidth,
   measureNumberedBranchHeightForCanvasMode,
   measureNumberedUnderlineBoxMetrics,
+  withMindMapBranchSecondaryBox,
 } from './mindMapMeasurements'
 
 export type MindMapV2LayoutNumbering = {
@@ -96,12 +96,12 @@ export function layoutMindMapSideV2(
       shape === 'underline'
         ? measureNumberedUnderlineBoxMetrics(text, prefix, id).totalHeight
         : measureNumberedBranchHeightForCanvasMode(text, prefix, id, 'v2')
-    const block = stackedTextBlock(
-      primaryWidth,
-      primaryHeight,
-      b.textSecondary ? Math.ceil(b.textSecondary.length * 8) : 0,
-      14,
-      b.textSecondary
+    const block = withMindMapBranchSecondaryBox(
+      { width: primaryWidth, height: primaryHeight },
+      text,
+      prefix,
+      b.textSecondary,
+      { nodeId: id, shape }
     )
     const estimatedWidth = block.width
     const estimatedHeight = block.height

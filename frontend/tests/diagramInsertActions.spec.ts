@@ -25,6 +25,7 @@ describe('diagramInsertActions', () => {
     expect(diagramInsertActions('brace_map').map((action) => action.id)).toEqual([
       'part',
       'subpart',
+      'nextLevel',
     ])
     expect(diagramInsertActions('double_bubble_map').map((action) => action.id)).toEqual([
       'similarity',

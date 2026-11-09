@@ -2,8 +2,10 @@
  * Outer-level and inner-level adds for tree, brace, and double bubble maps.
  * Enter and the first toolbar button add the outer level.
  * Tab and the second toolbar button add the inner level.
+ * Brace maps have a third button that adds one level below the selected node.
  */
 import type { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import type { InsertLabel } from '@/diagramBilingual/insertLabel'
 import {
   braceMapRootId,
   resolveBraceMapSubpartAttachParentId,
@@ -24,6 +26,9 @@ import {
 type DiagramSession = ReturnType<typeof useDiagramSession>
 
 type LevelAddTranslate = (key: string, named?: Record<string, unknown>) => string
+
+/** Node label in the diagram's file language(s). */
+type LevelAddLabel = (key: string, named?: Record<string, unknown>) => InsertLabel
 
 type LevelAddNotify = {
   success: (message: string) => void
@@ -63,6 +68,32 @@ function bracePartIdForSubpart(
   return parts[parts.length - 1]
 }
 
+/** Selected brace node below the whole, else the last subpart of the last part that has one. */
+function braceNodeIdForNextLevel(
+  nodes: DiagramNode[],
+  connections: Connection[],
+  selectedId: string | undefined
+): string | undefined {
+  const rootId = braceMapRootId(nodes, connections)
+  if (!rootId) return undefined
+  if (
+    selectedId &&
+    selectedId !== rootId &&
+    selectedId !== 'dimension-label' &&
+    nodes.some((node) => node.id === selectedId)
+  ) {
+    return selectedId
+  }
+  const childrenOf = (id: string) =>
+    connections.filter((edge) => edge.source === id).map((edge) => edge.target)
+  const parts = childrenOf(rootId).filter((id) => id !== 'dimension-label')
+  for (let index = parts.length - 1; index >= 0; index--) {
+    const subparts = childrenOf(parts[index])
+    if (subparts.length > 0) return subparts[subparts.length - 1]
+  }
+  return undefined
+}
+
 function createdChildId(
   before: ReadonlySet<string>,
   nodes: DiagramNode[],
@@ -90,10 +121,11 @@ function selectLatestDoubleBubble(diagramStore: DiagramSession, role: DoubleBubb
 export function createThinkingMapLevelAdds(
   diagramStore: DiagramSession,
   t: LevelAddTranslate,
+  label: LevelAddLabel,
   notify: LevelAddNotify
 ) {
   function addTreeCategoryNode(): boolean {
-    if (!diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) return false
+    if (!diagramStore.addTreeMapCategory(label('canvas.toolbar.newBranch'))) return false
     const columns = treeMapColumnsOf(diagramStore.data?.nodes ?? [])
     selectNode(diagramStore, columns[columns.length - 1]?.category.id)
     notify.successKey('canvas.toolbar.branchAdded')
@@ -111,7 +143,7 @@ export function createThinkingMapLevelAdds(
       notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
       return false
     }
-    if (!diagramStore.addTreeMapChild(categoryId, t('canvas.toolbar.newChild'))) {
+    if (!diagramStore.addTreeMapChild(categoryId, label('canvas.toolbar.newChild'))) {
       notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
       return false
     }
@@ -134,7 +166,7 @@ export function createThinkingMapLevelAdds(
     const rootId = braceMapRootId(nodes, connections)
     if (!rootId) return false
     const before = new Set(nodes.map((node) => node.id))
-    if (!diagramStore.addBraceMapPart(rootId, t('canvas.toolbar.newPart'))) return false
+    if (!diagramStore.addBraceMapPart(rootId, label('canvas.toolbar.newPart'))) return false
     const refreshed = diagramStore.data?.nodes ?? []
     const edges = diagramStore.data?.connections ?? []
     selectNode(diagramStore, createdChildId(before, refreshed, edges, rootId))
@@ -158,10 +190,10 @@ export function createThinkingMapLevelAdds(
     const before = new Set(nodes.map((node) => node.id))
     const added = groupEmpty
       ? diagramStore.addBraceMapPart(partId, undefined, [
-          t('canvas.toolbar.subpartLabel1'),
-          t('canvas.toolbar.subpartLabel2'),
+          label('canvas.toolbar.subpartLabel1'),
+          label('canvas.toolbar.subpartLabel2'),
         ])
-      : diagramStore.addBraceMapPart(partId, t('canvas.toolbar.newSubpart'))
+      : diagramStore.addBraceMapPart(partId, label('canvas.toolbar.newSubpart'))
     if (!added) return false
     const refreshed = diagramStore.data?.nodes ?? []
     const edges = diagramStore.data?.connections ?? []
@@ -170,10 +202,39 @@ export function createThinkingMapLevelAdds(
     return true
   }
 
+  /** One level below the target node: two children when it has none, else one more. */
+  function addBraceNextLevelNode(): boolean {
+    const nodes = diagramStore.data?.nodes
+    const connections = diagramStore.data?.connections ?? []
+    if (!nodes) {
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
+      return false
+    }
+    const parentId = braceNodeIdForNextLevel(nodes, connections, diagramStore.selectedNodes[0])
+    if (!parentId) {
+      notify.warningKey('canvas.toolbar.selectNodeForNextLevel')
+      return false
+    }
+    const groupEmpty = !connections.some((edge) => edge.source === parentId)
+    const before = new Set(nodes.map((node) => node.id))
+    const added = diagramStore.addBraceMapChildren(
+      parentId,
+      groupEmpty
+        ? [label('canvas.toolbar.subpartLabel1'), label('canvas.toolbar.subpartLabel2')]
+        : [label('canvas.toolbar.newSubpart')]
+    )
+    if (!added) return false
+    const refreshed = diagramStore.data?.nodes ?? []
+    const edges = diagramStore.data?.connections ?? []
+    selectNode(diagramStore, createdChildId(before, refreshed, edges, parentId))
+    notify.successKey('canvas.toolbar.nextLevelAdded')
+    return true
+  }
+
   function addDoubleBubbleSimilarityNode(): boolean {
     const spec = diagramStore.getDoubleBubbleSpecFromData()
     if (!spec) return false
-    const text = t('canvas.toolbar.similarityWithIndex', {
+    const text = label('canvas.toolbar.similarityWithIndex', {
       n: listLength(spec.similarities) + 1,
     })
     if (!diagramStore.addDoubleBubbleMapNode('similarity', text)) return false
@@ -188,8 +249,8 @@ export function createThinkingMapLevelAdds(
     if (!spec) return false
     const pairIndex =
       Math.max(listLength(spec.leftDifferences), listLength(spec.rightDifferences)) + 1
-    const text = t('canvas.toolbar.differenceAWithIndex', { n: pairIndex })
-    const pairText = t('canvas.toolbar.differenceBWithIndex', { n: pairIndex })
+    const text = label('canvas.toolbar.differenceAWithIndex', { n: pairIndex })
+    const pairText = label('canvas.toolbar.differenceBWithIndex', { n: pairIndex })
     if (!diagramStore.addDoubleBubbleMapNode('leftDiff', text, pairText)) return false
     diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
     selectLatestDoubleBubble(diagramStore, 'leftDiff')
@@ -202,6 +263,7 @@ export function createThinkingMapLevelAdds(
     addTreeItemNode,
     addBracePartNode,
     addBraceSubpartNode,
+    addBraceNextLevelNode,
     addDoubleBubbleSimilarityNode,
     addDoubleBubbleDifferenceNode,
   }

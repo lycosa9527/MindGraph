@@ -5,6 +5,7 @@
 import { type UnwrapNestedRefs, computed, reactive, ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import type { InsertLabelInput } from '@/diagramBilingual/insertLabel'
 import type {
   DiagramData,
   DiagramNode,
@@ -310,7 +311,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     pasteMindMapClipboardBranches,
   } = mindMapOpsSlice
   const { removeBubbleMapNodes } = bubbleMapOpsSlice
-  const { addBraceMapPart, removeBraceMapNodes } = braceMapOpsSlice
+  const { addBraceMapPart, addBraceMapChildren, removeBraceMapNodes } = braceMapOpsSlice
   const { addDoubleBubbleMapNode, removeDoubleBubbleMapNodes } = doubleBubbleMapOpsSlice
   const { toggleFlowMapOrientation, addFlowMapStep, addFlowMapSubstep } = flowMapOpsSlice
   const {
@@ -619,10 +620,11 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     removeNode,
     removeBubbleMapNodes,
     addBraceMapPart,
+    addBraceMapChildren,
     removeBraceMapNodes,
     addMindMapBranch,
     addMindMapChild,
-    insertMindMapSummary: (defaultText: string) =>
+    insertMindMapSummary: (defaultText: InsertLabelInput) =>
       insertMindMapSummaryFromSelection(ctx, defaultText),
     addMindMapSummaryChild: (nodeId: string, placement?: 'child' | 'above' | 'below') =>
       addMindMapSummaryChild(ctx, nodeId, placement),

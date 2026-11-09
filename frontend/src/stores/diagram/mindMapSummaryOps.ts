@@ -1,6 +1,11 @@
 /**
  * Insert / delete / child / remap ops for mind-map v2 summaries.
  */
+import {
+  type InsertLabelInput,
+  diagramInsertLabel,
+  insertLabelFields,
+} from '@/diagramBilingual/insertLabel'
 import { i18n } from '@/i18n'
 import type {
   Connection,
@@ -29,10 +34,6 @@ import { rematerializeMindMapSummaryNodes } from './mindMapSummaryLayout'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
-function defaultChildText(): string {
-  return String(i18n.global.t('diagram.newChild'))
-}
-
 function rematerialize(ctx: DiagramContext): void {
   if (!ctx.data.value) return
   rematerializeMindMapSummaryNodes(
@@ -44,7 +45,7 @@ function rematerialize(ctx: DiagramContext): void {
 
 export function insertMindMapSummaryFromSelection(
   ctx: DiagramContext,
-  defaultText: string
+  defaultText: InsertLabelInput
 ): boolean {
   if (isDiagramPresentationReadOnly(ctx)) return false
   const data = ctx.data.value
@@ -60,7 +61,7 @@ export function insertMindMapSummaryFromSelection(
   const summaries = readMindMapSummaries(data)
   const next: MindMapSummarySpec = {
     id: safeRandomUUID(),
-    text: defaultText,
+    ...insertLabelFields(defaultText),
     coveredPaths: range.coveredPaths,
   }
   writeMindMapSummaries(data, [...summaries, next])
@@ -115,12 +116,12 @@ export function addMindMapSummaryChild(
 
   ctx.pushHistory(String(i18n.global.t('diagram.newChild')))
   const target = summaries[index]
-  const text = defaultChildText()
+  const child = insertLabelFields(diagramInsertLabel(data.languages, 'diagram.newChild'))
   let children = target.children
   if (placement === 'child') {
-    children = insertSummaryChildAt(children, parsed.childPath, text, 'end')
+    children = insertSummaryChildAt(children, parsed.childPath, child, 'end')
   } else {
-    children = insertSummaryChildAt(children, parsed.childPath, text, placement)
+    children = insertSummaryChildAt(children, parsed.childPath, child, placement)
   }
   const next = [...summaries]
   next[index] = { ...target, children }

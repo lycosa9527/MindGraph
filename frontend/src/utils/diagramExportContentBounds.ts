@@ -242,15 +242,3 @@ export function cropCanvasToContentBounds(
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh)
   return cropped
 }
-
-export function cropExportedDiagramCanvas(
-  container: HTMLElement,
-  canvas: HTMLCanvasElement,
-  paddingPx = 24
-): HTMLCanvasElement {
-  const bounds = measureDiagramExportContentBounds(container, paddingPx)
-  if (!bounds) {
-    return canvas
-  }
-  return cropCanvasToContentBounds(canvas, container.clientWidth, container.clientHeight, bounds)
-}

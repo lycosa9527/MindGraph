@@ -4,7 +4,7 @@ import {
   pickFormatBrushStyle,
 } from '@/composables/canvasToolbar/formatBrushStyle'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { i18n } from '@/i18n'
+import { diagramInsertLabel, insertLabelFields } from '@/diagramBilingual/insertLabel'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import {
   BRIDGE_MAP_UID_DATA_KEY,
@@ -373,14 +373,17 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       }
 
       if (!node.text) {
-        const t = i18n.global.t
-        if (isCause || targetCategory === 'causes') {
-          node.text = String(t('diagram.flow.newCause'))
-        } else if (isEffect || targetCategory === 'effects') {
-          node.text = String(t('diagram.flow.newEffect'))
-        } else {
-          node.text = String(t('diagram.flow.newCause'))
-        }
+        const effectDefault =
+          !(isCause || targetCategory === 'causes') && (isEffect || targetCategory === 'effects')
+        Object.assign(
+          node,
+          insertLabelFields(
+            diagramInsertLabel(
+              ctx.data.value.languages,
+              effectDefault ? 'diagram.flow.newEffect' : 'diagram.flow.newCause'
+            )
+          )
+        )
       }
 
       const role = isCause || targetCategory === 'causes' ? 'cause' : 'effect'

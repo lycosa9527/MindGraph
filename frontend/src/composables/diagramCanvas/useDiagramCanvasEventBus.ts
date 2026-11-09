@@ -2,7 +2,7 @@ import { nextTick, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { isCanvasShownImageExport } from '@/config/canvasExportMenu'
+import { isA4DocumentExport, isCanvasShownImageExport } from '@/config/canvasExportMenu'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION, ZOOM } from '@/config/uiConfig'
 import { useCanvasExportStore } from '@/stores'
@@ -272,7 +272,8 @@ export function useDiagramCanvasEventBus(): {
 
         async function runFittedVisualExport<T>(
           run: () => Promise<T>,
-          asShown = false
+          asShown = false,
+          contentFrame = true
         ): Promise<T> {
           const savedViewport = getViewport()
           const restoreAnswers = await prepareLearningSheetAnswersForFit(
@@ -285,11 +286,12 @@ export function useDiagramCanvasEventBus(): {
             // Fit-to-window paints a large diagram at a tiny zoom, then the PNG
             // upscales that bitmap. Frame the capture at the diagram's own size
             // so the output pixels grow with the map. The frame puts the camera back.
+            // A4 documents keep the fitted window: the page caps the raster anyway.
             await prepareDiagramCanvasForRasterCapture(undefined, {
               promptLanguage: uiStore.promptLanguage,
             })
             const container = getExportContainer()
-            if (!container) {
+            if (!container || !contentFrame) {
               restoreViewportHere = true
               await fitApi.fitForExport()
               return await runWithExportVisualMode(uiStore, container, mergedOptions, run)
@@ -324,9 +326,13 @@ export function useDiagramCanvasEventBus(): {
         }
 
         await canvasExportStore.runExportSession(() =>
-          runFittedVisualExport(async () => {
-            await exportByFormat(format, mergedOptions)
-          }, isCanvasShownImageExport(format))
+          runFittedVisualExport(
+            async () => {
+              await exportByFormat(format, mergedOptions)
+            },
+            isCanvasShownImageExport(format),
+            !isA4DocumentExport(format)
+          )
         )
       })
     )

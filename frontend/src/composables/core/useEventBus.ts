@@ -65,8 +65,6 @@ export type EventTypes = {
   'diagram:rendered': { diagramType: string; nodeCount?: number }
   'diagram:type_changed': { diagramType: string }
   'diagram:spec_updated': { spec: unknown }
-  'diagram:operations_loaded': { diagramType: string; available?: string[] | boolean }
-  'diagram:operations_unavailable': { diagramType: string; reason: string }
   'diagram:node_added': {
     node?: unknown
     category?: string

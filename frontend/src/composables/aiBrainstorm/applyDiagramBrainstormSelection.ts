@@ -3,7 +3,7 @@
  */
 import { nextTick } from 'vue'
 
-import { i18n } from '@/i18n'
+import { type InsertLabel, diagramInsertLabel } from '@/diagramBilingual/insertLabel'
 import { usePanelsStore } from '@/stores'
 import type { DiagramSession } from '@/stores/diagram'
 import { flowStepIndexFromNodeId } from '@/stores/specLoader/flowMapSubsteps'
@@ -693,8 +693,7 @@ function applyRemainder(
     } else {
       remainder.forEach((s) => {
         const text = (s.text ?? '').trim()
-        if (text)
-          diagramStore.addMindMapBranch(undefined, text, String(i18n.global.t('diagram.newChild')))
+        if (text) diagramStore.addMindMapBranch(undefined, text)
       })
     }
   } else if (diagramTypeVal === 'flow_map') {
@@ -722,10 +721,10 @@ function applyRemainder(
       const stepCount = nodes.filter((n) => n.type === 'flow').length
       remainder.forEach((s, i) => {
         const stepNum = stepCount + i + 1
-        const gt = i18n.global.t as (key: string, values?: Record<string, unknown>) => string
-        const defaultSubsteps: [string, string] = [
-          gt('flowMap.defaultSubstepFirst', { n: stepNum }),
-          gt('flowMap.defaultSubstepSecond', { n: stepNum }),
+        const languages = diagramStore.data?.languages
+        const defaultSubsteps: [InsertLabel, InsertLabel] = [
+          diagramInsertLabel(languages, 'flowMap.defaultSubstepFirst', { n: stepNum }),
+          diagramInsertLabel(languages, 'flowMap.defaultSubstepSecond', { n: stepNum }),
         ]
         diagramStore.addFlowMapStep(s.text, defaultSubsteps)
       })
@@ -740,10 +739,10 @@ function applyRemainder(
     }
   } else if (diagramTypeVal === 'brace_map') {
     const wholeId = findBraceMapWholeId(nodes, diagramStore.data?.connections)
-    const gt = i18n.global.t as (key: string, values?: Record<string, unknown>) => string
-    const subpartTexts: [string, string] = [
-      gt('braceMap.defaultSubpartFirst'),
-      gt('braceMap.defaultSubpartSecond'),
+    const languages = diagramStore.data?.languages
+    const subpartTexts: [InsertLabel, InsertLabel] = [
+      diagramInsertLabel(languages, 'braceMap.defaultSubpartFirst'),
+      diagramInsertLabel(languages, 'braceMap.defaultSubpartSecond'),
     ]
     if (stage === 'subparts' && stageData?.part_name && stageData?.part_id) {
       remainder.forEach((s) => diagramStore.addBraceMapPart(stageData.part_id as string, s.text))

@@ -37,6 +37,8 @@ export type InsertMindMapSiblingPosition = 'above' | 'below'
 
 export type InsertMindMapSiblingInPlaceOptions = {
   text: string
+  /** Second line for a bilingual diagram. Empty leaves the node single-line. */
+  textSecondary?: string
   /** Anchor sibling — used when insertIndex / afterNodeId are omitted. */
   anchorNodeId?: string
   position?: InsertMindMapSiblingPosition
@@ -586,6 +588,7 @@ export function insertMindMapSiblingInPlace(
   const newNodeDraft: DiagramNode = {
     id: newNodeId,
     text: options.text,
+    ...(options.textSecondary ? { textSecondary: options.textSecondary } : {}),
     type: 'branch',
     position: {
       x,

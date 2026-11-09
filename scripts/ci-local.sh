@@ -347,6 +347,7 @@ run_frontend() {
     tests/bridgeMapOverlap.spec.ts \
     tests/bridgeMapDimensionClearance.spec.ts \
     tests/bilingualDefaultTemplate.spec.ts \
+    tests/bilingualInsertLabel.spec.ts \
     tests/bilingualNodePaint.spec.ts \
     tests/diagramBilingualMeasure.spec.ts \
     tests/multiFlowMapLayout.spec.ts \

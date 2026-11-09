@@ -10,6 +10,7 @@ import {
 } from '@/config/mindMapThemes'
 import { applyRainbowMindMapColors, isRainbowMindMapTheme } from '@/config/mindMapVibrantThemes'
 import { attachRemainingSecondary } from '@/diagramBilingual/attachRest'
+import { preloadDiagramLanguageCatalogs } from '@/diagramBilingual/insertLabel'
 import { readDiagramLanguages } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramData, DiagramNode, DiagramType } from '@/types'
 import {
@@ -159,6 +160,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       mindMapCanvasMode: sessionCanvasMode,
     })
     attachRemainingSecondary(diagramTypeValue, result.nodes, spec)
+    preloadDiagramLanguageCatalogs(spec.languages)
 
     const savedCanvas = Array.isArray(spec.nodes) && spec.nodes.length > 0
     let nodesToStore = relayoutLoadedSpecNodes(diagramTypeValue, result, savedCanvas)
@@ -506,6 +508,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ...secondary.rightDifferences,
     ].some((line) => line.length > 0)
     const languages = (ctx.data.value as { languages?: unknown }).languages
+    const bilingual = readDiagramLanguages({ languages }) !== null
 
     return {
       left,
@@ -513,7 +516,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       similarities,
       leftDifferences,
       rightDifferences,
-      ...(hasSecondary ? { secondary } : {}),
+      ...(hasSecondary || bilingual ? { secondary } : {}),
       ...(languages && typeof languages === 'object' ? { languages } : {}),
       ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0 ? { _doubleBubbleMapNodeSizes } : {}),
       ...(Object.keys(_doubleBubbleMeasureHints).length > 0 ? { _doubleBubbleMeasureHints } : {}),
@@ -649,12 +652,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       secondary.steps.some((line) => line.length > 0) ||
       secondary.substeps.some((group) => group.substeps.some((line) => line.length > 0))
     const languages = (ctx.data.value as { languages?: unknown }).languages
+    const bilingual = readDiagramLanguages({ languages }) !== null
     return {
       title,
       steps: collected.steps,
       substeps: collected.substeps,
       orientation,
-      ...(hasSecondary ? { secondary } : {}),
+      ...(hasSecondary || bilingual ? { secondary } : {}),
       ...(languages && typeof languages === 'object' ? { languages } : {}),
     }
   }

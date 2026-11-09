@@ -12,7 +12,6 @@ import {
   getStage2ParentsForDiagram,
   stage2StageNameForType,
 } from '@/composables/aiBrainstorm/stageHelpers'
-import { i18n } from '@/i18n'
 import type { DiagramSession } from '@/stores/diagram'
 import type { NodeSuggestion } from '@/types/panels'
 import { isMindMapBranchNode } from '@/utils/mindMapLocation'
@@ -121,9 +120,7 @@ export async function applyAiBrainstormSelection(ctx: ApplyAiBrainstormContext):
   } else {
     remainder.forEach((s) => {
       const text = (s.text ?? '').trim()
-      if (text) {
-        diagramStore.addMindMapBranch(undefined, text, String(i18n.global.t('diagram.newChild')))
-      }
+      if (text) diagramStore.addMindMapBranch(undefined, text)
     })
   }
 

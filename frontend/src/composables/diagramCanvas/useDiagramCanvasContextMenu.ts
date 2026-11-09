@@ -2,12 +2,14 @@ import type { Ref } from 'vue'
 import { ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { diagramInsertLabel, insertLabelFields } from '@/diagramBilingual/insertLabel'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
 /** Narrow store surface for this composable (avoids Pinia `Store` deep instantiation). */
 export interface DiagramCanvasContextMenuStore {
   clearSelection: () => void
   type: string | null
+  data?: { languages?: unknown } | null
   addNode: (node: DiagramNode) => void
   pushHistory: (label: string) => void
   pasteClipboardAt: (options: {
@@ -24,7 +26,6 @@ export function useDiagramCanvasContextMenu(options: {
   presentationDiagramEditLocked: Ref<boolean>
   emitPaneClick: () => void
   diagramStore: DiagramCanvasContextMenuStore
-  t: (key: string) => string
   shouldSuppressPaneClear?: () => boolean
 }) {
   const {
@@ -34,9 +35,14 @@ export function useDiagramCanvasContextMenu(options: {
     presentationDiagramEditLocked,
     emitPaneClick,
     diagramStore,
-    t,
     shouldSuppressPaneClear,
   } = options
+
+  function newConceptLabel() {
+    return insertLabelFields(
+      diagramInsertLabel(diagramStore.data?.languages, 'diagram.defaultNewConcept')
+    )
+  }
 
   const contextMenuVisible = ref(false)
   const contextMenuX = ref(0)
@@ -74,7 +80,7 @@ export function useDiagramCanvasContextMenu(options: {
       })
       diagramStore.addNode({
         id: '',
-        text: t('diagram.defaultNewConcept'),
+        ...newConceptLabel(),
         type: 'branch',
         position: { x: flowPos.x - 50, y: flowPos.y - 18 },
       })
@@ -178,7 +184,7 @@ export function useDiagramCanvasContextMenu(options: {
     const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
     diagramStore.addNode({
       id: '',
-      text: t('diagram.defaultNewConcept'),
+      ...newConceptLabel(),
       type: 'branch',
       position: { x: flowPos.x - 50, y: flowPos.y - 18 },
     })

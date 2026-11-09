@@ -1,4 +1,8 @@
-import { i18n } from '@/i18n'
+import {
+  type InsertLabelInput,
+  diagramInsertLabel,
+  insertLabelFields,
+} from '@/diagramBilingual/insertLabel'
 import { BRACE_MAP_UID_DATA_KEY, takeBraceMapStableId } from '@/utils/braceMapIdentity'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
@@ -19,8 +23,8 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
 
   function addBraceMapPart(
     parentId: string,
-    text?: string,
-    subpartTexts?: [string, string]
+    text?: InsertLabelInput,
+    subpartTexts?: [InsertLabelInput, InsertLabelInput]
   ): boolean {
     if (type.value !== 'brace_map' || !data.value?.nodes || !data.value?.connections) return false
 
@@ -35,17 +39,21 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
         ? parentId
         : resolveBraceMapSubpartAttachParentId(parentId, connections, rootId)
 
-    const t = i18n.global.t
-    const partText = text ?? String(isAddingPart ? t('diagram.newPart') : t('diagram.newSubpart'))
+    const partText =
+      text ??
+      diagramInsertLabel(
+        data.value.languages,
+        isAddingPart ? 'diagram.newPart' : 'diagram.newSubpart'
+      )
     const claimed = new Set(data.value.nodes.map((n) => n.id).filter(Boolean))
     claimed.add('brace-whole')
     claimed.add('dimension-label')
 
-    const place = (parent: string, label: string): string => {
+    const place = (parent: string, label: InsertLabelInput): string => {
       const id = takeBraceMapStableId(claimed)
       ctx.addNode({
         id,
-        text: label,
+        ...insertLabelFields(label),
         type: 'brace',
         position: { x: 0, y: 0 },
         data: { [BRACE_MAP_UID_DATA_KEY]: id },
@@ -64,6 +72,12 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
       }
     }
 
+    commitBraceMapAdd()
+    return true
+  }
+
+  function commitBraceMapAdd(): void {
+    if (!data.value) return
     ctx.pushHistory('Add brace map part')
     emitCtxEvent(ctx, 'diagram:node_added', { node: null })
 
@@ -73,7 +87,30 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
       ctx.nodeDimensions.value
     )
     data.value.nodes = layoutNodes
+  }
 
+  /** Attach children straight under `parentId`, at any depth below the whole. */
+  function addBraceMapChildren(parentId: string, texts: readonly InsertLabelInput[]): boolean {
+    if (type.value !== 'brace_map' || !data.value?.nodes || !data.value?.connections) return false
+    if (texts.length === 0 || parentId === 'dimension-label') return false
+    if (!data.value.nodes.some((n) => n.id === parentId)) return false
+
+    const claimed = new Set(data.value.nodes.map((n) => n.id).filter(Boolean))
+    claimed.add('brace-whole')
+    claimed.add('dimension-label')
+    for (const label of texts) {
+      const id = takeBraceMapStableId(claimed)
+      ctx.addNode({
+        id,
+        ...insertLabelFields(label),
+        type: 'brace',
+        position: { x: 0, y: 0 },
+        data: { [BRACE_MAP_UID_DATA_KEY]: id },
+      })
+      ctx.addConnection(parentId, id)
+    }
+
+    commitBraceMapAdd()
     return true
   }
 
@@ -142,5 +179,5 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     return deletedIds.length
   }
 
-  return { addBraceMapPart, removeBraceMapNodes }
+  return { addBraceMapPart, addBraceMapChildren, removeBraceMapNodes }
 }

@@ -1,3 +1,4 @@
+import type { InsertLabelInput } from '@/diagramBilingual/insertLabel'
 import type { Connection, DiagramNode } from '@/types'
 import {
   TREE_TOPIC_NODE_ID,
@@ -267,19 +268,19 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     return true
   }
 
-  function addTreeMapCategory(text: string): boolean {
+  function addTreeMapCategory(label: InsertLabelInput): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'tree_map' || !data.value?.nodes) return false
-    const next = appendTreeMapCategory(data.value.nodes, text)
+    const next = appendTreeMapCategory(data.value.nodes, label)
     if (!next) return false
     commitTreeMapGraph(next.nodes, next.connections, 'Add tree category', 'add')
     return true
   }
 
-  function addTreeMapChild(categoryId: string, text: string): boolean {
+  function addTreeMapChild(categoryId: string, label: InsertLabelInput): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'tree_map' || !data.value?.nodes) return false
-    const next = appendTreeMapChild(data.value.nodes, categoryId, text)
+    const next = appendTreeMapChild(data.value.nodes, categoryId, label)
     if (!next) return false
     commitTreeMapGraph(next.nodes, next.connections, 'Add tree child', 'add')
     return true

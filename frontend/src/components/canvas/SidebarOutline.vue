@@ -17,6 +17,7 @@ import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranc
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDrag'
 import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutlineMirror'
+import { type InsertLabel, diagramInsertLabel } from '@/diagramBilingual/insertLabel'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 import {
@@ -174,18 +175,22 @@ function handleAddChild(nodeId: string): void {
   if (nodeId === 'topic') {
     diagramStore.addMindMapBranch(
       undefined,
-      t('canvas.toolbar.newBranch'),
-      t('canvas.toolbar.newChild')
+      nodeLabel('canvas.toolbar.newBranch'),
+      nodeLabel('canvas.toolbar.newChild')
     )
     return
   }
-  diagramStore.addMindMapChild(nodeId, t('canvas.toolbar.newChild'))
+  diagramStore.addMindMapChild(nodeId, nodeLabel('canvas.toolbar.newChild'))
 }
 
 function handleAddSibling(nodeId: string): void {
   if (nodeId === 'topic') return
   diagramStore.selectNodes(nodeId)
-  diagramStore.addMindMapSibling(nodeId, t('canvas.toolbar.newBranch'))
+  diagramStore.addMindMapSibling(nodeId, nodeLabel('canvas.toolbar.newBranch'))
+}
+
+function nodeLabel(key: string): InsertLabel {
+  return diagramInsertLabel(diagramStore.data?.languages, key)
 }
 
 function showOutlineSibling(nodeId: string): boolean {
