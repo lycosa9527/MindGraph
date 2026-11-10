@@ -114,6 +114,10 @@ def _build_spec(meta: dict[str, Any]) -> WorksheetDocxSpec:
         diagram_offset_y=_as_float(meta.get("diagramOffsetY", meta.get("diagram_offset_y")), 0.0),
         diagram_scale=_as_float(meta.get("diagramScale", meta.get("diagram_scale")), 1.0),
         labels=labels,
+        diagram_crop_top=_as_float(meta.get("diagramCropTop", meta.get("diagram_crop_top")), 0.0),
+        diagram_crop_right=_as_float(meta.get("diagramCropRight", meta.get("diagram_crop_right")), 0.0),
+        diagram_crop_bottom=_as_float(meta.get("diagramCropBottom", meta.get("diagram_crop_bottom")), 0.0),
+        diagram_crop_left=_as_float(meta.get("diagramCropLeft", meta.get("diagram_crop_left")), 0.0),
     )
 
 

@@ -11,6 +11,12 @@ import {
   fitImageRectInA4Region,
   fitImageRectOnA4Page,
 } from '@/utils/diagramPdfExport'
+import {
+  type WorksheetDiagramCrop,
+  ZERO_WORKSHEET_DIAGRAM_CROP,
+  applyWorksheetDiagramCropToSvg,
+  worksheetDiagramHasCustomPlacement,
+} from '@/utils/worksheetDiagramCrop'
 
 type JsPdfDoc = InstanceType<(typeof import('jspdf'))['jsPDF']> & {
   svg: (
@@ -25,6 +31,7 @@ export type MindMapVectorPdfPageInput = {
   diagramOffsetX?: number
   diagramOffsetY?: number
   diagramScale?: number
+  diagramCrop?: WorksheetDiagramCrop
 }
 
 function parseSvgElement(svg: string): SVGSVGElement {
@@ -40,9 +47,11 @@ function parseSvgElement(svg: string): SVGSVGElement {
 async function embedSvgOnPage(
   pdf: JsPdfDoc,
   vector: MindMapVectorSvgResult,
-  rect: { x: number; y: number; width: number; height: number }
+  rect: { x: number; y: number; width: number; height: number },
+  crop: WorksheetDiagramCrop = ZERO_WORKSHEET_DIAGRAM_CROP
 ): Promise<void> {
-  const svgEl = parseSvgElement(vector.svg)
+  const cropped = applyWorksheetDiagramCropToSvg(vector.svg, vector.viewBox, crop)
+  const svgEl = parseSvgElement(cropped.svg)
   await pdf.svg(svgEl, {
     x: rect.x,
     y: rect.y,
@@ -82,7 +91,8 @@ export async function buildA4PdfFromMindMapVectors(
     const offsetX = page.diagramOffsetX ?? 0
     const offsetY = page.diagramOffsetY ?? 0
     const scale = page.diagramScale ?? 1
-    const hasCustomPlacement = offsetX !== 0 || offsetY !== 0 || scale !== 1
+    const crop = page.diagramCrop ?? ZERO_WORKSHEET_DIAGRAM_CROP
+    const hasCustomPlacement = worksheetDiagramHasCustomPlacement(offsetX, offsetY, scale, crop)
     const marginMm = 10
 
     if (header) {
@@ -104,9 +114,10 @@ export async function buildA4PdfFromMindMapVectors(
         marginMm,
         offsetX,
         offsetY,
-        scale
+        scale,
+        crop
       )
-      await embedSvgOnPage(pdf, page.vector, rect)
+      await embedSvgOnPage(pdf, page.vector, rect, crop)
     } else if (index === 0 && hasCustomPlacement) {
       const rect = fitImageRectInA4Region(
         pdf,
@@ -116,9 +127,10 @@ export async function buildA4PdfFromMindMapVectors(
         marginMm,
         offsetX,
         offsetY,
-        scale
+        scale,
+        crop
       )
-      await embedSvgOnPage(pdf, page.vector, rect)
+      await embedSvgOnPage(pdf, page.vector, rect, crop)
     } else {
       const rect = fitImageRectOnA4Page(pdf, page.vector.width, page.vector.height)
       await embedSvgOnPage(pdf, page.vector, rect)

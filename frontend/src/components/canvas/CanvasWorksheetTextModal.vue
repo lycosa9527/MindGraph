@@ -10,9 +10,13 @@ import { ElInput } from 'element-plus'
 import { FileText } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import WorksheetDiagramAlignBar from '@/components/canvas/WorksheetDiagramAlignBar.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
-import { useWorksheetDiagramPreviewDrag } from '@/composables/canvas/useWorksheetDiagramPreviewDrag'
+import {
+  DIAGRAM_CROP_EDGES,
+  useWorksheetDiagramPreviewDrag,
+} from '@/composables/canvas/useWorksheetDiagramPreviewDrag'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type {
@@ -27,6 +31,7 @@ import {
   hasActiveWorksheetHeader,
   resolveWorksheetTopicText,
 } from '@/config/canvasWorksheetText'
+import '@/styles/canvas-worksheet-diagram-preview.css'
 import '@/styles/canvas-worksheet-text-modal.css'
 
 const visible = defineModel<boolean>('visible', { required: true })
@@ -187,24 +192,31 @@ const showClassVisibility = worksheetVisibility('showClass')
 const showDateVisibility = worksheetVisibility('showDate')
 const showInstructionVisibility = worksheetVisibility('showInstruction')
 
-const diagramOffsetX = computed({
-  get: () => draft.value.diagramOffsetX,
-  set: (value: number) => {
-    draft.value.diagramOffsetX = value
-  },
-})
-const diagramOffsetY = computed({
-  get: () => draft.value.diagramOffsetY,
-  set: (value: number) => {
-    draft.value.diagramOffsetY = value
-  },
-})
-const diagramScale = computed({
-  get: () => draft.value.diagramScale,
-  set: (value: number) => {
-    draft.value.diagramScale = value
-  },
-})
+function diagramNumberModel(
+  field:
+    | 'diagramOffsetX'
+    | 'diagramOffsetY'
+    | 'diagramScale'
+    | 'diagramCropTop'
+    | 'diagramCropRight'
+    | 'diagramCropBottom'
+    | 'diagramCropLeft'
+) {
+  return computed({
+    get: () => draft.value[field],
+    set: (value: number) => {
+      draft.value[field] = value
+    },
+  })
+}
+
+const diagramOffsetX = diagramNumberModel('diagramOffsetX')
+const diagramOffsetY = diagramNumberModel('diagramOffsetY')
+const diagramScale = diagramNumberModel('diagramScale')
+const diagramCropTop = diagramNumberModel('diagramCropTop')
+const diagramCropRight = diagramNumberModel('diagramCropRight')
+const diagramCropBottom = diagramNumberModel('diagramCropBottom')
+const diagramCropLeft = diagramNumberModel('diagramCropLeft')
 const diagramDragEnabled = computed(() => Boolean(diagramPreviewUrl.value))
 
 const {
@@ -213,20 +225,29 @@ const {
   diagramFrameRef,
   dragging,
   resizing,
+  croppingAxis,
+  diagramAlign,
   showCenterGuideX,
   showCenterGuideY,
   diagramFrameStyle,
+  diagramImageStyle,
   onFramePointerDown,
   onFramePointerMove,
   onFramePointerUp,
   onFramePointerCancel,
+  onCropKeyDown,
   onDiagramImageLoad,
   syncFreeSpace,
   resetInteraction,
+  alignDiagram,
 } = useWorksheetDiagramPreviewDrag({
   offsetX: diagramOffsetX,
   offsetY: diagramOffsetY,
   scale: diagramScale,
+  cropTop: diagramCropTop,
+  cropRight: diagramCropRight,
+  cropBottom: diagramCropBottom,
+  cropLeft: diagramCropLeft,
   enabled: diagramDragEnabled,
 })
 
@@ -483,21 +504,29 @@ async function handleReset() {
                   v-if="diagramPreviewUrl"
                   ref="diagramFrameRef"
                   class="worksheet-text-modal__diagram-frame"
-                  :class="{ 'is-dragging': dragging, 'is-resizing': resizing }"
+                  :class="{
+                    'is-dragging': dragging,
+                    'is-resizing': resizing,
+                    'is-cropping-x': croppingAxis === 'x',
+                    'is-cropping-y': croppingAxis === 'y',
+                  }"
                   :style="diagramFrameStyle"
                   @pointerdown="onFramePointerDown"
                   @pointermove="onFramePointerMove"
                   @pointerup="onFramePointerUp"
                   @pointercancel="onFramePointerCancel"
                 >
-                  <img
-                    ref="diagramImgRef"
-                    :src="diagramPreviewUrl"
-                    class="worksheet-text-modal__paper-diagram-img"
-                    alt=""
-                    draggable="false"
-                    @load="onDiagramImageLoad"
-                  />
+                  <div class="worksheet-text-modal__diagram-viewport">
+                    <img
+                      ref="diagramImgRef"
+                      :src="diagramPreviewUrl"
+                      class="worksheet-text-modal__paper-diagram-img"
+                      :style="diagramImageStyle"
+                      alt=""
+                      draggable="false"
+                      @load="onDiagramImageLoad"
+                    />
+                  </div>
                   <span
                     class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--nw"
                     data-handle="nw"
@@ -513,6 +542,23 @@ async function handleReset() {
                   <span
                     class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--se"
                     data-handle="se"
+                  />
+                  <span
+                    v-for="edge in DIAGRAM_CROP_EDGES"
+                    :key="edge.id"
+                    class="worksheet-text-modal__diagram-crop"
+                    :class="`worksheet-text-modal__diagram-crop--${edge.id}`"
+                    :data-handle="edge.id"
+                    :aria-label="t(edge.labelKey)"
+                    role="slider"
+                    :aria-valuemin="0"
+                    :aria-valuemax="75"
+                    :aria-valuenow="Math.round(draft[edge.field] * 100)"
+                    :aria-orientation="
+                      edge.id === 'n' || edge.id === 's' ? 'vertical' : 'horizontal'
+                    "
+                    tabindex="0"
+                    @keydown="onCropKeyDown($event, edge.id)"
                   />
                 </div>
                 <p
@@ -531,12 +577,18 @@ async function handleReset() {
             </div>
           </div>
         </div>
-        <p
+        <div
           v-if="diagramPreviewUrl"
           class="worksheet-text-modal__preview-hint"
         >
-          <I18nText k="canvas.worksheetText.dragDiagramHint" />
-        </p>
+          <p class="worksheet-text-modal__preview-hint-text">
+            <I18nText k="canvas.worksheetText.dragDiagramHint" />
+          </p>
+          <WorksheetDiagramAlignBar
+            :align="diagramAlign"
+            @align="alignDiagram"
+          />
+        </div>
       </aside>
 
       <div class="worksheet-text-modal__controls">

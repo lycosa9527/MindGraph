@@ -1,5 +1,5 @@
 """
-School persona inputs for the shared MindMate Dify chatflow.
+School persona inputs, and the canvas diagram text, for the MindMate Dify chatflow.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -17,6 +17,8 @@ from utils.auth.org_privatization import organization_is_privatized
 from utils.db.session_open import system_rls_session
 
 DEFAULT_AGENT_LABEL = "MindMate"
+DIAGRAM_INPUT_KEY = "mg_diagram"
+DIAGRAM_INPUT_MAX = 5000
 
 
 def _stripped(value: object) -> str:
@@ -76,3 +78,28 @@ async def apply_persona_inputs_for_organization_id(
 ) -> None:
     """Load the organization row and overwrite persona keys on inputs."""
     apply_persona_inputs(inputs, await _organization_for_persona(organization_id))
+
+
+def clip_diagram_text(value: object) -> str:
+    """Keep diagram text inside the assistant message cap, ending on a whole line."""
+    if not isinstance(value, str):
+        return ""
+    text = value.strip()
+    if len(text) <= DIAGRAM_INPUT_MAX:
+        return text
+    cut = text[:DIAGRAM_INPUT_MAX]
+    line_end = cut.rfind("\n")
+    if line_end > 0:
+        return cut[:line_end].rstrip()
+    return cut
+
+
+def apply_diagram_input(inputs: dict[str, Any]) -> None:
+    """Clip ``mg_diagram``. Drop it when the value is empty or not text."""
+    if DIAGRAM_INPUT_KEY not in inputs:
+        return
+    clipped = clip_diagram_text(inputs.get(DIAGRAM_INPUT_KEY))
+    if clipped:
+        inputs[DIAGRAM_INPUT_KEY] = clipped
+        return
+    inputs.pop(DIAGRAM_INPUT_KEY, None)

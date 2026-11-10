@@ -1,9 +1,11 @@
 /**
- * Chrome extension MindMate first messages embed page extraction in Dify query.
- * Canvas diagram context uses the same split: the model sees the outline,
- * the bubble shows only the teacher's question.
+ * Teacher-visible MindMate text.
+ * Extension page-context payloads, and canvas queries saved before the
+ * outline moved to the `mg_diagram` input, keep that extra text off the bubble.
  */
-import { MINDMATE_DIAGRAM_CONTEXT_MARKER } from '@/utils/mindmateDiagramBrief'
+
+/** Prefix on canvas queries sent before the outline moved to `mg_diagram`. */
+const DIAGRAM_CONTEXT_MARKER = '[MindMate diagram]'
 
 const MATERIAL_HEADER_MARKERS = [
   '**【参考材料：网页正文】**',
@@ -44,7 +46,7 @@ function extractUserQuestionFromPageContext(text: string): string | null {
 }
 
 function questionAfterDiagramBrief(text: string): string | null {
-  if (!text.startsWith(MINDMATE_DIAGRAM_CONTEXT_MARKER)) {
+  if (!text.startsWith(DIAGRAM_CONTEXT_MARKER)) {
     return null
   }
   const splitAt = text.indexOf('\n\n')

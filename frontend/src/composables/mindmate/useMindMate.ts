@@ -55,6 +55,7 @@ import {
   queueMindmateDiagramPreviewsForMessages,
 } from '@/utils/mindmateDiagramPreviewPersist'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
+import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 import {
   appendDifyConversationRouteQuery,
   buildDifyConversationRouteSearchParams,
@@ -565,7 +566,11 @@ export function useMindMate(options: MindMateOptions = {}) {
   // SSE Streaming
   // =========================================================================
 
-  async function sendMessage(message: string, showUserMessage = true): Promise<void> {
+  async function sendMessage(
+    message: string,
+    showUserMessage = true,
+    inputs?: Record<string, string>
+  ): Promise<void> {
     if (!message.trim() && pendingFiles.value.length === 0) return
 
     // Cancel any ongoing stream
@@ -593,7 +598,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         msg.files = filesToSend
       }
       // Track user message for title generation (via store)
-      mindMateStore.trackMessage(message, filesToSend)
+      mindMateStore.trackMessage(displayMindmateUserQueryForUi(message), filesToSend)
     }
 
     // Clear message cache for this conversation (new message invalidates cache)
@@ -638,6 +643,9 @@ export function useMindMate(options: MindMateOptions = {}) {
           transfer_method: 'local_file',
           upload_file_id: f.id,
         }))
+      }
+      if (inputs && Object.keys(inputs).length > 0) {
+        requestBody.inputs = inputs
       }
 
       // Use fetch with credentials (token in httpOnly cookie)
@@ -757,7 +765,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     }
   }
 
-  function regenerateMessage(messageId: string): void {
+  function regenerateMessage(messageId: string, inputs?: Record<string, string>): void {
     // Find the user message before this assistant message
     const msgIndex = messages.value.findIndex((m) => m.id === messageId)
     if (msgIndex <= 0) return
@@ -777,8 +785,8 @@ export function useMindMate(options: MindMateOptions = {}) {
     messages.value = messages.value.slice(0, msgIndex)
 
     // Resend the user message
-    const userMessage = messages.value[userMsgIndex].content
-    sendMessage(userMessage, false)
+    const userMessage = displayMindmateUserQueryForUi(messages.value[userMsgIndex].content)
+    sendMessage(userMessage, false, inputs)
   }
 
   async function submitFeedback(localMessageId: string, rating: FeedbackRating): Promise<boolean> {

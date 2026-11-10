@@ -6,6 +6,7 @@ import io
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from PIL import Image, UnidentifiedImageError
 from docx import Document as create_document
 from docx.document import Document
 from docx.enum.section import WD_ORIENT
@@ -35,6 +36,9 @@ _DOCX_IMAGE_ERRORS = (
     InvalidImageStreamError,
     UnexpectedEndOfFileError,
 )
+_CROP_MAX = 0.75
+_CROP_MIN_VISIBLE = 0.2
+_CROP_ERRORS = (UnidentifiedImageError, OSError)
 
 
 @dataclass(frozen=True)
@@ -65,6 +69,10 @@ class WorksheetDocxSpec:
     diagram_offset_y: float
     diagram_scale: float
     labels: WorksheetDocxLabels
+    diagram_crop_top: float = 0.0
+    diagram_crop_right: float = 0.0
+    diagram_crop_bottom: float = 0.0
+    diagram_crop_left: float = 0.0
 
 
 def _clamp_offset(value: float) -> float:
@@ -81,6 +89,66 @@ def _clamp_scale(value: float) -> float:
     if value > 1.0:
         return 1.0
     return value
+
+
+def _clamp_crop_edge(value: float) -> float:
+    if value < 0.0:
+        return 0.0
+    if value > _CROP_MAX:
+        return _CROP_MAX
+    return value
+
+
+def _scale_crop_pair(first: float, second: float) -> tuple[float, float]:
+    """Keep opposite edges from hiding the whole image."""
+    max_sum = 1.0 - _CROP_MIN_VISIBLE
+    total = first + second
+    if total <= max_sum or total <= 0.0:
+        return first, second
+    factor = max_sum / total
+    return first * factor, second * factor
+
+
+def _normalize_crop(
+    top: float,
+    right: float,
+    bottom: float,
+    left: float,
+) -> tuple[float, float, float, float]:
+    clamped_top, clamped_bottom = _scale_crop_pair(_clamp_crop_edge(top), _clamp_crop_edge(bottom))
+    clamped_left, clamped_right = _scale_crop_pair(_clamp_crop_edge(left), _clamp_crop_edge(right))
+    return clamped_top, clamped_right, clamped_bottom, clamped_left
+
+
+def _crop_diagram_bytes(
+    diagram_bytes: bytes,
+    top: float,
+    right: float,
+    bottom: float,
+    left: float,
+) -> bytes:
+    """Return PNG bytes of the visible window. Uncropped input is returned unchanged."""
+    if top <= 0.0 and right <= 0.0 and bottom <= 0.0 and left <= 0.0:
+        return diagram_bytes
+    try:
+        with Image.open(io.BytesIO(diagram_bytes)) as image:
+            width, height = image.size
+            if width <= 0 or height <= 0:
+                raise ValueError("diagram image is invalid or unsupported")
+            x0 = min(width - 1, max(0, int(round(width * left))))
+            y0 = min(height - 1, max(0, int(round(height * top))))
+            visible_w = max(1, int(round(width * (1.0 - left - right))))
+            visible_h = max(1, int(round(height * (1.0 - top - bottom))))
+            x1 = min(width, x0 + visible_w)
+            y1 = min(height, y0 + visible_h)
+            cropped = image.crop((x0, y0, x1, y1))
+            if cropped.mode == "CMYK":
+                cropped = cropped.convert("RGB")
+            buffer = io.BytesIO()
+            cropped.save(buffer, format="PNG")
+            return buffer.getvalue()
+    except _CROP_ERRORS as exc:
+        raise ValueError("diagram image is invalid or unsupported") from exc
 
 
 def _set_r_fonts(r_fonts: Any) -> None:
@@ -180,15 +248,24 @@ def _add_diagram(
     offset_x: float,
     offset_y: float,
     scale: float,
+    crop: tuple[float, float, float, float],
 ) -> None:
     ox = _clamp_offset(offset_x)
     oy = _clamp_offset(offset_y)
     sc = _clamp_scale(scale)
+    top, right, bottom, left = _normalize_crop(*crop)
+    visible_w = 1.0 - left - right
+    visible_h = 1.0 - top - bottom
 
     diagram_box_h_mm = max(40.0, content_height_mm * DIAGRAM_HEIGHT_FRACTION)
-    max_img_h_mm = diagram_box_h_mm * sc
-    max_img_w_mm = content_width_mm * sc
-    img_w_mm, img_h_mm = _fit_diagram_size_mm(diagram_bytes, max_img_w_mm, max_img_h_mm)
+    full_w_mm, full_h_mm = _fit_diagram_size_mm(
+        diagram_bytes,
+        content_width_mm,
+        diagram_box_h_mm,
+    )
+    img_w_mm = full_w_mm * visible_w * sc
+    img_h_mm = full_h_mm * visible_h * sc
+    placed_bytes = _crop_diagram_bytes(diagram_bytes, top, right, bottom, left)
     free_w = max(0.0, content_width_mm - img_w_mm)
     free_h = max(0.0, diagram_box_h_mm - img_h_mm)
     left_indent_mm = (free_w / 2.0) + (ox * free_w / 2.0)
@@ -204,7 +281,7 @@ def _add_diagram(
     paragraph.paragraph_format.left_indent = Mm(left_indent_mm)
     run = paragraph.add_run()
     try:
-        run.add_picture(io.BytesIO(diagram_bytes), width=Mm(img_w_mm))
+        run.add_picture(io.BytesIO(placed_bytes), width=Mm(img_w_mm), height=Mm(img_h_mm))
     except _DOCX_IMAGE_ERRORS as exc:
         raise ValueError("diagram image is invalid or unsupported") from exc
 
@@ -247,6 +324,12 @@ def build_worksheet_docx(spec: WorksheetDocxSpec, diagram_bytes: bytes) -> bytes
         spec.diagram_offset_x,
         spec.diagram_offset_y,
         spec.diagram_scale,
+        (
+            spec.diagram_crop_top,
+            spec.diagram_crop_right,
+            spec.diagram_crop_bottom,
+            spec.diagram_crop_left,
+        ),
     )
     _stamp_run_fonts(document)
 

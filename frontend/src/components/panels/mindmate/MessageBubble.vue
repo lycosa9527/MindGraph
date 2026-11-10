@@ -25,7 +25,6 @@ import type { ModelLoadPhase } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
-import { formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 import {
   extractMindmatePreviewUniqueId,
   hasGeneratedDiagramImage,
@@ -35,7 +34,9 @@ import {
 } from '@/utils/mindmateDiagramMeta'
 import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
 import { notifyMindmateDiagramPreviewExpired } from '@/utils/mindmateDiagramPreviewExpiredNotify'
+import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 import { formatSeminarFileSize } from '@/utils/mindmateSeminarFolder'
+import { formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 import { isTeachingInstructionReply } from '@/utils/mindmateTeachingDesignFlag'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
@@ -351,12 +352,18 @@ watch(
 
 const showChainOfThought = computed(() => authStore.user?.showChainOfThought === true)
 
+const userVisibleContent = computed(() =>
+  props.message.role === 'user'
+    ? displayMindmateUserQueryForUi(props.message.content)
+    : props.message.content
+)
+
 const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => mindmateDisplayContent.value, {
   stripThinkBlocks: () => !showChainOfThought.value,
 })
 
 // Local editing state
-const localEditingContent = ref(props.editingContent || props.message.content)
+const localEditingContent = ref(props.editingContent || userVisibleContent.value)
 
 const editInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
@@ -464,7 +471,7 @@ function handleSaveEdit() {
 }
 
 function handleCancelEdit() {
-  localEditingContent.value = props.message.content
+  localEditingContent.value = userVisibleContent.value
   emit('cancelEdit')
 }
 
@@ -667,7 +674,7 @@ function handleMarkdownClick(event: MouseEvent) {
                 </template>
               </div>
               <p class="whitespace-pre-wrap text-sm leading-normal m-0">
-                {{ message.content }}
+                {{ userVisibleContent }}
               </p>
             </template>
 
@@ -722,7 +729,7 @@ function handleMarkdownClick(event: MouseEvent) {
               <ElButton
                 text
                 circle
-                @click="emit('copy', message.content)"
+                @click="emit('copy', userVisibleContent)"
               >
                 <ElIcon :size="16"><CopyDocument /></ElIcon>
               </ElButton>

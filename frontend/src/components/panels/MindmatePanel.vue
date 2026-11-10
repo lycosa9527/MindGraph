@@ -63,7 +63,7 @@ import {
   isMindmateBlockedDocUpload,
   isMindmateComposerUploadableFile,
 } from '@/utils/mindmateComposerUpload'
-import { buildMindmateDiagramBrief, withMindmateDiagramBrief } from '@/utils/mindmateDiagramBrief'
+import { buildMindmateDiagramBrief, mindmateDiagramInputs } from '@/utils/mindmateDiagramBrief'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 import {
   type SeminarBrief,
@@ -268,7 +268,8 @@ function mapLibrarySeed(msgs: Array<{ role: string; content: string }>): Mindmat
     .filter((message) => message.content.trim())
     .map((message) => ({
       role: message.role as 'user' | 'assistant',
-      content: message.content,
+      content:
+        message.role === 'user' ? displayMindmateUserQueryForUi(message.content) : message.content,
       sender_user_id: message.role === 'user' ? Number(authStore.user?.id) || null : null,
       username: message.role === 'user' ? (authStore.user?.username ?? null) : null,
     }))
@@ -766,11 +767,11 @@ function currentDiagramBrief(): string {
   )
 }
 
-function messageForSend(prompt: string): string {
+function diagramInputs(): Record<string, string> | undefined {
   if (isFullpageMode.value || !includeDiagramInfo.value) {
-    return prompt
+    return undefined
   }
-  return withMindmateDiagramBrief(prompt, currentDiagramBrief())
+  return mindmateDiagramInputs(currentDiagramBrief())
 }
 
 // Send message using composable
@@ -778,13 +779,13 @@ async function sendMessage() {
   if ((!inputText.value.trim() && mindMate.pendingFiles.value.length === 0) || isLoading.value)
     return
 
-  const message = messageForSend(inputText.value.trim())
+  const message = inputText.value.trim()
   if (showHomeModeSwitch.value && homeMode.value === 'seminar') {
     return
   }
 
   inputText.value = ''
-  await mindMate.sendMessage(message)
+  await mindMate.sendMessage(message, true, diagramInputs())
 }
 
 const pendingSeminarBrief = ref<SeminarBrief | null>(null)
@@ -1253,7 +1254,7 @@ async function copyMessage(content: string) {
 
 // Regenerate message
 function regenerateMessage(messageId: string) {
-  mindMate.regenerateMessage(messageId)
+  mindMate.regenerateMessage(messageId, diagramInputs())
 }
 
 // Handle like/dislike feedback
@@ -1357,7 +1358,7 @@ function exportWordTemplate(message: MindMateMessage) {
 // Start editing message
 function startEdit(message: { id: string; content: string }) {
   editingMessageId.value = message.id
-  editingContent.value = message.content
+  editingContent.value = displayMindmateUserQueryForUi(message.content)
 }
 
 // Cancel editing
@@ -1383,7 +1384,7 @@ async function saveEdit(content: string) {
     mindMate.messages.value = mindMate.messages.value.slice(0, msgIndex)
   }
 
-  await mindMate.sendMessage(content, false)
+  await mindMate.sendMessage(content, false, diagramInputs())
 }
 
 // Get previous user message for regeneration context

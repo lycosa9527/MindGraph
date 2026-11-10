@@ -159,6 +159,8 @@ run_backend() {
     tests/test_teaching_design_docx_export_api.py \
     tests/test_dify_user_key.py \
     tests/test_dify_file_upload_types.py \
+    tests/test_org_dify_inputs.py \
+    tests/test_worksheet_docx.py \
     tests/test_mindbot_bind_messages.py \
     tests/test_dingtalk_bind_imports.py \
     tests/test_mindbot_pair_code_handler.py \
@@ -360,6 +362,7 @@ run_frontend() {
     tests/tsecCaptcha.spec.ts tests/positionTsecCaptcha.spec.ts \
     tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
     tests/mindmateDiagramBrief.spec.ts tests/mindmateExtensionPageContext.spec.ts \
+    tests/canvasWorksheetText.spec.ts tests/worksheetDiagramCrop.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
     tests/normalizeAuthUser.spec.ts \
     tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \

@@ -187,6 +187,27 @@ describe('diagramPdfExport worksheet layout', () => {
     expect(shifted.y).toBeLessThan(centered.y)
   })
 
+  it('shrinks the fitted diagram by a bottom crop and recenters it', () => {
+    const pdf = {
+      internal: {
+        pageSize: {
+          getWidth: () => 297,
+          getHeight: () => 210,
+        },
+      },
+    }
+    const full = fitImageRectInA4Region(pdf, 1600, 900, 40, 10, 0, 0, 1)
+    const cropped = fitImageRectInA4Region(pdf, 1600, 900, 40, 10, 0, 0, 1, {
+      top: 0,
+      right: 0,
+      bottom: 0.2,
+      left: 0,
+    })
+    expect(cropped.width).toBeCloseTo(full.width)
+    expect(cropped.height).toBeCloseTo(full.height * 0.8)
+    expect(cropped.y).toBeGreaterThan(full.y)
+  })
+
   it('scales fitted diagram relative to max-fit size', () => {
     const pdf = {
       internal: {

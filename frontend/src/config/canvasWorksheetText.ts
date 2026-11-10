@@ -2,6 +2,10 @@
  * Worksheet header fields for classroom print/export (name, class, date, instructions).
  * Persisted in sessionStorage for the current browser tab session.
  */
+import {
+  type WorksheetDiagramCrop,
+  normalizeWorksheetDiagramCrop,
+} from '@/utils/worksheetDiagramCrop'
 
 export interface CanvasWorksheetTextOptions {
   /** When false, export is a plain DOC/PDF with no classroom header. */
@@ -23,6 +27,14 @@ export interface CanvasWorksheetTextOptions {
   diagramOffsetY: number
   /** Relative to max-fit size in the content region; clamped to 0.25–1. */
   diagramScale: number
+  /**
+   * Fraction of the source image hidden on each edge (0 = none).
+   * The remaining window is what PDF / Word export draws.
+   */
+  diagramCropTop: number
+  diagramCropRight: number
+  diagramCropBottom: number
+  diagramCropLeft: number
 }
 
 export const DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS: CanvasWorksheetTextOptions = {
@@ -37,6 +49,10 @@ export const DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS: CanvasWorksheetTextOptions =
   diagramOffsetX: 0,
   diagramOffsetY: 0,
   diagramScale: 1,
+  diagramCropTop: 0,
+  diagramCropRight: 0,
+  diagramCropBottom: 0,
+  diagramCropLeft: 0,
 }
 
 /** Classroom-friendly preset applied from the modal reset action. */
@@ -60,6 +76,21 @@ function readOffset(value: unknown, fallback: number): number {
 function readScale(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   return Math.max(0.25, Math.min(1, value))
+}
+
+function readCropEdge(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+export function worksheetDiagramCropFromOptions(
+  options: CanvasWorksheetTextOptions | undefined
+): WorksheetDiagramCrop {
+  return normalizeWorksheetDiagramCrop({
+    top: options?.diagramCropTop ?? 0,
+    right: options?.diagramCropRight ?? 0,
+    bottom: options?.diagramCropBottom ?? 0,
+    left: options?.diagramCropLeft ?? 0,
+  })
 }
 
 export function hasActiveWorksheetHeader(options: CanvasWorksheetTextOptions | undefined): boolean {
@@ -89,6 +120,12 @@ export function loadCanvasWorksheetTextOptions(): CanvasWorksheetTextOptions {
     if (!raw) return { ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS }
     const parsed = JSON.parse(raw) as Partial<CanvasWorksheetTextOptions>
     const defaults = DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS
+    const crop = normalizeWorksheetDiagramCrop({
+      top: readCropEdge(parsed.diagramCropTop),
+      right: readCropEdge(parsed.diagramCropRight),
+      bottom: readCropEdge(parsed.diagramCropBottom),
+      left: readCropEdge(parsed.diagramCropLeft),
+    })
     return {
       learningSheetMode: readBoolean(parsed.learningSheetMode, defaults.learningSheetMode),
       showTopic: readBoolean(parsed.showTopic, defaults.showTopic),
@@ -104,6 +141,10 @@ export function loadCanvasWorksheetTextOptions(): CanvasWorksheetTextOptions {
       diagramOffsetX: readOffset(parsed.diagramOffsetX, defaults.diagramOffsetX),
       diagramOffsetY: readOffset(parsed.diagramOffsetY, defaults.diagramOffsetY),
       diagramScale: readScale(parsed.diagramScale, defaults.diagramScale),
+      diagramCropTop: crop.top,
+      diagramCropRight: crop.right,
+      diagramCropBottom: crop.bottom,
+      diagramCropLeft: crop.left,
     }
   } catch {
     return { ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS }

@@ -2,6 +2,7 @@
  * High-level mind-map vector export helpers (snapshot → SVG / PDF pages / DOCX PNG).
  */
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
+import { worksheetDiagramCropFromOptions } from '@/config/canvasWorksheetText'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useUIStore } from '@/stores/ui'
 import {
@@ -78,6 +79,7 @@ export async function exportMindMapVectorPdfDocument(options: {
       diagramOffsetX: worksheetText?.diagramOffsetX ?? 0,
       diagramOffsetY: worksheetText?.diagramOffsetY ?? 0,
       diagramScale: worksheetText?.diagramScale ?? 1,
+      diagramCrop: worksheetDiagramCropFromOptions(worksheetText),
     })),
     options.orientation
   )

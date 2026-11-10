@@ -14,7 +14,11 @@ import {
 } from '@/composables/auth/useThinkingCoinSync'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import { hasActiveWorksheetHeader, resolveWorksheetTopicText } from '@/config/canvasWorksheetText'
+import {
+  hasActiveWorksheetHeader,
+  resolveWorksheetTopicText,
+  worksheetDiagramCropFromOptions,
+} from '@/config/canvasWorksheetText'
 import { specHasSecondaryText } from '@/diagramBilingual/mirror'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
@@ -57,6 +61,7 @@ import {
   addRasterImageToA4PdfPage,
   addWorksheetPageToPdf,
   compressRasterDataUrlForA4Pdf,
+  cropRasterDataUrl,
   isPdfExportCommand,
   resolvePdfOrientationFromExportOptions,
 } from '@/utils/diagramPdfExport'
@@ -64,6 +69,11 @@ import { type WorksheetHeaderLabels, captureWorksheetHeader } from '@/utils/diag
 import { applyLlmExportWatermarkToCanvas } from '@/utils/llmExportWatermark'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 import { encodeMgFileContents } from '@/utils/mgInterchange'
+import {
+  ZERO_WORKSHEET_DIAGRAM_CROP,
+  worksheetDiagramCropIsActive,
+  worksheetDiagramHasCustomPlacement,
+} from '@/utils/worksheetDiagramCrop'
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'diagram'
@@ -168,7 +178,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const diagramOffsetX = worksheetText?.diagramOffsetX ?? 0
     const diagramOffsetY = worksheetText?.diagramOffsetY ?? 0
     const diagramScale = worksheetText?.diagramScale ?? 1
-    const hasCustomPlacement = diagramOffsetX !== 0 || diagramOffsetY !== 0 || diagramScale !== 1
+    const diagramCrop = worksheetDiagramCropFromOptions(worksheetText)
+    const hasCustomPlacement = worksheetDiagramHasCustomPlacement(
+      diagramOffsetX,
+      diagramOffsetY,
+      diagramScale,
+      diagramCrop
+    )
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index]
       if (index > 0) {
@@ -182,10 +198,23 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         image.image
       )
       const includeHeader = headerCapture !== null && index === 0
+      const placeDiagram = includeHeader || (index === 0 && hasCustomPlacement && !headerCapture)
+      let diagramDataUrl = compressed.dataUrl
+      let placedCrop = diagramCrop
+      if (placeDiagram && worksheetDiagramCropIsActive(diagramCrop)) {
+        const cropped = await cropRasterDataUrl(
+          compressed.dataUrl,
+          compressed.width,
+          compressed.height,
+          diagramCrop
+        )
+        diagramDataUrl = cropped.dataUrl
+        if (!cropped.applied) placedCrop = ZERO_WORKSHEET_DIAGRAM_CROP
+      }
       if (includeHeader && headerCapture) {
         addWorksheetPageToPdf(
           pdf,
-          compressed.dataUrl,
+          diagramDataUrl,
           compressed.width,
           compressed.height,
           headerCapture.dataUrl,
@@ -195,13 +224,14 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           4,
           diagramOffsetX,
           diagramOffsetY,
-          diagramScale
+          diagramScale,
+          placedCrop
         )
       } else if (index === 0 && hasCustomPlacement && !headerCapture) {
-        // No header, but user placed/resized the diagram — honor transform on page 1.
+        // No header, but user placed, resized, or cropped the diagram — honor it on page 1.
         addWorksheetPageToPdf(
           pdf,
-          compressed.dataUrl,
+          diagramDataUrl,
           compressed.width,
           compressed.height,
           null,
@@ -211,7 +241,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           4,
           diagramOffsetX,
           diagramOffsetY,
-          diagramScale
+          diagramScale,
+          placedCrop
         )
       } else {
         addRasterImageToA4PdfPage(pdf, compressed.dataUrl, compressed.width, compressed.height)
@@ -586,6 +617,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           diagramOffsetX: worksheetText.diagramOffsetX,
           diagramOffsetY: worksheetText.diagramOffsetY,
           diagramScale: worksheetText.diagramScale,
+          diagramCropTop: worksheetText.diagramCropTop,
+          diagramCropRight: worksheetText.diagramCropRight,
+          diagramCropBottom: worksheetText.diagramCropBottom,
+          diagramCropLeft: worksheetText.diagramCropLeft,
           labels: {
             name: t('canvas.worksheetText.fieldName'),
             className: t('canvas.worksheetText.fieldClass'),

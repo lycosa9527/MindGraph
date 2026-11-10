@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Connection, DiagramNode, NodeType } from '@/types'
-import { buildMindmateDiagramBrief, withMindmateDiagramBrief } from '@/utils/mindmateDiagramBrief'
-import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
+import {
+  MINDMATE_DIAGRAM_INPUT_KEY,
+  buildMindmateDiagramBrief,
+  mindmateDiagramInputs,
+} from '@/utils/mindmateDiagramBrief'
 
 const zh: Record<string, string> = {
   'mindmate.diagramContext.childJoiner': '、',
@@ -123,6 +126,36 @@ describe('mindmate diagram brief', () => {
         node('blank', '', 'bubble'),
       ])
     ).toBe(['圆圈图用来围绕一个中心词展开联想。', '中心词：苹果', '联想：水果、红色'].join('\n'))
+  })
+
+  it('keeps the space in an English list', () => {
+    const english = (key: string, params?: Record<string, unknown>): string => {
+      const lines: Record<string, string> = {
+        'mindmate.diagramContext.purpose.circle_map':
+          'A circle map associates ideas around one central word.',
+        'mindmate.diagramContext.field.center': 'Central word: {text}',
+        'mindmate.diagramContext.field.contexts': 'Associations: {items}',
+        'mindmate.diagramContext.childJoiner': ', ',
+      }
+      let text = lines[key] ?? key
+      if (!params) return text
+      for (const [name, value] of Object.entries(params)) {
+        text = text.replaceAll(`{${name}}`, String(value ?? ''))
+      }
+      return text
+    }
+    expect(
+      buildMindmateDiagramBrief(
+        'circle_map',
+        [
+          node('topic', 'apple', 'topic'),
+          node('context-0', 'fruit', 'bubble'),
+          node('context-1', 'red', 'bubble'),
+        ],
+        [],
+        english
+      )
+    ).toContain('Associations: fruit, red')
   })
 
   it('describes bubble-map attributes in ring order', () => {
@@ -340,14 +373,20 @@ describe('mindmate diagram brief', () => {
     ).toBe(['括号图用来把一个整体拆成它的组成部分。', '整体：自行车', '部分1：车轮'].join('\n'))
   })
 
-  it('sends the outline with the prompt and shows only the prompt in the bubble', () => {
-    const sent = withMindmateDiagramBrief(
-      '请帮我看这张图',
-      '思维导图用来从一个中心主题向外分层展开。'
-    )
-    expect(sent.startsWith('[MindMate diagram]')).toBe(true)
-    expect(sent.endsWith('请帮我看这张图')).toBe(true)
-    expect(displayMindmateUserQueryForUi(sent)).toBe('请帮我看这张图')
+  it('packs the outline as the mg_diagram input and leaves an empty brief out', () => {
+    expect(mindmateDiagramInputs('思维导图用来从一个中心主题向外分层展开。')).toEqual({
+      [MINDMATE_DIAGRAM_INPUT_KEY]: '思维导图用来从一个中心主题向外分层展开。',
+    })
+    expect(mindmateDiagramInputs('   ')).toBeUndefined()
+  })
+
+  it('clips a long outline on the last whole line', () => {
+    const line = `分支：${'甲'.repeat(80)}`
+    const packed = mindmateDiagramInputs(Array.from({ length: 80 }, () => line).join('\n'))
+    const text = packed?.[MINDMATE_DIAGRAM_INPUT_KEY] ?? ''
+    expect(text.length).toBeLessThanOrEqual(5000)
+    expect(text.endsWith('甲')).toBe(true)
+    expect(text.split('\n').every((row) => row === line)).toBe(true)
   })
 
   it('returns nothing when the canvas has no nodes', () => {

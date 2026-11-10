@@ -318,6 +318,7 @@ export default {
   'settings.tabs.language': '語言',
   'settings.tabs.plugins': '插件',
   'settings.tabs.knowledge': '個人知識庫',
+  'settings.knowledge.testing': 'In testing',
   'settings.tabs.aria': '設置分類',
   'settings.knowledge.uploadsTitle': '我的上傳',
   'settings.knowledge.uploadsHint': 'PDF、Word、文字和圖片進入 MindChunk，供檢索使用。',
@@ -591,5 +592,4 @@ export default {
   'swissGlass.hero.askOnce.ribbon': '多應',
   'swissGlass.hero.askOnce.title': '新建對話',
   'swissGlass.hero.askOnce.line1': '選擇模板並開始一次新的問答',
-  'settings.knowledge.testing': 'In testing',
 } as const

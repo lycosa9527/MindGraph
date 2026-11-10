@@ -318,6 +318,7 @@ export default {
   'settings.tabs.language': 'Language',
   'settings.tabs.plugins': 'Plugins',
   'settings.tabs.knowledge': 'Knowledge',
+  'settings.knowledge.testing': 'In testing',
   'settings.tabs.aria': 'Settings sections',
   'settings.knowledge.uploadsTitle': 'Your uploads',
   'settings.knowledge.uploadsHint': 'PDFs, Word files, text, and images go into MindChunk for retrieval.',
@@ -591,5 +592,4 @@ export default {
   'swissGlass.hero.askOnce.ribbon': 'Duoying',
   'swissGlass.hero.askOnce.title': 'Yangi suhbat',
   'swissGlass.hero.askOnce.line1': 'Shablonni tanlang va yangi savol-javobni boshlang',
-  'settings.knowledge.testing': 'In testing',
 } as const

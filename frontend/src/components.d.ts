@@ -539,6 +539,7 @@ declare module 'vue' {
     VoiceNotesSpeakerEditor: typeof import('./components/voiceNotes/VoiceNotesSpeakerEditor.vue')['default']
     VoiceNotesTranscriptPane: typeof import('./components/voiceNotes/VoiceNotesTranscriptPane.vue')['default']
     WatchAssignmentModal: typeof import('./components/smart-response/WatchAssignmentModal.vue')['default']
+    WorksheetDiagramAlignBar: typeof import('./components/canvas/WorksheetDiagramAlignBar.vue')['default']
     WorkshopChatHistory: typeof import('./components/sidebar/WorkshopChatHistory.vue')['default']
     WorkshopChatWsHost: typeof import('./components/workshop-chat/WorkshopChatWsHost.vue')['default']
     WorkshopComposeToolbar: typeof import('./components/workshop-chat/WorkshopComposeToolbar.vue')['default']

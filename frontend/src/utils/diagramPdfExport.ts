@@ -2,6 +2,12 @@
  * A4 PDF helpers for diagram raster export.
  */
 import type { CanvasExportLayout } from '@/config/canvasExportOptions'
+import {
+  type WorksheetDiagramCrop,
+  normalizeWorksheetDiagramCrop,
+  worksheetDiagramCropFractions,
+  worksheetDiagramCropIsActive,
+} from '@/utils/worksheetDiagramCrop'
 
 export type PdfPageOrientation = 'landscape' | 'portrait'
 
@@ -191,7 +197,8 @@ export function fitImageRectInA4Region(
   marginMm = 10,
   offsetX = 0,
   offsetY = 0,
-  scale = 1
+  scale = 1,
+  crop?: WorksheetDiagramCrop
 ): { x: number; y: number; width: number; height: number } {
   const pageW = pdf.internal.pageSize.getWidth()
   const pageH = pdf.internal.pageSize.getHeight()
@@ -205,8 +212,9 @@ export function fitImageRectInA4Region(
     drawW = drawH * aspect
   }
   const s = clampUnitScale(scale)
-  drawW *= s
-  drawH *= s
+  const { cw, ch } = worksheetDiagramCropFractions(crop)
+  drawW *= s * cw
+  drawH *= s * ch
   const freeW = Math.max(0, maxW - drawW)
   const freeH = Math.max(0, maxH - drawH)
   const ox = clampUnitOffset(offsetX)
@@ -216,6 +224,52 @@ export function fitImageRectInA4Region(
     y: regionTopMm + freeH / 2 + (oy * freeH) / 2,
     width: drawW,
     height: drawH,
+  }
+}
+
+function loadHtmlImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('worksheet diagram crop failed to load image'))
+    image.src = src
+  })
+}
+
+/** Crop a raster to the worksheet window. `applied` is false when the original must be drawn. */
+export async function cropRasterDataUrl(
+  dataUrl: string,
+  width: number,
+  height: number,
+  crop: WorksheetDiagramCrop | undefined
+): Promise<{ dataUrl: string; applied: boolean }> {
+  if (!worksheetDiagramCropIsActive(crop) || width <= 0 || height <= 0) {
+    return { dataUrl, applied: false }
+  }
+  const normalized = normalizeWorksheetDiagramCrop(crop)
+  const { cw, ch } = worksheetDiagramCropFractions(normalized)
+  const sx = Math.min(width - 1, Math.max(0, Math.round(width * normalized.left)))
+  const sy = Math.min(height - 1, Math.max(0, Math.round(height * normalized.top)))
+  const sw = Math.max(1, Math.min(width - sx, Math.round(width * cw)))
+  const sh = Math.max(1, Math.min(height - sy, Math.round(height * ch)))
+  if (sx === 0 && sy === 0 && sw === width && sh === height) {
+    return { dataUrl, applied: false }
+  }
+  try {
+    const image = await loadHtmlImage(dataUrl)
+    const canvas = document.createElement('canvas')
+    canvas.width = sw
+    canvas.height = sh
+    const context = canvas.getContext('2d')
+    if (!context) return { dataUrl, applied: false }
+    context.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh)
+    const format = pdfRasterFormatFromDataUrl(dataUrl)
+    const next =
+      format === 'JPEG' ? canvas.toDataURL('image/jpeg', 0.92) : canvas.toDataURL('image/png')
+    return { dataUrl: next, applied: true }
+  } catch (error: unknown) {
+    console.error('[worksheetDiagram] Failed to crop export image:', error)
+    return { dataUrl, applied: false }
   }
 }
 
@@ -231,7 +285,8 @@ export function addWorksheetPageToPdf(
   headerGapMm = 4,
   diagramOffsetX = 0,
   diagramOffsetY = 0,
-  diagramScale = 1
+  diagramScale = 1,
+  crop?: WorksheetDiagramCrop
 ): void {
   const pageW = pdf.internal.pageSize.getWidth()
   let regionTopMm = marginMm
@@ -260,7 +315,8 @@ export function addWorksheetPageToPdf(
     marginMm,
     diagramOffsetX,
     diagramOffsetY,
-    diagramScale
+    diagramScale,
+    crop
   )
   pdf.addImage(
     diagramDataUrl,

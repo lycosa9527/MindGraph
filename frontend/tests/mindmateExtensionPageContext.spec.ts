@@ -20,6 +20,17 @@ const SAMPLE_COMPOSED = [
 ].join('\n')
 
 describe('displayMindmateUserQueryForUi', () => {
+  it('hides a canvas query saved when the outline was still in the message', () => {
+    const saved = [
+      '[MindMate diagram]',
+      '思维导图用来从一个中心主题向外分层展开。',
+      '主题：智能体开发',
+      '',
+      '我怎么介绍这图',
+    ].join('\n')
+    expect(displayMindmateUserQueryForUi(saved)).toBe('我怎么介绍这图')
+  })
+
   it('returns plain queries unchanged', () => {
     expect(displayMindmateUserQueryForUi('你好')).toBe('你好')
     expect(displayMindmateUserQueryForUi('')).toBe('')

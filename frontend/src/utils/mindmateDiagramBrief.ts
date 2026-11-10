@@ -51,10 +51,20 @@ import {
   treeMapColumnsOf,
 } from '@/utils/treeMapIdentity'
 
-export const MINDMATE_DIAGRAM_CONTEXT_MARKER = '[MindMate diagram]'
+/** Dify Start variable. The chatflow system prompt reads `{{#mg_diagram#}}`. */
+export const MINDMATE_DIAGRAM_INPUT_KEY = 'mg_diagram'
 
-/** Dify assistant message cap (`AIAssistantRequest.message`). */
-export const MINDMATE_ASSISTANT_MESSAGE_MAX = 5000
+/** Cap for `mg_diagram`, matching `AIAssistantRequest.message`. */
+const DIAGRAM_INPUT_MAX = 5000
+
+function clipDiagramInput(text: string): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= DIAGRAM_INPUT_MAX) return trimmed
+  const cut = trimmed.slice(0, DIAGRAM_INPUT_MAX)
+  const lineEnd = cut.lastIndexOf('\n')
+  const clipped = lineEnd > 0 ? cut.slice(0, lineEnd) : cut
+  return clipped.trim()
+}
 
 export type DiagramBriefTranslate = (key: string, params?: Record<string, unknown>) => string
 
@@ -76,7 +86,7 @@ function say(t: DiagramBriefTranslate, key: string, params?: Record<string, unkn
 }
 
 function joiner(t: DiagramBriefTranslate): string {
-  return say(t, 'mindmate.diagramContext.childJoiner')
+  return t('mindmate.diagramContext.childJoiner')
 }
 
 function wrap(t: DiagramBriefTranslate, text: string, children: string): string {
@@ -450,16 +460,9 @@ export function buildMindmateDiagramBrief(
   return finish(diagramType, translate, lines)
 }
 
-/** Keep the teacher's question and clip the outline so the request stays within the cap. */
-export function withMindmateDiagramBrief(prompt: string, brief: string): string {
-  const question = prompt.trim()
-  const context = brief.trim()
-  if (!question) return ''
-  if (!context) return question.slice(0, MINDMATE_ASSISTANT_MESSAGE_MAX)
-  const body = `${MINDMATE_DIAGRAM_CONTEXT_MARKER}\n${context}`
-  const separator = '\n\n'
-  const budget = MINDMATE_ASSISTANT_MESSAGE_MAX - question.length - separator.length
-  if (budget <= 0) return question.slice(0, MINDMATE_ASSISTANT_MESSAGE_MAX)
-  const clipped = body.length <= budget ? body : body.slice(0, budget)
-  return `${clipped}${separator}${question}`
+/** System-side diagram text. Empty when there is nothing to send. */
+export function mindmateDiagramInputs(brief: string): Record<string, string> | undefined {
+  const text = clipDiagramInput(brief)
+  if (!text) return undefined
+  return { [MINDMATE_DIAGRAM_INPUT_KEY]: text }
 }

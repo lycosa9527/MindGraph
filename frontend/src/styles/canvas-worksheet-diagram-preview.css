@@ -1,0 +1,319 @@
+/* Diagram frame, crop bars, and alignment controls for the worksheet preview. */
+.worksheet-text-modal__paper-diagram {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.worksheet-text-modal__paper-diagram-body {
+  position: relative;
+  flex: 1;
+  min-height: 120px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.worksheet-text-modal__center-guide {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background: #dc2626;
+  opacity: 0.85;
+}
+
+.worksheet-text-modal__center-guide--x {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.worksheet-text-modal__center-guide--y {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.dark .worksheet-text-modal__center-guide {
+  background: #f87171;
+}
+
+.worksheet-text-modal__diagram-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  border: 1.5px dashed #78716c;
+  border-radius: 2px;
+  background: transparent;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.worksheet-text-modal__diagram-frame.is-dragging {
+  cursor: grabbing;
+  border-color: #44403c;
+}
+
+.worksheet-text-modal__diagram-frame.is-resizing {
+  cursor: nwse-resize;
+  border-color: #44403c;
+}
+
+.worksheet-text-modal__diagram-frame.is-cropping-x {
+  cursor: ew-resize;
+  border-color: #44403c;
+}
+
+.worksheet-text-modal__diagram-frame.is-cropping-y {
+  cursor: ns-resize;
+  border-color: #44403c;
+}
+
+.worksheet-text-modal__diagram-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.worksheet-text-modal__paper-diagram-img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.worksheet-text-modal__diagram-handle {
+  position: absolute;
+  z-index: 2;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #1c1917;
+  border-radius: 1px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.worksheet-text-modal__diagram-handle--nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.worksheet-text-modal__diagram-handle--ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.worksheet-text-modal__diagram-handle--sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.worksheet-text-modal__diagram-handle--se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+
+.worksheet-text-modal__diagram-crop {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  background: #1c1917;
+  border-radius: 1px;
+  touch-action: none;
+}
+
+.worksheet-text-modal__diagram-crop:focus-visible {
+  outline: 2px solid #1c1917;
+  outline-offset: 2px;
+}
+
+.worksheet-text-modal__diagram-crop::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+
+.worksheet-text-modal__diagram-crop--n,
+.worksheet-text-modal__diagram-crop--s {
+  left: 50%;
+  width: 18px;
+  height: 4px;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+
+.worksheet-text-modal__diagram-crop--n {
+  top: -2px;
+}
+
+.worksheet-text-modal__diagram-crop--s {
+  bottom: -2px;
+}
+
+.worksheet-text-modal__diagram-crop--e,
+.worksheet-text-modal__diagram-crop--w {
+  top: 50%;
+  width: 4px;
+  height: 18px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.worksheet-text-modal__diagram-crop--e {
+  right: -2px;
+}
+
+.worksheet-text-modal__diagram-crop--w {
+  left: -2px;
+}
+
+.worksheet-text-modal__paper-diagram-status {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #78716c;
+  text-align: center;
+}
+
+.worksheet-text-modal__preview-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  flex-shrink: 0;
+  padding: 0.4rem 0.35rem 0.1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #57534e;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.worksheet-text-modal__preview-hint-text {
+  margin: 0;
+}
+
+.worksheet-text-modal__align {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.worksheet-text-modal__align-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid #d6d3d1;
+  border-radius: 999px;
+  background: #fff;
+  color: #1c1917;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.worksheet-text-modal__align-icon {
+  flex-shrink: 0;
+}
+
+.worksheet-text-modal__align-btn[aria-pressed='true'] {
+  background: #1c1917;
+  border-color: #1c1917;
+  color: #fafaf9;
+}
+
+.dark .worksheet-text-modal__diagram-frame {
+  border-color: #a8a29e;
+}
+
+.dark .worksheet-text-modal__diagram-handle {
+  border-color: #fafaf9;
+  background: #1f2937;
+}
+
+.dark .worksheet-text-modal__diagram-crop {
+  background: #fafaf9;
+}
+
+.dark .worksheet-text-modal__diagram-crop:focus-visible {
+  outline-color: #fafaf9;
+}
+
+.dark .worksheet-text-modal__align-btn {
+  background: #1c1917;
+  color: #fafaf9;
+  border-color: #57534e;
+}
+
+.dark .worksheet-text-modal__align-btn[aria-pressed='true'] {
+  background: #fafaf9;
+  border-color: #fafaf9;
+  color: #1c1917;
+}
+
+@media (max-width: 760px) {
+  .worksheet-text-modal__diagram-handle {
+    width: 22px;
+    height: 22px;
+  }
+
+  .worksheet-text-modal__diagram-handle::after {
+    content: '';
+    position: absolute;
+    inset: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--nw {
+    top: -11px;
+    left: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--ne {
+    top: -11px;
+    right: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--sw {
+    bottom: -11px;
+    left: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--se {
+    right: -11px;
+    bottom: -11px;
+  }
+
+  .worksheet-text-modal__align-btn {
+    min-height: 44px;
+    padding-inline: 0.85rem;
+  }
+}

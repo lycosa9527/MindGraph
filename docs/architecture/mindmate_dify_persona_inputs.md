@@ -16,6 +16,8 @@ Gate: existing [`organization_is_privatized`](../../utils/auth/org_privatization
 
 Keep existing `mg_dify_user` / `mg_conversation_id`. Overwrite the three persona keys after MindBot `dify_inputs_json` and after any browser `inputs`.
 
+Canvas MindMate sends one more Start variable, `mg_diagram`, only when the side panel **图示信息** control is **包括**. The value is the typed diagram brief, capped at 5000 characters and cut on a whole line. The chat `query` stays the teacher's sentence. Full-page MindMate and **不包括** omit the key. The chatflow Start node needs an optional paragraph variable named `mg_diagram`, and the system prompt reads `{{#mg_diagram#}}`. A required variable makes those omitted turns fail. Until the variable exists, Dify ignores the extra key.
+
 ```mermaid
 flowchart LR
   Admin[Admin MindMate tab] --> Org[(organizations)]

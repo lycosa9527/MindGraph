@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import zipfile
 
 import pytest
 from docx import Document
@@ -54,6 +55,10 @@ def _spec(
     diagram_offset_x: float = 0.0,
     diagram_offset_y: float = 0.0,
     diagram_scale: float = 1.0,
+    diagram_crop_top: float = 0.0,
+    diagram_crop_right: float = 0.0,
+    diagram_crop_bottom: float = 0.0,
+    diagram_crop_left: float = 0.0,
 ) -> WorksheetDocxSpec:
     return WorksheetDocxSpec(
         title=title,
@@ -68,6 +73,10 @@ def _spec(
         diagram_offset_x=diagram_offset_x,
         diagram_offset_y=diagram_offset_y,
         diagram_scale=diagram_scale,
+        diagram_crop_top=diagram_crop_top,
+        diagram_crop_right=diagram_crop_right,
+        diagram_crop_bottom=diagram_crop_bottom,
+        diagram_crop_left=diagram_crop_left,
         labels=_labels(),
     )
 
@@ -137,6 +146,27 @@ def test_build_worksheet_docx_fits_tall_diagram_within_page_box() -> None:
     shape = document.inline_shapes[0]
     assert shape.height <= Mm(max_h_mm)
     assert shape.width <= Mm(A4_LANDSCAPE_MM[0] - (MARGIN_MM * 2))
+
+
+def _embedded_png(docx_bytes: bytes) -> Image.Image:
+    with zipfile.ZipFile(io.BytesIO(docx_bytes)) as archive:
+        name = next(item for item in archive.namelist() if item.startswith("word/media/"))
+        return Image.open(io.BytesIO(archive.read(name)))
+
+
+def test_build_worksheet_docx_crop_trims_edges_and_shrinks_placement() -> None:
+    """Edge crop keeps the visible pixels and shortens the placed picture."""
+    source = _png_bytes(width=200, height=100)
+    full = build_worksheet_docx(_spec(), source)
+    cropped = build_worksheet_docx(
+        _spec(diagram_crop_bottom=0.5),
+        source,
+    )
+    full_shape = Document(io.BytesIO(full)).inline_shapes[0]
+    cropped_shape = Document(io.BytesIO(cropped)).inline_shapes[0]
+    assert cropped_shape.height < full_shape.height * 0.6
+    assert abs(cropped_shape.width - full_shape.width) < 20000
+    assert _embedded_png(cropped).size == (200, 50)
 
 
 def test_build_worksheet_docx_rejects_invalid_image() -> None:

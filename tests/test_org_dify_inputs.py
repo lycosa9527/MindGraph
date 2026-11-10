@@ -10,7 +10,7 @@ from fastapi import HTTPException
 
 from models.domain.auth import Organization
 from routers.auth.admin.organization_mindmate_branding import apply_mindmate_branding_on_update
-from services.dify.org_dify_inputs import apply_persona_inputs, persona_inputs_for_org
+from services.dify.org_dify_inputs import apply_diagram_input, apply_persona_inputs, persona_inputs_for_org
 
 _AVATAR = "/static/org_mindmate_avatars/2/avatar.png"
 _DIFY_URL = "https://dify.example.com/v1"
@@ -140,3 +140,33 @@ def test_alias_is_stripped_on_save() -> None:
         "en",
     )
     assert org.mindmate_agent_alias == "小思"
+
+
+def test_diagram_input_keeps_a_short_outline() -> None:
+    """A normal canvas brief is forwarded unchanged."""
+    inputs: dict[str, object] = {"mg_diagram": "思维导图用来从一个中心主题向外分层展开。", "mg_dify_user": "u"}
+    apply_diagram_input(inputs)
+    assert inputs["mg_diagram"] == "思维导图用来从一个中心主题向外分层展开。"
+    assert inputs["mg_dify_user"] == "u"
+
+
+def test_diagram_input_drops_blank_and_non_text() -> None:
+    """Empty or non-text diagram values are not sent to Dify."""
+    blank: dict[str, object] = {"mg_diagram": "  "}
+    apply_diagram_input(blank)
+    assert "mg_diagram" not in blank
+    wrong: dict[str, object] = {"mg_diagram": 12}
+    apply_diagram_input(wrong)
+    assert "mg_diagram" not in wrong
+
+
+def test_diagram_input_clips_on_a_whole_line() -> None:
+    """A brief past the message cap ends on the last complete line."""
+    line = "分支：" + ("甲" * 80)
+    inputs: dict[str, object] = {"mg_diagram": "\n".join([line] * 80)}
+    apply_diagram_input(inputs)
+    text = inputs["mg_diagram"]
+    assert isinstance(text, str)
+    assert len(text) <= 5000
+    assert text.endswith("甲")
+    assert all(row == line for row in text.split("\n"))

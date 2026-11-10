@@ -318,6 +318,7 @@ export default {
   'settings.tabs.language': 'Language',
   'settings.tabs.plugins': 'Plugins',
   'settings.tabs.knowledge': 'Knowledge',
+  'settings.knowledge.testing': 'In testing',
   'settings.tabs.aria': 'Settings sections',
   'settings.knowledge.uploadsTitle': 'Your uploads',
   'settings.knowledge.uploadsHint': 'PDFs, Word files, text, and images go into MindChunk for retrieval.',
@@ -591,5 +592,4 @@ export default {
   'swissGlass.hero.askOnce.ribbon': 'AskOnce',
   'swissGlass.hero.askOnce.title': 'New conversation',
   'swissGlass.hero.askOnce.line1': 'Pick a template and start a new prompt',
-  'settings.knowledge.testing': 'In testing',
 } as const

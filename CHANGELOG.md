@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.220] - 2026-11-11
+
+> **Learning-sheet export can crop the diagram, and Canvas MindMate sends that diagram as its own field.**
+
+### Added
+
+- **Learning-sheet export** — Drag the bars on the top, bottom, left, and right edges to crop the diagram, the way Word crops a picture. Corner handles still resize it, and dragging still moves it. **左对齐**, **居中**, and **右对齐** place it. Arrow keys nudge a focused crop bar. PDF and Word match the preview. Crop, size, and alignment apply to the first page.
+
+### Changed
+
+- **Canvas MindMate** — **包括** sends the diagram brief as the `mg_diagram` field. The question itself stays the chat message, including when you copy, edit, or regenerate it. Older messages that stored the outline in the question still show only the question.
+
+### Tests
+
+- [`frontend/tests/worksheetDiagramCrop.spec.ts`](frontend/tests/worksheetDiagramCrop.spec.ts) covers crop drag, arrow-key direction, the opposite edge staying fixed, root-only SVG crop, and stored crops that would hide the diagram.
+- [`frontend/tests/canvasWorksheetText.spec.ts`](frontend/tests/canvasWorksheetText.spec.ts) checks that a bottom crop keeps the width and shortens the height.
+- [`tests/test_worksheet_docx.py`](tests/test_worksheet_docx.py) checks that a bottom crop trims the embedded picture and the placed height.
+- [`frontend/tests/mindmateDiagramBrief.spec.ts`](frontend/tests/mindmateDiagramBrief.spec.ts) and [`tests/test_org_dify_inputs.py`](tests/test_org_dify_inputs.py) cover packing and clipping `mg_diagram`.
+
 ## [5.180.219] - 2026-11-10
 
 > **Canvas MindMate can send the open diagram with a question, described the way that diagram is actually built.**
