@@ -465,7 +465,11 @@ defineExpose({ focus: focusComposer })
       v-if="showSuggestions && !isFullpageMode && !showSeminarHome"
       class="suggestions-above-input-panel"
     >
-      <SuggestionBubbles @select="handleSuggestionSelect" />
+      <SuggestionBubbles
+        flow
+        :limit="2"
+        @select="handleSuggestionSelect"
+      />
     </div>
 
     <!-- Input Area - Same design for fullpage and panel (MindMate module style) -->

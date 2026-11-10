@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.219] - 2026-11-10
+
+> **Canvas MindMate can send the open diagram with a question, described the way that diagram is actually built.**
+
+### Added
+
+- **Canvas MindMate** — The side panel header has **图示信息**: **不包括** or **包括**. **包括** sends the current diagram with the question. The chat bubble still shows only the question.
+- **Diagram brief** — The message starts with one sentence on what that diagram is for, then the topic in that diagram’s own terms: circle associations, bubble attributes, double-bubble similarities and each side’s differences, tree classification and categories, brace whole and parts, flow steps, multi-flow causes and effects, bridge analogies, concept links, and mind-map branches. A second line of text stays with its node. Repeated concept links are sent once. Association lines and summary braces stay out.
+
+### Changed
+
+- **Canvas MindMate welcome** — The side panel shows the circular avatar, then the same greeting as the MindMate page, and two suggestion bubbles. The seminar switch stays on the full page.
+
+### Tests
+
+- [`frontend/tests/mindmateDiagramBrief.spec.ts`](frontend/tests/mindmateDiagramBrief.spec.ts) covers each diagram’s brief, including clockwise mind-map branches, chained flow steps and tree leaves, and a brace part that links back to itself.
+
 ## [5.180.218] - 2026-11-09
 
 > **Dual-language mind maps size each node for its second line, inserted nodes get both languages, and brace maps add a level under any node.**

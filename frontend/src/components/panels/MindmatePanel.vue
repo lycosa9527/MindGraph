@@ -49,7 +49,12 @@ import { useMindmateSavedSeminar } from '@/composables/mindmate/useMindmateSaved
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useMindmateSeminarFaces } from '@/composables/mindmate/useMindmateSeminarFaces'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
-import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/stores'
+import {
+  useAuthStore,
+  useDiagramStore,
+  useMindMateStore,
+  useTeachingDesignExportStore,
+} from '@/stores'
 import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
@@ -58,6 +63,7 @@ import {
   isMindmateBlockedDocUpload,
   isMindmateComposerUploadableFile,
 } from '@/utils/mindmateComposerUpload'
+import { buildMindmateDiagramBrief, withMindmateDiagramBrief } from '@/utils/mindmateDiagramBrief'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 import {
   type SeminarBrief,
@@ -163,6 +169,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
 const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const diagramStore = useDiagramStore()
 const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
 const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
@@ -170,6 +177,7 @@ const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
 const homeMode = ref<'dialogue' | 'seminar'>('dialogue')
+const includeDiagramInfo = ref(false)
 const mindmateInputRef = ref<MindmateInputHandle | null>(null)
 const memberDialogOpen = ref(false)
 const memberDialogMode = ref<'create' | 'expand'>('create')
@@ -334,7 +342,9 @@ const inConversation = computed(
 
 const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
 
-const showHomeModeSwitch = computed(() => showWelcome.value && !isCollabChatroomMode.value)
+const showHomeModeSwitch = computed(
+  () => isFullpageMode.value && showWelcome.value && !isCollabChatroomMode.value
+)
 
 const collabSessionTitle = computed(
   () => collabRoomTitle.value || mindMateStore.conversationTitle || t('mindmate.collabPill')
@@ -740,12 +750,35 @@ async function deleteConversationFromHistory(convId: string) {
   }
 }
 
+function currentDiagramBrief(): string {
+  const data = diagramStore.data
+  const diagramType = diagramStore.type
+  if (!data?.nodes?.length || !diagramType) {
+    return ''
+  }
+  const focusQuestion = typeof data.focus_question === 'string' ? data.focus_question : undefined
+  return buildMindmateDiagramBrief(
+    diagramType,
+    data.nodes,
+    data.connections ?? [],
+    (key, params) => (params ? t(key, params) : t(key)),
+    focusQuestion
+  )
+}
+
+function messageForSend(prompt: string): string {
+  if (isFullpageMode.value || !includeDiagramInfo.value) {
+    return prompt
+  }
+  return withMindmateDiagramBrief(prompt, currentDiagramBrief())
+}
+
 // Send message using composable
 async function sendMessage() {
   if ((!inputText.value.trim() && mindMate.pendingFiles.value.length === 0) || isLoading.value)
     return
 
-  const message = inputText.value.trim()
+  const message = messageForSend(inputText.value.trim())
   if (showHomeModeSwitch.value && homeMode.value === 'seminar') {
     return
   }
@@ -1494,6 +1527,7 @@ function isLastAssistantMessage(messageId: string): boolean {
     </div>
     <MindmateHeader
       v-if="!isFullpageMode"
+      v-model:include-diagram="includeDiagramInfo"
       :mode="mode"
       :title="displayTitle"
       :is-typing="isTypingTitle"

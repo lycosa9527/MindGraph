@@ -5,6 +5,7 @@ import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar } from 'eleme
 
 import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 
+import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateSeminarRosterBar from '@/components/mindmate/MindmateSeminarRosterBar.vue'
 import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
@@ -52,6 +53,20 @@ const emit = defineEmits<{
   (e: 'continueSession'): void
 }>()
 
+const includeDiagram = defineModel<boolean>('includeDiagram', { default: false })
+
+const diagramChoice = computed({
+  get: () => (includeDiagram.value ? 'include' : 'exclude'),
+  set: (value: string) => {
+    includeDiagram.value = value === 'include'
+  },
+})
+
+const diagramOptions = computed(() => [
+  { labelKey: 'mindmate.diagramContext.off', value: 'exclude' },
+  { labelKey: 'mindmate.diagramContext.on', value: 'include' },
+])
+
 const { t, currentLanguage } = useLanguage()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 
@@ -96,7 +111,27 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
   <div
     class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
   >
-    <div class="flex-1 min-w-0" />
+    <div class="flex-1 min-w-0 flex items-center">
+      <div
+        v-if="!isFullpageMode && !showContactsToggle"
+        class="mm-diagram-context"
+      >
+        <span class="mm-diagram-context__label">
+          <I18nText
+            k="mindmate.diagramContext.label"
+            dense
+            primary-only
+          />
+        </span>
+        <AdminSwissSegmented
+          v-model="diagramChoice"
+          fit
+          class="mm-diagram-context__seg"
+          :options="diagramOptions"
+          :aria-label="t('mindmate.diagramContext.label')"
+        />
+      </div>
+    </div>
     <div class="mindmate-header-actions flex items-center gap-2 shrink-0">
       <ElButton
         v-if="showContinueSession"
@@ -213,6 +248,41 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
 
 .mindmate-header-actions :deep(.el-button + .el-button) {
   margin-left: 0;
+}
+
+.mm-diagram-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mm-diagram-context__label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--swiss-ink, #1c1917);
+  white-space: nowrap;
+}
+
+.mm-diagram-context__seg :deep(.admin-swiss-segment) {
+  min-height: 26px;
+  padding: 0.1rem 0.55rem;
+  font-size: 12px;
+}
+
+.mm-diagram-context__seg :deep(.admin-swiss-segment.is-active) {
+  background: var(--swiss-geek-violet-ui, #7c3aed);
+  color: #fff;
+}
+
+:global(html.dark) .mm-diagram-context__label {
+  color: var(--swiss-ink, #f5f5f4);
+}
+
+:global(html.dark) .mm-diagram-context__seg :deep(.admin-swiss-segment.is-active) {
+  background: var(--swiss-geek-violet, #a78bfa);
+  color: #1c1917;
 }
 
 /* History dropdown - panel mode */

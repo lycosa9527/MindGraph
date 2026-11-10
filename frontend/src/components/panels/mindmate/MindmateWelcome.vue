@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import I18nText from '@/components/common/I18nText.vue'
 import MindmateHomeModeSwitch from '@/components/mindmate/MindmateHomeModeSwitch.vue'
 import { useLanguage } from '@/composables'
 import { beijingHour, greetHourLabel } from '@/composables/learningSpace/lsHelpers'
@@ -118,29 +117,34 @@ const leadSecondary = computed(() =>
     v-else
     class="welcome-panel"
   >
-    <div
-      class="welcome-card bg-gradient-to-br from-primary-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 text-center"
-    >
+    <div class="welcome-panel-hero">
       <MindmateAgentAvatar
-        :size="64"
+        :size="72"
         branding-size="md"
-        avatar-class="mindmate-avatar mx-auto mb-3"
+        avatar-class="welcome-panel-avatar"
       />
-      <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
-        {{ displayName }}
-      </p>
-      <p class="text-sm text-gray-600 dark:text-gray-300">
-        <I18nText
-          k="mindmate.welcome"
-          :params="welcomeParams"
-          align="center"
-        />
-      </p>
-      <MindmateHomeModeSwitch
-        v-if="showModeSwitch"
-        :mode="homeMode"
-        @update:mode="emit('update:homeMode', $event)"
-      />
+      <div class="welcome-panel-copy">
+        <div class="welcome-title">{{ greetText }}</div>
+        <div class="welcome-subtitle">
+          <span>{{ leadPrimary.before }}</span
+          ><span
+            v-if="leadPrimary.name"
+            class="welcome-agent"
+            >{{ leadPrimary.name }}</span
+          ><span>{{ leadPrimary.after }}</span>
+        </div>
+        <div
+          v-if="leadSecondary"
+          class="welcome-subtitle-alt"
+        >
+          <span>{{ leadSecondary.before }}</span
+          ><span
+            v-if="leadSecondary.name"
+            class="welcome-agent"
+            >{{ leadSecondary.name }}</span
+          ><span>{{ leadSecondary.after }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -150,6 +154,56 @@ const leadSecondary = computed(() =>
 
 .welcome-fullpage {
   align-items: flex-start;
+}
+
+.welcome-panel {
+  gap: 10px;
+  flex: 0 0 auto;
+  min-height: 0;
+  justify-content: flex-start;
+  padding: 28px 20px 0;
+}
+
+.welcome-panel-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: center;
+}
+
+.welcome-panel-hero :deep(.welcome-panel-avatar) {
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.welcome-panel-hero :deep(.welcome-panel-avatar img) {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.welcome-panel-copy {
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.welcome-panel-copy .welcome-title,
+.welcome-panel-copy .welcome-subtitle {
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+.welcome-panel-copy .welcome-subtitle {
+  margin-top: 4px;
+}
+
+.welcome-panel-copy .welcome-subtitle-alt {
+  font-size: 0.75rem;
 }
 
 .welcome-mode-row {

@@ -1,7 +1,9 @@
 /**
  * Chrome extension MindMate first messages embed page extraction in Dify query.
- * Display layers should show only the teacher's question, not the full payload.
+ * Canvas diagram context uses the same split: the model sees the outline,
+ * the bubble shows only the teacher's question.
  */
+import { MINDMATE_DIAGRAM_CONTEXT_MARKER } from '@/utils/mindmateDiagramBrief'
 
 const MATERIAL_HEADER_MARKERS = [
   '**【参考材料：网页正文】**',
@@ -41,9 +43,25 @@ function extractUserQuestionFromPageContext(text: string): string | null {
   return null
 }
 
-/** Return the teacher-visible question when query is an extension page-context payload. */
+function questionAfterDiagramBrief(text: string): string | null {
+  if (!text.startsWith(MINDMATE_DIAGRAM_CONTEXT_MARKER)) {
+    return null
+  }
+  const splitAt = text.indexOf('\n\n')
+  if (splitAt < 0) {
+    return null
+  }
+  const question = text.slice(splitAt + 2).trim()
+  return question || null
+}
+
+/** Teacher-visible question. Diagram outlines and extension payloads stay off the bubble. */
 export function displayMindmateUserQueryForUi(query: string | undefined | null): string {
   const text = (query || '').trim()
+  const diagramQuestion = questionAfterDiagramBrief(text)
+  if (diagramQuestion) {
+    return diagramQuestion
+  }
   if (!text || !isExtensionPageContextMessage(text)) {
     return query || ''
   }

@@ -30,12 +30,15 @@ const props = withDefaults(
     flow?: boolean
     /** Row sizes for flow layout, e.g. [3, 4] means three then four. */
     flowRows?: number[]
+    /** Cap how many bubbles render. 0 keeps the full list. */
+    limit?: number
   }>(),
   {
     suggestionKeys: () => [],
     suggestions: () => [],
     flow: false,
     flowRows: () => [],
+    limit: 0,
   }
 )
 
@@ -49,13 +52,18 @@ const authStore = useAuthStore()
 type SuggestionBubble = { key: string; text: string } | { key: ''; text: string }
 
 const displaySuggestions = computed((): SuggestionBubble[] => {
+  let items: SuggestionBubble[]
   if (props.suggestionKeys.length > 0) {
-    return props.suggestionKeys.map((key) => ({ key, text: t(key) }))
+    items = props.suggestionKeys.map((key) => ({ key, text: t(key) }))
+  } else if (props.suggestions.length > 0) {
+    items = props.suggestions.map((text) => ({ key: '', text }))
+  } else {
+    items = DEFAULT_SUGGESTION_KEYS.map((key) => ({ key, text: t(key) }))
   }
-  if (props.suggestions.length > 0) {
-    return props.suggestions.map((text) => ({ key: '', text }))
+  if (props.limit > 0) {
+    return items.slice(0, props.limit)
   }
-  return DEFAULT_SUGGESTION_KEYS.map((key) => ({ key, text: t(key) }))
+  return items
 })
 
 const suggestionRows = computed((): SuggestionBubble[][] => {

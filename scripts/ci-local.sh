@@ -359,6 +359,7 @@ run_frontend() {
     tests/mindMapStringChildrenAudit.spec.ts \
     tests/tsecCaptcha.spec.ts tests/positionTsecCaptcha.spec.ts \
     tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
+    tests/mindmateDiagramBrief.spec.ts tests/mindmateExtensionPageContext.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
     tests/normalizeAuthUser.spec.ts \
     tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \
