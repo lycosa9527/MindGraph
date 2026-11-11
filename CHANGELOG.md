@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.221] - 2026-11-11
+
+> **The canvas MindMate welcome portrait stays its own size.**
+
+### Changed
+
+- **Canvas MindMate** — The side panel welcome portrait is 48px. The MindMate page stays 96px, and the phone app stays 64px.
+
+### Tests
+
+- [`frontend/tests/mindmateWelcomeLayout.spec.ts`](frontend/tests/mindmateWelcomeLayout.spec.ts) checks that the page portrait stays 96px and the canvas panel portrait stays 48px.
+
 ## [5.180.220] - 2026-11-11
 
 > **Learning-sheet export can crop the diagram, and Canvas MindMate sends that diagram as its own field.**

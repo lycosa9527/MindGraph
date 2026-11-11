@@ -18,6 +18,10 @@ const welcomeLayoutCss = readFileSync(
   join(here, '../src/components/panels/mindmate/mindmate-welcome-layout.css'),
   'utf8'
 )
+const welcomeVue = readFileSync(
+  join(here, '../src/components/panels/mindmate/MindmateWelcome.vue'),
+  'utf8'
+)
 const mindmateCss = readFileSync(
   join(here, '../src/components/panels/mindmate/mindmate.css'),
   'utf8'
@@ -39,6 +43,9 @@ describe('mindmate welcome layout', () => {
     expect(welcomeLayoutCss).toContain('container-type: inline-size')
     expect(welcomeLayoutCss).not.toContain('container-type: size')
     expect(welcomeLayoutCss).toContain('--mm-avatar: 96px')
+    expect(welcomeVue).toContain(':size="96"')
+    expect(welcomeVue).toContain(':size="48"')
+    expect(welcomeLayoutCss).not.toContain('--mm-avatar: 48px')
     expect(welcomeLayoutCss).toContain('--mm-title: 1.75rem')
     expect(welcomeLayoutCss).toContain('padding-top: clamp(48px, 12vh, 120px)')
     expect(welcomeLayoutCss).toContain('height: 148px')

@@ -119,7 +119,7 @@ const leadSecondary = computed(() =>
   >
     <div class="welcome-panel-hero">
       <MindmateAgentAvatar
-        :size="72"
+        :size="48"
         branding-size="md"
         avatar-class="welcome-panel-avatar"
       />
@@ -173,8 +173,14 @@ const leadSecondary = computed(() =>
   text-align: center;
 }
 
+.welcome-panel-hero :deep(.mindmate-agent-avatar-ring),
 .welcome-panel-hero :deep(.welcome-panel-avatar) {
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
+}
+
+.welcome-panel-hero :deep(.welcome-panel-avatar) {
   border-radius: 50%;
   overflow: hidden;
 }
