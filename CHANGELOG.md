@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.222] - 2026-11-11
+
+> **DingTalk bind in Settings shows the pair code again.**
+
+### Fixed
+
+- **DingTalk bind** — Settings → Security → Link DingTalk starts the pair session as soon as the dialog opens, so the rotating code appears. Closing the dialog cancels that session. A mint that finishes after the dialog has already closed cancels only that abandoned token.
+
+### Changed
+
+- **MindBot library notice** — The English unbound-staff line tells the teacher to send the pair code to MindBot.
+- **Pair claim** — Bind claim is `claim_dingtalk_pair_bind`. New links store `linked_via=code_bind`. The unused QR poll route and the unused claim alias are gone.
+
+### Tests
+
+- [`frontend/tests/dingtalkPairModal.spec.ts`](frontend/tests/dingtalkPairModal.spec.ts) covers open, close, and a mint that finishes after close.
+- [`tests/test_dingtalk_bind_live_redis.py`](tests/test_dingtalk_bind_live_redis.py) mints a session on Redis, resolves the current code, claims it, and checks the code is consumed.
+- [`tests/test_dingtalk_bind_redis_guess_block.py`](tests/test_dingtalk_bind_redis_guess_block.py) checks that a scoped cancel leaves a newer session in place.
+
 ## [5.180.221] - 2026-11-11
 
 > **The canvas MindMate welcome portrait stays its own size.**

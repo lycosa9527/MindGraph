@@ -630,15 +630,22 @@ async def consume_bind_token(token: str) -> Optional[dict[str, Any]]:
     return data
 
 
-async def revoke_pending_bind_token(user_id: int) -> None:
-    """Remove pending bind token for user (modal close / new mint)."""
+async def revoke_pending_bind_token(user_id: int, only_token: str | None = None) -> None:
+    """Remove the user's pending pair session.
+
+    ``only_token`` limits the delete to that session, so a mint response that
+    arrives after the dialog moved on cannot revoke a newer session.
+    """
     redis = get_async_redis()
     if redis is None:
         return
     try:
         raw = await redis.get(_minter_key(user_id))
-        if isinstance(raw, str) and raw.strip():
-            pending_token = raw.strip()
+        pending_token = raw.strip() if isinstance(raw, str) else ""
+        expected = (only_token or "").strip()
+        if expected and pending_token != expected:
+            return
+        if pending_token:
             pending_data = await get_bind_token_data(pending_token)
             pending_org = _organization_id_from_payload(pending_data) if pending_data else None
             if pending_org is not None:

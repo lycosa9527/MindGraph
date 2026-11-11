@@ -61,7 +61,7 @@ def library_save_user_notice(
             if use_en:
                 return (
                     "Diagram preview only — open MindGraph on the web, go to Account info "
-                    "→ Link DingTalk, complete the QR bind, then regenerate to save and "
+                    "→ Link DingTalk, send the pair code to MindBot, then regenerate to save and "
                     "edit in canvas."
                 )
             return (

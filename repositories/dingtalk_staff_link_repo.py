@@ -16,7 +16,7 @@ from services.utils.typing_helpers import result_rowcount
 
 @dataclass(frozen=True)
 class StaffLinkClaimResult:
-    """Outcome of a universal QR bind claim."""
+    """Outcome of a DingTalk pair-code bind claim."""
 
     ok: bool
     error_code: str = ""
@@ -97,7 +97,7 @@ class DingtalkStaffLinkRepository:
         organization_id: int,
         dingtalk_staff_id: str,
         user_id: int,
-        linked_via: str = "qr_bind",
+        linked_via: str = "code_bind",
     ) -> StaffLinkClaimResult:
         """
         Link one DingTalk staff id to one MindGraph user within an org.
@@ -150,7 +150,7 @@ class DingtalkStaffLinkRepository:
         organization_id: int,
         dingtalk_staff_id: str,
         user_id: int,
-        linked_via: str = "qr_bind",
+        linked_via: str = "code_bind",
     ) -> DingtalkStaffLink:
         """Create or update staff link using universal claim rules."""
         result = await self.claim_staff_link(

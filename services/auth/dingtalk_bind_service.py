@@ -42,7 +42,7 @@ from utils.db.rls_context import RlsContext, rls_async_session
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "claim_dingtalk_qr_bind",
+    "claim_dingtalk_pair_bind",
     "claim_dingtalk_unbind_pair",
     "BIND_ERROR_STAFF_TAKEN",
 ]
@@ -178,7 +178,7 @@ async def _finalize_successful_claim(
     return False, BIND_ERROR_INTERNAL, False
 
 
-async def claim_dingtalk_qr_bind(
+async def claim_dingtalk_pair_bind(
     *,
     token: str,
     bind_code: str,

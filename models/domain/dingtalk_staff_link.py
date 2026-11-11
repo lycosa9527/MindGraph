@@ -48,7 +48,7 @@ class DingtalkStaffLink(Base):
         nullable=False,
         index=True,
     )
-    linked_via: Mapped[str] = mapped_column(String(32), nullable=False, default="qr_bind")
+    linked_via: Mapped[str] = mapped_column(String(32), nullable=False, default="code_bind")
     linked_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,

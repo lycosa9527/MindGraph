@@ -1,4 +1,4 @@
-"""Constants for DingTalk QR account binding."""
+"""Constants for DingTalk pair-code account binding."""
 
 from __future__ import annotations
 
@@ -6,9 +6,6 @@ BIND_TOKEN_TTL_SECONDS = 600
 BIND_TOKEN_KEY_PREFIX = "dingtalk_bind:"
 BIND_ORG_INDEX_PREFIX = "dingtalk_bind:org:"
 BIND_MINTER_PREFIX = "dingtalk_bind:minter:"
-BIND_PATH_MARKER = "/bind/dingtalk"
-BIND_QUERY_PARAM = "t"
-BIND_QUERY_CODE_PARAM = "c"
 BIND_CODE_SECRET_FIELD = "bind_code_secret"
 BIND_CONSUMED_PREFIX = "dingtalk_bind:consumed:"
 

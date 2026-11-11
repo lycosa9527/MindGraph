@@ -17,7 +17,7 @@ from services.auth.dingtalk_bind_redis import (
     record_bind_code_guess_failure,
     resolve_bind_token_for_org_code,
 )
-from services.auth.dingtalk_bind_service import claim_dingtalk_qr_bind, claim_dingtalk_unbind_pair
+from services.auth.dingtalk_bind_service import claim_dingtalk_pair_bind, claim_dingtalk_unbind_pair
 from services.mindbot.bind.code_parse import extract_bind_code_from_text
 from services.mindbot.bind.ingress_helpers import finish_pair_reply, is_valid_bind_staff_id
 from services.mindbot.bind.messages import mindbot_code_from_claim_error
@@ -117,7 +117,7 @@ class PairCodeToolHandler:
             )
             outcome = self._unbind_outcome(ok, err_code)
         else:
-            ok, err_code = await claim_dingtalk_qr_bind(
+            ok, err_code = await claim_dingtalk_pair_bind(
                 token=token,
                 bind_code=bind_code,
                 organization_id=org_id,

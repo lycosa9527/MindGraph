@@ -271,14 +271,12 @@ function openBrowserPluginPage(): void {
       @success="form.handleOAuthBindSuccess"
     />
     <DingTalkPairModal
-      v-if="form.showBindDingTalkModal"
       v-model="form.showBindDingTalkModal"
       mode="bind"
       :linked-staff-id="form.dingtalkStaffMasked"
       @completed="form.handleDingtalkBindCompleted"
     />
     <DingTalkPairModal
-      v-if="form.showUnbindDingTalkModal"
       v-model="form.showUnbindDingTalkModal"
       mode="unbind"
       :linked-staff-id="form.dingtalkStaffMasked"

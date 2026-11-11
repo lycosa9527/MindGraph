@@ -14,7 +14,7 @@ from services.auth.dingtalk_bind_constants import (
     PAIR_PURPOSE_UNBIND,
 )
 from services.auth.dingtalk_bind_service import (
-    claim_dingtalk_qr_bind,
+    claim_dingtalk_pair_bind,
     claim_dingtalk_unbind_pair,
 )
 from services.auth.quick_register_room_code import current_room_code_from_room_secret
@@ -288,7 +288,7 @@ async def test_claim_lock_contention_returns_expired() -> None:
             new_callable=AsyncMock,
         ) as mock_consume,
     ):
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token=token,
             bind_code=bind_code,
             organization_id=5,
@@ -336,7 +336,7 @@ async def test_claim_lock_contention_returns_consumed_when_token_used() -> None:
             new_callable=AsyncMock,
         ) as mock_consume,
     ):
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token=token,
             bind_code=bind_code,
             organization_id=5,

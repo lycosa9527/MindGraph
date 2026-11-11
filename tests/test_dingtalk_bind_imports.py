@@ -30,11 +30,15 @@ def test_png_export_helpers_importable() -> None:
 
 def test_dingtalk_bind_router_importable() -> None:
     """DingTalk bind router registers start and unbind paths."""
-    paths = [route.path for route in dingtalk_bind_router.routes if isinstance(route, APIRoute)]
-    assert "/dingtalk-bind/start" in paths
-    assert "/dingtalk-bind/room-code" in paths
-    assert "/dingtalk-bind/unbind/start" in paths
-    assert "/dingtalk-bind/unbind" in paths
+    paths = {route.path for route in dingtalk_bind_router.routes if isinstance(route, APIRoute)}
+    assert paths == {
+        "/dingtalk-bind/start",
+        "/dingtalk-bind/unbind/start",
+        "/dingtalk-bind/room-code",
+        "/dingtalk-bind/status",
+        "/dingtalk-bind/cancel",
+        "/dingtalk-bind/unbind",
+    }
 
 
 def test_library_save_notice_modules_importable() -> None:

@@ -6,7 +6,7 @@ See also: [`mindbot_tool_ingress.md`](mindbot_tool_ingress.md) for the MindBot p
 
 ## Principles
 
-1. **One universal bind pipeline** — Any channel that receives a pair code (MindBot text today) must call `services.auth.dingtalk_bind_service.claim_dingtalk_qr_bind` or `claim_dingtalk_unbind_pair` with `(token, bind_code, organization_id, dingtalk_staff_id)`.
+1. **One universal bind pipeline** — Any channel that receives a pair code (MindBot text today) must call `services.auth.dingtalk_bind_service.claim_dingtalk_pair_bind` or `claim_dingtalk_unbind_pair` with `(token, bind_code, organization_id, dingtalk_staff_id)`.
 
 2. **One MindGraph user → one DingTalk staff per org** — A teacher may link at most one `senderStaffId` within their school org.
 
@@ -28,7 +28,7 @@ See also: [`mindbot_tool_ingress.md`](mindbot_tool_ingress.md) for the MindBot p
 
 | `pair_purpose` | Web endpoint | MindBot message | Claim function |
 |----------------|--------------|-----------------|----------------|
-| `bind` | `POST /dingtalk-bind/start` | bare `123456` or `123-456` | `claim_dingtalk_qr_bind` |
+| `bind` | `POST /dingtalk-bind/start` | bare `123456` or `123-456` | `claim_dingtalk_pair_bind` |
 | `unbind` | `POST /dingtalk-bind/unbind/start` | same shape from **linked** staff | `claim_dingtalk_unbind_pair` |
 
 ## Flow (bind)

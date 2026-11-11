@@ -1,6 +1,7 @@
 import { createApp, nextTick, reactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -115,6 +116,9 @@ function mountPanel(section: 'security' | 'plugins' = 'security'): {
     },
   })
   app.use(createPinia())
+  app.use(VueQueryPlugin, {
+    queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  })
   app.use(router)
   app.mount(host)
   return { app, host, router, closed }

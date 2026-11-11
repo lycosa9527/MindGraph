@@ -68,12 +68,6 @@ class DingtalkBindRoomCodeResponse(BaseModel):
     bind_token: str
 
 
-class DingtalkBindQrCodeResponse(DingtalkBindRoomCodeResponse):
-    """Backward-compatible alias for older clients."""
-
-    qr_query: str = ""
-
-
 class DingtalkBindStatusResponse(BaseModel):
     """Bind status for account modal polling."""
 
@@ -91,6 +85,12 @@ class DingtalkBindStartResponse(BaseModel):
 
     token: str
     ttl_seconds: int = BIND_TOKEN_TTL_SECONDS
+
+
+class DingtalkBindCancelRequest(BaseModel):
+    """Optional body so a late mint can revoke only its own token."""
+
+    token: str = ""
 
 
 def _bind_http_error(http_status: int, code: str, message: str) -> HTTPException:
@@ -396,28 +396,6 @@ async def dingtalk_bind_room_code(
     )
 
 
-@router.get("/dingtalk-bind/qr-code", response_model=DingtalkBindQrCodeResponse)
-async def dingtalk_bind_qr_code(
-    bind_token: str | None = Query(default=None, min_length=20, max_length=512),
-    current_user: User = Depends(get_current_user),
-) -> DingtalkBindQrCodeResponse:
-    """Backward-compatible alias for room-code polling."""
-    payload = await _dingtalk_bind_room_code_payload(
-        bind_token=bind_token,
-        current_user=current_user,
-    )
-    return DingtalkBindQrCodeResponse(
-        code=payload.code,
-        code_display=payload.code_display,
-        pair_purpose=payload.pair_purpose,
-        period_seconds=payload.period_seconds,
-        valid_until_unix=payload.valid_until_unix,
-        ttl_seconds=payload.ttl_seconds,
-        bind_token=payload.bind_token,
-        qr_query="",
-    )
-
-
 @router.get("/dingtalk-bind/status", response_model=DingtalkBindStatusResponse)
 async def dingtalk_bind_status(
     current_user: User = Depends(get_current_user),
@@ -466,10 +444,15 @@ async def dingtalk_bind_status(
 @router.post("/dingtalk-bind/cancel")
 async def dingtalk_bind_cancel(
     current_user: User = Depends(get_current_user),
+    body: Optional[DingtalkBindCancelRequest] = None,
 ) -> dict[str, str]:
-    """Revoke pending bind token when modal closes."""
+    """Revoke the pending pair session when the dialog closes or a mint is abandoned."""
+    only_token = (body.token if body is not None else "").strip()
     log_web_cancel(user_id=int(current_user.id))
-    await revoke_pending_bind_token(int(current_user.id))
+    await revoke_pending_bind_token(
+        int(current_user.id),
+        only_token=only_token or None,
+    )
     return {"status": "ok"}
 
 

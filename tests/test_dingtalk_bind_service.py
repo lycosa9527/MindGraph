@@ -1,4 +1,4 @@
-"""Tests for universal DingTalk QR bind claim service."""
+"""Tests for universal DingTalk pair-code bind claim."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from services.auth.dingtalk_bind_constants import (
     BIND_ERROR_STAFF_TAKEN,
     BIND_ERROR_TOKEN_CONSUMED,
 )
-from services.auth.dingtalk_bind_service import claim_dingtalk_qr_bind
+from services.auth.dingtalk_bind_service import claim_dingtalk_pair_bind
 from services.auth.quick_register_room_code import current_room_code_from_room_secret
 
 
@@ -55,7 +55,7 @@ async def test_org_mismatch_does_not_consume_token() -> None:
             new_callable=AsyncMock,
         ) as mock_consume,
     ):
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token=token,
             bind_code=bind_code,
             organization_id=99,
@@ -128,7 +128,7 @@ async def test_staff_taken_precheck_does_not_consume_token() -> None:
         mock_cm.__aexit__ = AsyncMock(return_value=False)
         mock_rls.return_value = mock_cm
 
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token=token,
             bind_code=bind_code,
             organization_id=5,
@@ -216,7 +216,7 @@ async def test_success_consumes_after_commit() -> None:
         mock_usage_repo.backfill_linked_user = AsyncMock(return_value=3)
         mock_usage_cls.return_value = mock_usage_repo
 
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token=token,
             bind_code=bind_code,
             organization_id=5,
@@ -290,7 +290,7 @@ async def test_integrity_error_maps_to_staff_taken() -> None:
         mock_cm.__aexit__ = AsyncMock(return_value=False)
         mock_rls.return_value = mock_cm
 
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token=token,
             bind_code=bind_code,
             organization_id=5,
@@ -316,7 +316,7 @@ async def test_consumed_token_returns_without_consume_retry() -> None:
             new_callable=AsyncMock,
         ) as mock_consume,
     ):
-        ok, err = await claim_dingtalk_qr_bind(
+        ok, err = await claim_dingtalk_pair_bind(
             token="used-token",
             bind_code="123456",
             organization_id=5,

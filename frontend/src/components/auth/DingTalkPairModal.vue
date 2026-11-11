@@ -109,6 +109,10 @@ const pairingActive = computed(
   () => !!token.value && !completed.value && !expired.value && !tokenLoading.value
 )
 
+const waitingForCode = computed(
+  () => !!token.value && !pairCodeDisplay.value && !completed.value && !expired.value
+)
+
 function stopTimers() {
   if (pollTimer) {
     clearInterval(pollTimer)
@@ -124,9 +128,14 @@ function stopTimers() {
   }
 }
 
-async function cancelPendingToken() {
+async function cancelPendingToken(onlyToken = '') {
+  const tokenToDrop = onlyToken.trim()
   try {
-    await authFetch('/api/auth/dingtalk-bind/cancel', { method: 'POST' })
+    await authFetch('/api/auth/dingtalk-bind/cancel', {
+      method: 'POST',
+      headers: tokenToDrop ? { 'Content-Type': 'application/json' } : undefined,
+      body: tokenToDrop ? JSON.stringify({ token: tokenToDrop }) : undefined,
+    })
     logPairAudit('session_cancel', {
       purpose: pairPurpose.value,
       generation: sessionGeneration.value,
@@ -330,6 +339,9 @@ async function mintSession() {
       detail?: { code?: string; message?: string } | string
     }
     if (generation !== sessionGeneration.value) {
+      if (res.ok && typeof data.token === 'string' && data.token) {
+        void cancelPendingToken(data.token)
+      }
       return
     }
     if (!res.ok) {
@@ -394,31 +406,42 @@ function close() {
   visible.value = false
 }
 
+function openPairSession() {
+  sessionGeneration.value += 1
+  completed.value = false
+  token.value = ''
+  pairCode.value = ''
+  pairCodeDisplay.value = ''
+  expiresAtMs.value = 0
+  validUntilUnix.value = 0
+  logPairAudit('modal_open', {
+    purpose: pairPurpose.value,
+    generation: sessionGeneration.value,
+  })
+  void mintSession()
+}
+
+function closePairSession() {
+  sessionGeneration.value += 1
+  stopTimers()
+  void cancelPendingToken()
+  token.value = ''
+  pairCode.value = ''
+  pairCodeDisplay.value = ''
+}
+
 watch(
   () => props.modelValue,
-  (open) => {
+  (open, wasOpen) => {
     if (open) {
-      sessionGeneration.value += 1
-      completed.value = false
-      token.value = ''
-      pairCode.value = ''
-      pairCodeDisplay.value = ''
-      expiresAtMs.value = 0
-      validUntilUnix.value = 0
-      logPairAudit('modal_open', {
-        purpose: pairPurpose.value,
-        generation: sessionGeneration.value,
-      })
-      void mintSession()
-    } else {
-      sessionGeneration.value += 1
-      stopTimers()
-      void cancelPendingToken()
-      token.value = ''
-      pairCode.value = ''
-      pairCodeDisplay.value = ''
+      openPairSession()
+      return
     }
-  }
+    if (wasOpen) {
+      closePairSession()
+    }
+  },
+  { immediate: true }
 )
 
 watch(expired, (isExpired) => {
@@ -432,8 +455,12 @@ watch(expired, (isExpired) => {
 })
 
 onBeforeUnmount(() => {
+  const shouldCancel = props.modelValue || token.value.length > 0
   sessionGeneration.value += 1
   stopTimers()
+  if (shouldCancel) {
+    void cancelPendingToken()
+  }
 })
 </script>
 
@@ -469,7 +496,7 @@ onBeforeUnmount(() => {
 
       <div class="flex flex-col items-center gap-3 min-h-[240px] justify-center">
         <Loader2
-          v-if="tokenLoading"
+          v-if="tokenLoading || waitingForCode"
           class="w-8 h-8 animate-spin text-stone-400"
         />
         <div
