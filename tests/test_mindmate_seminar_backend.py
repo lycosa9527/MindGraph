@@ -296,11 +296,53 @@ async def test_join_by_code_rejects_pending_invite_from_another_school() -> None
             "services.features.mindmate_seminar.manager.accepted_member_ids",
             AsyncMock(return_value=[]),
         ),
+        patch(
+            "services.features.mindmate_seminar.manager.enroll_member_via_invite_code",
+            AsyncMock(return_value="pending"),
+        ),
     ):
         payload, error = await mgr.join_by_code(99, "ABC-DEF")
 
     assert payload is None
     assert error == "forbidden"
+
+
+@pytest.mark.asyncio
+async def test_join_by_code_enrolls_new_member_via_invite_code() -> None:
+    """A peer who only has the live code is enrolled as accepted and may join."""
+    mgr = MindmateSeminarManager()
+    session = MagicMock()
+    session.id = "sess-net"
+    session.code = "ABC-DEF"
+    session.visibility = "network"
+    session.owner_user_id = 1
+    session.organization_id = 4
+
+    with (
+        patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
+        patch(
+            "services.features.mindmate_seminar.manager.seminar_room_is_closed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.list_invited_member_ids",
+            AsyncMock(return_value=[1]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.accepted_member_ids",
+            AsyncMock(return_value=[1]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.enroll_member_via_invite_code",
+            AsyncMock(return_value="accepted"),
+        ),
+        patch.object(mgr, "_session_payload", AsyncMock(return_value={"code": "ABC-DEF"})),
+    ):
+        payload, error = await mgr.join_by_code(88, "ABC-DEF")
+
+    assert error is None
+    assert payload == {"code": "ABC-DEF"}
 
 
 @pytest.mark.asyncio

@@ -5,10 +5,11 @@
 import { computed, ref } from 'vue'
 
 import {
-  fetchSeminarGroup,
   type SeminarGroupMember,
   type SeminarGroupPayload,
+  fetchSeminarGroup,
 } from '@/utils/mindmateSeminarGroup'
+import { clearSeminarCustomRoles, syncSeminarCustomRoles } from '@/utils/seminarCustomRoles'
 
 export const seminarGroupMembers = ref<SeminarGroupMember[]>([])
 export const seminarGroupOwnerUserId = ref(0)
@@ -36,6 +37,7 @@ export function setSeminarGroupRoster(payload: {
   crossSchool?: boolean
 }): void {
   seminarGroupMembers.value = payload.members
+  syncSeminarCustomRoles(payload.members.map((member) => member.role))
   if (payload.sessionId != null) {
     seminarGroupSessionId.value = payload.sessionId
   }
@@ -61,6 +63,7 @@ export function clearSeminarGroupRoster(): void {
   seminarGroupSessionId.value = ''
   seminarGroupVisibility.value = 'organization'
   seminarGroupCrossSchool.value = false
+  clearSeminarCustomRoles()
 }
 
 export async function loadSeminarGroupRoster(

@@ -379,6 +379,7 @@ declare module 'vue' {
     MindmateSeminarMessageStamp: typeof import('./components/mindmate/MindmateSeminarMessageStamp.vue')['default']
     MindmateSeminarPanel: typeof import('./components/mindmate/MindmateSeminarPanel.vue')['default']
     MindmateSeminarRoleIcon: typeof import('./components/mindmate/MindmateSeminarRoleIcon.vue')['default']
+    MindmateSeminarRoleSelect: typeof import('./components/mindmate/MindmateSeminarRoleSelect.vue')['default']
     MindmateSeminarRoom: typeof import('./components/mindmate/MindmateSeminarRoom.vue')['default']
     MindmateSeminarRosterBar: typeof import('./components/mindmate/MindmateSeminarRosterBar.vue')['default']
     MindmateSeminarSavedTranscript: typeof import('./components/mindmate/MindmateSeminarSavedTranscript.vue')['default']

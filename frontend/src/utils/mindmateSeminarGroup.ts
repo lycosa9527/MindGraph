@@ -2,7 +2,7 @@
  * Invited teachers for a school seminar. Offline members stay on the list.
  */
 import { authFetch } from '@/utils/api'
-import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
+import { type SeminarBriefRole, normalizeSeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarFace } from '@/utils/mindmateSeminarFaces'
 
 export interface SeminarGroupMember {
@@ -49,19 +49,7 @@ interface GroupMemberRow {
 }
 
 function asRole(raw: unknown): SeminarBriefRole {
-  const role = String(raw || '').trim()
-  if (
-    role === 'leader' ||
-    role === 'leadPrep' ||
-    role === 'coPrep' ||
-    role === 'expert' ||
-    role === 'researcher' ||
-    role === 'observer' ||
-    role === 'none'
-  ) {
-    return role
-  }
-  return 'observer'
+  return normalizeSeminarBriefRole(String(raw || '').trim())
 }
 
 export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroupPayload | null> {
@@ -130,7 +118,9 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
     .filter((row): row is SeminarGroupMember => row != null)
 
   const orgIds = new Set(
-    members.map((member) => member.organizationId).filter((id): id is number => id != null && id > 0)
+    members
+      .map((member) => member.organizationId)
+      .filter((id): id is number => id != null && id > 0)
   )
   const crossSchool = visibility === 'network' || orgIds.size > 1
 

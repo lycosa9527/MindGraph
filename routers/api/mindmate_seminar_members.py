@@ -34,8 +34,8 @@ from services.features.mindmate_seminar.group_members import (
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
 from services.features.mindmate_seminar.poke_notify import send_seminar_member_poke
 from services.features.mindmate_seminar.seminar_roles import (
-    LEADER_ASSIGNABLE_SEMINAR_ROLES,
     SEMINAR_ROLE_LEADER,
+    is_leader_assignable_seminar_role,
     normalize_seminar_role,
     resolve_seminar_leader_id,
 )
@@ -247,7 +247,7 @@ async def update_seminar_member_role(
     if int(body.user_id) == int(current_user.id):
         raise HTTPException(status_code=400, detail="Transfer leadership to another member")
     role = normalize_seminar_role(body.role)
-    if role not in LEADER_ASSIGNABLE_SEMINAR_ROLES:
+    if not is_leader_assignable_seminar_role(role):
         raise HTTPException(status_code=400, detail="Invalid seminar role")
     ok = await set_group_member_role(session.id, body.user_id, role)
     if not ok:

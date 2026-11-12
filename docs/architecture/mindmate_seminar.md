@@ -23,7 +23,7 @@ MindMate seminar and MindGraph online collaboration are regular services. They a
 | Mode | Discover | Join |
 |------|----------|------|
 | `organization` | Same-org browse via `GET /organization/sessions`. A closed room is listed only for the host and accepted invitees | Same org, or expert/superadmin/school_admin cross-org, while the room is open. After the host names members, only those teachers |
-| `network` | Not listed | Valid 6-char code is not enough. Only invited teachers, after a cross-school teacher agrees |
+| `network` | Not listed | Phone/org multi-select invites need the peer to agree. Holding the live invite code enrolls a new accepted seat. Pending phone/org invites still require consent before join |
 
 ## Session lifecycle
 
@@ -49,13 +49,15 @@ Operational parity with canvas collab: see [`docs/operations/online-collab-runbo
 | Identifier | Scope | Client-visible? | Notes |
 |------------|-------|-----------------|-------|
 | `session_id` (UUID) | One collab room | Yes — join/browse/history | Unguessable; route-level visibility checks before access |
-| `code` (XXX-XXX) | One live room | Yes — invite link, WS path | Addresses one live room. A network room also requires an accepted invite |
+| `code` (XXX-XXX) | One live room | Yes — invite link, WS path | Addresses one live room. Code holders not already pending may enroll; pending phone/org invites still require accept |
 | `dify_conversation_id` | One shared AI thread per room | **No** — server-internal only | Stored as `s{server}:{difyId}` so 主服务器 and 备用服务器 stay distinct. Dify user: `{MINDMATE_DIFY_USER_PREFIX}_mindmate_seminar_{orgId}_{sessionId}` |
 | `resume_token` | One reconnect | Yes — `joined` frame | Bound to `{user, code, session}`; one-time Redis consume |
 
 **Org join parity (canvas collab):** when the host has no `organization_id`, any authenticated org member may join an `organization`-visible room ([`online_collab_visibility_helpers.py`](../../services/online_collab/lifecycle/online_collab_visibility_helpers.py)).
 
-**Network rooms:** a network room is invite-only. A signed-in teacher enters after they are on the invite list and have accepted. The code addresses the room.
+**Network rooms:** invite-only. Hosts add people by school roster (platform-tier roles may filter other orgs), phone lookup, or by sharing the invite code/link. Phone/org picks stay pending until the peer agrees. A peer who only has the live code is enrolled as accepted when they join.
+
+**Cross-org picker:** `GET /api/mindmate/invite-organizations` and `org_id` on `/api/mindmate/org-members` are for superadmin / platform_bd / expert.
 
 **Access layers:** visibility rules → per-route authorization → PostgreSQL RLS on user-scoped reads.
 

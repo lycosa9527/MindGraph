@@ -8,6 +8,7 @@ import { Plus, Trash2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateMentionMenu from '@/components/mindmate/MindmateMentionMenu.vue'
+import MindmateSeminarRoleSelect from '@/components/mindmate/MindmateSeminarRoleSelect.vue'
 import { swissGlassConfirm, useLanguage } from '@/composables'
 import {
   requestSeminarMention,
@@ -15,7 +16,10 @@ import {
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import { seminarShowsMemberOrg } from '@/composables/mindmate/seminarGroupRoster'
 import { useSeminarMemberPresence } from '@/composables/mindmate/useSeminarMemberPresence'
-import { SEMINAR_BRIEF_ROLE_OPTIONS, type SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
+import {
+  type SeminarBriefRole,
+  isSeminarBuiltinRole,
+} from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
@@ -87,17 +91,20 @@ const sorted = computed(() =>
 )
 
 function roleLabel(role: SeminarBriefRole): string {
-  return t(`mindmate.home.brief.role.${role}`)
+  if (isSeminarBuiltinRole(role) || role === 'none') {
+    return t(`mindmate.home.brief.role.${role === 'none' ? 'observer' : role}`)
+  }
+  return role
 }
 
 function memberRoleValue(member: SeminarGroupMember): SeminarBriefRole {
   return member.role === 'none' ? 'observer' : member.role
 }
 
-async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<void> {
-  const select = event.target as HTMLSelectElement
-  const role = select.value as SeminarBriefRole
-  const previous = memberRoleValue(member)
+async function onRoleUpdate(member: SeminarGroupMember, role: SeminarBriefRole): Promise<void> {
+  if (role === memberRoleValue(member)) {
+    return
+  }
   if (role === 'leader') {
     try {
       await swissGlassConfirm(
@@ -110,7 +117,6 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
         }
       )
     } catch {
-      select.value = previous
       return
     }
   }
@@ -207,24 +213,16 @@ defineExpose({ keepOpen, scheduleClose })
           >
         </div>
         <span class="mm-members-pop__role-wrap">
-          <select
+          <MindmateSeminarRoleSelect
             v-if="isLeader && !member.isLeader && member.userId !== selfUserId"
-            class="mm-members-pop__role"
+            :model-value="memberRoleValue(member)"
             :disabled="busy"
-            :value="memberRoleValue(member)"
-            @change="onRoleSelect(member, $event)"
-          >
-            <option
-              v-for="role in SEMINAR_BRIEF_ROLE_OPTIONS"
-              :key="role"
-              :value="role"
-            >
-              {{ roleLabel(role) }}
-            </option>
-          </select>
+            @update:model-value="onRoleUpdate(member, $event)"
+          />
           <span
             v-else
             class="mm-members-pop__role-text"
+            :class="{ 'is-custom': !isSeminarBuiltinRole(memberRoleValue(member)) }"
             >{{ roleLabel(member.role === 'none' ? 'observer' : member.role) }}</span
           >
         </span>
@@ -262,15 +260,16 @@ defineExpose({ keepOpen, scheduleClose })
       <Plus :size="14" />
       <I18nText k="mindmate.home.addMembers" />
     </button>
+
+    <MindmateMentionMenu
+      v-if="mentionMenu"
+      :x="mentionMenu.x"
+      :y="mentionMenu.y"
+      :name="mentionMenu.name"
+      @choose="chooseMention"
+      @close="mentionMenu = null"
+    />
   </div>
-  <MindmateMentionMenu
-    v-if="mentionMenu"
-    :x="mentionMenu.x"
-    :y="mentionMenu.y"
-    :name="mentionMenu.name"
-    @choose="chooseMention"
-    @close="mentionMenu = null"
-  />
 </template>
 
 <style scoped>
@@ -279,12 +278,14 @@ defineExpose({ keepOpen, scheduleClose })
   top: calc(100% + 8px);
   right: 0;
   z-index: 40;
-  width: min(360px, 82vw);
+  width: min(360px, calc(100vw - 24px));
   padding: 10px;
   border: 1px solid #e9e5ff;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 14px 36px rgba(76, 61, 180, 0.14);
+  box-shadow:
+    0 10px 30px rgba(28, 25, 23, 0.12),
+    0 2px 8px rgba(28, 25, 23, 0.06);
 }
 
 .mm-members-pop__head {
@@ -299,17 +300,9 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__count {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #f5f3ff;
-  color: #6d5efc;
-  font-size: 11px;
-  font-weight: 650;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a8a29e;
 }
 
 .mm-members-pop__list {
@@ -322,7 +315,7 @@ defineExpose({ keepOpen, scheduleClose })
 
 .mm-members-pop__row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto 28px;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   padding: 8px 4px;
@@ -335,26 +328,26 @@ defineExpose({ keepOpen, scheduleClose })
 
 .mm-members-pop__avatar {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 650;
+  flex-shrink: 0;
 }
 
 .mm-members-pop__avatar.is-offline {
-  filter: grayscale(0.35);
-  opacity: 0.78;
+  opacity: 0.55;
 }
 
 .mm-members-pop__avatar.is-mentionable {
   cursor: context-menu;
 }
 
-.mm-members-pop__dot.is-on {
+.mm-members-pop__dot {
   position: absolute;
   right: -1px;
   bottom: -1px;
@@ -362,6 +355,10 @@ defineExpose({ keepOpen, scheduleClose })
   height: 9px;
   border-radius: 50%;
   border: 2px solid #fff;
+  background: #d6d3d1;
+}
+
+.mm-members-pop__dot.is-on {
   background: #22c55e;
 }
 
@@ -373,10 +370,6 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__name {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   color: #1c1917;
@@ -386,25 +379,16 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__tag {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: #ede9fe;
-  color: #6d28d9;
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.mm-members-pop__pending {
-  font-size: 11px;
-  color: #a8a29e;
-}
-
-.mm-members-pop__org {
-  min-width: 0;
+  margin-left: 4px;
   font-size: 11px;
   font-weight: 500;
-  color: #78716c;
+  color: #7c3aed;
+}
+
+.mm-members-pop__pending,
+.mm-members-pop__org {
+  font-size: 11px;
+  color: #a8a29e;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -414,7 +398,6 @@ defineExpose({ keepOpen, scheduleClose })
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
   min-width: 0;
 }
 
@@ -426,23 +409,19 @@ defineExpose({ keepOpen, scheduleClose })
   color: #a8a29e;
 }
 
-.mm-members-pop__role,
 .mm-members-pop__role-text {
-  width: 96px;
+  max-width: 108px;
   font-size: 11px;
   color: #57534e;
-}
-
-.mm-members-pop__role {
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid #e9e5ff;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.mm-members-pop__role-text {
   text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-members-pop__role-text.is-custom {
+  color: #5b21b6;
+  font-weight: 600;
 }
 
 .mm-members-pop__remove {
@@ -459,8 +438,13 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__remove:hover:not(:disabled) {
-  background: #fef2f2;
-  color: #ef4444;
+  color: #1c1917;
+  background: #f5f5f4;
+}
+
+.mm-members-pop__remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .mm-members-pop__add {
@@ -470,20 +454,23 @@ defineExpose({ keepOpen, scheduleClose })
   gap: 6px;
   width: 100%;
   margin-top: 8px;
-  min-height: 36px;
-  height: auto;
-  border: 1px dashed #c4b5fd;
-  border-radius: 9999px;
+  min-height: 34px;
+  border: 1px dashed #ddd6fe;
+  border-radius: 10px;
   background: #faf8ff;
-  color: #6d5efc;
+  color: #5b21b6;
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .mm-members-pop__add:hover:not(:disabled) {
   background: #f5f3ff;
-  color: #1c1917;
+}
+
+.mm-members-pop__add:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 </style>

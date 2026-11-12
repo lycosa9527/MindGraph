@@ -9,17 +9,61 @@ export const SEMINAR_BRIEF_ROW_MAX = 200
 
 export type SeminarBriefVisibility = 'organization' | 'network'
 
+/** Built-in seats plus free-text labels the leader may assign (max 32 chars). */
 export type SeminarBriefRole =
-  'leader' | 'leadPrep' | 'coPrep' | 'expert' | 'researcher' | 'observer' | 'none'
+  | 'leader'
+  | 'leadPrep'
+  | 'coPrep'
+  | 'expert'
+  | 'researcher'
+  | 'observer'
+  | 'none'
+  | (string & {})
 
-export const SEMINAR_BRIEF_ROLE_OPTIONS: Exclude<SeminarBriefRole, 'none'>[] = [
+export const SEMINAR_BRIEF_ROLE_OPTIONS = [
   'leader',
   'leadPrep',
   'coPrep',
   'expert',
   'researcher',
   'observer',
-]
+] as const
+
+export type SeminarBuiltinAssignableRole = (typeof SEMINAR_BRIEF_ROLE_OPTIONS)[number]
+
+/** Sentinel value in role <select> for the free-text field. */
+export const SEMINAR_CUSTOM_ROLE_VALUE = '__custom__'
+
+export const SEMINAR_CUSTOM_ROLE_MAX = 32
+
+export function isSeminarBuiltinRole(role: string): role is SeminarBuiltinAssignableRole | 'none' {
+  return (
+    role === 'none' ||
+    (SEMINAR_BRIEF_ROLE_OPTIONS as readonly string[]).includes(role)
+  )
+}
+
+export function isSeminarCustomRole(role: string): boolean {
+  const cleaned = role.trim()
+  if (!cleaned || isSeminarBuiltinRole(cleaned)) {
+    return false
+  }
+  return cleaned.length <= SEMINAR_CUSTOM_ROLE_MAX
+}
+
+export function normalizeSeminarBriefRole(role: string): SeminarBriefRole {
+  const cleaned = role.trim()
+  if (!cleaned) {
+    return 'observer'
+  }
+  if (isSeminarBuiltinRole(cleaned)) {
+    return cleaned
+  }
+  if (isSeminarCustomRole(cleaned)) {
+    return cleaned
+  }
+  return 'observer'
+}
 
 export type SeminarBriefParticipantSource = 'school' | 'external'
 
@@ -39,6 +83,8 @@ export interface SeminarBrief {
   skipRoles: boolean
   resourceFiles: File[]
   skipResources: boolean
+  /** Pre-generated room code for invite-link sharing before start. */
+  preferredInviteCode?: string
 }
 
 export type SeminarBriefSection = 'topic' | 'goals' | 'participants' | 'resources'
@@ -48,7 +94,7 @@ export interface SeminarBriefLabels {
   goals: string
   participants: string
   resources: string
-  roleLabels: Record<SeminarBriefRole, string>
+  roleLabels: Record<SeminarBuiltinAssignableRole | 'none', string>
   visibilityOrg: string
   visibilityNetwork: string
   skipRoles: string
@@ -68,12 +114,21 @@ export function seminarBriefInviteeCount(brief: SeminarBrief, hostUserId = 0): n
   return brief.participants.length
 }
 
+export function seminarBriefHasInvitePath(brief: SeminarBrief, hostUserId = 0): boolean {
+  if (seminarBriefInviteeCount(brief, hostUserId) > 0) {
+    return true
+  }
+  return (
+    brief.visibility === 'network' && Boolean((brief.preferredInviteCode || '').trim())
+  )
+}
+
 export function seminarBriefMissing(brief: SeminarBrief, hostUserId = 0): SeminarBriefSection[] {
   const missing: SeminarBriefSection[] = []
   if (!brief.topic.trim()) {
     missing.push('topic')
   }
-  if (seminarBriefInviteeCount(brief, hostUserId) === 0) {
+  if (!seminarBriefHasInvitePath(brief, hostUserId)) {
     missing.push('participants')
   }
   return missing
@@ -95,7 +150,7 @@ export function seminarBriefSectionFilled(
     return filledBriefLines(brief.goals).length > 0
   }
   if (section === 'participants') {
-    return seminarBriefInviteeCount(brief, hostUserId) > 0
+    return seminarBriefHasInvitePath(brief, hostUserId)
   }
   return brief.skipResources || brief.resourceFiles.length > 0
 }
@@ -123,7 +178,13 @@ export function seminarSeedFromBrief(
 
   if (brief.participants.length > 0) {
     const lines = brief.participants.map((row, index) => {
-      const role = row.role === 'none' ? '' : `（${labels.roleLabels[row.role]}）`
+      const roleText =
+        row.role === 'none'
+          ? ''
+          : isSeminarBuiltinRole(row.role)
+            ? labels.roleLabels[row.role]
+            : row.role
+      const role = roleText ? `（${roleText}）` : ''
       const sourceTag =
         row.source === 'external' && labels.pendingConsent ? `（${labels.pendingConsent}）` : ''
       return `${index + 1}. ${row.name}${role}${sourceTag}`

@@ -40,6 +40,7 @@ export async function startSeminarRoom(input: {
   briefTopic?: string
   briefGoals?: string[]
   closeGroup?: boolean
+  preferredCode?: string
 }): Promise<{ ok: true; room: SeminarRoomStart } | { ok: false; detail: string }> {
   const rolePayload: Record<string, string> = {}
   if (input.memberRoles) {
@@ -47,6 +48,7 @@ export async function startSeminarRoom(input: {
       rolePayload[userId] = role
     }
   }
+  const preferredCode = (input.preferredCode || '').trim().toUpperCase()
   let response: Response
   try {
     response = await authFetch('/api/mindmate/seminar/start', {
@@ -61,6 +63,7 @@ export async function startSeminarRoom(input: {
         brief_topic: input.briefTopic || undefined,
         brief_goals: input.briefGoals ?? [],
         close_group: Boolean(input.closeGroup),
+        preferred_code: preferredCode || undefined,
       }),
     })
   } catch {

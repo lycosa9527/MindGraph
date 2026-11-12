@@ -26,8 +26,11 @@ from routers.api.mindmate_seminar_share_canvas import router as seminar_share_ro
 from routers.api.mindmate_seminar_members import router as seminar_members_router
 from routers.api.mindmate_seminar_messages import router as seminar_messages_router
 from routers.api.mindmate_seminar_minutes import router as seminar_minutes_router
-from routers.features.workshop_chat.dependencies import resolve_social_org_id
 from routers.features.workshop_chat.schemas import OrgMembersPage
+from services.features.mindmate_seminar.invite_org_access import (
+    fetch_seminar_invite_roster_page,
+    resolve_seminar_roster_org_id,
+)
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.features.mindmate_seminar.config import MINDMATE_COLLAB_DEFAULT_DURATION
@@ -51,10 +54,7 @@ from services.features.mindmate_seminar.poke_notify import send_seminar_member_p
 from services.features.mindmate_seminar.reopen_session import reopen_saved_seminar
 from services.features.mindmate_seminar.seminar_leave import leave_live_seminar
 from services.features.mindmate_seminar.visibility import user_may_join_mindmate_seminar
-from services.features.org_member_roster import (
-    fetch_org_members_page,
-    fetch_session_participants_page,
-)
+from services.features.org_member_roster import fetch_session_participants_page
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
@@ -97,6 +97,7 @@ class StartCollabRequest(BaseModel):
     brief_topic: Optional[str] = None
     brief_goals: List[str] = Field(default_factory=list)
     close_group: bool = False
+    preferred_code: Optional[str] = Field(default=None, max_length=7)
 
 
 class RenameCollabRequest(BaseModel):
@@ -182,6 +183,7 @@ async def start_collab_room(
         brief_topic=body.brief_topic,
         brief_goals=body.brief_goals,
         close_group=body.close_group or bool(body.member_user_ids) or bool(body.member_roles),
+        preferred_code=body.preferred_code,
     )
     if not payload:
         raise HTTPException(status_code=400, detail=error or "Failed to start room")
@@ -446,6 +448,7 @@ async def list_collab_org_members(
     q: Optional[str] = None,
     limit: int = Query(default=200, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    org_id: Optional[int] = Query(default=None, ge=1),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -453,9 +456,10 @@ async def list_collab_org_members(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_seminar_org_members", identifier, max_requests=60, window_seconds=60)
 
-    effective_org_id = await resolve_social_org_id(db, current_user, None)
-    return await fetch_org_members_page(
+    effective_org_id = await resolve_seminar_roster_org_id(db, current_user, org_id)
+    return await fetch_seminar_invite_roster_page(
         db,
+        current_user,
         effective_org_id,
         q=q or "",
         limit=limit,

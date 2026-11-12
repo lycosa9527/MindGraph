@@ -33,11 +33,36 @@ ASSIGNABLE_SEMINAR_ROLES = frozenset(SEMINAR_ROLES - {SEMINAR_ROLE_LEADER, SEMIN
 # Leader may also assign leader (transfers the role). Unassigned is not a seat they pick.
 LEADER_ASSIGNABLE_SEMINAR_ROLES = frozenset(SEMINAR_ROLES - {SEMINAR_ROLE_UNASSIGNED})
 
+# Matches mindmate_seminar_members.seminar_role String(32).
+SEMINAR_CUSTOM_ROLE_MAX = 32
+
+
+def is_builtin_seminar_role(role: str) -> bool:
+    """True when the role is one of the fixed seminar seats."""
+    return role in SEMINAR_ROLES
+
+
+def is_custom_seminar_role(role: str) -> bool:
+    """True when the leader typed a free-text role label."""
+    cleaned = role.strip()
+    if not cleaned or cleaned in SEMINAR_ROLES:
+        return False
+    if len(cleaned) > SEMINAR_CUSTOM_ROLE_MAX:
+        return False
+    return all(ch.isprintable() and ch not in "\n\r\t" for ch in cleaned)
+
+
+def is_leader_assignable_seminar_role(role: str) -> bool:
+    """True when a leader may assign this role to another member."""
+    return role in LEADER_ASSIGNABLE_SEMINAR_ROLES or is_custom_seminar_role(role)
+
 
 def normalize_seminar_role(raw: str | None, *, default: str = SEMINAR_ROLE_OBSERVER) -> str:
-    """Return a known seminar role or the default."""
+    """Return a known seminar role, a sanitized custom label, or the default."""
     role = (raw or "").strip()
     if role in SEMINAR_ROLES:
+        return role
+    if is_custom_seminar_role(role):
         return role
     return default
 

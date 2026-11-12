@@ -95,6 +95,24 @@ describe('seminarBrief', () => {
     expect(seminarBriefSectionFilled({ ...hostOnly, skipResources: true }, 'resources')).toBe(true)
   })
 
+  it('allows network brief with only an invite code and the host', () => {
+    const inviteOnly = {
+      topic: '跨校主题',
+      goals: ['目标'],
+      visibility: 'network' as const,
+      participants: [{ userId: 1, name: '我', role: 'leader' as const, source: 'school' as const }],
+      skipRoles: false,
+      resourceFiles: [],
+      skipResources: true,
+      preferredInviteCode: 'ABC-DEF',
+    }
+    expect(seminarBriefSectionFilled(inviteOnly, 'participants', 1)).toBe(true)
+    expect(seminarBriefIsComplete(inviteOnly, 1)).toBe(true)
+    expect(seminarBriefMissing({ ...inviteOnly, preferredInviteCode: '' }, 1)).toEqual([
+      'participants',
+    ])
+  })
+
   it('builds a seeded brief from the filled lines', () => {
     const brief = {
       topic: '  平行四边形认知冲突  ',
