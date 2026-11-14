@@ -19,7 +19,6 @@ import logging
 import os
 import signal
 import sys
-from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -146,33 +145,6 @@ def _is_uvicorn_reloader_process() -> bool:
     return False
 
 
-# Original launch art from the first commit. Do not delete. It must show at startup.
-_MINDGRAPH_ASCII_BANNER = (
-    "    ███╗   ███╗██╗███╗   ██╗██████╗ ███╗   ███╗ █████╗ ████████╗███████╗",
-    "    ████╗ ████║██║████╗  ██║██╔══██╗████╗ ████║██╔══██╗╚══██╔══╝██╔════╝",
-    "    ██╔████╔██║██║██╔██╗ ██║██║  ██║██╔████╔██║███████║   ██║   █████╗  ",
-    "    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║╚██╔╝██║██╔══██║   ██║   ██╔══╝  ",
-    "    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝██║ ╚═╝ ██║██║  ██║   ██║   ███████╗",
-    "    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝",
-)
-
-
-def mindgraph_startup_banner_lines() -> tuple[str, ...]:
-    """Launch banner lines, including the version. Do not remove."""
-    try:
-        version_file = Path(__file__).resolve().parents[3] / "VERSION"
-        version = version_file.read_text(encoding="utf-8").strip()
-    except BACKGROUND_INFRA_ERRORS:
-        version = "0.0.0"
-    return (
-        *_MINDGRAPH_ASCII_BANNER,
-        "=" * 80,
-        "    AI-Powered Visual Thinking Tools for K12 Education",
-        f"    Version {version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)",
-        "=" * 80,
-    )
-
-
 def setup_early_configuration():
     """
     Perform early configuration setup that must happen before other initialization.
@@ -188,8 +160,6 @@ def setup_early_configuration():
     worker_id = os.getenv("UVICORN_WORKER_ID")
     is_reloader = _is_uvicorn_reloader_process()
     should_log_startup = not is_reloader and worker_id is None and not _UvicornProcessHints.is_launched_child()
-
-    # The ASCII banner is printed once from run_server(), before this process logs.
 
     # Windows event loop: psycopg async requires SelectorEventLoop; Proactor is only
     # needed for Playwright subprocesses (set WINDOWS_PROACTOR_EVENT_LOOP=1 if PNG export fails).

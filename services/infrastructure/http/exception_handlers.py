@@ -21,12 +21,12 @@ from fastapi.responses import JSONResponse, Response
 from starlette.requests import ClientDisconnect
 from starlette.types import ExceptionHandler
 from starlette.websockets import WebSocketDisconnect
-from uvicorn.protocols.utils import ClientDisconnected
 
 from clients.dify_exceptions import DifyAPIError
 from clients.dify_http_errors import dify_error_is_upstream_outage
 from config.settings import config
 from models import Messages, get_request_language
+from services.infrastructure.http.client_abort import is_client_abort
 from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
@@ -238,22 +238,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         return await http_exception_handler(request, exc)
 
-    # Outer BaseHTTPMiddleware can raise ClientDisconnect before ExceptionMiddleware
-    # sees it; ServerErrorMiddleware then routes here via the Exception handler.
-    if isinstance(exc, (ClientDisconnect, WebSocketDisconnect, ClientDisconnected)):
+    # BaseHTTPMiddleware raises this outside ExceptionMiddleware. ServerErrorMiddleware
+    # calls this handler (registered on Exception), sends the response, then re-raises.
+    # MindGraphFastAPI swallows that re-raise so Uvicorn does not log an ASGI crash.
+    # The 204 must be decided here: otherwise this path records a critical RuntimeError.
+    if isinstance(exc, WebSocketDisconnect) or is_client_abort(exc):
         logger.debug("Client disconnected (request aborted): %s", request_path)
-        return Response(status_code=204)
-
-    # Starlette's BaseHTTPMiddleware raises RuntimeError("No response returned.") when
-    # a streaming response is cancelled (asyncio.CancelledError / GeneratorExit) before
-    # the ASGI `http.response.start` message is sent. This is a client-disconnect
-    # artifact — the SSE generator was aborted by the frontend (AbortController) — not
-    # an application fault. Treat it like ClientDisconnect: log at debug and return 204.
-    if exception_type == "RuntimeError" and "No response returned" in exception_message:
-        logger.debug(
-            "Client disconnected during streaming response (no response returned): %s",
-            request_path,
-        )
         return Response(status_code=204)
 
     logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)

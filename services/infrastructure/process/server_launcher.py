@@ -36,10 +36,8 @@ except ImportError:
 
 from config.settings import config
 from scripts.db.postgres_app_startup import prepare_postgresql_rls_runtime
-from services.infrastructure.lifecycle.startup import (
-    MINDGRAPH_LAUNCHER_PID_ENV,
-    mindgraph_startup_banner_lines,
-)
+from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
+from services.infrastructure.lifecycle.startup_banner import release_held_startup_logs
 from services.infrastructure.lifecycle.startup_env_requirements import (
     enforce_startup_env_requirements_or_exit,
 )
@@ -153,11 +151,6 @@ def run_server() -> None:
         workers_str = os.getenv("UVICORN_WORKERS")
         workers = int(workers_str) if workers_str else default_workers
 
-        # Print the launch art here, before logging, so letter spacing stays intact.
-        print()
-        for banner_line in mindgraph_startup_banner_lines():
-            print(banner_line)
-        print()
         print(f"Environment: {environment} (DEBUG={debug})")
         print(f"Host: {host}")
         print(f"Port: {port}")
@@ -175,6 +168,8 @@ def run_server() -> None:
         print("=" * 80)
         print("Press Ctrl+C to stop the server")
         print()
+        sys.stdout.flush()
+        release_held_startup_logs()
 
         enforce_startup_env_requirements_or_exit()
 

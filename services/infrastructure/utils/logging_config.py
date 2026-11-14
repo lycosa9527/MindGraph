@@ -23,6 +23,7 @@ from typing import Literal, cast
 from urllib.parse import urlparse
 
 from config.settings import config
+from services.infrastructure.lifecycle.startup_banner import bind_startup_log_handlers
 from services.infrastructure.utils.log_user_context import format_log_user_suffix
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -570,38 +571,6 @@ def setup_logging():
     console_formatter = UnifiedFormatter(use_colors=True)
     file_formatter = UnifiedFormatter(use_colors=False)
 
-    # Use UTF-8 encoding for console output to handle emojis and Chinese characters
-    # Only create console handler if stdout is usable
-    # This prevents errors when stdout is closed (e.g., in uvicorn workers or reload mode)
-    handlers = []
-
-    if _is_stream_usable(sys.stdout):
-        console_handler = SafeStreamHandler(sys.stdout)
-        console_handler.setFormatter(console_formatter)
-        handlers.append(console_handler)
-    # If stdout is not usable, we'll only use file handler (more reliable)
-
-    # Use custom TimestampedRotatingFileHandler to create timestamped log files every 72 hours
-    # Each file is named with the start timestamp: app.YYYY-MM-DD_HH-MM-SS.log
-    # File handler is always created as it's more reliable than console streams
-    try:
-        file_handler = TimestampedRotatingFileHandler(
-            os.path.join("logs", "app.log"),
-            interval_hours=72,  # Every 72 hours (3 days)
-            backup_count=10,  # Keep 10 backup files (30 days of logs)
-            encoding="utf-8",
-        )
-        file_handler.setFormatter(file_formatter)
-        handlers.append(file_handler)
-    except (OSError, IOError):
-        # If we can't create file handler, at least try to use console if available
-        # This is a fallback for edge cases where logs directory can't be created
-        if handlers:
-            pass  # At least we have console handler
-        else:
-            # Last resort: create a null handler to prevent errors
-            handlers.append(logging.NullHandler())
-
     # File: full detail (DEBUG when LOG_LEVEL=DEBUG). Console: INFO by default when
     # LOG_LEVEL=DEBUG so startup stays readable; full DEBUG still in logs/app.log.
     # Set VERBOSE_CONSOLE=1 to mirror DEBUG to the terminal as well.
@@ -617,16 +586,40 @@ def setup_logging():
     else:
         console_level = log_level
 
-    for handler in handlers:
-        if isinstance(handler, TimestampedRotatingFileHandler):
-            handler.setLevel(log_level)
-        elif isinstance(handler, SafeStreamHandler):
-            handler.setLevel(console_level)
-        elif not isinstance(handler, logging.NullHandler):
-            handler.setLevel(log_level)
+    handlers: list[logging.Handler] = []
+    console_handler: logging.Handler | None = None
+    # Skip the console handler when stdout is closed (uvicorn workers, reload).
+    if _is_stream_usable(sys.stdout):
+        console_handler = SafeStreamHandler(sys.stdout)
+        console_handler.setFormatter(console_formatter)
+        console_handler.setLevel(console_level)
 
-    # Configure logging with available handlers
-    # Use force=True to replace any existing configuration
+    # Timestamped file: app.YYYY-MM-DD_HH-MM-SS.log, rotated every 72 hours.
+    file_handler: logging.Handler | None = None
+    try:
+        created_file_handler = TimestampedRotatingFileHandler(
+            os.path.join("logs", "app.log"),
+            interval_hours=72,
+            backup_count=10,
+            encoding="utf-8",
+        )
+        created_file_handler.setFormatter(file_formatter)
+        created_file_handler.setLevel(log_level)
+        file_handler = created_file_handler
+    except (OSError, IOError):
+        file_handler = None
+
+    # Launch keeps the real console behind the startup buffer so the art stays first.
+    console_slot = bind_startup_log_handlers(console_handler, file_handler)
+    if console_slot is not None:
+        handlers.append(console_slot)
+    if file_handler is not None:
+        handlers.append(file_handler)
+    elif not handlers:
+        handlers.append(logging.NullHandler())
+
+    # force=True drops handlers installed before this call, then installs these.
+    # The launch buffer is one of these handlers, so it stays in place.
     logging.basicConfig(level=logging.DEBUG, handlers=handlers, force=True)
 
     # Set all loggers to DEBUG level for full verbose logging

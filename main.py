@@ -26,16 +26,21 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+_project_root = Path(__file__).resolve().parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+from services.infrastructure.lifecycle.startup_banner import print_launch_banner_and_hold_logs
+
+# ASCII art first. Log records stay off the console until the launch header is printed.
+if __name__ == "__main__":
+    print_launch_banner_and_hold_logs()
+
 # Load .env before any router imports so module-level os.getenv() calls in fanout
 # modules (workshop_ws_broadcast, ws_redis_fanout_listener, ws_pg_notify_fanout)
 # see the correct values.  The load_dotenv() call inside setup_early_configuration()
 # is harmless — it won't override env vars already in os.environ.
 load_dotenv()
-
-
-_project_root = Path(__file__).resolve().parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
 
 from scripts.db.migration_urls import bootstrap_rls_migration_from_env
 
@@ -48,15 +53,13 @@ bootstrap_rls_migration_from_env()
 if not os.environ.get("COLLAB_FANOUT_ORIGIN_SECRET"):
     os.environ["COLLAB_FANOUT_ORIGIN_SECRET"] = secrets.token_hex(32)
 
-# Third-party imports
-from fastapi import FastAPI
-
 # First-party imports
 from config.settings import config
 from routers.register import register_routers
 from services.infrastructure.lifecycle.startup import setup_early_configuration
 from services.infrastructure.utils.logging_config import setup_logging
 from services.infrastructure.lifecycle.lifespan import lifespan
+from services.infrastructure.http.client_abort import MindGraphFastAPI
 from services.infrastructure.http.middleware import setup_middleware
 from services.infrastructure.http.exception_handlers import setup_exception_handlers
 from services.infrastructure.utils.spa_handler import setup_vue_spa, is_dev_mode
@@ -73,7 +76,7 @@ logger = setup_logging()
 # FASTAPI APPLICATION INITIALIZATION
 # ============================================================================
 
-app = FastAPI(
+app = MindGraphFastAPI(
     title="MindGraph API",
     description="AI-Powered Graph Generation with FastAPI + Uvicorn",
     version=config.version,

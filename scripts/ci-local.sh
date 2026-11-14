@@ -195,6 +195,8 @@ run_backend() {
     tests/test_session_live_redis.py \
     tests/test_security_production_hardening.py \
     tests/test_csrf_protection.py \
+    tests/services/test_client_abort_asgi.py \
+    tests/test_startup_banner.py \
     tests/test_privacy_policy_static.py \
     tests/test_privacy_policy_http.py \
     tests/test_workshop_chat_file_service.py \
