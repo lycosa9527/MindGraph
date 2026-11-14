@@ -27,6 +27,7 @@ from services.features.mindmate_seminar.config import MINDMATE_COLLAB_MAX_PARTIC
 from services.features.mindmate_seminar.seminar_roles import (
     SEMINAR_ROLE_LEADER,
     SEMINAR_ROLE_OBSERVER,
+    SEMINAR_ROLE_UNASSIGNED,
     normalize_seminar_role,
     resolve_seminar_leader_id,
 )
@@ -257,6 +258,62 @@ async def seed_closed_group(
         len(inserted),
     )
     return inserted
+
+
+async def enroll_member_via_invite_code(session_id: str, user_id: int) -> str:
+    """Admit a code holder onto a closed roster.
+
+    Returns:
+        ``accepted`` — already invited and accepted, or newly enrolled via code
+        ``pending`` — already invited and still waiting to agree (phone/org invite)
+        ``full`` — room is at capacity
+    """
+    target = int(user_id)
+    if target <= 0:
+        return "pending"
+    async with system_rls_session() as db:
+        rows = (
+            (await db.execute(select(MindmateSeminarMember).where(MindmateSeminarMember.session_id == session_id)))
+            .scalars()
+            .all()
+        )
+        by_user = {int(row.user_id): row for row in rows}
+        current = by_user.get(target)
+        if current is not None:
+            if current.accepted and current.invited:
+                return "accepted"
+            if current.invited and not current.accepted:
+                return "pending"
+            current.invited = True
+            current.accepted = True
+            current.left_at = None
+            await db.commit()
+            logger.info(
+                "[MindmateSeminar] invite-code activated existing seat session=%s user=%s",
+                session_id,
+                target,
+            )
+            return "accepted"
+        invited_count = sum(1 for row in rows if row.invited)
+        if invited_count >= MINDMATE_COLLAB_MAX_PARTICIPANTS:
+            return "full"
+        db.add(
+            MindmateSeminarMember(
+                session_id=session_id,
+                user_id=target,
+                joined_at=datetime.now(tz=UTC),
+                seminar_role=SEMINAR_ROLE_UNASSIGNED,
+                accepted=True,
+                invited=True,
+            )
+        )
+        await db.commit()
+    logger.info(
+        "[MindmateSeminar] invite-code enrolled session=%s user=%s",
+        session_id,
+        target,
+    )
+    return "accepted"
 
 
 async def repair_seminar_leader_roles(session_id: str, owner_user_id: int) -> int:

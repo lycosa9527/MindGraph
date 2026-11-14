@@ -12,7 +12,7 @@ import { Check, Clock, List, SquareCheck, Star } from '@lucide/vue'
 import { useLanguage, useNotifications } from '@/composables'
 import type { SeminarHighlight } from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
-import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
+import { type SeminarBriefRole, isSeminarBuiltinRole } from '@/utils/mindmateSeminarBrief'
 import {
   type SeminarSummaryCardModel,
   emptySeminarSummary,
@@ -148,7 +148,10 @@ const scopeChoices: Array<{
 ]
 
 function roleLabel(role: SeminarBriefRole): string {
-  return t(`mindmate.home.brief.role.${role}`)
+  if (role === 'none' || isSeminarBuiltinRole(role)) {
+    return t(`mindmate.home.brief.role.${role === 'none' ? 'observer' : role}`)
+  }
+  return role
 }
 
 watch(

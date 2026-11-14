@@ -148,6 +148,8 @@ run_backend() {
     tests/test_ws_fanout.py \
     tests/test_mindmate_seminar_library_archive.py \
     tests/test_mindmate_seminar_group_members.py \
+    tests/test_mindmate_seminar_backend.py \
+    tests/test_mindmate_seminar_ws_broadcast.py \
     tests/test_mindmate_notify_presence.py \
     tests/test_collab_synthetic_probe.py \
     tests/test_workshop_join_resume_tokens.py \
@@ -384,6 +386,9 @@ run_frontend() {
     tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
     tests/mindmateWelcomeLayout.spec.ts \
     tests/mindmateSeminarLibrarySave.spec.ts \
+    tests/mindmateSeminarHome.spec.ts \
+    tests/mindmateSeminarRoleSelect.spec.ts \
+    tests/seminarCustomRoles.spec.ts \
     tests/mindmateContinueSession.spec.ts \
     tests/mindmatePresenceSubscribe.spec.ts \
     tests/workshopTopicChevron.spec.ts \

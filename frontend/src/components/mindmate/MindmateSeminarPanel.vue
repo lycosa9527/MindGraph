@@ -7,19 +7,11 @@
 import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import {
-  ElButton,
-  ElDialog,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElPopover,
-} from 'element-plus'
+import { ElButton, ElDialog, ElPopover } from 'element-plus'
 
-import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
+import { ArrowLeft, Loader2, RefreshCw } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
-import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import MindmateSeminarBriefForm from '@/components/mindmate/MindmateSeminarBriefForm.vue'
 import MindmateSeminarStartPicker from '@/components/mindmate/MindmateSeminarStartPicker.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -341,30 +333,6 @@ function onLaunchBrief(brief: SeminarBrief): void {
   emit('launchBrief', brief)
 }
 
-function onCollabDropdownCommand(command: string) {
-  if (command === 'start') {
-    collabPanelMode.value = 'start'
-    collabPopoverVisible.value = true
-    return
-  }
-  if (command === 'launch-org') {
-    void startSeminar('organization')
-    return
-  }
-  if (command === 'launch-network') {
-    void startSeminar('network')
-    return
-  }
-  if (command !== 'organization' && command !== 'network') {
-    return
-  }
-  collabPanelMode.value = command
-  collabPopoverVisible.value = true
-  if (command === 'organization') {
-    void openOrgPanel()
-  }
-}
-
 function closeCollabPopover() {
   collabPopoverVisible.value = false
 }
@@ -439,70 +407,11 @@ defineExpose({
     @click-outside="closeCollabPopover"
   >
     <template #reference>
-      <div class="collab-trigger-wrap inline-flex">
-        <ElDropdown
-          trigger="click"
-          placement="bottom-end"
-          popper-class="collab-trigger-dropdown-popper"
-          @command="onCollabDropdownCommand"
-        >
-          <span class="inline-flex">
-            <I18nTooltip
-              :k="inConversation ? 'mindmate.collabLaunchTooltip' : 'mindgraphLanding.collaborate'"
-              placement="bottom"
-            >
-              <ElButton
-                type="default"
-                class="join-workshop-btn join-workshop-btn--pill"
-                size="small"
-                :aria-haspopup="true"
-                :aria-label="
-                  inConversation
-                    ? t('mindmate.collabLaunchTooltip')
-                    : t('mindgraphLanding.collaborate')
-                "
-              >
-                <Users class="collab-trigger-icon-users" />
-                <ChevronDown
-                  class="collab-trigger-icon-chevron"
-                  aria-hidden="true"
-                />
-              </ElButton>
-            </I18nTooltip>
-          </span>
-          <template #dropdown>
-            <ElDropdownMenu>
-              <template v-if="inConversation">
-                <ElDropdownItem command="launch-org">
-                  <I18nText
-                    k="mindmate.collabLaunchOrg"
-                    dense
-                  />
-                </ElDropdownItem>
-                <ElDropdownItem command="launch-network">
-                  <I18nText
-                    k="mindmate.collabLaunchNetwork"
-                    dense
-                  />
-                </ElDropdownItem>
-              </template>
-              <template v-else>
-                <ElDropdownItem command="organization">
-                  <I18nText
-                    k="mindmate.collabJoinOrgSeminar"
-                    dense
-                  />
-                </ElDropdownItem>
-                <ElDropdownItem command="start">
-                  <I18nText
-                    k="mindmate.collabStartSession"
-                    dense
-                  />
-                </ElDropdownItem>
-              </template>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
+      <div
+        class="collab-trigger-wrap collab-trigger-wrap--hidden inline-flex"
+        aria-hidden="true"
+      >
+        <span class="collab-trigger-anchor" />
       </div>
     </template>
 
@@ -714,34 +623,18 @@ defineExpose({
   background: #ede9fe;
 }
 
-.join-workshop-btn.join-workshop-btn--pill {
-  --el-button-bg-color: #e7e5e4;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #d6d3d1;
-  --el-button-hover-border-color: #a8a29e;
-  --el-button-active-bg-color: #a8a29e;
-  --el-button-active-border-color: #78716c;
-  --el-button-text-color: #1c1917;
-  font-weight: 500;
-  border-radius: 9999px;
-  padding-left: 12px;
-  padding-right: 12px;
-  gap: 6px;
-  display: inline-flex;
-  align-items: center;
+.collab-trigger-wrap--hidden {
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.collab-trigger-icon-users {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.collab-trigger-icon-chevron {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  opacity: 0.72;
+.collab-trigger-anchor {
+  display: inline-block;
+  width: 1px;
+  height: 1px;
 }
 
 .collab-trigger-wrap {
@@ -968,18 +861,23 @@ defineExpose({
   height: auto;
   min-height: 36px;
   padding: 7px 16px;
-  background: #1c1917;
-  color: #fff;
+  background: #ede9fe;
+  color: #5b21b6;
   font-size: 13px;
   font-weight: 500;
-  border: none;
+  border: 1px solid #c4b5fd;
   border-radius: 9999px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .sw-join-btn:hover:not(:disabled) {
-  background: #292524;
+  background: #ddd6fe;
+  color: #4c1d95;
+  border-color: #a78bfa;
 }
 
 .sw-join-btn:disabled {
@@ -1081,54 +979,6 @@ defineExpose({
   padding: 12px !important;
   box-sizing: border-box;
   max-width: calc(100vw - 24px);
-}
-
-.collab-trigger-dropdown-popper.el-popper {
-  padding: 4px !important;
-  border: 1px solid #e7e5e4 !important;
-  border-radius: 10px !important;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.07),
-    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
-  overflow: hidden;
-}
-
-.collab-trigger-dropdown-popper .el-dropdown-menu {
-  padding: 0;
-  border: none;
-  background: transparent;
-  min-width: 100%;
-}
-
-.collab-trigger-dropdown-popper .el-dropdown-menu__item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 32px;
-  height: auto;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #44403c;
-  border-radius: 6px;
-  line-height: 1.4;
-  letter-spacing: 0.01em;
-  text-align: start;
-  transition:
-    background 0.12s,
-    color 0.12s;
-}
-
-.collab-trigger-dropdown-popper .el-dropdown-menu__item:hover,
-.collab-trigger-dropdown-popper .el-dropdown-menu__item:focus {
-  background: #f5f5f4;
-  color: #1c1917;
-}
-
-.collab-trigger-dropdown-popper .el-dropdown-menu__item:active {
-  background: #e7e5e4;
 }
 
 .mm-launch-brief.el-dialog {

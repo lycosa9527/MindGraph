@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.223] - 2026-11-12
+
+> **Seminars invite teachers from other schools by code, and the seminar leader can name member roles freely.**
+
+### Added
+
+- **Cross-school seminar members** — A platform host builds the roster from a searchable organization list with select-all. The home school stays out of the organization list, and the host never appears among external invitees. External seats show as pending until the teacher accepts, and a cross-school room shows each member's school beside their name.
+- **Join by code** — Every seminar shares a room code. The invite dialog and the pre-start page copy a ready-made invite text with the code and the mindspringedu.com link; the QR code is gone. A teacher who submits that code on Join is enrolled on the roster. A status check, the school list, or a socket reconnect does not add a seat.
+- **Custom member roles** — The seminar leader can type a role name (up to 32 characters) in any role picker, both on the pre-start brief and in the live room's member list. A created role stays in the dropdown for every member, is stored on the server, and shows with a pen mark across the roster, chat rows, and minutes.
+
+### Changed
+
+- **Seminar entry** — The old collab pill is gone; a soft-purple **加入教研会** button joins the room. It hides on the seminar create page and inside the live room, where the header faces already say you are in.
+- **Member rows** — The role picker and the remove button share one line in the task pane, and the add-members dialog follows the brief's member picker.
+
+### Fixed
+
+- **Custom roles keep their name** — Free-text role names were coerced back to **观摩学习** on save; the server now normalizes and stores them, and the roster read path returns them unchanged.
+
+### Tests
+
+- [`frontend/tests/mindmateSeminarRoleSelect.spec.ts`](frontend/tests/mindmateSeminarRoleSelect.spec.ts) mounts the role picker and covers picking a shared custom role, creating one from the footer, and rendering a custom value set from outside.
+- [`frontend/tests/seminarCustomRoles.spec.ts`](frontend/tests/seminarCustomRoles.spec.ts) covers the shared custom-role pool: remembering a new role, ignoring builtin roles, and syncing roles from the roster.
+- [`frontend/tests/mindmateSeminarSharePlainText.spec.ts`](frontend/tests/mindmateSeminarSharePlainText.spec.ts) covers the copyable invite text with the room code and link.
+- [`tests/test_mindmate_seminar_backend.py`](tests/test_mindmate_seminar_backend.py) covers joining a seminar room by invite code.
+
 ## [5.180.222] - 2026-11-11
 
 > **DingTalk bind in Settings shows the pair code again.**

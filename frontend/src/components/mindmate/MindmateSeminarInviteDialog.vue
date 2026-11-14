@@ -1,9 +1,7 @@
 <script setup lang="ts">
 /**
- * Share a seminar invite link and QR code. Any signed-in account can open the link.
+ * Share a seminar invite code and copyable invite message.
  */
-import { computed } from 'vue'
-
 import { ElButton, ElDialog } from 'element-plus'
 
 import I18nText from '@/components/common/I18nText.vue'
@@ -20,30 +18,29 @@ const props = defineProps<{
 const { t } = useLanguage()
 const notify = useNotifications()
 
-const joinLink = computed(() => {
+async function copyCode(): Promise<void> {
   const code = props.code.trim()
-  if (!code || typeof window === 'undefined') {
-    return ''
-  }
-  const url = new URL('/mindmate', window.location.origin)
-  url.searchParams.set('join_mindmate_seminar', code)
-  return url.toString()
-})
-
-const qrSrc = computed(() => {
-  if (!joinLink.value) {
-    return ''
-  }
-  return `/api/qrcode?data=${encodeURIComponent(joinLink.value)}&size=220`
-})
-
-async function copyLink(): Promise<void> {
-  if (!joinLink.value) {
+  if (!code) {
     return
   }
   try {
-    await navigator.clipboard.writeText(joinLink.value)
-    notify.successKey('mindmate.home.inviteCopied')
+    await navigator.clipboard.writeText(code)
+    notify.successKey('mindmate.home.inviteCodeCopied')
+  } catch {
+    notify.errorKey('notification.copyFailed')
+  }
+}
+
+async function copyInviteMessage(): Promise<void> {
+  const code = props.code.trim()
+  if (!code) {
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(
+      t('mindmate.home.brief.inviteShareText', { code })
+    )
+    notify.successKey('mindmate.home.brief.inviteShareCopied')
   } catch {
     notify.errorKey('notification.copyFailed')
   }
@@ -75,22 +72,24 @@ async function copyLink(): Promise<void> {
         <I18nText k="mindmate.home.inviteDialogHint" />
       </p>
       <p class="mm-invite-dialog__code">{{ code }}</p>
-      <img
-        v-if="qrSrc"
-        class="mm-invite-dialog__qr"
-        :src="qrSrc"
-        alt=""
-      />
-      <p class="mm-invite-dialog__link">{{ joinLink }}</p>
     </template>
     <template #footer>
       <ElButton
-        type="primary"
-        :disabled="creating || !joinLink"
-        @click="copyLink"
+        :disabled="creating || !code.trim()"
+        @click="copyCode"
       >
         <I18nText
-          k="mindmate.home.inviteCopy"
+          k="mindmate.home.inviteCopyCode"
+          dense
+        />
+      </ElButton>
+      <ElButton
+        type="primary"
+        :disabled="creating || !code.trim()"
+        @click="copyInviteMessage"
+      >
+        <I18nText
+          k="mindmate.home.brief.inviteCopyMessage"
           dense
         />
       </ElButton>
@@ -117,20 +116,5 @@ async function copyLink(): Promise<void> {
   letter-spacing: 0.08em;
   text-align: center;
   color: #1c1917;
-}
-
-.mm-invite-dialog__qr {
-  display: block;
-  width: 220px;
-  height: 220px;
-  margin: 0 auto 12px;
-}
-
-.mm-invite-dialog__link {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #57534e;
-  word-break: break-all;
 }
 </style>

@@ -799,7 +799,7 @@ function seminarLabels() {
     researcher: t('mindmate.home.brief.role.researcher'),
     observer: t('mindmate.home.brief.role.observer'),
     none: t('mindmate.home.brief.role.none'),
-  } as Record<SeminarBriefRole, string>
+  }
   return {
     topic: t('mindmate.home.brief.topic'),
     goals: t('mindmate.home.brief.goals'),
@@ -931,6 +931,7 @@ async function openSeminarFromBrief(
       briefTopic: topic,
       briefGoals: goals,
       closeGroup: true,
+      preferredCode: brief.preferredInviteCode,
     })
     if (!room) {
       return
@@ -951,6 +952,10 @@ async function openSeminarFromBrief(
 function openAddSeminarMembers(): void {
   memberDialogMode.value = 'expand'
   memberDialogOpen.value = true
+}
+
+function openJoinSeminarPanel(): void {
+  collabPanelRef.value?.openJoinPanel()
 }
 
 async function pokeSeminarMember(sessionId: string, userId: number): Promise<void> {
@@ -975,6 +980,7 @@ async function openStartedSeminar(
     briefTopic?: string
     briefGoals?: string[]
     closeGroup?: boolean
+    preferredCode?: string
   }
 ): Promise<StartedSeminarRoom | null> {
   const result = await startSeminarRoom({
@@ -986,6 +992,7 @@ async function openStartedSeminar(
     briefTopic: source.briefTopic,
     briefGoals: source.briefGoals,
     closeGroup: source.closeGroup,
+    preferredCode: source.preferredCode,
   })
   if (!result.ok) {
     if (result.detail) {
@@ -1458,7 +1465,7 @@ function isLastAssistantMessage(messageId: string): boolean {
         class="flex-1"
       />
       <MindmateSeminarPanel
-        v-if="!isCollabChatroomMode && !showWelcome && !savedSeminar.sessionId.value"
+        v-if="!isCollabChatroomMode && !savedSeminar.sessionId.value"
         ref="collabPanelRef"
         :in-conversation="inConversation"
         :conversation-title="mindMateStore.conversationTitle || displayTitle"
@@ -1513,6 +1520,17 @@ function isLastAssistantMessage(messageId: string): boolean {
             dense
           />
         </button>
+        <el-button
+          v-if="showWelcome && homeMode === 'dialogue' && !isCollabChatroomMode"
+          class="join-seminar-btn shrink-0"
+          :disabled="!authStore.isAuthenticated"
+          @click="openJoinSeminarPanel"
+        >
+          <I18nText
+            k="mindmate.collabJoinChatroom"
+            dense
+          />
+        </el-button>
         <el-button
           class="new-chat-btn shrink-0"
           :disabled="!authStore.isAuthenticated"
@@ -1696,7 +1714,7 @@ function isLastAssistantMessage(messageId: string): boolean {
     <MindmateSeminarMemberDialog
       v-model="memberDialogOpen"
       :busy="memberBusy"
-      :allow-external="true"
+      :invite-code="memberDialogMode === 'expand' ? collabRoomCode || '' : ''"
       :exclude-ids="memberDialogMode === 'expand' ? seminarMemberIds : []"
       :title-key="
         memberDialogMode === 'expand'

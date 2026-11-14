@@ -42,7 +42,10 @@ import {
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import { seminarGroupMembers } from '@/composables/mindmate/seminarGroupRoster'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
-import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
+import {
+  type SeminarBriefRole,
+  isSeminarBuiltinRole,
+} from '@/utils/mindmateSeminarBrief'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useTeachingDesignExportStore } from '@/stores/teachingDesignExport'
@@ -303,7 +306,10 @@ const authorRole = computed((): SeminarBriefRole | null => {
 })
 
 function authorRoleLabel(role: SeminarBriefRole): string {
-  return t(`mindmate.home.brief.role.${role}`)
+  if (isSeminarBuiltinRole(role) || role === 'none') {
+    return t(`mindmate.home.brief.role.${role === 'none' ? 'observer' : role}`)
+  }
+  return role
 }
 
 const selfUserId = computed(() => Number(authStore.user?.id) || 0)

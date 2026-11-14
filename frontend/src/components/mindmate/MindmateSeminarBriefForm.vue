@@ -2,7 +2,9 @@
 /**
  * Segmented brief the seminar host fills before a group room can open.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import { ElOption, ElSelect } from 'element-plus'
 
 import {
   Building2,
@@ -17,12 +19,12 @@ import {
 } from '@lucide/vue'
 
 import MindmateSeminarRoleIcon from '@/components/mindmate/MindmateSeminarRoleIcon.vue'
+import MindmateSeminarRoleSelect from '@/components/mindmate/MindmateSeminarRoleSelect.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 import { authFetch } from '@/utils/api'
 import {
-  SEMINAR_BRIEF_ROLE_OPTIONS,
   SEMINAR_BRIEF_ROW_MAX,
   SEMINAR_BRIEF_TOPIC_MAX,
   type SeminarBrief,
@@ -31,17 +33,18 @@ import {
   type SeminarBriefRole,
   type SeminarBriefSection,
   type SeminarBriefVisibility,
+  normalizeSeminarBriefRole,
   seminarBriefIsComplete,
   seminarBriefMissing,
   seminarBriefSectionFilled,
 } from '@/utils/mindmateSeminarBrief'
+import { generateSeminarInviteCode } from '@/utils/mindmateSeminarInviteCode'
 import {
-  type SeminarPhoneLookupHit,
-  isValidSeminarPhone,
-  lookupSeminarUserByPhone,
-  normalizeSeminarPhone,
-} from '@/utils/mindmateSeminarPhoneLookup'
+  type SeminarInviteOrgOption,
+  loadSeminarInviteOrganizations,
+} from '@/utils/mindmateSeminarInviteOrgs'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
+import { rememberSeminarCustomRole } from '@/utils/seminarCustomRoles'
 
 const emit = defineEmits<{
   (e: 'start', brief: SeminarBrief): void
@@ -84,16 +87,39 @@ const sourceByUser = ref<Record<number, SeminarBriefParticipantSource>>({})
 const phoneMetaByUser = ref<Record<number, { orgName: string; phoneMasked: string }>>({})
 const membersLoading = ref(false)
 const memberQuery = ref('')
-const phoneQuery = ref('')
-const phoneHit = ref<SeminarPhoneLookupHit | null>(null)
-const phoneLooking = ref(false)
-const phoneStatus = ref<'idle' | 'empty' | 'invalid' | 'error'>('idle')
+const orgSearchOpen = ref(false)
+const orgSearchInput = ref<HTMLInputElement | null>(null)
 /** Which accordion is open in cross-school left column. */
 const networkFold = ref<'external' | 'school' | null>(null)
+/** How the host adds outsiders inside the external fold. */
+const externalMethod = ref<'invite' | 'org'>('invite')
+const preferredInviteCode = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const moreOpen = ref(false)
+const canBrowseOrgs = ref(false)
+const inviteOrgs = ref<SeminarInviteOrgOption[]>([])
+const selectedOrgId = ref<number | null>(null)
 let memberSearchTimer: ReturnType<typeof setTimeout> | null = null
-
+const showOrgFilter = computed(
+  () => visibility.value === 'network' && (authStore.isPlatformLevel || canBrowseOrgs.value)
+)
+const homeOrgId = computed(() => {
+  const fromAuth = Number(authStore.user?.schoolId ?? 0)
+  if (Number.isFinite(fromAuth) && fromAuth > 0) {
+    return fromAuth
+  }
+  const fromWorkshop = Number(workshopChat.adminOrgId ?? 0)
+  return Number.isFinite(fromWorkshop) && fromWorkshop > 0 ? fromWorkshop : 0
+})
+/** Other orgs only — home-school colleagues belong under the school fold. */
+const externalInviteOrgs = computed(() =>
+  inviteOrgs.value.filter((org) => org.id !== homeOrgId.value)
+)
+const orgPickSource = computed<SeminarBriefParticipantSource>(() =>
+  selectedOrgId.value != null && homeOrgId.value > 0 && selectedOrgId.value === homeOrgId.value
+    ? 'school'
+    : 'external'
+)
 const sectionTitle: Record<SeminarBriefSection, string> = {
   topic: 'mindmate.home.brief.topic',
   goals: 'mindmate.home.brief.goals',
@@ -153,11 +179,22 @@ const selfMember = computed<OrgMember | null>(() => {
   }
 })
 
+const hideSelfInRoster = computed(
+  () =>
+    visibility.value === 'network' &&
+    networkFold.value === 'external' &&
+    externalMethod.value === 'org'
+)
+
 const rosterMembers = computed(() => {
   const query = memberQuery.value.trim().toLowerCase()
+  const excludeSelf = hideSelfInRoster.value
   const rows = members.value.filter((member) => {
     const id = Number(member.id)
     if (!Number.isFinite(id) || id <= 0) {
+      return false
+    }
+    if (excludeSelf && isSelf(id)) {
       return false
     }
     if (query && !member.name.toLowerCase().includes(query)) {
@@ -165,14 +202,16 @@ const rosterMembers = computed(() => {
     }
     return true
   })
-  const self = selfMember.value
-  if (self && !rows.some((row) => Number(row.id) === self.id)) {
-    if (!query || self.name.toLowerCase().includes(query)) {
-      rows.push(self)
+  if (!excludeSelf) {
+    const self = selfMember.value
+    if (self && !rows.some((row) => Number(row.id) === self.id)) {
+      if (!query || self.name.toLowerCase().includes(query)) {
+        rows.push(self)
+      }
     }
   }
   return rows.slice().sort((left, right) => {
-    if (selfId.value > 0) {
+    if (!excludeSelf && selfId.value > 0) {
       if (Number(left.id) === selfId.value) {
         return -1
       }
@@ -187,10 +226,11 @@ const rosterMembers = computed(() => {
 const selectedParticipants = computed<SeminarBriefParticipant[]>(() =>
   selectedMembers.value.map((member) => {
     const userId = Number(member.id)
+    const rawRole = rolesByUser.value[userId] || (userId === selfId.value ? 'leader' : 'observer')
     return {
       userId,
       name: member.name,
-      role: rolesByUser.value[userId] || (userId === selfId.value ? 'leader' : 'observer'),
+      role: userId === selfId.value ? 'leader' : normalizeSeminarBriefRole(rawRole),
       source: sourceByUser.value[userId] || 'school',
     }
   })
@@ -204,6 +244,8 @@ const brief = computed<SeminarBrief>(() => ({
   skipRoles: false,
   resourceFiles: resourceFiles.value,
   skipResources: skipResources.value,
+  preferredInviteCode:
+    visibility.value === 'network' ? preferredInviteCode.value.trim() || undefined : undefined,
 }))
 
 const topicFilled = computed(() => seminarBriefSectionFilled(brief.value, 'topic'))
@@ -244,10 +286,14 @@ function clearActive(section: SeminarBriefSection): void {
 function setVisibility(next: SeminarBriefVisibility): void {
   visibility.value = next
   setActive('participants')
-  phoneHit.value = null
-  phoneStatus.value = 'idle'
   if (next === 'network') {
+    networkFold.value = 'external'
+    externalMethod.value = showOrgFilter.value && externalMethod.value === 'org' ? 'org' : 'invite'
+  } else {
     networkFold.value = null
+    preferredInviteCode.value = ''
+    orgSearchOpen.value = false
+    memberQuery.value = ''
   }
   if (members.value.length === 0) {
     void loadMembers()
@@ -257,8 +303,90 @@ function setVisibility(next: SeminarBriefVisibility): void {
 function toggleNetworkFold(fold: 'external' | 'school'): void {
   networkFold.value = networkFold.value === fold ? null : fold
   setActive('participants')
-  if (fold === 'school' && members.value.length === 0) {
-    void loadMembers()
+  if (fold === 'school') {
+    void loadMembers(memberQuery.value, { forceHome: true })
+  } else if (fold === 'external' && externalMethod.value === 'org') {
+    void loadMembers(memberQuery.value)
+  }
+}
+
+function setExternalMethod(method: 'invite' | 'org'): void {
+  externalMethod.value = method
+  setActive('participants')
+  if (method === 'org') {
+    void loadMembers(memberQuery.value)
+    return
+  }
+  orgSearchOpen.value = false
+  memberQuery.value = ''
+}
+
+async function openOrgSearch(): Promise<void> {
+  orgSearchOpen.value = true
+  setActive('participants')
+  await nextTick()
+  orgSearchInput.value?.focus()
+  orgSearchInput.value?.select()
+}
+
+function closeOrgSearch(): void {
+  orgSearchOpen.value = false
+  if (memberQuery.value) {
+    memberQuery.value = ''
+  }
+}
+
+function generatePreferredInviteCode(): void {
+  preferredInviteCode.value = generateSeminarInviteCode()
+  setActive('participants')
+}
+
+async function copyPreferredInviteCode(): Promise<void> {
+  if (!preferredInviteCode.value) {
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(preferredInviteCode.value)
+    notify.successKey('mindmate.home.inviteCodeCopied')
+  } catch {
+    notify.errorKey('notification.copyFailed')
+  }
+}
+
+async function copyPreferredInviteMessage(): Promise<void> {
+  if (!preferredInviteCode.value) {
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(
+      t('mindmate.home.brief.inviteShareText', { code: preferredInviteCode.value })
+    )
+    notify.successKey('mindmate.home.brief.inviteShareCopied')
+  } catch {
+    notify.errorKey('notification.copyFailed')
+  }
+}
+
+function selectAllOrgRoster(): void {
+  const source = orgPickSource.value
+  for (const member of rosterMembers.value) {
+    const id = Number(member.id)
+    if (!Number.isFinite(id) || id <= 0 || isSelf(id)) {
+      continue
+    }
+    addSelectedMember(id, source)
+  }
+}
+
+function clearOrgRosterSelection(): void {
+  for (const member of rosterMembers.value) {
+    const id = Number(member.id)
+    if (!Number.isFinite(id) || id <= 0 || isSelf(id)) {
+      continue
+    }
+    if (isSelected(id)) {
+      toggleExternalOrgMember(id, false)
+    }
   }
 }
 
@@ -323,47 +451,16 @@ function toggleMember(userId: number, checked: boolean): void {
   phoneMetaByUser.value = nextMeta
 }
 
-async function searchByPhone(): Promise<void> {
-  const phone = normalizeSeminarPhone(phoneQuery.value)
-  phoneQuery.value = phone
-  phoneHit.value = null
-  if (!isValidSeminarPhone(phone)) {
-    phoneStatus.value = phone ? 'invalid' : 'idle'
+function toggleExternalOrgMember(userId: number, checked: boolean): void {
+  if (isSelf(userId)) {
+    ensureSelfSelected()
     return
   }
-  phoneLooking.value = true
-  phoneStatus.value = 'idle'
-  try {
-    const hit = await lookupSeminarUserByPhone(phone)
-    if (!hit) {
-      phoneStatus.value = 'empty'
-      return
-    }
-    phoneHit.value = hit
-    phoneStatus.value = 'idle'
-  } catch {
-    phoneStatus.value = 'error'
-  } finally {
-    phoneLooking.value = false
-  }
-}
-
-function addPhoneHit(): void {
-  const hit = phoneHit.value
-  if (!hit || isSelf(hit.userId)) {
+  if (checked) {
+    addSelectedMember(userId, orgPickSource.value)
     return
   }
-  rememberMembers([
-    {
-      id: hit.userId,
-      name: hit.name,
-      avatar: hit.avatar,
-    },
-  ])
-  addSelectedMember(hit.userId, hit.sameOrg ? 'school' : 'external', {
-    orgName: hit.orgName,
-    phoneMasked: hit.phoneMasked,
-  })
+  toggleMember(userId, false)
 }
 
 function removeMember(userId: number): void {
@@ -380,15 +477,14 @@ function chosenRole(userId: number): SeminarBriefRole {
   return rolesByUser.value[userId] || 'observer'
 }
 
-function setRole(userId: number, role: string): void {
+function setRole(userId: number, role: SeminarBriefRole): void {
   if (isSelf(userId)) {
     rolesByUser.value = { ...rolesByUser.value, [userId]: 'leader' }
     return
   }
-  if (!SEMINAR_BRIEF_ROLE_OPTIONS.includes(role as Exclude<SeminarBriefRole, 'none'>)) {
-    return
-  }
-  rolesByUser.value = { ...rolesByUser.value, [userId]: role as SeminarBriefRole }
+  const next = normalizeSeminarBriefRole(role)
+  rememberSeminarCustomRole(next)
+  rolesByUser.value = { ...rolesByUser.value, [userId]: next }
 }
 
 function openFilePicker(): void {
@@ -435,10 +531,47 @@ async function readRoster(url: string): Promise<OrgMember[] | null> {
   return data.items ?? []
 }
 
-async function loadMembers(query = ''): Promise<void> {
+async function bootstrapOrgFilter(): Promise<void> {
+  if (!authStore.isPlatformLevel) {
+    canBrowseOrgs.value = false
+    inviteOrgs.value = []
+    selectedOrgId.value = workshopChat.adminOrgId
+    return
+  }
+  const orgs = await loadSeminarInviteOrganizations()
+  canBrowseOrgs.value = orgs.canBrowse
+  inviteOrgs.value = orgs.items
+  if (orgs.items.length === 0) {
+    selectedOrgId.value = null
+    return
+  }
+  const home = homeOrgId.value
+  const otherOrgs = orgs.items.filter((row) => row.id !== home)
+  const preferredPool = otherOrgs.length > 0 ? otherOrgs : orgs.items
+  const workshopPreferred = workshopChat.adminOrgId
+  const preferred =
+    workshopPreferred != null &&
+    preferredPool.some((row) => row.id === workshopPreferred) &&
+    workshopPreferred !== home
+      ? workshopPreferred
+      : preferredPool[0]?.id
+  selectedOrgId.value = preferred ?? null
+}
+
+async function loadMembers(query = '', options?: { forceHome?: boolean }): Promise<void> {
   membersLoading.value = true
   const trimmed = query.trim()
-  if (!trimmed && workshopChat.orgMembers.length > 0 && members.value.length === 0) {
+  const useCrossOrg =
+    !options?.forceHome &&
+    visibility.value === 'network' &&
+    showOrgFilter.value &&
+    (networkFold.value === 'external' ? externalMethod.value === 'org' : false)
+  if (
+    !useCrossOrg &&
+    !trimmed &&
+    workshopChat.orgMembers.length > 0 &&
+    members.value.length === 0
+  ) {
     rememberMembers(workshopChat.orgMembers)
     members.value = [...workshopChat.orgMembers]
   }
@@ -447,18 +580,14 @@ async function loadMembers(query = ''): Promise<void> {
     if (trimmed) {
       params.set('q', trimmed)
     }
-    if (workshopChat.adminOrgId != null) {
-      params.set('org_id', String(workshopChat.adminOrgId))
+    const orgId = useCrossOrg ? selectedOrgId.value : workshopChat.adminOrgId
+    if (orgId != null) {
+      params.set('org_id', String(orgId))
     }
     const fromSeminar = await readRoster(`/api/mindmate/org-members?${params}`)
     const fromChat = fromSeminar ?? (await readRoster(`/api/chat/org-members?${params}`))
     const page =
-      fromChat ??
-      (await readRoster(
-        `/api/mindmate/seminar/org-members?limit=200&offset=0${
-          trimmed ? `&q=${encodeURIComponent(trimmed)}` : ''
-        }`
-      ))
+      fromChat ?? (await readRoster(`/api/mindmate/seminar/org-members?${params.toString()}`))
     if (page) {
       rememberMembers(page)
       members.value = page
@@ -475,7 +604,11 @@ function scheduleMemberSearch(query: string): void {
   }
   memberSearchTimer = setTimeout(() => {
     memberSearchTimer = null
-    void loadMembers(query)
+    const forceHome =
+      networkFold.value === 'school' ||
+      visibility.value !== 'network' ||
+      externalMethod.value !== 'org'
+    void loadMembers(query, { forceHome })
   }, 250)
 }
 
@@ -483,14 +616,40 @@ watch(memberQuery, (query) => {
   scheduleMemberSearch(query)
 })
 
-watch(phoneQuery, (raw) => {
-  const next = normalizeSeminarPhone(raw)
-  if (next !== raw) {
-    phoneQuery.value = next
+watch(selectedOrgId, () => {
+  if (
+    visibility.value !== 'network' ||
+    !showOrgFilter.value ||
+    networkFold.value !== 'external' ||
+    externalMethod.value !== 'org'
+  ) {
+    return
   }
-  if (phoneHit.value || phoneStatus.value !== 'idle') {
-    phoneHit.value = null
-    phoneStatus.value = 'idle'
+  void loadMembers(memberQuery.value)
+})
+
+watch(externalInviteOrgs, (rows) => {
+  if (!showOrgFilter.value) {
+    return
+  }
+  if (rows.length === 0) {
+    if (selectedOrgId.value != null) {
+      selectedOrgId.value = null
+    }
+    return
+  }
+  if (!rows.some((row) => row.id === selectedOrgId.value)) {
+    selectedOrgId.value = rows[0]?.id ?? null
+  }
+})
+
+watch(visibility, (next) => {
+  if (next === 'network' && authStore.isPlatformLevel && inviteOrgs.value.length === 0) {
+    void bootstrapOrgFilter().then(() => {
+      if (externalMethod.value === 'org') {
+        void loadMembers(memberQuery.value)
+      }
+    })
   }
 })
 
@@ -515,7 +674,7 @@ function onStart(): void {
 
 onMounted(() => {
   ensureSelfSelected()
-  void loadMembers()
+  void bootstrapOrgFilter().then(() => loadMembers())
 })
 
 watch(selfId, () => {
@@ -658,91 +817,238 @@ onUnmounted(() => {
                     </button>
                     <div
                       v-if="networkFold === 'external'"
-                      class="mm-brief__fold-body"
+                      class="mm-brief__fold-body mm-brief__fold-body--external"
+                      :class="{
+                        'is-org': showOrgFilter && externalMethod === 'org',
+                      }"
                     >
-                      <div class="mm-brief__phone">
-                        <input
-                          v-model="phoneQuery"
-                          type="tel"
-                          inputmode="numeric"
-                          maxlength="11"
-                          class="mm-brief__phone-input"
-                          :placeholder="t('mindmate.home.brief.phonePlaceholder')"
-                          @focus="setActive('participants')"
-                          @keydown.enter.prevent="searchByPhone"
-                        />
+                      <div
+                        v-if="showOrgFilter"
+                        class="mm-brief__method-tabs"
+                        role="tablist"
+                        :aria-label="t('mindmate.home.brief.foldExternal')"
+                      >
                         <button
                           type="button"
-                          class="mm-brief__phone-btn"
-                          :disabled="phoneLooking"
-                          @click="searchByPhone"
+                          role="tab"
+                          class="mm-brief__method-tab"
+                          :class="{ 'is-on': externalMethod === 'invite' }"
+                          :aria-selected="externalMethod === 'invite'"
+                          @click="setExternalMethod('invite')"
                         >
-                          <I18nText k="mindmate.home.brief.phoneSearch" />
+                          <I18nText k="mindmate.home.brief.methodInvite" />
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class="mm-brief__method-tab"
+                          :class="{ 'is-on': externalMethod === 'org' }"
+                          :aria-selected="externalMethod === 'org'"
+                          @click="setExternalMethod('org')"
+                        >
+                          <I18nText k="mindmate.home.brief.methodOrg" />
                         </button>
                       </div>
 
-                      <p
-                        v-if="phoneLooking"
-                        class="mm-brief__hint mm-brief__hint--pad"
-                      >
-                        <I18nText k="common.loading" />
-                      </p>
-                      <p
-                        v-else-if="phoneStatus === 'invalid'"
-                        class="mm-brief__hint mm-brief__hint--pad mm-brief__hint--warn"
-                      >
-                        <I18nText k="mindmate.home.brief.phoneInvalid" />
-                      </p>
-                      <p
-                        v-else-if="phoneStatus === 'empty'"
-                        class="mm-brief__hint mm-brief__hint--pad"
-                      >
-                        <I18nText k="mindmate.home.brief.phoneEmpty" />
-                      </p>
-                      <p
-                        v-else-if="phoneStatus === 'error'"
-                        class="mm-brief__hint mm-brief__hint--pad mm-brief__hint--warn"
-                      >
-                        <I18nText k="mindmate.home.brief.phoneError" />
-                      </p>
-
                       <div
-                        v-if="phoneHit"
-                        class="mm-brief__phone-hit"
+                        v-if="externalMethod === 'invite'"
+                        class="mm-brief__invite-panel"
                       >
-                        <span
-                          class="mm-brief__avatar"
-                          :style="{
-                            background: seminarAvatarTone(phoneHit.userId).background,
-                            color: seminarAvatarTone(phoneHit.userId).color,
-                          }"
+                        <p class="mm-brief__invite-hint">
+                          <I18nText k="mindmate.home.brief.inviteCodeHint" />
+                        </p>
+                        <div
+                          v-if="preferredInviteCode"
+                          class="mm-brief__invite-card"
                         >
-                          {{ seminarAvatarSurname(phoneHit.name) }}
-                        </span>
-                        <div class="mm-brief__phone-meta">
-                          <span class="mm-brief__person-name">{{ phoneHit.name }}</span>
-                          <span class="mm-brief__phone-sub">
-                            <template v-if="phoneHit.orgName">{{ phoneHit.orgName }}</template
-                            ><I18nText
-                              v-else
-                              k="mindmate.home.brief.phoneNoOrg"
-                            />
-                            · {{ phoneHit.phoneMasked }}
-                          </span>
+                          <p class="mm-brief__invite-code">{{ preferredInviteCode }}</p>
+                          <button
+                            type="button"
+                            class="mm-brief__invite-primary"
+                            @click="copyPreferredInviteMessage"
+                          >
+                            <I18nText k="mindmate.home.brief.inviteCopyMessage" />
+                          </button>
+                          <div class="mm-brief__invite-links">
+                            <button
+                              type="button"
+                              class="mm-brief__invite-link-btn"
+                              @click="copyPreferredInviteCode"
+                            >
+                              <I18nText k="mindmate.home.inviteCopyCode" />
+                            </button>
+                            <span
+                              class="mm-brief__invite-dot"
+                              aria-hidden="true"
+                              >·</span
+                            >
+                            <button
+                              type="button"
+                              class="mm-brief__invite-link-btn"
+                              @click="generatePreferredInviteCode"
+                            >
+                              <I18nText k="mindmate.home.brief.inviteCodeRefresh" />
+                            </button>
+                          </div>
                         </div>
                         <button
-                          v-if="!isSelected(phoneHit.userId)"
-                          type="button"
-                          class="mm-brief__phone-add"
-                          @click="addPhoneHit"
-                        >
-                          <I18nText k="mindmate.home.brief.phoneAdd" />
-                        </button>
-                        <span
                           v-else
-                          class="mm-brief__phone-added"
-                          ><I18nText k="mindmate.home.brief.phoneAdded"
-                        /></span>
+                          type="button"
+                          class="mm-brief__invite-primary"
+                          @click="generatePreferredInviteCode"
+                        >
+                          <I18nText k="mindmate.home.brief.inviteCodeGenerate" />
+                        </button>
+                      </div>
+
+                      <div
+                        v-else-if="externalMethod === 'org' && showOrgFilter"
+                        class="mm-brief__org-panel"
+                      >
+                        <p
+                          v-if="externalInviteOrgs.length === 0"
+                          class="mm-brief__hint mm-brief__hint--warn mm-brief__org-empty"
+                        >
+                          <I18nText k="mindmate.home.brief.orgListEmpty" />
+                        </p>
+                        <template v-else>
+                          <ElSelect
+                            v-model="selectedOrgId"
+                            class="mm-brief__org-select"
+                            filterable
+                            :placeholder="t('mindmate.home.brief.orgSearch')"
+                            @focus="setActive('participants')"
+                          >
+                            <ElOption
+                              v-for="org in externalInviteOrgs"
+                              :key="org.id"
+                              :label="org.displayName"
+                              :value="org.id"
+                            />
+                          </ElSelect>
+                          <div class="mm-brief__org-toolbar">
+                            <div
+                              class="mm-brief__org-search"
+                              :class="{ 'is-open': orgSearchOpen }"
+                            >
+                              <button
+                                v-if="!orgSearchOpen"
+                                type="button"
+                                class="mm-brief__org-search-toggle"
+                                :aria-label="t('mindmate.home.brief.memberSearch')"
+                                @click="openOrgSearch"
+                              >
+                                <Search
+                                  :size="15"
+                                  aria-hidden="true"
+                                />
+                              </button>
+                              <div
+                                v-else
+                                class="mm-brief__org-search-field"
+                              >
+                                <Search
+                                  class="mm-brief__org-search-field-icon"
+                                  :size="14"
+                                  aria-hidden="true"
+                                />
+                                <input
+                                  ref="orgSearchInput"
+                                  v-model="memberQuery"
+                                  type="search"
+                                  class="mm-brief__org-search-input"
+                                  :placeholder="t('mindmate.home.brief.memberSearch')"
+                                  @focus="setActive('participants')"
+                                  @keydown.escape.prevent="closeOrgSearch"
+                                />
+                                <button
+                                  type="button"
+                                  class="mm-brief__org-search-close"
+                                  :aria-label="t('common.close')"
+                                  @click="closeOrgSearch"
+                                >
+                                  <X
+                                    :size="14"
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              </div>
+                            </div>
+                            <div
+                              v-if="rosterMembers.length > 0"
+                              class="mm-brief__org-bulk"
+                            >
+                              <button
+                                type="button"
+                                class="mm-brief__invite-link-btn"
+                                @click="selectAllOrgRoster"
+                              >
+                                <I18nText k="mindmate.home.brief.orgSelectAll" />
+                              </button>
+                              <span
+                                class="mm-brief__invite-dot"
+                                aria-hidden="true"
+                                >·</span
+                              >
+                              <button
+                                type="button"
+                                class="mm-brief__invite-link-btn"
+                                @click="clearOrgRosterSelection"
+                              >
+                                <I18nText k="mindmate.home.brief.orgClearAll" />
+                              </button>
+                            </div>
+                          </div>
+                          <p
+                            v-if="membersLoading && rosterMembers.length === 0"
+                            class="mm-brief__org-status"
+                          >
+                            <I18nText k="common.loading" />
+                          </p>
+                          <p
+                            v-else-if="rosterMembers.length === 0"
+                            class="mm-brief__org-status"
+                          >
+                            <I18nText k="mindmate.home.memberDialogEmpty" />
+                          </p>
+                          <div
+                            v-else
+                            class="mm-brief__roster mm-brief__roster--org"
+                          >
+                            <button
+                              v-for="member in rosterMembers"
+                              :key="`ext-org-${member.id}`"
+                              type="button"
+                              class="mm-brief__roster-row"
+                              :class="{
+                                'is-on': isSelected(Number(member.id)),
+                                'is-self': isSelf(Number(member.id)),
+                              }"
+                              @click="
+                                toggleExternalOrgMember(
+                                  Number(member.id),
+                                  !isSelected(Number(member.id))
+                                )
+                              "
+                            >
+                              <span
+                                class="mm-brief__check"
+                                :class="{ 'is-on': isSelected(Number(member.id)) }"
+                                aria-hidden="true"
+                              />
+                              <span
+                                class="mm-brief__avatar"
+                                :style="{
+                                  background: seminarAvatarTone(member.id).background,
+                                  color: seminarAvatarTone(member.id).color,
+                                }"
+                              >
+                                {{ seminarAvatarSurname(member.name) }}
+                              </span>
+                              <span class="mm-brief__person-name">{{ member.name }}</span>
+                            </button>
+                          </div>
+                        </template>
                       </div>
                     </div>
                   </div>
@@ -990,22 +1296,12 @@ onUnmounted(() => {
                         :role="chosenRole(Number(member.id))"
                         :size="22"
                       />
-                      <select
-                        class="mm-brief__role"
+                      <MindmateSeminarRoleSelect
+                        :model-value="chosenRole(Number(member.id))"
                         :disabled="isSelf(Number(member.id))"
-                        :value="chosenRole(Number(member.id))"
-                        @change="
-                          setRole(Number(member.id), ($event.target as HTMLSelectElement).value)
-                        "
-                      >
-                        <option
-                          v-for="role in SEMINAR_BRIEF_ROLE_OPTIONS"
-                          :key="role"
-                          :value="role"
-                        >
-                          <I18nText :k="`mindmate.home.brief.role.${role}`" />
-                        </option>
-                      </select>
+                        wide
+                        @update:model-value="setRole(Number(member.id), $event)"
+                      />
                     </span>
                     <p
                       v-if="
@@ -1580,12 +1876,273 @@ onUnmounted(() => {
   background: #fff;
 }
 
+.mm-brief__fold-body--external {
+  flex: 1 1 auto;
+  gap: 12px;
+  padding: 12px 12px 14px;
+}
+
+.mm-brief__fold-body--external.is-org {
+  min-height: 0;
+}
+
 .mm-brief__fold-body--roster {
   flex: 1 1 auto;
 }
 
 .mm-brief__fold-body--roster .mm-brief__roster {
   flex: 1 1 auto;
+}
+
+.mm-brief__method-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+.mm-brief__method-tab {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 8px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+
+.mm-brief__method-tab.is-on {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.mm-brief__invite-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: center;
+}
+
+.mm-brief__invite-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #78716c;
+  text-align: center;
+}
+
+.mm-brief__invite-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 18px 16px 16px;
+  border: 1px solid #e7e5e4;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+}
+
+.mm-brief__invite-code {
+  margin: 0;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #1c1917;
+  font-variant-numeric: tabular-nums;
+}
+
+.mm-brief__invite-primary {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #c4b5fd;
+  border-radius: 10px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mm-brief__invite-primary:hover {
+  background: #ddd6fe;
+  color: #4c1d95;
+  border-color: #a78bfa;
+}
+
+.mm-brief__invite-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mm-brief__invite-link-btn {
+  border: 0;
+  background: transparent;
+  color: #57534e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mm-brief__invite-link-btn:hover {
+  color: #1c1917;
+  text-decoration: underline;
+}
+
+.mm-brief__invite-dot {
+  color: #d6d3d1;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.mm-brief__org-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mm-brief__org-empty {
+  margin: 0;
+  padding: 8px 2px;
+}
+
+.mm-brief__org-select {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.mm-brief__org-select :deep(.el-select__wrapper) {
+  min-height: 38px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.mm-brief__org-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 32px;
+}
+
+.mm-brief__org-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.mm-brief__org-search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  background: #fff;
+  color: #78716c;
+  cursor: pointer;
+}
+
+.mm-brief__org-search-toggle:hover {
+  color: #1c1917;
+  border-color: #d6d3d1;
+  background: #fafaf9;
+}
+
+.mm-brief__org-search-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 0 8px 0 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.mm-brief__org-search-field-icon {
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+.mm-brief__org-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.mm-brief__org-search-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.mm-brief__org-search-close:hover {
+  color: #1c1917;
+  background: #f3f4f6;
+}
+
+.mm-brief__org-bulk {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0 2px;
+}
+
+.mm-brief__org-status {
+  margin: 0;
+  padding: 18px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.mm-brief__roster--org {
+  margin: 0 -4px;
+  padding: 2px 0 0;
+  border-top: 1px solid #eef2f7;
 }
 
 .mm-brief__phone {
@@ -1685,8 +2242,8 @@ onUnmounted(() => {
 .mm-brief__picker {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  height: 420px;
-  max-height: min(420px, 52vh);
+  height: 460px;
+  max-height: min(460px, 58vh);
   border: 1px solid #e8edf5;
   border-radius: 14px;
   overflow: hidden;
@@ -1883,7 +2440,7 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.mm-brief__role-line .mm-brief__role {
+.mm-brief__role-line :deep(.mm-role-select) {
   flex: 1;
   min-width: 0;
 }
@@ -2087,6 +2644,84 @@ onUnmounted(() => {
 :global(.dark) .mm-brief__fold-body {
   background: #111827;
   border-top-color: #374151;
+}
+
+:global(.dark) .mm-brief__method-tabs {
+  background: #0f172a;
+}
+
+:global(.dark) .mm-brief__method-tab {
+  color: #94a3b8;
+}
+
+:global(.dark) .mm-brief__method-tab.is-on {
+  background: #1e293b;
+  color: #f8fafc;
+  box-shadow: none;
+}
+
+:global(.dark) .mm-brief__invite-hint,
+:global(.dark) .mm-brief__org-status {
+  color: #94a3b8;
+}
+
+:global(.dark) .mm-brief__invite-card {
+  border-color: #334155;
+  background: linear-gradient(180deg, #1e293b 0%, #111827 100%);
+}
+
+:global(.dark) .mm-brief__invite-code {
+  color: #f8fafc;
+}
+
+:global(.dark) .mm-brief__invite-primary {
+  background: #2e1065;
+  border-color: #7c3aed;
+  color: #e9d5ff;
+}
+
+:global(.dark) .mm-brief__invite-primary:hover {
+  background: #4c1d95;
+  color: #f5f3ff;
+}
+
+:global(.dark) .mm-brief__invite-link-btn {
+  color: #94a3b8;
+}
+
+:global(.dark) .mm-brief__invite-link-btn:hover {
+  color: #e2e8f0;
+}
+
+:global(.dark) .mm-brief__roster--org {
+  border-top-color: #334155;
+}
+
+:global(.dark) .mm-brief__org-search-toggle {
+  border-color: #334155;
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+:global(.dark) .mm-brief__org-search-toggle:hover {
+  color: #e2e8f0;
+  border-color: #475569;
+  background: #273449;
+}
+
+:global(.dark) .mm-brief__org-search-field {
+  border-color: #3b82f6;
+  background: #0f172a;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+:global(.dark) .mm-brief__org-search-input {
+  color: #f8fafc;
+}
+
+:global(.dark) .mm-brief__org-search-close:hover {
+  color: #e2e8f0;
+  background: #1e293b;
 }
 
 :global(.dark) .mm-brief__fold-icon.is-external {

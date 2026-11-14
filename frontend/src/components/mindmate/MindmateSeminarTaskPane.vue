@@ -11,6 +11,7 @@ import MindmateMentionMenu from '@/components/mindmate/MindmateMentionMenu.vue'
 import MindmateSeminarArtifactsDrawer from '@/components/mindmate/MindmateSeminarArtifactsDrawer.vue'
 import MindmateSeminarFolderDrawer from '@/components/mindmate/MindmateSeminarFolderDrawer.vue'
 import MindmateSeminarHighlightsDrawer from '@/components/mindmate/MindmateSeminarHighlightsDrawer.vue'
+import MindmateSeminarRoleSelect from '@/components/mindmate/MindmateSeminarRoleSelect.vue'
 import MindmateSoftIcon from '@/components/mindmate/MindmateSoftIcon.vue'
 import { swissGlassConfirm, useLanguage } from '@/composables'
 import {
@@ -29,7 +30,7 @@ import {
   seminarShowsMemberOrg,
 } from '@/composables/mindmate/seminarGroupRoster'
 import { useSeminarMemberPresence } from '@/composables/mindmate/useSeminarMemberPresence'
-import { SEMINAR_BRIEF_ROLE_OPTIONS, type SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
+import { type SeminarBriefRole, isSeminarBuiltinRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
@@ -153,17 +154,20 @@ function onNavClick(tab: SeminarTaskPaneTab): void {
 }
 
 function roleLabel(role: SeminarBriefRole): string {
-  return t(`mindmate.home.brief.role.${role}`)
+  if (isSeminarBuiltinRole(role) || role === 'none') {
+    return t(`mindmate.home.brief.role.${role === 'none' ? 'observer' : role}`)
+  }
+  return role
 }
 
 function memberRoleValue(member: SeminarGroupMember): SeminarBriefRole {
   return member.role === 'none' ? 'observer' : member.role
 }
 
-async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<void> {
-  const select = event.target as HTMLSelectElement
-  const role = select.value as SeminarBriefRole
-  const previous = memberRoleValue(member)
+async function onRoleUpdate(member: SeminarGroupMember, role: SeminarBriefRole): Promise<void> {
+  if (role === memberRoleValue(member)) {
+    return
+  }
   if (role === 'leader') {
     try {
       await swissGlassConfirm(
@@ -176,7 +180,6 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
         }
       )
     } catch {
-      select.value = previous
       return
     }
   }
@@ -284,24 +287,16 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                 >
               </div>
               <span class="mm-task-pane__role-wrap">
-                <select
+                <MindmateSeminarRoleSelect
                   v-if="isLeader && !member.isLeader && member.userId !== selfUserId"
-                  class="mm-task-pane__role"
+                  :model-value="memberRoleValue(member)"
                   :disabled="busy"
-                  :value="memberRoleValue(member)"
-                  @change="onRoleSelect(member, $event)"
-                >
-                  <option
-                    v-for="role in SEMINAR_BRIEF_ROLE_OPTIONS"
-                    :key="role"
-                    :value="role"
-                  >
-                    {{ roleLabel(role) }}
-                  </option>
-                </select>
+                  @update:model-value="onRoleUpdate(member, $event)"
+                />
                 <span
                   v-else
                   class="mm-task-pane__role-text"
+                  :class="{ 'is-custom': !isSeminarBuiltinRole(memberRoleValue(member)) }"
                   >{{ roleLabel(memberRoleValue(member)) }}</span
                 >
               </span>
@@ -532,10 +527,11 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
 }
 
 .mm-task-pane__member-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
+  row-gap: 6px;
   min-width: 0;
   padding: 8px 8px 8px 10px;
   border: 1px solid #ececf1;
@@ -626,47 +622,36 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  flex: 0 0 auto;
-  margin-left: auto;
   min-width: 0;
 }
 
 .mm-task-pane__role-note {
-  flex: 1 0 100%;
+  grid-column: 1 / -1;
   margin: 0;
   font-size: 11px;
   line-height: 1.45;
   color: #a8a29e;
 }
 
-.mm-task-pane__role,
-.mm-task-pane__role-text {
-  max-width: 96px;
-  font-size: 12px;
-  color: #6b6b76;
-}
-
-.mm-task-pane__role {
-  height: 28px;
-  padding: 0 22px 0 10px;
-  border: 1px solid #ececf1;
-  border-radius: 999px;
-  background-color: #f7f7f8;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c9aa8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  appearance: none;
-  cursor: pointer;
-}
-
 .mm-task-pane__role-text {
   display: inline-flex;
   align-items: center;
+  max-width: 118px;
   height: 28px;
   padding: 0 10px;
   border-radius: 999px;
   background: #f7f7f8;
+  color: #6b6b76;
+  font-size: 12px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-task-pane__role-text.is-custom {
+  background: #f5f3ff;
+  color: #5b21b6;
+  font-weight: 600;
 }
 
 .mm-task-pane__remove {

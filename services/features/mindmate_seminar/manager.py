@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple
@@ -39,6 +40,7 @@ from services.features.mindmate_seminar.dify_stream_control import abort_dify_st
 from services.features.mindmate_seminar.group_members import (
     accepted_member_ids,
     actor_is_seminar_leader,
+    enroll_member_via_invite_code,
     list_invited_member_ids,
     seed_closed_group,
     seminar_room_is_closed,
@@ -73,6 +75,7 @@ from services.features.mindmate_seminar.redis_mirror import mirror_live_session_
 from services.features.mindmate_seminar.visibility import user_may_join_mindmate_seminar
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.online_collab.core.online_collab_code import (
+    ONLINE_COLLAB_CODE_RE,
     _allocate_unique_online_collab_code,
     generate_online_collab_code,
 )
@@ -148,6 +151,7 @@ class MindmateSeminarManager:
         brief_topic: Optional[str] = None,
         brief_goals: Optional[List[str]] = None,
         close_group: bool = False,
+        preferred_code: Optional[str] = None,
     ) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Create a MindMate collab room; return (payload, error message)."""
         if not duration_allowed_for_visibility(visibility, duration):
@@ -184,11 +188,16 @@ class MindmateSeminarManager:
                 expires_at = compute_online_collab_expires_at(started_at, duration)
                 session_id = str(uuid4())
                 code: Optional[str] = None
+                preferred_raw = (preferred_code or "").strip().upper()
+                preferred = preferred_raw if re.fullmatch(ONLINE_COLLAB_CODE_RE, preferred_raw) else ""
 
-                for _ in range(5):
-                    candidate = await _allocate_unique_online_collab_code(redis)
-                    if not candidate:
-                        candidate = generate_online_collab_code()
+                for attempt in range(5):
+                    if attempt == 0 and preferred:
+                        candidate = preferred
+                    else:
+                        candidate = await _allocate_unique_online_collab_code(redis)
+                        if not candidate:
+                            candidate = generate_online_collab_code()
                     topic = (brief_topic or title or "").strip()[:200] or None
                     goals_raw = [str(item).strip() for item in (brief_goals or []) if str(item).strip()][:20]
                     goals_json = json.dumps(goals_raw, ensure_ascii=False) if goals_raw else None
@@ -432,7 +441,7 @@ class MindmateSeminarManager:
         # Duration and age are advisory. A live row ends when its leader stops it.
         if await self.session_is_closing(session.code):
             return None, "still_live"
-        if not await self._validate_join_permissions(session, user_id):
+        if not await self._validate_join_permissions(session, user_id, enroll_with_code=True):
             return None, "forbidden"
         return await self._session_payload(session), None
 
@@ -446,20 +455,52 @@ class MindmateSeminarManager:
         accepted = {int(item) for item in await accepted_member_ids(session.id)}
         return int(user_id) in invited and int(user_id) in accepted
 
+    async def _admit_closed_group_member(
+        self,
+        session: MindmateSeminarSession,
+        user_id: int,
+        *,
+        enroll_with_code: bool,
+    ) -> bool:
+        """Admit a closed-room joiner who already has a seat, or enroll on explicit code join.
+
+        Teachers already invited by phone or organization stay pending until they
+        agree. A new seat is written only when ``enroll_with_code`` is set, which
+        is the POST /join-by-code path. Status, school-list join, and the socket
+        check membership without inserting a row.
+        """
+        if not await seminar_room_is_closed(session.id, session.visibility):
+            return True
+        if await self._closed_group_allows(session, user_id):
+            return True
+        if not enroll_with_code:
+            return False
+        enroll = await enroll_member_via_invite_code(session.id, user_id)
+        if enroll == "accepted":
+            return True
+        return False
+
     async def _validate_join_permissions(
         self,
         session: MindmateSeminarSession,
         user_id: int,
+        *,
+        enroll_with_code: bool = False,
     ) -> bool:
-        """Return True when the user may join; participant registration happens on WS connect.
+        """Return True when the user may join.
 
         A closed invite list is the access check. A teacher who accepted a phone
-        invite may enter even when they belong to another school. Open school
-        rooms still require the same school.
+        invite may enter even when they belong to another school. Passing the
+        live invite code to POST /join enrolls a new seat. Open school rooms
+        still require the same school. Other callers do not write membership.
         """
         if await self.session_is_closing(session.code):
             return False
-        if not await self._closed_group_allows(session, user_id):
+        if not await self._admit_closed_group_member(
+            session,
+            user_id,
+            enroll_with_code=enroll_with_code,
+        ):
             return False
         if await seminar_room_is_closed(session.id, session.visibility):
             return True
@@ -486,6 +527,7 @@ class MindmateSeminarManager:
     async def user_may_connect(self, user_id: int, session: MindmateSeminarSession) -> bool:
         """Return True when user may open a WebSocket to this room."""
         # Duration presets are advisory; a seminar ends only when its leader stops it.
+        # Connect checks the roster only. POST /join is what enrolls a code holder.
         if not await self._closed_group_allows(session, user_id):
             return False
         if await seminar_room_is_closed(session.id, session.visibility):
