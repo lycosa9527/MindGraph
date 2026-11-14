@@ -78,10 +78,15 @@ async def test_user_may_connect_denies_network_without_membership() -> None:
             "services.features.mindmate_seminar.manager.accepted_member_ids",
             AsyncMock(return_value=[]),
         ),
+        patch(
+            "services.features.mindmate_seminar.manager.enroll_member_via_invite_code",
+            AsyncMock(return_value="accepted"),
+        ) as enroll,
     ):
         allowed = await mgr.user_may_connect(99, session)
 
     assert allowed is False
+    enroll.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -136,10 +141,15 @@ async def test_user_may_connect_denies_pending_network_member() -> None:
             "services.features.mindmate_seminar.manager.accepted_member_ids",
             AsyncMock(return_value=[]),
         ),
+        patch(
+            "services.features.mindmate_seminar.manager.enroll_member_via_invite_code",
+            AsyncMock(return_value="accepted"),
+        ) as enroll,
     ):
         allowed = await mgr.user_may_connect(99, session)
 
     assert allowed is False
+    enroll.assert_not_awaited()
 
 
 @pytest.mark.asyncio

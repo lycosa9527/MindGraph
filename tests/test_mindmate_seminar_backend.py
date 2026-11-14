@@ -78,6 +78,10 @@ async def test_session_payload_includes_owner_and_expiry() -> None:
             return_value=context,
         ),
         patch.object(mgr, "participant_count", AsyncMock(return_value=4)),
+        patch(
+            "services.features.mindmate_seminar.manager.attach_cross_school_flags",
+            AsyncMock(),
+        ),
     ):
         payload = await mgr.get_hosted_session(7)
 
@@ -225,7 +229,7 @@ async def test_join_by_code_returns_payload_after_permission_check() -> None:
     ):
         payload, error = await mgr.join_by_code(2, "ABC-DEF")
 
-    validate_mock.assert_awaited_once_with(session, 2)
+    validate_mock.assert_awaited_once_with(session, 2, enroll_with_code=True)
     assert error is None
     assert payload == {"code": "ABC-DEF", "participant_count": 2}
 
@@ -336,13 +340,51 @@ async def test_join_by_code_enrolls_new_member_via_invite_code() -> None:
         patch(
             "services.features.mindmate_seminar.manager.enroll_member_via_invite_code",
             AsyncMock(return_value="accepted"),
-        ),
+        ) as enroll,
         patch.object(mgr, "_session_payload", AsyncMock(return_value={"code": "ABC-DEF"})),
     ):
         payload, error = await mgr.join_by_code(88, "ABC-DEF")
 
     assert error is None
     assert payload == {"code": "ABC-DEF"}
+    enroll.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_join_by_session_id_does_not_enroll_via_invite_code() -> None:
+    """The school list must not turn a closed room into an open code join."""
+    mgr = MindmateSeminarManager()
+    session = MagicMock()
+    session.id = "sess-org"
+    session.code = "ABC-DEF"
+    session.visibility = "organization"
+    session.owner_user_id = 1
+    session.organization_id = 4
+
+    with (
+        patch.object(mgr, "load_session_by_id", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
+        patch(
+            "services.features.mindmate_seminar.manager.seminar_room_is_closed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.list_invited_member_ids",
+            AsyncMock(return_value=[1]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.accepted_member_ids",
+            AsyncMock(return_value=[1]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.enroll_member_via_invite_code",
+            AsyncMock(return_value="accepted"),
+        ) as enroll,
+    ):
+        payload = await mgr.join_by_session_id(88, "sess-org")
+
+    assert payload is None
+    enroll.assert_not_awaited()
 
 
 @pytest.mark.asyncio

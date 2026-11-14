@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Cross-school seminar members** — The host builds the roster from a searchable organization list with select-all, or invites a teacher by phone. The home school stays out of the organization list, and the host never appears among external invitees. External seats show as pending until the teacher accepts, and a cross-school room shows each member's school beside their name.
-- **Join by code** — Every seminar shares a room code. The invite dialog and the pre-start page copy a ready-made invite text with the code and the mindspringedu.com link; the QR code is gone. A teacher who enters the code is enrolled on the roster directly.
+- **Cross-school seminar members** — A platform host builds the roster from a searchable organization list with select-all. The home school stays out of the organization list, and the host never appears among external invitees. External seats show as pending until the teacher accepts, and a cross-school room shows each member's school beside their name.
+- **Join by code** — Every seminar shares a room code. The invite dialog and the pre-start page copy a ready-made invite text with the code and the mindspringedu.com link; the QR code is gone. A teacher who submits that code on Join is enrolled on the roster. A status check, the school list, or a socket reconnect does not add a seat.
 - **Custom member roles** — The seminar leader can type a role name (up to 32 characters) in any role picker, both on the pre-start brief and in the live room's member list. A created role stays in the dropdown for every member, is stored on the server, and shows with a pen mark across the roster, chat rows, and minutes.
 
 ### Changed

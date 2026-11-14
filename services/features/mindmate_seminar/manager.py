@@ -441,7 +441,7 @@ class MindmateSeminarManager:
         # Duration and age are advisory. A live row ends when its leader stops it.
         if await self.session_is_closing(session.code):
             return None, "still_live"
-        if not await self._validate_join_permissions(session, user_id):
+        if not await self._validate_join_permissions(session, user_id, enroll_with_code=True):
             return None, "forbidden"
         return await self._session_payload(session), None
 
@@ -459,16 +459,22 @@ class MindmateSeminarManager:
         self,
         session: MindmateSeminarSession,
         user_id: int,
+        *,
+        enroll_with_code: bool,
     ) -> bool:
-        """Admit a closed-room joiner: existing accepted seat, or invite-code enroll.
+        """Admit a closed-room joiner who already has a seat, or enroll on explicit code join.
 
-        Teachers already invited by phone/org stay pending until they agree. Anyone
-        else who holds the live invite code is enrolled as accepted.
+        Teachers already invited by phone or organization stay pending until they
+        agree. A new seat is written only when ``enroll_with_code`` is set, which
+        is the POST /join-by-code path. Status, school-list join, and the socket
+        check membership without inserting a row.
         """
         if not await seminar_room_is_closed(session.id, session.visibility):
             return True
         if await self._closed_group_allows(session, user_id):
             return True
+        if not enroll_with_code:
+            return False
         enroll = await enroll_member_via_invite_code(session.id, user_id)
         if enroll == "accepted":
             return True
@@ -478,17 +484,23 @@ class MindmateSeminarManager:
         self,
         session: MindmateSeminarSession,
         user_id: int,
+        *,
+        enroll_with_code: bool = False,
     ) -> bool:
-        """Return True when the user may join; participant registration happens on WS connect.
+        """Return True when the user may join.
 
         A closed invite list is the access check. A teacher who accepted a phone
-        invite may enter even when they belong to another school. Holding the
-        live invite code also enrolls a new seat. Open school rooms still
-        require the same school.
+        invite may enter even when they belong to another school. Passing the
+        live invite code to POST /join enrolls a new seat. Open school rooms
+        still require the same school. Other callers do not write membership.
         """
         if await self.session_is_closing(session.code):
             return False
-        if not await self._admit_closed_group_member(session, user_id):
+        if not await self._admit_closed_group_member(
+            session,
+            user_id,
+            enroll_with_code=enroll_with_code,
+        ):
             return False
         if await seminar_room_is_closed(session.id, session.visibility):
             return True
@@ -515,7 +527,8 @@ class MindmateSeminarManager:
     async def user_may_connect(self, user_id: int, session: MindmateSeminarSession) -> bool:
         """Return True when user may open a WebSocket to this room."""
         # Duration presets are advisory; a seminar ends only when its leader stops it.
-        if not await self._admit_closed_group_member(session, user_id):
+        # Connect checks the roster only. POST /join is what enrolls a code holder.
+        if not await self._closed_group_allows(session, user_id):
             return False
         if await seminar_room_is_closed(session.id, session.visibility):
             return True
