@@ -270,6 +270,20 @@ export function useDiagramCanvasEventBus(): {
           return
         }
 
+        // Compare worksheets already hold left/right rasters — do not re-fit the live
+        // canvas (that path is single-diagram and can race with the pair payload).
+        const isCompareExport = Boolean(
+          mergedOptions.comparePair?.left &&
+          mergedOptions.comparePair?.right &&
+          mergedOptions.worksheetText?.worksheetMode === 'compare'
+        )
+        if (isCompareExport) {
+          await canvasExportStore.runExportSession(async () => {
+            await exportByFormat(format, mergedOptions)
+          })
+          return
+        }
+
         async function runFittedVisualExport<T>(
           run: () => Promise<T>,
           asShown = false,

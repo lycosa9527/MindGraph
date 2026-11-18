@@ -24,6 +24,7 @@ import {
   isDoubleBubbleRoleNode,
   readDoubleBubbleIndex,
 } from '@/utils/doubleBubbleMapIdentity'
+import { resolveFlowMapSubstepArrangement } from '@/utils/flowMapSubstepArrangement'
 import {
   LLM_EXPORT_ATTRIBUTION_KEY,
   clearLlmExportAttribution,
@@ -44,6 +45,7 @@ import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
+  clearDefaultTemplateCache,
   defaultTemplateForUi,
   estimateMultiFlowTopicWidth,
   loadSpecForDiagramType,
@@ -67,6 +69,7 @@ import { cancelMindMapPendingInlineEdit, clearMindMapEditingNodeId } from './min
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import { rematerializeMindMapSummaryNodes } from './mindMapSummaryLayout'
 import {
+  mergeReloadedConnections,
   mergeReloadedNodeFields,
   nodeLabelSignature,
   structuralSessionCarry,
@@ -132,6 +135,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.type.value === diagramTypeValue &&
       ctx.data.value?.nodes
         ? ctx.data.value.nodes
+        : undefined
+    const prevConnectionsForStyleMerge =
+      (options?.mergePreviousNodeStyles === true || structural) &&
+      ctx.type.value === diagramTypeValue &&
+      ctx.data.value?.connections
+        ? ctx.data.value.connections
         : undefined
 
     const preserveMindMapMeasures = options?.preserveMindMapMeasures === true
@@ -282,7 +291,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     }
     if (diagramTypeValue === 'flow_map') {
       const topic = nodesToStore.find((n) => n.id === 'flow-topic')
-      const topicOri = (topic?.data as Record<string, unknown> | undefined)?.orientation
+      const topicData = (topic?.data as Record<string, unknown> | undefined) ?? {}
+      const topicOri = topicData.orientation
       const specOri = spec.orientation
       const resolved =
         topicOri === 'vertical' || topicOri === 'horizontal'
@@ -290,8 +300,19 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           : specOri === 'vertical' || specOri === 'horizontal'
             ? specOri
             : undefined
-      if (topic && resolved && topicOri !== resolved) {
-        topic.data = { ...(topic.data || {}), orientation: resolved }
+      const arrangement = resolveFlowMapSubstepArrangement(topic, spec as Record<string, unknown>)
+      if (topic) {
+        const nextData: Record<string, unknown> = { ...topicData }
+        let dirty = false
+        if (resolved && topicOri !== resolved) {
+          nextData.orientation = resolved
+          dirty = true
+        }
+        if (topicData.substepArrangement !== arrangement) {
+          nextData.substepArrangement = arrangement
+          dirty = true
+        }
+        if (dirty) topic.data = nextData
       }
     }
 
@@ -313,10 +334,15 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (!structural) ctx.setExpectedNodeCount(nodesToStore.length)
 
+    const connectionsToStore = mergeReloadedConnections(
+      result.connections,
+      prevConnectionsForStyleMerge
+    )
+
     ctx.data.value = {
       type: diagramTypeValue,
       nodes: nodesToStore,
-      connections: result.connections,
+      connections: connectionsToStore,
       ...Object.fromEntries(
         Object.entries(spec).filter(
           ([key]) =>
@@ -540,8 +566,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       _node_styles: ctx.data.value._node_styles,
     }
     if (ctx.type.value === 'flow_map') {
-      const orientation = (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
-      spec.orientation = orientation
+      const dataRoot = ctx.data.value as Record<string, unknown>
+      const topicNode = ctx.data.value.nodes.find((n) => n.id === 'flow-topic')
+      spec.orientation = dataRoot.orientation ?? 'horizontal'
+      spec.substepArrangement = resolveFlowMapSubstepArrangement(topicNode, dataRoot)
     }
     const dataRecord = ctx.data.value as Record<string, unknown>
     if (ctx.type.value === 'bridge_map' || ctx.type.value === 'tree_map') {
@@ -634,7 +662,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const topicNode = ctx.data.value.nodes.find((n) => n.id === 'flow-topic')
     const title = topicNode?.text ?? (ctx.data.value as Record<string, unknown>).title ?? ''
     const collected = collectFlowMapSpecFromNodes(ctx.data.value.nodes)
-    const orientation = (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
+    const dataRoot = ctx.data.value as Record<string, unknown>
+    const orientation = dataRoot.orientation ?? 'horizontal'
+    const substepArrangement = resolveFlowMapSubstepArrangement(topicNode, dataRoot)
     const byId = new Map(ctx.data.value.nodes.map((node) => [node.id, node]))
     const lineOf = (id: string | undefined): string =>
       String(byId.get(id ?? '')?.textSecondary ?? '').trim()
@@ -658,12 +688,15 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       steps: collected.steps,
       substeps: collected.substeps,
       orientation,
+      substepArrangement,
       ...(hasSecondary || bilingual ? { secondary } : {}),
       ...(languages && typeof languages === 'object' ? { languages } : {}),
     }
   }
 
   function loadDefaultTemplate(diagramTypeValue: DiagramType): boolean {
+    // Always rebuild blanks so template edits (and HMR) are not stuck behind CACHE.
+    clearDefaultTemplateCache()
     const template = defaultTemplateForUi(diagramTypeValue, useUIStore())
     if (!template) return false
     return loadFromSpec(template, diagramTypeValue)

@@ -48,12 +48,24 @@ export function flowStepSlot(index: number, perRow = FLOW_MAP_STEPS_PER_ROW): Se
   return serpentineSlot(index, perRow)
 }
 
-/** Extra height under a step once its substeps are stacked. */
+/** Extra height under a step once its substeps are stacked vertically. */
 export function flowSubstepStackExtent(heights: readonly number[]): number {
   if (heights.length === 0) return 0
   const stack =
     heights.reduce((sum, height) => sum + height, 0) + FLOW_SUBSTEP_SPACING * (heights.length - 1)
   return FLOW_SUBSTEP_OFFSET_X + stack
+}
+
+/** Extra height under a step when substeps sit in one horizontal row. */
+export function flowSubstepRowExtent(heights: readonly number[]): number {
+  if (heights.length === 0) return 0
+  return FLOW_SUBSTEP_OFFSET_X + Math.max(...heights)
+}
+
+/** Width of a horizontal substep row (gaps between pills). */
+export function flowSubstepRowWidth(widths: readonly number[]): number {
+  if (widths.length === 0) return 0
+  return widths.reduce((sum, width) => sum + width, 0) + FLOW_SUBSTEP_SPACING * (widths.length - 1)
 }
 
 export function placeFlowSerpentine(

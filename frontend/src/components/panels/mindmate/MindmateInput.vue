@@ -102,6 +102,21 @@ const authStore = useAuthStore()
 const router = useRouter()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const showSeminarHome = computed(() => props.showSuggestions && props.homeMode === 'seminar')
+/** Canvas panel starter prompts (diagram-focused). */
+const canvasSuggestionKeys = [
+  'mindmate.canvasSuggestion1',
+  'mindmate.canvasSuggestion2',
+  'mindmate.canvasSuggestion3',
+] as const
+const composerPlaceholder = computed(() => {
+  if (props.placeholder) {
+    return props.placeholder
+  }
+  if (!isFullpageMode.value) {
+    return t('mindmate.input.canvasPlaceholder')
+  }
+  return t('mindmate.input.placeholder')
+})
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const chatInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
@@ -467,10 +482,17 @@ defineExpose({ focus: focusComposer })
     >
       <SuggestionBubbles
         flow
-        :limit="2"
+        :suggestion-keys="canvasSuggestionKeys"
+        :limit="3"
         @select="handleSuggestionSelect"
       />
     </div>
+
+    <!-- Between suggestions and compose (e.g. diagram context) -->
+    <slot
+      v-if="!showSeminarHome"
+      name="above-compose"
+    />
 
     <!-- Input Area - Same design for fullpage and panel (MindMate module style) -->
     <div
@@ -599,12 +621,12 @@ defineExpose({ focus: focusComposer })
             type="textarea"
             name="mindmate-chat-input"
             :rows="textareaRows"
-            :placeholder="placeholder || t('mindmate.input.placeholder')"
+            :placeholder="composerPlaceholder"
             :disabled="isComposerDisabled"
             :maxlength="maxlength"
             :show-word-limit="maxlength != null"
             class="fullpage-textarea"
-            :aria-label="placeholder || t('mindmate.input.placeholder')"
+            :aria-label="composerPlaceholder"
             @update:model-value="handleInputUpdate"
             @keydown="handleKeydown"
             @focus="handleInputFocus"

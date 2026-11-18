@@ -100,15 +100,21 @@ def _brace_map_parts() -> list[dict[str, Any]]:
 
 
 def _flow_map_substeps() -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for step_index in range(1, 5):
-        rows.append(
-            {
-                "step": f"步骤{step_index}",
-                "substeps": [f"子步骤{step_index}.{substep_index}" for substep_index in range(1, 3)],
-            }
-        )
-    return rows
+    """Match frontend defaultTemplates: step1×3, step2×2, steps 3–4 bare."""
+    return [
+        {
+            "step": "步骤1",
+            "stepIndex": 0,
+            "substeps": [f"子步骤1.{substep_index}" for substep_index in range(1, 4)],
+        },
+        {
+            "step": "步骤2",
+            "stepIndex": 1,
+            "substeps": [f"子步骤2.{substep_index}" for substep_index in range(1, 3)],
+        },
+        {"step": "步骤3", "stepIndex": 2, "substeps": []},
+        {"step": "步骤4", "stepIndex": 3, "substeps": []},
+    ]
 
 
 def _bridge_map_analogies() -> list[dict[str, str]]:
@@ -147,6 +153,8 @@ def blank_spec_for_type(title: str, diagram_type: str) -> dict[str, Any]:
     if dtype == "flow_map":
         return {
             "title": "事件流程",
+            "orientation": "horizontal",
+            "substepArrangement": "row",
             "steps": _range(4, "步骤{n}"),
             "substeps": _flow_map_substeps(),
         }

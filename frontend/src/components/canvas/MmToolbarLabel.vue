@@ -11,15 +11,24 @@ import { abbreviateToolbarLabel } from '@/utils/toolbarLabelAbbreviation'
 
 const props = withDefaults(
   defineProps<{
-    k: string
+    /** Message key when `text` is not set. */
+    k?: string
+    /** Pre-resolved label (e.g. school MindMate agent name). */
+    text?: string
     /** Show the abbreviation even when the toolbar row still has room. */
     short?: boolean
   }>(),
-  { short: false }
+  { k: '', text: '', short: false }
 )
 
 const { t } = useLanguage()
-const shortLabel = computed(() => abbreviateToolbarLabel(t(props.k)))
+const fullLabel = computed(() => {
+  if (props.text) {
+    return props.text
+  }
+  return props.k ? t(props.k) : ''
+})
+const shortLabel = computed(() => abbreviateToolbarLabel(fullLabel.value))
 </script>
 
 <template>
@@ -28,7 +37,11 @@ const shortLabel = computed(() => abbreviateToolbarLabel(t(props.k)))
     :class="{ 'is-short': short }"
   >
     <span class="mm-label-full">
-      <I18nText :k="k" />
+      <template v-if="text">{{ text }}</template>
+      <I18nText
+        v-else-if="k"
+        :k="k"
+      />
     </span>
     <span
       class="mm-label-short"

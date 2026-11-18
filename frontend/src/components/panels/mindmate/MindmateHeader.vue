@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar } from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownMenu, ElIcon } from 'element-plus'
 
 import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 
-import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import { MessageCirclePlus } from '@lucide/vue'
+
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateSeminarRosterBar from '@/components/mindmate/MindmateSeminarRosterBar.vue'
 import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 import { useLanguage } from '@/composables'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { MindMateConversation } from '@/stores'
@@ -31,7 +33,7 @@ const props = withDefaults(
   }>(),
   {
     mode: 'panel',
-    title: 'MindMate',
+    title: '',
     isTyping: false,
     isAuthenticated: true,
     conversations: () => [],
@@ -43,6 +45,9 @@ const props = withDefaults(
   }
 )
 
+const { displayName: brandedTitle } = useMindMateBranding()
+const headerTitle = computed(() => props.title || brandedTitle.value)
+
 const emit = defineEmits<{
   (e: 'newConversation'): void
   (e: 'close'): void
@@ -52,20 +57,6 @@ const emit = defineEmits<{
   (e: 'addMembers'): void
   (e: 'continueSession'): void
 }>()
-
-const includeDiagram = defineModel<boolean>('includeDiagram', { default: false })
-
-const diagramChoice = computed({
-  get: () => (includeDiagram.value ? 'include' : 'exclude'),
-  set: (value: string) => {
-    includeDiagram.value = value === 'include'
-  },
-})
-
-const diagramOptions = computed(() => [
-  { labelKey: 'mindmate.diagramContext.off', value: 'exclude' },
-  { labelKey: 'mindmate.diagramContext.on', value: 'include' },
-])
 
 const { t, currentLanguage } = useLanguage()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
@@ -112,25 +103,12 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
     class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
   >
     <div class="flex-1 min-w-0 flex items-center">
-      <div
-        v-if="!isFullpageMode && !showContactsToggle"
-        class="mm-diagram-context"
+      <span
+        v-if="!isFullpageMode && headerTitle"
+        class="panel-header-title"
       >
-        <span class="mm-diagram-context__label">
-          <I18nText
-            k="mindmate.diagramContext.label"
-            dense
-            primary-only
-          />
-        </span>
-        <AdminSwissSegmented
-          v-model="diagramChoice"
-          fit
-          class="mm-diagram-context__seg"
-          :options="diagramOptions"
-          :aria-label="t('mindmate.diagramContext.label')"
-        />
-      </div>
+        {{ headerTitle }}
+      </span>
     </div>
     <div class="mindmate-header-actions flex items-center gap-2 shrink-0">
       <ElButton
@@ -150,7 +128,7 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
         @toggle-members="emit('toggleMembers')"
         @add-members="emit('addMembers')"
       />
-      <!-- History dropdown - panel mode only, left of close -->
+      <!-- History dropdown - panel mode only -->
       <ElDropdown
         v-if="!isFullpageMode"
         trigger="click"
@@ -188,9 +166,8 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
                   <I18nText k="mindmate.noHistory" />
                 </p>
               </div>
-              <ElScrollbar
+              <div
                 v-else
-                :max-height="280"
                 class="history-dropdown-list"
               >
                 <div
@@ -224,11 +201,29 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
                     <ElIcon :size="14"><Delete /></ElIcon>
                   </ElButton>
                 </div>
-              </ElScrollbar>
+              </div>
             </div>
           </ElDropdownMenu>
         </template>
       </ElDropdown>
+      <!-- New chat — right of history -->
+      <ElButton
+        v-if="!isFullpageMode"
+        text
+        circle
+        size="small"
+        class="new-chat-icon-btn shrink-0"
+        :disabled="!isAuthenticated"
+        :aria-label="t('mindmate.newChat')"
+        :title="t('mindmate.newChat')"
+        @click="emit('newConversation')"
+      >
+        <MessageCirclePlus
+          class="new-chat-icon"
+          :size="18"
+          :stroke-width="2"
+        />
+      </ElButton>
       <!-- Close button (panel mode only) -->
       <ElButton
         v-if="!isFullpageMode"
@@ -250,39 +245,37 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
   margin-left: 0;
 }
 
-.mm-diagram-context {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.mm-diagram-context__label {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
+.panel-header-title {
+  font-size: 14px;
+  font-weight: 650;
   color: var(--swiss-ink, #1c1917);
-  white-space: nowrap;
+  line-height: 1.2;
 }
 
-.mm-diagram-context__seg :deep(.admin-swiss-segment) {
-  min-height: 26px;
-  padding: 0.1rem 0.55rem;
-  font-size: 12px;
-}
-
-.mm-diagram-context__seg :deep(.admin-swiss-segment.is-active) {
-  background: var(--swiss-geek-violet-ui, #7c3aed);
-  color: #fff;
-}
-
-:global(html.dark) .mm-diagram-context__label {
+:global(html.dark) .panel-header-title {
   color: var(--swiss-ink, #f5f5f4);
 }
 
-:global(html.dark) .mm-diagram-context__seg :deep(.admin-swiss-segment.is-active) {
-  background: var(--swiss-geek-violet, #a78bfa);
-  color: #1c1917;
+.new-chat-icon-btn {
+  color: #5b21b6;
+}
+
+.new-chat-icon-btn:hover:not(:disabled) {
+  color: #4c1d95;
+  background: #ede9fe;
+}
+
+.new-chat-icon {
+  display: block;
+}
+
+:global(html.dark) .new-chat-icon-btn {
+  color: #c4b5fd;
+}
+
+:global(html.dark) .new-chat-icon-btn:hover:not(:disabled) {
+  color: #e0e7ff;
+  background: rgb(99 102 241 / 0.2);
 }
 
 /* History dropdown - panel mode */
@@ -315,7 +308,10 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
 }
 
 .history-dropdown-list {
-  max-height: 280px;
+  max-height: min(280px, 50vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .history-dropdown-item {
@@ -399,7 +395,7 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
 </style>
 
 <style>
-/* Popper is teleported to body - needs global style for z-index */
+/* Popper is teleported to body - needs global style for z-index / clip */
 .mindmate-history-dropdown-popper {
   z-index: 9999 !important;
 }
@@ -408,6 +404,14 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
 .mindmate-history-dropdown-popper .el-dropdown-menu {
   padding: 0 !important;
   min-width: 260px !important;
-  max-height: 320px !important;
+  max-height: min(320px, 60vh) !important;
+  overflow: hidden !important;
+}
+
+.mindmate-history-dropdown-popper .history-dropdown-list {
+  max-height: min(280px, 50vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 </style>

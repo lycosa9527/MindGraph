@@ -26,6 +26,9 @@ export {
   useCanvasNodeChromeOverlayGate,
   canvasNodeChromeBlockedByOverlay,
 } from './canvasNodeChromeOverlayGate'
+export { useDoubleBubbleAddPosition } from './useDoubleBubbleAddPosition'
+export { useFlowMapAddPosition } from './useFlowMapAddPosition'
+export { useMindMapDirectionalAddPosition } from './useMindMapDirectionalAddPosition'
 export {
   useNodeFloatingToolbarPosition,
   resolveFloatingToolbarAnchor,

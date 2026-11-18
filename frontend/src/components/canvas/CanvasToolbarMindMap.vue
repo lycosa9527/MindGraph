@@ -10,7 +10,6 @@ import { storeToRefs } from 'pinia'
 import { ElDropdown, ElTooltip } from 'element-plus'
 
 import {
-  ArrowDownUp,
   Bot,
   ChevronDown,
   Download,
@@ -80,6 +79,7 @@ import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
@@ -104,6 +104,7 @@ import {
   nextLabelCollapse,
 } from '@/utils/toolbarLabelCollapse'
 
+import FlowMapStructureIcon from './FlowMapStructureIcon.vue'
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
 
 const props = withDefaults(defineProps<{ compact?: boolean; ribbonTab?: MindMapRibbonTabId }>(), {
@@ -112,6 +113,11 @@ const props = withDefaults(defineProps<{ compact?: boolean; ribbonTab?: MindMapR
 })
 
 const { t, currentLanguage } = useLanguage()
+const { displayName: mindMateDisplayName, hasCustomAgentName } = useMindMateBranding()
+/** Ribbon chip: “{agent} AI”, or default “MindMate AI”. */
+const mindMateLabel = computed(() =>
+  hasCustomAgentName.value ? `${mindMateDisplayName.value} AI` : t('canvas.ribbon.mindMate')
+)
 const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { showCanvasAiFeatures } = useLearningAiGate()
@@ -122,7 +128,35 @@ const savedDiagramsStore = useSavedDiagramsStore()
 const shareSeminarOpen = ref(false)
 const knowledgeOpen = ref(false)
 const { buttonOn: knowledgeButtonOn } = useDiagramKnowledgeSelection()
-const { triggerImportInPlace } = useDiagramImport()
+const {
+  handdrawnImportBusy,
+  triggerImportInPlace,
+  triggerConceptMapImportInPlace,
+  triggerHanddrawnImportInPlace,
+} = useDiagramImport()
+const importDropdownRef = ref<{ handleClose?: () => void } | null>(null)
+
+function closeImportMenu(): void {
+  importDropdownRef.value?.handleClose?.()
+}
+
+function handleImportMgCommand(): void {
+  closeImportMenu()
+  if (caps.value.conceptMap) {
+    triggerConceptMapImportInPlace()
+    return
+  }
+  triggerImportInPlace()
+}
+
+function handleImportHanddrawnCommand(): void {
+  closeImportMenu()
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
+  triggerHanddrawnImportInPlace()
+}
 const { resetToDefaultTemplate } = useCanvasReset()
 const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
@@ -238,6 +272,24 @@ const structureLabel = computed(() =>
     : t('canvas.toolbar.mindMapStructureBalanced')
 )
 
+const flowStructureMode = computed(() => {
+  void diagramStore.data?.nodes?.length
+  void diagramStore.data?.connections?.length
+  return diagramStore.getFlowMapStructureMode()
+})
+
+const flowStructureLabel = computed(() => {
+  if (flowStructureMode.value === 'vertical') {
+    return t('canvas.toolbar.flowStructureVertical')
+  }
+  if (flowStructureMode.value === 'stack') {
+    return t('canvas.toolbar.flowSubstepStructureStack')
+  }
+  return t('canvas.toolbar.flowSubstepStructureRow')
+})
+
+const flowStructureDropdownOpen = ref(false)
+
 function handleUndo() {
   tryCollabGuardedUndo()
 }
@@ -250,6 +302,13 @@ function handleStructurePick(mode: 'balanced' | 'right') {
   structureDropdownOpen.value = false
   if (diagramStore.setMindMapStructureMode(mode)) {
     notify.successKey('canvas.toolbar.mindMapStructureApplied')
+  }
+}
+
+function handleFlowStructurePick(mode: 'row' | 'stack' | 'vertical') {
+  flowStructureDropdownOpen.value = false
+  if (diagramStore.setFlowMapStructureMode(mode)) {
+    notify.successKey('canvas.toolbar.flowStructureApplied')
   }
 }
 
@@ -521,6 +580,88 @@ watch(
           class="mm-sep"
         />
 
+        <!-- Flow-map structure: row / stack / vertical -->
+        <I18nTooltip
+          v-if="caps.flowSubstepArrangement"
+          :k="
+            flowStructureMode === 'vertical'
+              ? 'canvas.toolbar.flowStructureVertical'
+              : flowStructureMode === 'stack'
+                ? 'canvas.toolbar.flowSubstepStructureStack'
+                : 'canvas.toolbar.flowSubstepStructureRow'
+          "
+          placement="bottom"
+        >
+          <span class="inline-flex shrink-0">
+            <ElDropdown
+              v-model:visible="flowStructureDropdownOpen"
+              trigger="hover"
+              :show-timeout="150"
+              :hide-timeout="200"
+              placement="bottom-start"
+              popper-class="mm-toolbar-popper mm-toolbar-popper--structure"
+            >
+              <button
+                type="button"
+                class="mm-btn mm-btn--structure"
+                :aria-label="flowStructureLabel"
+              >
+                <FlowMapStructureIcon
+                  class="mm-btn__structure-preview"
+                  :mode="flowStructureMode"
+                />
+                <ChevronDown
+                  :size="12"
+                  class="mm-btn__chevron"
+                />
+              </button>
+              <template #dropdown>
+                <div class="mm-panel mm-panel--structure">
+                  <button
+                    type="button"
+                    class="mm-structure-card"
+                    :class="{ 'is-active': flowStructureMode === 'row' }"
+                    @click="handleFlowStructurePick('row')"
+                  >
+                    <FlowMapStructureIcon mode="row" />
+                    <span class="mm-structure-card__label">
+                      <I18nText k="canvas.toolbar.flowSubstepStructureRow" />
+                    </span>
+                  </button>
+                  <div class="mm-panel__divider-v" />
+                  <button
+                    type="button"
+                    class="mm-structure-card"
+                    :class="{ 'is-active': flowStructureMode === 'stack' }"
+                    @click="handleFlowStructurePick('stack')"
+                  >
+                    <FlowMapStructureIcon mode="stack" />
+                    <span class="mm-structure-card__label">
+                      <I18nText k="canvas.toolbar.flowSubstepStructureStack" />
+                    </span>
+                  </button>
+                  <div class="mm-panel__divider-v" />
+                  <button
+                    type="button"
+                    class="mm-structure-card"
+                    :class="{ 'is-active': flowStructureMode === 'vertical' }"
+                    @click="handleFlowStructurePick('vertical')"
+                  >
+                    <FlowMapStructureIcon mode="vertical" />
+                    <span class="mm-structure-card__label">
+                      <I18nText k="canvas.toolbar.flowStructureVertical" />
+                    </span>
+                  </button>
+                </div>
+              </template>
+            </ElDropdown>
+          </span>
+        </I18nTooltip>
+        <span
+          v-if="caps.flowSubstepArrangement"
+          class="mm-sep"
+        />
+
         <!-- Undo / Redo -->
         <div
           class="mm-history-group"
@@ -600,20 +741,6 @@ watch(
                 v-else
                 class="w-4 h-4"
               />
-            </button>
-          </I18nTooltip>
-          <I18nTooltip
-            v-if="caps.flowOrientation"
-            k="canvas.toolbar.toggleDirection"
-            placement="bottom"
-          >
-            <button
-              type="button"
-              class="mm-btn mm-btn--icon"
-              :aria-label="t('canvas.toolbar.directionLabel')"
-              @click="ribbon.toggleFlowOrientation()"
-            >
-              <ArrowDownUp class="w-4 h-4" />
             </button>
           </I18nTooltip>
           <I18nTooltip
@@ -753,18 +880,50 @@ watch(
             placement="bottom"
             :disabled="shortLabels || !props.compact"
           >
-            <button
-              type="button"
-              class="mm-btn"
-              :aria-label="t('canvas.toolbar.import')"
-              @click="() => triggerImportInPlace()"
-            >
-              <Upload class="w-4 h-4" />
-              <MmToolbarLabel
-                class="mm-btn__label"
-                k="canvas.toolbar.import"
-              />
-            </button>
+            <span class="inline-flex">
+              <ElDropdown
+                ref="importDropdownRef"
+                trigger="click"
+                placement="bottom-start"
+                popper-class="mm-toolbar-popper"
+              >
+                <button
+                  type="button"
+                  class="mm-btn"
+                  :aria-busy="handdrawnImportBusy"
+                  :aria-label="t('canvas.toolbar.import')"
+                >
+                  <Upload class="w-4 h-4" />
+                  <MmToolbarLabel
+                    class="mm-btn__label"
+                    k="canvas.toolbar.import"
+                  />
+                  <ChevronDown
+                    :size="12"
+                    class="mm-btn__chevron"
+                  />
+                </button>
+                <template #dropdown>
+                  <div class="mm-panel mm-panel--list">
+                    <button
+                      type="button"
+                      class="mm-list-item"
+                      @click="handleImportMgCommand"
+                    >
+                      <I18nText k="canvas.toolbar.importMg" />
+                    </button>
+                    <button
+                      type="button"
+                      class="mm-list-item"
+                      :disabled="handdrawnImportBusy"
+                      @click="handleImportHanddrawnCommand"
+                    >
+                      <I18nText k="canvas.toolbar.importHanddrawn" />
+                    </button>
+                  </div>
+                </template>
+              </ElDropdown>
+            </span>
           </I18nTooltip>
           <I18nTooltip
             v-if="caps.conceptMap"
@@ -956,7 +1115,7 @@ watch(
             </button>
           </I18nTooltip>
           <I18nTooltip
-            v-if="caps.mindMapV2"
+            v-if="caps.nodeCarousel"
             k="canvas.mindMapPresentationToolbar.slides"
             placement="bottom"
             :disabled="shortLabels"
@@ -1323,8 +1482,8 @@ watch(
 
       <template v-if="ribbonTab === 'research'">
         <div class="mm-btn-group">
-          <I18nTooltip
-            k="canvas.ribbon.mindMate"
+          <ElTooltip
+            :content="mindMateLabel"
             placement="bottom"
             :disabled="shortLabels"
           >
@@ -1334,16 +1493,16 @@ watch(
               :class="{
                 'is-active': ribbon.isMindmateOpen,
               }"
-              :aria-label="t('canvas.ribbon.mindMate')"
+              :aria-label="mindMateLabel"
               @click="ribbon.toggleMindmate"
             >
               <Bot class="w-4 h-4" />
               <MmToolbarLabel
                 class="mm-btn__label"
-                k="canvas.ribbon.mindMate"
+                :text="mindMateLabel"
               />
             </button>
-          </I18nTooltip>
+          </ElTooltip>
           <I18nTooltip
             k="canvas.ribbon.shareToSeminarTip"
             placement="bottom"

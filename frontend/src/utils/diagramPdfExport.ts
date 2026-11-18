@@ -3,6 +3,11 @@
  */
 import type { CanvasExportLayout } from '@/config/canvasExportOptions'
 import {
+  type WorksheetCompareArrangement,
+  placeImageInComparePanel,
+  splitWorksheetCompareRegion,
+} from '@/utils/worksheetCompareLayout'
+import {
   type WorksheetDiagramCrop,
   normalizeWorksheetDiagramCrop,
   worksheetDiagramCropFractions,
@@ -134,6 +139,14 @@ type JsPdfLike = {
     height: number
   ) => void
   addPage: () => void
+  setFontSize?: (size: number) => void
+  setTextColor?: (r: number, g?: number, b?: number) => void
+  text?: (
+    text: string,
+    x: number,
+    y: number,
+    options?: { align?: 'left' | 'center' | 'right' }
+  ) => void
 }
 
 export function fitImageRectOnA4Page(
@@ -326,4 +339,95 @@ export function addWorksheetPageToPdf(
     diagramRect.width,
     diagramRect.height
   )
+}
+
+type WorksheetComparePanelImage = {
+  dataUrl: string
+  widthPx: number
+  heightPx: number
+  label?: string
+}
+
+export type WorksheetComparePanelPlacement = {
+  offsetX?: number
+  offsetY?: number
+  scale?: number
+}
+
+/**
+ * One A4 page: optional header + two diagram panels (left|right or top/bottom) with labels.
+ */
+export function addWorksheetComparePageToPdf(
+  pdf: JsPdfLike,
+  left: WorksheetComparePanelImage,
+  right: WorksheetComparePanelImage,
+  headerDataUrl: string | null,
+  headerWidthPx: number,
+  headerHeightPx: number,
+  marginMm = 10,
+  headerGapMm = 4,
+  arrangement: WorksheetCompareArrangement = 'horizontal',
+  leftPlacement: WorksheetComparePanelPlacement = {},
+  rightPlacement: WorksheetComparePanelPlacement = {}
+): void {
+  const pageW = pdf.internal.pageSize.getWidth()
+  const pageH = pdf.internal.pageSize.getHeight()
+  let regionTopMm = marginMm
+
+  if (headerDataUrl && headerWidthPx > 0 && headerHeightPx > 0) {
+    const headerMaxW = pageW - marginMm * 2
+    const headerAspect = headerWidthPx / headerHeightPx
+    const headerDrawW = headerMaxW
+    const headerDrawH = headerDrawW / headerAspect
+    pdf.addImage(
+      headerDataUrl,
+      pdfRasterFormatFromDataUrl(headerDataUrl),
+      marginMm,
+      regionTopMm,
+      headerDrawW,
+      headerDrawH
+    )
+    regionTopMm += headerDrawH + headerGapMm
+  }
+
+  const regionWidth = pageW - marginMm * 2
+  const regionHeight = pageH - regionTopMm - marginMm
+  const layout = splitWorksheetCompareRegion(
+    marginMm,
+    regionTopMm,
+    regionWidth,
+    regionHeight,
+    undefined,
+    undefined,
+    arrangement
+  )
+
+  for (const [panel, image, placement] of [
+    [layout.first, left, leftPlacement],
+    [layout.second, right, rightPlacement],
+  ] as const) {
+    const fitted = placeImageInComparePanel(
+      image.widthPx,
+      image.heightPx,
+      panel,
+      placement.offsetX ?? 0,
+      placement.offsetY ?? 0,
+      placement.scale ?? 1
+    )
+    pdf.addImage(
+      image.dataUrl,
+      pdfRasterFormatFromDataUrl(image.dataUrl),
+      fitted.x,
+      fitted.y,
+      fitted.width,
+      fitted.height
+    )
+    const label = image.label?.trim()
+    if (label && pdf.setFontSize && pdf.setTextColor && pdf.text) {
+      pdf.setFontSize(9)
+      pdf.setTextColor(80)
+      const labelY = panel.y + panel.height + layout.labelHeightMm * 0.75
+      pdf.text(label, panel.x + panel.width / 2, labelY, { align: 'center' })
+    }
+  }
 }

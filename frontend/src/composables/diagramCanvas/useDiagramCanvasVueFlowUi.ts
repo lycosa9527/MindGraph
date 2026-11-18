@@ -3,6 +3,7 @@ import { type ComputedRef, type Ref, computed } from 'vue'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
+import { type CanvasInputMode, canvasInputUsesSlash } from '@/config/canvasInputMode'
 import type { PresentationToolId } from '@/types'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
@@ -24,6 +25,11 @@ export interface UseDiagramCanvasVueFlowUiOptions {
   interactionFrozen?: Ref<boolean>
   /** Grab-pan: the wheel pans instead of zooming. */
   handToolPan?: Ref<boolean>
+  /**
+   * Canvas input profile. Laptop (default) keeps always-on marquee; mouse/board
+   * reserve plain left-drag for slash, so box select needs Control.
+   */
+  inputMode?: Ref<CanvasInputMode>
 }
 
 export interface UseDiagramCanvasVueFlowUiResult {
@@ -36,17 +42,17 @@ export interface UseDiagramCanvasVueFlowUiResult {
   elementsSelectable: ComputedRef<boolean>
   selectNodesOnDrag: ComputedRef<boolean>
   /**
-   * `Control` rubber-bands while that key is held. `null` leaves box select off.
-   * Written onto the Vue Flow store. The 1.48 prop only accepts boolean | null.
+   * `true` = always-on marquee. `Control` = hold Control. `null` = off.
+   * Written onto the Vue Flow store (1.48 template prop is boolean | null only).
    */
-  selectionKeyCode: ComputedRef<CanvasGroupSelectKey | null>
+  selectionKeyCode: ComputedRef<true | CanvasGroupSelectKey | null>
   panOnScroll: ComputedRef<boolean>
   zoomOnScroll: ComputedRef<boolean>
   zoomOnPinch: ComputedRef<boolean>
   vueFlowBackgroundClasses: ComputedRef<string[]>
 }
 
-/** Hold to rubber-band select. A plain left-drag stays the slash gesture. */
+/** Hold to rubber-band select when slash owns the plain left-drag. */
 export const CANVAS_GROUP_SELECT_KEY = 'Control'
 
 export type CanvasGroupSelectKey = typeof CANVAS_GROUP_SELECT_KEY
@@ -68,6 +74,7 @@ export function useDiagramCanvasVueFlowUi(
     presentationPenColor,
     interactionFrozen,
     handToolPan,
+    inputMode,
   } = options
 
   function interactionHeld(): boolean {
@@ -173,20 +180,23 @@ export function useDiagramCanvasVueFlowUi(
   })
 
   /**
-   * Separate from selectNodesOnDrag. Always-on marquee stole the left-drag slash.
-   * A finger never holds Control, so e-blackboard touch keeps the slash.
-   * The phone page pans on the primary button, so box select stays off there.
+   * Separate from selectNodesOnDrag.
+   * Laptop (default): always-on marquee — plain left-drag box-selects.
+   * Mouse / board: Control + drag, so plain left-drag can still slash.
+   * Phone page pans on the primary button, so box select stays off there.
    */
-  const selectionKeyCode = computed<CanvasGroupSelectKey | null>(() => {
+  const selectionKeyCode = computed<true | CanvasGroupSelectKey | null>(() => {
     if (interactionHeld()) return null
     if (browseMode.value) return null
     if (learningSheetPickActive.value) return null
     if (mobilePageTouchGesturesActive.value) return null
     if (presentationStrokeToolActive.value) return null
-    if (presentationPointerEditMode.value) return CANVAS_GROUP_SELECT_KEY
     if (presentationDiagramEditLocked.value) return null
     if (handToolActive.value || presentationHandPanMode.value) return null
-    return CANVAS_GROUP_SELECT_KEY
+    const mode = inputMode?.value ?? 'laptop'
+    // Slash owns the unmodified left-drag — require Control for marquee.
+    if (canvasInputUsesSlash(mode)) return CANVAS_GROUP_SELECT_KEY
+    return true
   })
 
   const panOnScroll = computed(() => !interactionHeld() && Boolean(handToolPan?.value))

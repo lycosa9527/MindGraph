@@ -526,6 +526,11 @@
   cursor: wait;
 }
 
+.mc-launch__start.is-coming-soon:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .mc-launch__start.is-busy {
   --mc-launch-fill: 0%;
   overflow: hidden;

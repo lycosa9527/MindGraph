@@ -69,6 +69,10 @@ export const MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH = 250
 /** Flow map minimum pill. The painted box grows with the label up to the caps below. */
 export const FLOW_MAP_PILL_WIDTH = 120
 export const FLOW_MAP_PILL_HEIGHT = 48
+/** Compact stand-in height for flow substep pills (smaller than main steps). */
+export const FLOW_SUBSTEP_PILL_MIN_HEIGHT = 32
+/** Compact stand-in width for flow substep pills. */
+export const FLOW_SUBSTEP_PILL_MIN_WIDTH = 72
 
 /**
  * Painted border-box caps. The stand-in width is clamped here so a pill is
@@ -76,8 +80,9 @@ export const FLOW_MAP_PILL_HEIGHT = 48
  * replaces that stand-in. Keep in sync with the flow node `maxWidth` styles.
  */
 export const FLOW_TOPIC_NODE_MAX_WIDTH = 400
-export const FLOW_STEP_NODE_MAX_WIDTH = 300
-export const FLOW_SUBSTEP_NODE_MAX_WIDTH = 230
+/** Steps stretch to cover a substep row; keep headroom for several compact pills. */
+export const FLOW_STEP_NODE_MAX_WIDTH = 560
+export const FLOW_SUBSTEP_NODE_MAX_WIDTH = 160
 
 /** Gap between flow map topic and first step */
 export const FLOW_TOPIC_TO_STEP_GAP = 60

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 /**
  * Short gloss bubble anchored beside a mind-map node (or a compact fallback card).
+ * Pin detaches it from the node so it stays on the canvas and can be dragged.
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
-import { X } from '@lucide/vue'
+import { useDraggable, useWindowSize } from '@vueuse/core'
+
+import { Pin, PinOff, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import type {
@@ -24,6 +27,7 @@ import {
 } from '@/utils/mindMapExplainResearch'
 
 const visible = defineModel<boolean>('visible', { required: true })
+const pinned = defineModel<boolean>('pinned', { default: false })
 
 const props = withDefaults(
   defineProps<{
@@ -50,7 +54,9 @@ const props = withDefaults(
   }
 )
 
-const showBubble = computed(() => visible.value && (props.position.visible || props.allowFallback))
+const showBubble = computed(
+  () => visible.value && (pinned.value || props.position.visible || props.allowFallback)
+)
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -58,9 +64,29 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const { width: winW, height: winH } = useWindowSize()
 
 const rootEl = ref<HTMLElement | null>(null)
+const headEl = ref<HTMLElement | null>(null)
 let sizeObserver: ResizeObserver | null = null
+
+const {
+  x: freeX,
+  y: freeY,
+  isDragging,
+} = useDraggable(rootEl, {
+  handle: headEl,
+  disabled: computed(() => !pinned.value),
+  preventDefault: true,
+  onMove(pos) {
+    const el = rootEl.value
+    const width = el?.offsetWidth ?? 280
+    const height = el?.offsetHeight ?? 160
+    const pad = 8
+    pos.x = Math.max(pad, Math.min(winW.value - width - pad, pos.x))
+    pos.y = Math.max(pad, Math.min(winH.value - height - pad, pos.y))
+  },
+})
 
 const nodeLabel = computed(() => props.target?.nodeLabel?.trim() || '')
 
@@ -159,7 +185,31 @@ function sourceForCite(index: number): ExplainResearchSource | undefined {
   return props.sources[index - 1]
 }
 
+function captureFreePositionFromDom(): void {
+  const el = rootEl.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  freeX.value = rect.left
+  freeY.value = rect.top
+}
+
+function togglePinned(): void {
+  if (pinned.value) {
+    pinned.value = false
+    return
+  }
+  captureFreePositionFromDom()
+  pinned.value = true
+}
+
 const bubbleStyle = computed(() => {
+  if (pinned.value) {
+    return {
+      left: `${freeX.value}px`,
+      top: `${freeY.value}px`,
+      transform: 'none',
+    }
+  }
   if (!props.position.visible) {
     return undefined
   }
@@ -209,14 +259,16 @@ watch(
 )
 
 function handleClose(): void {
+  pinned.value = false
   visible.value = false
   emit('close')
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && visible.value) {
-    handleClose()
-  }
+  if (event.key !== 'Escape' || !visible.value) return
+  // Pinned cards stay until the user closes or unpins them.
+  if (pinned.value) return
+  handleClose()
 }
 
 watch(
@@ -226,6 +278,7 @@ watch(
       document.addEventListener('keydown', onDocumentKeydown)
       return
     }
+    pinned.value = false
     document.removeEventListener('keydown', onDocumentKeydown)
   },
   { immediate: true }
@@ -246,11 +299,16 @@ onUnmounted(() => {
       ref="rootEl"
       class="ne-bubble"
       :class="[
-        position.visible ? `ne-bubble--${position.placement}` : 'ne-bubble--fallback',
+        pinned
+          ? 'ne-bubble--pinned'
+          : position.visible
+            ? `ne-bubble--${position.placement}`
+            : 'ne-bubble--fallback',
         {
           'ne-bubble--streaming': loading,
           'ne-bubble--error': !!error && !loading,
           'ne-bubble--agent': showThinking,
+          'ne-bubble--dragging': isDragging,
         },
       ]"
       :style="bubbleStyle"
@@ -261,11 +319,15 @@ onUnmounted(() => {
       @click.stop
     >
       <span
-        v-if="position.visible"
+        v-if="position.visible && !pinned"
         class="ne-bubble__tail"
         aria-hidden="true"
       />
-      <header class="ne-bubble__head">
+      <header
+        ref="headEl"
+        class="ne-bubble__head"
+        :class="{ 'ne-bubble__head--drag': pinned }"
+      >
         <span
           v-if="nodeLabel"
           class="ne-bubble__node"
@@ -273,9 +335,32 @@ onUnmounted(() => {
         >
         <button
           type="button"
+          class="ne-bubble__pin"
+          :class="{ 'is-active': pinned }"
+          :aria-label="
+            pinned ? t('canvas.mindMapNodeExplain.unpin') : t('canvas.mindMapNodeExplain.pin')
+          "
+          :aria-pressed="pinned"
+          @pointerdown.stop
+          @click.stop="togglePinned"
+        >
+          <PinOff
+            v-if="pinned"
+            :size="14"
+            :stroke-width="2.2"
+          />
+          <Pin
+            v-else
+            :size="14"
+            :stroke-width="2.2"
+          />
+        </button>
+        <button
+          type="button"
           class="ne-bubble__close"
           :aria-label="t('common.close')"
-          @click="handleClose"
+          @pointerdown.stop
+          @click.stop="handleClose"
         >
           <X
             :size="14"
@@ -453,14 +538,34 @@ onUnmounted(() => {
   transform: rotate(135deg);
 }
 
+.ne-bubble--pinned {
+  box-shadow:
+    0 12px 20px -4px rgb(28 25 23 / 0.14),
+    0 4px 8px -4px rgb(28 25 23 / 0.1),
+    0 0 0 1px color-mix(in srgb, var(--ne-accent) 18%, transparent);
+}
+
+.ne-bubble--dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .ne-bubble__head {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
   min-width: 0;
   margin-bottom: 0.2rem;
+}
+
+.ne-bubble__head--drag {
+  cursor: grab;
+}
+
+.ne-bubble__head--drag:active {
+  cursor: grabbing;
 }
 
 .ne-bubble__node {
@@ -475,6 +580,7 @@ onUnmounted(() => {
   color: var(--ne-ink);
 }
 
+.ne-bubble__pin,
 .ne-bubble__close {
   flex-shrink: 0;
   display: inline-flex;
@@ -482,7 +588,6 @@ onUnmounted(() => {
   justify-content: center;
   width: 1.35rem;
   height: 1.35rem;
-  margin-left: auto;
   border: 0;
   border-radius: 9999px;
   color: var(--ne-muted);
@@ -490,9 +595,19 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
+.ne-bubble__pin {
+  margin-left: auto;
+}
+
+.ne-bubble__pin:hover,
 .ne-bubble__close:hover {
   color: var(--ne-ink);
   background: var(--swiss-hover, #f5f5f4);
+}
+
+.ne-bubble__pin.is-active {
+  color: var(--ne-accent);
+  background: var(--ne-soft);
 }
 
 .ne-bubble__think {

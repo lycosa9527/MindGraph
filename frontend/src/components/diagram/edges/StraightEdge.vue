@@ -9,6 +9,7 @@ import { EdgeLabelRenderer, type EdgeProps, getStraightPath } from '@vue-flow/co
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
+import { FLOW_TOPIC_NODE_ID } from '@/utils/flowMapIdentity'
 import { flowTurnEdgePath } from '@/utils/flowTurnEdge'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
@@ -29,6 +30,15 @@ const isMultiFlowMapEdge = computed(() => {
   )
 })
 
+/** Flow event ↔ first step: plain line, no arrow (all structure modes). */
+const isFlowTopicStepEdge = computed(
+  () =>
+    diagramStore.type === 'flow_map' &&
+    (props.source === FLOW_TOPIC_NODE_ID || props.target === FLOW_TOPIC_NODE_ID)
+)
+
+const showArrow = computed(() => !isFlowTopicStepEdge.value)
+
 function turnSide(): 'left' | 'right' | null {
   if (props.sourcePosition !== props.targetPosition) return null
   if (props.sourcePosition === 'right' || props.sourcePosition === 'left') {
@@ -37,10 +47,46 @@ function turnSide(): 'left' | 'right' | null {
   return null
 }
 
+function axisAlignedTopicStepPath(): {
+  edgePath: string
+  labelX: number
+  labelY: number
+} | null {
+  if (!isFlowTopicStepEdge.value) return null
+  const horizontal =
+    props.sourcePosition === 'right' ||
+    props.sourcePosition === 'left' ||
+    props.targetPosition === 'left' ||
+    props.targetPosition === 'right'
+  if (horizontal) {
+    // True horizontal bar between event and step (row / stack structures).
+    const y = (props.sourceY + props.targetY) / 2
+    const [edgePath, labelX, labelY] = getStraightPath({
+      sourceX: props.sourceX,
+      sourceY: y,
+      targetX: props.targetX,
+      targetY: y,
+    })
+    return { edgePath, labelX, labelY }
+  }
+  // Vertical structure: spine drop without arrow tip inset.
+  const x = (props.sourceX + props.targetX) / 2
+  const [edgePath, labelX, labelY] = getStraightPath({
+    sourceX: x,
+    sourceY: props.sourceY,
+    targetX: x,
+    targetY: props.targetY,
+  })
+  return { edgePath, labelX, labelY }
+}
+
 // Calculate straight path with offset to prevent line from sticking through arrowhead
 const path = computed(() => {
+  const topicStep = axisAlignedTopicStepPath()
+  if (topicStep) return topicStep
+
   const turn = turnSide()
-  const arrowOffset = isMultiFlowMapEdge.value ? 7 : 10
+  const arrowOffset = showArrow.value ? (isMultiFlowMapEdge.value ? 7 : 10) : 0
   if (turn) {
     return flowTurnEdgePath(
       props.sourceX,
@@ -58,7 +104,7 @@ const path = computed(() => {
   const distance = Math.sqrt(dx * dx + dy * dy)
 
   // Only apply offset if the path is long enough
-  if (distance > arrowOffset) {
+  if (arrowOffset > 0 && distance > arrowOffset) {
     const angle = Math.atan2(dy, dx)
     const adjustedTargetX = props.targetX - Math.cos(angle) * arrowOffset
     const adjustedTargetY = props.targetY - Math.sin(angle) * arrowOffset
@@ -108,7 +154,7 @@ const markerId = computed(() => `arrow-${props.id}`)
 
 <template>
   <!-- Arrow marker definition -->
-  <defs>
+  <defs v-if="showArrow">
     <marker
       :id="markerId"
       markerWidth="20"
@@ -128,9 +174,10 @@ const markerId = computed(() => `arrow-${props.id}`)
   <path
     :id="id"
     class="vue-flow__edge-path straight-edge"
+    :class="{ 'is-topic-step': isFlowTopicStepEdge }"
     :d="path.edgePath"
     :style="edgeStyle"
-    :marker-end="`url(#${markerId})`"
+    :marker-end="showArrow ? `url(#${markerId})` : undefined"
   />
 
   <!-- Edge label -->

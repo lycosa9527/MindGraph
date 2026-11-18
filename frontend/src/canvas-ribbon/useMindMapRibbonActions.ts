@@ -47,6 +47,11 @@ export function useMindMapRibbonActions() {
     void diagramStore.data?.connections?.length
     return diagramStore.getMindMapStructureMode()
   })
+  const flowStructureMode = computed(() => {
+    void diagramStore.data?.nodes?.length
+    void diagramStore.data?.connections?.length
+    return diagramStore.getFlowMapStructureMode()
+  })
 
   function requireSelection(): boolean {
     if (diagramStore.selectedNodes.length === 0) {
@@ -165,6 +170,12 @@ export function useMindMapRibbonActions() {
     }
   }
 
+  function setFlowStructureMode(mode: 'row' | 'stack' | 'vertical'): void {
+    if (diagramStore.setFlowMapStructureMode(mode)) {
+      notify.successKey('canvas.toolbar.flowStructureApplied')
+    }
+  }
+
   function zoomIn(): void {
     eventBus.emit('view:zoom_in_requested', {})
   }
@@ -253,6 +264,8 @@ export function useMindMapRibbonActions() {
     resetTemplate,
     structureMode,
     setStructure,
+    flowStructureMode,
+    setFlowStructureMode,
     zoomIn,
     zoomOut,
     zoomSet,

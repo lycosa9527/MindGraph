@@ -38,7 +38,9 @@ import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { ANIMATION } from '@/config/uiConfig'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { orderFlowStepNodes, resolveFlowMapOrientation } from '@/stores/specLoader/flowMapSubsteps'
 import type { MindGraphNode, NodeStyle } from '@/types'
+import { FLOW_TOPIC_NODE_ID, isFlowMapStepNode } from '@/utils/flowMapIdentity'
 import { mindMapBranchPaintBox } from '@/utils/mindMapBranchPaintBox'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { isPositionalMindMapBranchId } from '@/utils/mindMapLocation'
@@ -304,6 +306,37 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     return { type: 'child', nodeId }
   }
 
+  /** Step→step: left/top half = predecessor, right/bottom half = successor. */
+  function classifyFlowStepDrop(
+    node: MindGraphNode,
+    flowX: number,
+    flowY: number,
+    pad: number,
+    orientation: 'horizontal' | 'vertical'
+  ): DropTarget | null {
+    const pos = node.position ?? { x: 0, y: 0 }
+    const { w: nodeW, h: nodeH } = getNodeDimensions(node)
+    if (
+      flowX < pos.x - pad ||
+      flowX > pos.x + nodeW + pad ||
+      flowY < pos.y - pad ||
+      flowY > pos.y + nodeH + pad
+    ) {
+      return null
+    }
+    const nodeId = node.id ?? ''
+    if (orientation === 'vertical') {
+      return flowY < pos.y + nodeH / 2 ? { type: 'before', nodeId } : { type: 'after', nodeId }
+    }
+    return flowX < pos.x + nodeW / 2 ? { type: 'before', nodeId } : { type: 'after', nodeId }
+  }
+
+  function flowMapChainOrientation(): 'horizontal' | 'vertical' {
+    const nodes = diagramStore.data?.nodes ?? []
+    const topic = nodes.find((node) => node.id === FLOW_TOPIC_NODE_ID)
+    return resolveFlowMapOrientation(topic ?? {}, orderFlowStepNodes(nodes))
+  }
+
   function hitTestHierarchical(
     nodes: MindGraphNode[],
     flowX: number,
@@ -356,25 +389,43 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const storeNodes = diagramStore.data?.nodes
     const dragGroup = getSwapGroup(dt, draggedId, storeNodes)
     if (!dragGroup) return null
+    const draggedStore = storeNodes?.find((node) => node.id === draggedId)
+    const dragIsFlowStep = dt === 'flow_map' && !!draggedStore && isFlowMapStepNode(draggedStore)
+    const orientation = dragIsFlowStep ? flowMapChainOrientation() : 'horizontal'
     const h = hiddenIds.value
+    let best: DropTarget | null = null
+    let bestArea = Infinity
     for (const node of nodes) {
       const nid = node.id ?? ''
-      if (h.has(nid)) continue
+      if (h.has(nid) || nid === draggedId) continue
       if (getSwapGroup(dt, nid, storeNodes) !== dragGroup) continue
       if (dt === 'brace_map' && node.data?.originalNode?.type === 'topic') continue
-      const pos = node.position ?? { x: 0, y: 0 }
-      const { w, h: nodeH } = getNodeDimensions(node)
       const pad = flowHitPad()
-      if (
-        flowX >= pos.x - pad &&
-        flowX <= pos.x + w + pad &&
-        flowY >= pos.y - pad &&
-        flowY <= pos.y + nodeH + pad
-      ) {
-        return { type: 'child', nodeId: nid }
+      const tgtStore = storeNodes?.find((item) => item.id === nid)
+      let hit: DropTarget | null = null
+      if (dragIsFlowStep && tgtStore && isFlowMapStepNode(tgtStore)) {
+        hit = classifyFlowStepDrop(node, flowX, flowY, pad, orientation)
+      } else {
+        const pos = node.position ?? { x: 0, y: 0 }
+        const { w, h: nodeH } = getNodeDimensions(node)
+        if (
+          flowX >= pos.x - pad &&
+          flowX <= pos.x + w + pad &&
+          flowY >= pos.y - pad &&
+          flowY <= pos.y + nodeH + pad
+        ) {
+          hit = { type: 'child', nodeId: nid }
+        }
+      }
+      if (!hit) continue
+      const { w: nodeW, h: nodeH } = getNodeDimensions(node)
+      const area = nodeW * nodeH
+      if (area < bestArea) {
+        bestArea = area
+        best = hit
       }
     }
-    return null
+    return best
   }
 
   function hitTest(flowX: number, flowY: number): DropTarget | null {
@@ -425,13 +476,18 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     removeAllListeners()
   }
 
-  function executeDrop(draggedId: string, targetNodeId: string): void {
+  function executeDrop(draggedId: string, target: DropTarget | string): void {
+    const drop: DropTarget = typeof target === 'string' ? { type: 'child', nodeId: target } : target
     const dt = diagramStore.type ?? ''
     if (usesHierarchicalMove(dt)) {
-      handleDropHierarchical(draggedId, { type: 'child', nodeId: targetNodeId })
-    } else {
-      diagramStore.moveNodeBySwap(draggedId, targetNodeId)
+      handleDropHierarchical(draggedId, drop)
+      return
     }
+    if (dt === 'flow_map' && (drop.type === 'before' || drop.type === 'after')) {
+      diagramStore.moveNodeBySwap(draggedId, drop.nodeId, drop.type)
+      return
+    }
+    diagramStore.moveNodeBySwap(draggedId, drop.nodeId)
   }
 
   function handleDropHierarchical(nodeId: string, target: DropTarget): void {
@@ -511,12 +567,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     if (!nodeId) return
 
     if (target && target.nodeId !== nodeId) {
-      const dt = diagramStore.type ?? ''
-      if (usesHierarchicalMove(dt)) {
-        handleDropHierarchical(nodeId, target)
-      } else {
-        diagramStore.moveNodeBySwap(nodeId, target.nodeId)
-      }
+      executeDrop(nodeId, target)
     }
     cleanup()
   }
@@ -551,12 +602,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     if (!nodeId) return
 
     if (target && target.nodeId !== nodeId) {
-      const dt = diagramStore.type ?? ''
-      if (usesHierarchicalMove(dt)) {
-        handleDropHierarchical(nodeId, target)
-      } else {
-        diagramStore.moveNodeBySwap(nodeId, target.nodeId)
-      }
+      executeDrop(nodeId, target)
       cleanup()
       return
     }

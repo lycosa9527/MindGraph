@@ -22,6 +22,7 @@ import { displayedNodeFontSize, readPaintedNodeFontSizePx } from '@/utils/displa
 import { resolveFloatingToolbarNodeDisplay } from '@/utils/floatingToolbarNodeDisplay'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
+import { syncDoubleBubbleConnectionsToLeafBorders } from '@/utils/thinkingMapNodePaint'
 
 export {
   formatBrushActive,
@@ -365,10 +366,20 @@ export function useCanvasToolbarFormatting(options?: {
       diagramStore.data?.connections
     ) {
       const picked = updates.borderColor
-      const touched = new Set(ids)
-      for (const connection of diagramStore.data.connections) {
-        if (!touched.has(connection.source) && !touched.has(connection.target)) continue
-        connection.style = { ...(connection.style || {}), strokeColor: picked }
+      if (diagramType === 'double_bubble_map' && diagramStore.data.nodes) {
+        // Only similarity / difference borders drive connector color — not topics.
+        syncDoubleBubbleConnectionsToLeafBorders(
+          diagramStore.data.connections,
+          diagramStore.data.nodes,
+          ids,
+          picked
+        )
+      } else {
+        const touched = new Set(ids)
+        for (const connection of diagramStore.data.connections) {
+          if (!touched.has(connection.source) && !touched.has(connection.target)) continue
+          connection.style = { ...(connection.style || {}), strokeColor: picked }
+        }
       }
     }
     if (!options?.silent && notifyOnApply) notify.successKey('canvas.toolbar.applied')

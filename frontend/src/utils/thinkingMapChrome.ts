@@ -17,6 +17,7 @@ import { isBubbleMapAttributeNode, readBubbleGroupIndex } from '@/utils/bubbleMa
 import { isCircleMapContextNode, readCircleContextIndex } from '@/utils/circleMapIdentity'
 import { readDoubleBubbleIndex, readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isFlowMapStepNode, isFlowMapSubstepNode, readFlowStepIndex } from '@/utils/flowMapIdentity'
+import { FLOW_SUBSTEP_FONT_SIZE } from '@/utils/flowPillBox'
 import {
   isMultiFlowCauseNode,
   isMultiFlowEffectNode,
@@ -232,7 +233,12 @@ export function thinkingMapRoleChrome(
     (diagramType === 'flow_map' && isFlowMapSubstepNode(node)) ||
     (diagramType === 'brace_map' && braceIsNested(node, connections))
   const bar = diagramType === 'tree_map' && isTreeMapLeafNode(node)
-  return groupChrome(index, nested, bar)
+  const chrome = groupChrome(index, nested, bar)
+  // Flow substeps stay a step smaller than the main-chain pills.
+  if (diagramType === 'flow_map' && nested) {
+    return { ...chrome, fontSize: FLOW_SUBSTEP_FONT_SIZE }
+  }
+  return chrome
 }
 
 export function isLegacyBranchStamp(fill: string | undefined, border: string | undefined): boolean {
@@ -289,16 +295,18 @@ export function thinkingMapColorsAreDefault(
 }
 
 /**
- * Rainbow L2 bars store borderWidth 0. A solid theme does not.
- * Paint width wins, including 0. A stored 0 without paint falls back.
+ * Rainbow L2 bars paint borderWidth 0 — that must win over a leftover stored width.
+ * Otherwise an explicit positive stored width (style edit / format brush) beats theme chrome,
+ * including when fill/border are still default and theme paint would otherwise hide the edit.
  */
 export function thinkingMapBorderWidth(
   paintWidth: number | undefined,
   storedWidth: number | undefined,
   fallback: number
 ): number {
-  if (paintWidth != null) return paintWidth
+  if (paintWidth === 0) return 0
   if (storedWidth != null && storedWidth > 0) return storedWidth
+  if (paintWidth != null) return paintWidth
   return fallback
 }
 

@@ -173,3 +173,34 @@ def test_build_worksheet_docx_rejects_invalid_image() -> None:
     """Corrupt diagram bytes raise ValueError for a clean 400 at the API."""
     with pytest.raises(ValueError, match="invalid or unsupported"):
         build_worksheet_docx(_spec(), b"not-a-real-image")
+
+
+def test_build_worksheet_docx_compare_embeds_two_images_and_labels() -> None:
+    """Side-by-side compare mode places two diagrams with captions."""
+    spec = WorksheetDocxSpec(
+        title="对比",
+        layout="landscape",
+        show_topic=True,
+        show_name=False,
+        show_class=False,
+        show_date=False,
+        show_instruction=False,
+        topic_text="对比",
+        instruction_text="",
+        diagram_offset_x=0.0,
+        diagram_offset_y=0.0,
+        diagram_scale=1.0,
+        labels=_labels(),
+        label_a="模型 A",
+        label_b="版本 2",
+    )
+    docx_bytes = build_worksheet_docx(spec, _png_bytes(), _png_bytes(width=90, height=70))
+    document = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                text += "\n" + cell.text
+    assert "模型 A" in text
+    assert "版本 2" in text
+    assert len(document.inline_shapes) >= 2

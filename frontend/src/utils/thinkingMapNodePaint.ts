@@ -6,6 +6,7 @@
 import { getMindMapThemeById, resolveMindMapThemeId } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import { isDoubleBubbleTopicId, readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import {
   type ThinkingMapChrome,
   thinkingMapColorsAreDefault,
@@ -128,6 +129,87 @@ export function thinkingMapRenderedConnectorStroke(
     handPaintedFill(diagramType, themeId, source, connections),
     handPaintedFill(diagramType, themeId, target, connections),
   ])
+}
+
+/** Similarity / difference endpoint of a double-bubble edge (not a topic). */
+export function doubleBubbleLeafEndpoint(
+  source: PaintNode | undefined,
+  target: PaintNode | undefined
+): PaintNode | undefined {
+  if (source && readDoubleBubbleRole(source)) return source
+  if (target && readDoubleBubbleRole(target)) return target
+  if (source && !isDoubleBubbleTopicId(source.id)) return source
+  if (target && !isDoubleBubbleTopicId(target.id)) return target
+  return undefined
+}
+
+/** Displayed border on a double-bubble leaf (theme chrome or hand-painted). */
+export function doubleBubbleLeafBorderColor(
+  themeId: string | null | undefined,
+  leaf: PaintNode,
+  connections?: Connection[] | null
+): string | undefined {
+  const paint = thinkingMapDisplayedNodeColors(
+    'double_bubble_map',
+    themeId,
+    leaf,
+    leaf.style,
+    connections
+  )
+  return paint?.borderColor ?? leaf.style?.borderColor
+}
+
+/**
+ * Double-bubble connectors follow the similarity / difference border color.
+ * Topic borders do not drive the stroke.
+ */
+export function doubleBubbleConnectorStroke(
+  themeId: string | null | undefined,
+  paletteStroke: string | null | undefined,
+  source: PaintNode | undefined,
+  target: PaintNode | undefined,
+  connections?: Connection[] | null
+): string {
+  const leaf = doubleBubbleLeafEndpoint(source, target)
+  if (leaf) {
+    const border = doubleBubbleLeafBorderColor(themeId, leaf, connections)
+    if (border) {
+      return connectorStrokeReadableOnFills(border, [
+        handPaintedFill('double_bubble_map', themeId, source, connections),
+        handPaintedFill('double_bubble_map', themeId, target, connections),
+      ])
+    }
+  }
+  return thinkingMapRenderedConnectorStroke(
+    'double_bubble_map',
+    themeId,
+    paletteStroke,
+    source,
+    target,
+    connections
+  )
+}
+
+/** Persist connector strokes onto edges that touch painted similarity / difference nodes. */
+export function syncDoubleBubbleConnectionsToLeafBorders(
+  connections: Connection[],
+  nodes: readonly DiagramNode[],
+  leafNodeIds: readonly string[],
+  borderColor: string
+): void {
+  if (!borderColor || leafNodeIds.length === 0) return
+  const byId = new Map(nodes.map((node) => [node.id, node] as const))
+  const leaves = new Set(
+    leafNodeIds.filter((id) => {
+      const node = byId.get(id)
+      return Boolean(node && readDoubleBubbleRole(node))
+    })
+  )
+  if (leaves.size === 0) return
+  for (const connection of connections) {
+    if (!leaves.has(connection.source) && !leaves.has(connection.target)) continue
+    connection.style = { ...(connection.style || {}), strokeColor: borderColor }
+  }
 }
 
 /**

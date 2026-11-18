@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  FLOW_MAP_PILL_HEIGHT,
   FLOW_SUBSTEP_NODE_MAX_WIDTH,
+  FLOW_SUBSTEP_PILL_MIN_HEIGHT,
+  FLOW_SUBSTEP_PILL_MIN_WIDTH,
   FLOW_SUBSTEP_SPACING,
 } from '@/composables/diagrams/layoutConfig'
 import { loadFlowMapSpec, recalculateFlowMapLayout } from '@/stores/specLoader/flowMap'
@@ -261,7 +262,7 @@ describe('recalculateFlowMapLayout', () => {
 
   it('wraps a label that fits the script column but not the pill', () => {
     const full = '选择基础模型并完成对比评估说明文字'
-    const ceiling = flowPillContentMaxPx(FLOW_SUBSTEP_NODE_MAX_WIDTH)
+    const ceiling = flowPillContentMaxPx(FLOW_SUBSTEP_NODE_MAX_WIDTH, 'substep')
     let text = ''
     for (const glyph of full) {
       text += glyph
@@ -273,7 +274,7 @@ describe('recalculateFlowMapLayout', () => {
       if (open.lineCount !== 1 || open.width <= ceiling) continue
       const box = measureFlowRolePill(text, 'substep')
       expect(box.boxWidth).toBeLessThanOrEqual(FLOW_SUBSTEP_NODE_MAX_WIDTH)
-      expect(box.boxHeight).toBeGreaterThan(FLOW_MAP_PILL_HEIGHT)
+      expect(box.boxHeight).toBeGreaterThan(FLOW_SUBSTEP_PILL_MIN_HEIGHT)
       return
     }
     expect(text.length).toBeGreaterThan(0)
@@ -283,6 +284,7 @@ describe('recalculateFlowMapLayout', () => {
     const loaded = loadFlowMapSpec({
       title: '流程',
       orientation: 'horizontal',
+      substepArrangement: 'stack',
       steps: ['模型选型与提示工程'],
       substeps: [
         {
@@ -301,9 +303,10 @@ describe('recalculateFlowMapLayout', () => {
     expect(afterSub?.position?.y).toEqual(expect.any(Number))
     if (!step || !shortSub?.position || !longSub?.position || !afterSub?.position) return
 
+    const shortBox = measureFlowRolePill('A', 'substep')
     const longBox = measureFlowRolePill('设计输出结构（JSON / 工具参数）', 'substep')
     expect(longBox.boxWidth).toBeLessThanOrEqual(FLOW_SUBSTEP_NODE_MAX_WIDTH)
-    const shortCenter = shortSub.position.x + 60
+    const shortCenter = shortSub.position.x + shortBox.boxWidth / 2
     const impliedLongWidth = 2 * (shortCenter - longSub.position.x)
     expect(impliedLongWidth).toBeCloseTo(longBox.boxWidth, 0)
     expect(afterSub.position.y).toBeGreaterThanOrEqual(
@@ -334,7 +337,8 @@ describe('recalculateFlowMapLayout', () => {
     })
     const stepBefore = beforeFonts.find((node) => node.id === step.id)
     const longBefore = beforeFonts.find((node) => node.id === longSub.id)
-    const heldCenter = (longBefore?.position?.x ?? 0) + longBox.boxWidth / 2
+    // Measured 120 is trusted once present; estimate only fills gaps before measure.
+    const heldCenter = (longBefore?.position?.x ?? 0) + 60
     const stepHeldCenter = (stepBefore?.position?.x ?? 0) + stepPainted / 2
     expect(Math.abs(heldCenter - stepHeldCenter)).toBeLessThan(1)
   })
@@ -352,18 +356,106 @@ describe('recalculateFlowMapLayout', () => {
     expect(sub?.id).toBeTruthy()
     if (!step || !sub) return
     const estimate = measureFlowRolePill('Electronics', 'substep')
-    expect(estimate.boxWidth).toBeGreaterThan(120)
-    expect(estimate.boxWidth).toBeLessThan(136)
+    expect(estimate.boxWidth).toBeGreaterThan(FLOW_SUBSTEP_PILL_MIN_WIDTH)
+    expect(estimate.boxWidth).toBeLessThanOrEqual(FLOW_SUBSTEP_NODE_MAX_WIDTH)
+    const paintedSub = 120
+    const paintedStep = 160
     const laidOut = recalculateFlowMapLayout(loaded.nodes, {
       'flow-topic': { width: 160, height: 48 },
-      [step.id]: { width: 160, height: 48 },
-      [sub.id]: { width: 120, height: 48 },
+      [step.id]: { width: paintedStep, height: 48 },
+      [sub.id]: { width: paintedSub, height: 48 },
     })
     const stepLaid = laidOut.find((node) => node.id === step.id)
     const subLaid = laidOut.find((node) => node.id === sub.id)
-    const stepCenter = (stepLaid?.position?.x ?? 0) + 80
-    const subCenter = (subLaid?.position?.x ?? 0) + 60
+    // Row mode: step width is max(intrinsic text, substep row), stamped on style.
+    const stepW = stepLaid?.style?.width ?? paintedStep
+    expect(stepW).toBeGreaterThanOrEqual(paintedSub)
+    const stepCenter = (stepLaid?.position?.x ?? 0) + stepW / 2
+    const subCenter = (subLaid?.position?.x ?? 0) + paintedSub / 2
     expect(Math.abs(subCenter - stepCenter)).toBeLessThan(1)
+  })
+
+  it('stretches a step pill to cover its horizontal substep row', () => {
+    const loaded = loadFlowMapSpec({
+      title: 'Brew',
+      orientation: 'horizontal',
+      substepArrangement: 'row',
+      steps: ['Boil'],
+      substeps: [{ step: 'Boil', substeps: ['Fill', 'Heat', 'Pour'] }],
+    })
+    const step = loaded.nodes.find((node) => node.type === 'flow')
+    const subs = loaded.nodes.filter((node) => node.type === 'flowSubstep')
+    expect(step).toBeTruthy()
+    expect(subs).toHaveLength(3)
+    if (!step) return
+    const rowW = subs.reduce((sum, node, index) => {
+      const w = measureFlowRolePill(node.text ?? '', 'substep').boxWidth
+      return sum + w + (index > 0 ? FLOW_SUBSTEP_SPACING : 0)
+    }, 0)
+    const textW = measureFlowRolePill(step.text ?? '', 'step').boxWidth
+    const expected = Math.max(textW, rowW)
+    expect(step.style?.width).toBe(expected)
+
+    // DOM measure of the stretched pill must not clear the forced width.
+    const afterMeasure = recalculateFlowMapLayout(loaded.nodes, {
+      'flow-topic': { width: 160, height: 48 },
+      [step.id]: { width: expected, height: 48 },
+      ...Object.fromEntries(
+        subs.map((node) => [
+          node.id,
+          { width: measureFlowRolePill(node.text ?? '', 'substep').boxWidth, height: 32 },
+        ])
+      ),
+    })
+    const stepAfter = afterMeasure.find((node) => node.id === step.id)
+    expect(stepAfter?.style?.width).toBe(expected)
+  })
+
+  it('keeps a vertical spine centered so step centers share one X', () => {
+    const loaded = loadFlowMapSpec({
+      title: '事件流程',
+      orientation: 'vertical',
+      substepArrangement: 'row',
+      steps: ['步骤1', '步骤2', '步骤3', '步骤4'],
+      substeps: [
+        { step: '步骤1', stepIndex: 0, substeps: ['子步骤1.1', '子步骤1.2', '子步骤1.3'] },
+        { step: '步骤2', stepIndex: 1, substeps: ['子步骤2.1', '子步骤2.2'] },
+      ],
+    })
+    // Simulate leftover horizontal stretch on step 1.
+    const step1 = loaded.nodes.find((n) => n.text === '步骤1')
+    expect(step1).toBeTruthy()
+    if (!step1) return
+    const dims: Record<string, { width: number; height: number }> = {
+      'flow-topic': { width: 160, height: 48 },
+    }
+    for (const node of loaded.nodes) {
+      if (node.type === 'flow') {
+        dims[node.id] = {
+          width: node.id === step1.id ? 280 : 120,
+          height: 48,
+        }
+      }
+      if (node.type === 'flowSubstep') {
+        dims[node.id] = { width: 100, height: 32 }
+      }
+    }
+    const laidOut = recalculateFlowMapLayout(loaded.nodes, dims)
+    const steps = laidOut.filter((n) => n.type === 'flow')
+    const centers = steps.map((n) => {
+      // Layout clears stretch; centers use intrinsic / trusted widths.
+      const styleW = typeof n.style?.width === 'number' ? n.style.width : undefined
+      expect(styleW).toBeUndefined()
+      const boxW = measureFlowRolePill(n.text ?? '', 'step').boxWidth
+      return (n.position?.x ?? 0) + boxW / 2
+    })
+    const spine = centers[0]
+    for (const center of centers) {
+      expect(Math.abs(center - spine)).toBeLessThan(2)
+    }
+    const subs = laidOut.filter((n) => n.type === 'flowSubstep')
+    const step1Laid = laidOut.find((n) => n.id === step1.id)
+    expect(subs.every((s) => (s.position?.x ?? 0) > (step1Laid?.position?.x ?? 0))).toBe(true)
   })
 
   it('infers vertical orientation from step positions when topic data is missing', () => {

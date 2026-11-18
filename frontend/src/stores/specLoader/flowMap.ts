@@ -14,6 +14,7 @@ import {
   FLOW_MAP_PILL_WIDTH,
   FLOW_MIN_STEP_SPACING,
   FLOW_SUBSTEP_OFFSET_X,
+  FLOW_SUBSTEP_PILL_MIN_WIDTH,
   FLOW_SUBSTEP_SPACING,
   FLOW_TOPIC_TO_STEP_GAP,
 } from '@/composables/diagrams/layoutConfig'
@@ -26,17 +27,24 @@ import {
   takeFlowMapStableId,
 } from '@/utils/flowMapIdentity'
 import {
+  type FlowSubstepArrangement,
+  normalizeFlowSubstepArrangement,
+  resolveFlowMapSubstepArrangement,
+} from '@/utils/flowMapSubstepArrangement'
+import {
   type FlowPillFont,
   type FlowPillRole,
   flowSecondaryExtraHeight,
   measureFlowRolePill,
 } from '@/utils/flowPillBox'
-import { measuredBoxExtent } from '@/utils/measuredBoxExtent'
+import { MEASURED_BOX_COLLAPSE_SLACK_PX, measuredBoxExtent } from '@/utils/measuredBoxExtent'
 import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
 
 import {
   flowSerpentineStepPorts,
+  flowSubstepRowExtent,
+  flowSubstepRowWidth,
   flowSubstepStackExtent,
   placeFlowSerpentine,
 } from './flowMapSerpentine'
@@ -77,8 +85,12 @@ function flowBoxHeight(
 }
 
 /** Width used to center a pill. The estimate is a stand-in until the border box exists. */
-function flowCenteringWidth(measured: number | undefined, estimated: number): number {
-  return measuredBoxExtent(measured, estimated, FLOW_MAP_PILL_WIDTH)
+function flowCenteringWidth(
+  measured: number | undefined,
+  estimated: number,
+  floor = FLOW_MAP_PILL_WIDTH
+): number {
+  return measuredBoxExtent(measured, estimated, floor)
 }
 
 function effectiveFlowWidth(
@@ -88,9 +100,11 @@ function effectiveFlowWidth(
   font: FlowPillFont,
   nodeDimensions: Record<string, { width: number; height: number }>
 ): number {
+  const floor = role === 'substep' ? FLOW_SUBSTEP_PILL_MIN_WIDTH : FLOW_MAP_PILL_WIDTH
   return flowCenteringWidth(
     nodeDimensions[nodeId]?.width,
-    estimateFlowPill(text, role, font).boxWidth
+    estimateFlowPill(text, role, font).boxWidth,
+    floor
   )
 }
 
@@ -132,6 +146,7 @@ export function recalculateFlowMapLayout(
   if (!firstStep.position || !topicNode.position) return nodes
 
   const orientation = resolveFlowMapOrientation(topicNode, stepNodes)
+  const substepArrangement = resolveFlowMapSubstepArrangement(topicNode)
 
   const result = nodes.map((n) => ({ ...n }))
   const indexById = new Map(result.map((n, index) => [n.id, index]))
@@ -153,14 +168,47 @@ export function recalculateFlowMapLayout(
         width: widthOf(sub, 'substep'),
         height: heightOf(sub, 'substep'),
       }))
-      const stepW = widthOf(stepNode, 'step')
-      const maxSubW = groupSubsteps.reduce((maxW, sub) => Math.max(maxW, sub.width), 0)
+      const subWidths = groupSubsteps.map((sub) => sub.width)
+      const subHeights = groupSubsteps.map((sub) => sub.height)
+      const rowW = flowSubstepRowWidth(subWidths)
+      // Intrinsic text width only — never the previously forced stretch from DOM measure.
+      const textStepW = estimateFlowPill(
+        flowLabel(stepNode),
+        'step',
+        flowNodeTypography(stepNode)
+      ).boxWidth
+      const measuredStepW = nodeDimensions[stepNode.id]?.width
+      // Trust a measured width when it looks like real text (narrower than the row).
+      const contentStepW =
+        measuredStepW != null &&
+        measuredStepW > textStepW &&
+        (groupSubsteps.length === 0 || measuredStepW < rowW - 1)
+          ? measuredStepW
+          : textStepW
+      // Row mode: stretch the step pill to cover its substep row.
+      const stepW =
+        substepArrangement === 'row' && groupSubsteps.length > 0
+          ? Math.max(contentStepW, rowW)
+          : widthOf(stepNode, 'step')
+      const footprintWidth =
+        substepArrangement === 'row'
+          ? Math.max(stepW, rowW)
+          : Math.max(
+              stepW,
+              subWidths.reduce((maxW, width) => Math.max(maxW, width), 0)
+            )
+      const belowHeight =
+        substepArrangement === 'row'
+          ? flowSubstepRowExtent(subHeights)
+          : flowSubstepStackExtent(subHeights)
       return {
         stepNode,
         stepW,
+        stretchToRow: substepArrangement === 'row' && groupSubsteps.length > 0,
         stepH: heightOf(stepNode, 'step'),
         groupSubsteps,
-        footprintWidth: Math.max(stepW, maxSubW),
+        footprintWidth,
+        belowHeight,
       }
     })
 
@@ -176,7 +224,7 @@ export function recalculateFlowMapLayout(
         footprintWidth: group.footprintWidth,
         stepWidth: group.stepW,
         stepHeight: group.stepH,
-        belowHeight: flowSubstepStackExtent(group.groupSubsteps.map((sub) => sub.height)),
+        belowHeight: group.belowHeight,
       })),
       topicNode.position.x + effectiveTopicW + FLOW_TOPIC_TO_STEP_GAP,
       DEFAULT_CENTER_Y
@@ -184,12 +232,39 @@ export function recalculateFlowMapLayout(
     groups.forEach((group, index) => {
       const place = placed[index]
       const stepY = Math.round(place.stepY)
-      moveTo(group.stepNode.id, { x: Math.round(place.stepX), y: stepY })
+      const stepIndex = indexById.get(group.stepNode.id)
+      if (stepIndex !== undefined) {
+        const prev = result[stepIndex]
+        const nextStyle = { ...(prev.style || {}) }
+        if (group.stretchToRow) {
+          nextStyle.width = group.stepW
+          nextStyle.minWidth = group.stepW
+        } else {
+          delete nextStyle.width
+          delete nextStyle.minWidth
+        }
+        result[stepIndex] = {
+          ...prev,
+          position: { x: Math.round(place.stepX), y: stepY },
+          style: nextStyle,
+        }
+      }
 
-      let subY = stepY + group.stepH + FLOW_SUBSTEP_OFFSET_X
+      if (group.groupSubsteps.length === 0) return
+      const subY = stepY + group.stepH + FLOW_SUBSTEP_OFFSET_X
+      if (substepArrangement === 'row') {
+        const rowW = flowSubstepRowWidth(group.groupSubsteps.map((sub) => sub.width))
+        let subX = Math.round(place.centerX - rowW / 2)
+        group.groupSubsteps.forEach((sub) => {
+          moveTo(sub.node.id, { x: subX, y: subY })
+          subX += sub.width + FLOW_SUBSTEP_SPACING
+        })
+        return
+      }
+      let stackY = subY
       group.groupSubsteps.forEach((sub) => {
-        moveTo(sub.node.id, { x: Math.round(place.centerX - sub.width / 2), y: subY })
-        subY += sub.height + FLOW_SUBSTEP_SPACING
+        moveTo(sub.node.id, { x: Math.round(place.centerX - sub.width / 2), y: stackY })
+        stackY += sub.height + FLOW_SUBSTEP_SPACING
       })
     })
 
@@ -202,37 +277,77 @@ export function recalculateFlowMapLayout(
     return result
   }
 
-  // Vertical: steps on the left, substeps stacked to their right.
-  let currentY = topicNode.position.y + topicH + FLOW_TOPIC_TO_STEP_GAP
-  stepNodes.forEach((stepNode) => {
-    const stepX = stepNode.position?.x ?? 0
-    const stepH = heightOf(stepNode, 'step')
-    const groupSubsteps = substepsForFlowStep(substepNodes, stepNode)
-    if (groupSubsteps.length === 0) {
-      moveTo(stepNode.id, { x: stepX, y: currentY })
-      currentY += stepH + FLOW_MIN_STEP_SPACING
-      return
+  // Vertical: one centered spine of steps; substeps stack to the right of each step.
+  // Do not keep horizontal-row stretch widths — they skew centers and bend the spine.
+  const verticalGroups = stepNodes.map((stepNode) => {
+    const groupSubsteps = substepsForFlowStep(substepNodes, stepNode).map((sub) => ({
+      node: sub,
+      width: widthOf(sub, 'substep'),
+      height: heightOf(sub, 'substep'),
+    }))
+    const estimatedW = estimateFlowPill(
+      flowLabel(stepNode),
+      'step',
+      flowNodeTypography(stepNode)
+    ).boxWidth
+    const measuredW = nodeDimensions[stepNode.id]?.width
+    // Drop leftover row-stretch measures (much wider than the label).
+    const stepW =
+      measuredW != null && measuredW <= estimatedW + MEASURED_BOX_COLLAPSE_SLACK_PX * 2
+        ? measuredW
+        : estimatedW
+    return {
+      stepNode,
+      stepW,
+      stepH: heightOf(stepNode, 'step'),
+      groupSubsteps,
     }
-    const subHeights = groupSubsteps.map((sub) => heightOf(sub, 'substep'))
-    const substepColumnH =
-      subHeights.reduce((sum, h) => sum + h, 0) + FLOW_SUBSTEP_SPACING * (subHeights.length - 1)
-    moveTo(stepNode.id, {
-      x: stepX,
-      y: Math.round(currentY + Math.max(0, (substepColumnH - stepH) / 2)),
-    })
-    const substepX = stepX + widthOf(stepNode, 'step') + FLOW_SUBSTEP_OFFSET_X
-    let subY = Math.round(currentY + Math.max(0, (stepH - substepColumnH) / 2))
-    groupSubsteps.forEach((sub, index) => {
-      moveTo(sub.id, { x: substepX, y: subY })
-      subY += subHeights[index] + FLOW_SUBSTEP_SPACING
-    })
-    currentY += Math.max(stepH, substepColumnH) + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
   })
 
-  const stepCenterX = firstStep.position.x + widthOf(firstStep, 'step') / 2
+  const topicW = widthOf(topicNode, 'topic')
+  const spineCenterX = DEFAULT_CENTER_X
+  let currentY = Math.round(
+    (topicNode.position?.y ?? FLOW_VERTICAL_TOPIC_Y) + topicH + FLOW_TOPIC_TO_STEP_GAP
+  )
+
+  verticalGroups.forEach((group) => {
+    const stepIndex = indexById.get(group.stepNode.id)
+    const stepX = Math.round(spineCenterX - group.stepW / 2)
+    const subHeights = group.groupSubsteps.map((sub) => sub.height)
+    const substepColumnH =
+      subHeights.length === 0
+        ? 0
+        : subHeights.reduce((sum, h) => sum + h, 0) + FLOW_SUBSTEP_SPACING * (subHeights.length - 1)
+    const blockH = Math.max(group.stepH, substepColumnH)
+    const stepY = Math.round(currentY + Math.max(0, (blockH - group.stepH) / 2))
+
+    if (stepIndex !== undefined) {
+      const prev = result[stepIndex]
+      const nextStyle = { ...(prev.style || {}) }
+      delete nextStyle.width
+      delete nextStyle.minWidth
+      result[stepIndex] = {
+        ...prev,
+        position: { x: stepX, y: stepY },
+        style: nextStyle,
+      }
+    }
+
+    if (group.groupSubsteps.length > 0) {
+      const substepX = stepX + group.stepW + FLOW_SUBSTEP_OFFSET_X
+      let subY = Math.round(currentY + Math.max(0, (blockH - substepColumnH) / 2))
+      group.groupSubsteps.forEach((sub, index) => {
+        moveTo(sub.node.id, { x: substepX, y: subY })
+        subY += subHeights[index] + FLOW_SUBSTEP_SPACING
+      })
+    }
+
+    currentY += blockH + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
+  })
+
   moveTo(FLOW_TOPIC_NODE_ID, {
-    x: Math.round(stepCenterX - widthOf(topicNode, 'topic') / 2),
-    y: topicNode.position.y,
+    x: Math.round(spineCenterX - topicW / 2),
+    y: Math.round(topicNode.position?.y ?? FLOW_VERTICAL_TOPIC_Y),
   })
   return result
 }
@@ -285,8 +400,8 @@ function flowSubstepEdge(
     : {
         sourcePosition: 'bottom' as const,
         targetPosition: 'top' as const,
-        sourceHandle: 'center-source',
-        targetHandle: 'center-target',
+        sourceHandle: 'bottom',
+        targetHandle: 'top-target',
         edgeType: 'tree' as const,
       }
   return {
@@ -306,6 +421,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   // Steps can be strings or objects with text property
   const rawSteps = (spec.steps as Array<string | { id?: string; text: string }>) || []
   const orientation = (spec.orientation as 'horizontal' | 'vertical') || 'horizontal'
+  const substepArrangement = normalizeFlowSubstepArrangement(spec.substepArrangement)
   const substepsData = (spec.substeps as FlowSubstepEntry[]) || []
   const title = (spec.title as string) || ''
 
@@ -332,7 +448,10 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     position: isVertical
       ? { x: Math.round(DEFAULT_CENTER_X - topicBox.boxWidth / 2), y: FLOW_VERTICAL_TOPIC_Y }
       : { x: DEFAULT_PADDING, y: DEFAULT_CENTER_Y - topicBox.boxHeight / 2 },
-    data: { orientation: isVertical ? 'vertical' : 'horizontal' },
+    data: {
+      orientation: isVertical ? 'vertical' : 'horizontal',
+      substepArrangement,
+    },
   })
 
   steps.forEach((step, stepIndex) => {
@@ -368,6 +487,8 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   return {
     nodes: recalculateFlowMapLayout(nodes),
     connections,
-    metadata: { orientation },
+    metadata: { orientation, substepArrangement },
   }
 }
+
+export type { FlowSubstepArrangement }

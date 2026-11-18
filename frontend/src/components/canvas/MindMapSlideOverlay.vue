@@ -19,21 +19,42 @@ import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'
+import type { DiagramType } from '@/types'
 import type { MindMapSlideTraversalMode } from '@/utils/mindMapSlides'
 
-const props = defineProps<{
-  slideIndex: number
-  slideCount: number
-  slideTitle: string
-  breadcrumb: string[]
-  isOverviewSlide: boolean
-  autoPlay: boolean
-  autoPlayProgress: number
-  transitioning: boolean
-  canGoPrev: boolean
-  canGoNext: boolean
-  traversalMode: MindMapSlideTraversalMode
-}>()
+const props = withDefaults(
+  defineProps<{
+    slideIndex: number
+    slideCount: number
+    slideTitle: string
+    breadcrumb: string[]
+    isOverviewSlide: boolean
+    autoPlay: boolean
+    autoPlayProgress: number
+    transitioning: boolean
+    canGoPrev: boolean
+    canGoNext: boolean
+    traversalMode: MindMapSlideTraversalMode
+    showTraversalMode?: boolean
+    /** Flow maps use 主步骤 / 子步骤遍历; mind maps keep branch wording. */
+    diagramType?: DiagramType | null
+  }>(),
+  {
+    showTraversalMode: true,
+    diagramType: null,
+  }
+)
+
+const firstLevelLabelKey = computed(() =>
+  props.diagramType === 'flow_map'
+    ? 'canvas.mindMapSlideOverlay.flowFirstLevel'
+    : 'canvas.mindMapSlideOverlay.firstLevel'
+)
+const deepLabelKey = computed(() =>
+  props.diagramType === 'flow_map'
+    ? 'canvas.mindMapSlideOverlay.flowDeep'
+    : 'canvas.mindMapSlideOverlay.deep'
+)
 
 const emit = defineEmits<{
   (e: 'toggleAutoPlay'): void
@@ -139,6 +160,7 @@ function toggleCollapsed(): void {
         class="slide-toolbar"
       >
         <div
+          v-if="showTraversalMode"
           class="traversal-mode"
           role="group"
           :aria-label="t('canvas.mindMapSlideOverlay.traversalMode')"
@@ -149,7 +171,7 @@ function toggleCollapsed(): void {
             :class="{ 'is-active': traversalMode === 'firstLevel' }"
             @click="emit('updateTraversalMode', 'firstLevel')"
           >
-            <I18nText k="canvas.mindMapSlideOverlay.firstLevel" />
+            <I18nText :k="firstLevelLabelKey" />
           </button>
           <button
             type="button"
@@ -157,7 +179,7 @@ function toggleCollapsed(): void {
             :class="{ 'is-active': traversalMode === 'deep' }"
             @click="emit('updateTraversalMode', 'deep')"
           >
-            <I18nText k="canvas.mindMapSlideOverlay.deep" />
+            <I18nText :k="deepLabelKey" />
           </button>
         </div>
 

@@ -166,8 +166,18 @@ const nodeStyle = computed(() => {
     }
   }
 
-  // Flow map: adaptive width and height so full text displays
+  // Flow map: stretch to cover a substep row when layout stamped a width.
   if (isFlowMap.value) {
+    if (layoutWidth.value !== null) {
+      return {
+        ...shapedStyle,
+        width: `${layoutWidth.value}px`,
+        minWidth: `${layoutWidth.value}px`,
+        minHeight:
+          props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
+        maxWidth: `${Math.max(FLOW_STEP_NODE_MAX_WIDTH, layoutWidth.value)}px`,
+      }
+    }
     return {
       ...shapedStyle,
       width: 'max-content',
@@ -242,14 +252,15 @@ const blankFrame = useLearningSheetBlankFrame(
 )
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
-// Layout width for multi-flow map (from recalculateMultiFlowMapLayout)
-// Used when not editing so node displays full text instead of fixed 140px
+// Layout width from recalculateMultiFlowMapLayout / flow-map substep row stretch.
 const layoutWidth = computed(() => {
-  if (!isMultiFlowMap.value || dynamicWidth.value !== null) return null
+  if ((!isMultiFlowMap.value && !isFlowMap.value) || dynamicWidth.value !== null) return null
+  const fromData = props.data.style?.width ?? props.data.style?.minWidth
+  if (typeof fromData === 'number' && fromData > 0) return fromData
   const node = diagramStore.vueFlowNodes.find((n) => n.id === props.id)
   const style = node?.style as { width?: number; minWidth?: number } | undefined
   const w = style?.width ?? style?.minWidth
-  return typeof w === 'number' ? w : null
+  return typeof w === 'number' && w > 0 ? w : null
 })
 
 /**
@@ -478,8 +489,9 @@ function handleBranchMovePointerUp(): void {
 
 <style scoped>
 .flow-node {
-  width: 140px;
-  min-width: 140px;
+  /* Intrinsic fallback; layout may override via inline width/minWidth. */
+  width: max-content;
+  min-width: 120px;
   min-height: 50px;
   overflow: visible; /* Changed from hidden to visible so delete button isn't clipped */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

@@ -4,8 +4,10 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { BranchMoveGhostPreview } from '@/composables/editor/useBranchMoveDrag'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import { orderFlowStepNodes, resolveFlowMapOrientation } from '@/stores/specLoader/flowMapSubsteps'
 import type { DiagramNode, NodeStyle } from '@/types'
 import type { MindGraphNode } from '@/types/vueflow'
+import { FLOW_TOPIC_NODE_ID } from '@/utils/flowMapIdentity'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { type NodeShape, nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
 
@@ -254,6 +256,26 @@ export function getDropTargetStyle(
   const { width: nodeW, height: nodeH } = getTargetNodeDimensions(node)
 
   if (target.type === 'before' || target.type === 'after') {
+    const session = useDiagramSession()
+    const flowNodes = session.data?.nodes ?? []
+    const flowTopic = flowNodes.find((n) => n.id === FLOW_TOPIC_NODE_ID)
+    const flowHorizontal =
+      session.type === 'flow_map' &&
+      resolveFlowMapOrientation(flowTopic ?? {}, orderFlowStepNodes(flowNodes)) === 'horizontal'
+    if (flowHorizontal) {
+      const x = target.type === 'before' ? node.position.x - 2 : node.position.x + nodeW - 2
+      return {
+        position: 'absolute',
+        left: `${x}px`,
+        top: `${node.position.y}px`,
+        width: '4px',
+        height: `${nodeH}px`,
+        borderRadius: '2px',
+        background: '#2563eb',
+        boxShadow: '0 0 0 2px rgb(37 99 235 / 0.25)',
+        pointerEvents: 'none',
+      }
+    }
     const y = target.type === 'before' ? node.position.y - 2 : node.position.y + nodeH - 2
     return {
       position: 'absolute',

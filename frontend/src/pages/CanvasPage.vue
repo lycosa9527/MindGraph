@@ -441,7 +441,7 @@ function handleMindMapTimerCloseHud(): void {
 
 function handlePresentationEscape(event: KeyboardEvent): void {
   if (!showSimplifiedPresentationRail.value) return
-  if (useMindMapV2.value && mindMapPresentationTool.value === 'slides') return
+  if (supportsNodeCarousel.value && mindMapPresentationTool.value === 'slides') return
   if (event.key !== 'Escape') return
   const active = document.activeElement as HTMLElement
   if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.isContentEditable) {
@@ -493,6 +493,7 @@ const fitViewOnInit = computed(() => {
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
 const ribbonCaps = computed(() => diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value))
+const supportsNodeCarousel = computed(() => ribbonCaps.value.nodeCarousel)
 const isMindMapRibbonFamily = computed(() =>
   isCanvasEditorRibbonFamily(diagramStore.type, diagramStore.mindMapCanvasMode)
 )
@@ -532,7 +533,7 @@ const slidePresentation = useMindMapSlidePresentation({
 const slideRemotePlay = createSlideRemoteDesktopPlay({
   isRailOpen: () => presentationRailOpen.value,
   openRail: handleStartPresentation,
-  shouldUseSlidesTool: () => useMindMapV2.value,
+  shouldUseSlidesTool: () => supportsNodeCarousel.value,
   setSlidesTool: () => {
     if (mindMapPresentationTool.value === 'slides') {
       void slidePresentation.startSlideShow()
@@ -543,7 +544,7 @@ const slideRemotePlay = createSlideRemoteDesktopPlay({
 })
 
 async function handleStartSlidesWithTier(): Promise<void> {
-  if (!useMindMapV2.value) return
+  if (!supportsNodeCarousel.value) return
   if (presentationRailOpen.value && mindMapPresentationTool.value === 'slides') return
   if (!(await confirmOpeningPresentation())) return
   slideRemotePlay.requestPlay()
@@ -1139,7 +1140,7 @@ watch(
 
 watch(mindMapPresentationTool, (tool) => {
   if (!showSimplifiedPresentationRail.value) return
-  if (tool === 'slides' && !useMindMapV2.value) {
+  if (tool === 'slides' && !supportsNodeCarousel.value) {
     mindMapPresentationTool.value = 'laser'
     return
   }
@@ -1604,7 +1605,7 @@ onUnmounted(() => {
         :highlighter-scale="highlighterScale"
         :highlighter-color-index="highlighterColorIndex"
         :stroke-eraser-active="presentationStrokeEraserActive"
-        :show-slides-tool="useMindMapV2"
+        :show-slides-tool="supportsNodeCarousel"
         @select-tool="handleMindMapPresentationToolSelect"
         @select-color="applyPenColor"
         @select-thickness="applyPenThickness"
@@ -1652,6 +1653,8 @@ onUnmounted(() => {
       :can-go-prev="slidePresentation.canGoPrev.value"
       :can-go-next="slidePresentation.canGoNext.value"
       :traversal-mode="slidePresentation.traversalMode.value"
+      :show-traversal-mode="diagramStore.type !== 'double_bubble_map'"
+      :diagram-type="diagramStore.type"
       @toggle-auto-play="slidePresentation.toggleAutoPlay()"
       @prev="slidePresentation.prevSlide()"
       @next="slidePresentation.nextSlide()"

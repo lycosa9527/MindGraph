@@ -39,12 +39,14 @@ export function useDiagramCanvasNodeExplain(options: {
     const topic = findExplainCenterNode(options.nodes.value, diagramStore.type)
     return resolveExplainResearchSide(node?.position?.x, topic?.position?.x)
   })
+  const nodeExplainPinned = ref(false)
   const explainBubbleSize = ref<ExplainBubbleSize | null>(null)
+  const explainBubbleAnchored = computed(() => nodeExplainVisible.value && !nodeExplainPinned.value)
   const { position: explainBubblePosition, scheduleMeasure: scheduleExplainBubbleMeasure } =
     useNodeExplainBubblePosition({
       containerRef: options.canvasContainer,
       nodeId: explainBubbleNodeId,
-      enabled: nodeExplainVisible,
+      enabled: explainBubbleAnchored,
       bubbleSize: explainBubbleSize,
     })
 
@@ -52,16 +54,33 @@ export function useDiagramCanvasNodeExplain(options: {
     explainBubbleSize.value = size
   }
 
+  function handleCloseNodeExplain(): void {
+    nodeExplainPinned.value = false
+    closeNodeExplain()
+  }
+
+  watch(nodeExplainVisible, (open) => {
+    if (!open) nodeExplainPinned.value = false
+  })
+
+  function openExplainOnCanvas(nodeId: string): void {
+    const currentId = nodeExplainTarget.value?.nodeId
+    if (nodeExplainPinned.value && currentId && currentId !== nodeId) {
+      nodeExplainPinned.value = false
+    }
+    openNodeExplain(nodeId)
+  }
+
   function handleFloatingToolbarExplainNode(): void {
     const nodeId = options.floatingToolbarAnchorId.value
     if (!nodeId) return
-    openNodeExplain(nodeId)
+    openExplainOnCanvas(nodeId)
   }
 
   watch(
     () => {
       const nodeId = explainBubbleNodeId.value
-      if (!nodeId || !nodeExplainVisible.value) return ''
+      if (!nodeId || !nodeExplainVisible.value || nodeExplainPinned.value) return ''
       const node = options.nodes.value.find((item) => item.id === nodeId)
       return `${nodeId}:${node?.position?.x ?? 0}:${node?.position?.y ?? 0}`
     },
@@ -72,6 +91,7 @@ export function useDiagramCanvasNodeExplain(options: {
 
   return {
     nodeExplainVisible,
+    nodeExplainPinned,
     nodeExplainTarget,
     nodeExplainText,
     nodeExplainThinking,
@@ -82,10 +102,10 @@ export function useDiagramCanvasNodeExplain(options: {
     nodeExplainError,
     nodeExplainLoading,
     explainBubblePosition,
-    closeNodeExplain,
+    closeNodeExplain: handleCloseNodeExplain,
     handleExplainBubbleSizeChange,
     handleFloatingToolbarExplainNode,
     scheduleExplainBubbleMeasure,
-    openNodeExplain,
+    openNodeExplain: openExplainOnCanvas,
   }
 }

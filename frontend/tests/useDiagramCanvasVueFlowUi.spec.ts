@@ -26,9 +26,18 @@ function buildUiOptions(overrides: Partial<Parameters<typeof useDiagramCanvasVue
 }
 
 describe('useDiagramCanvasVueFlowUi', () => {
-  it('box-selects only while Control is held so a plain left-drag can slash', () => {
+  it('laptop mode box-selects with a plain left-drag (no slash conflict)', () => {
     learningSheetPickActive.value = false
-    const ui = useDiagramCanvasVueFlowUi(buildUiOptions())
+    const ui = useDiagramCanvasVueFlowUi(buildUiOptions({ inputMode: ref('laptop') }))
+    expect(ui.selectNodesOnDrag.value).toBe(true)
+    expect(ui.selectionKeyCode.value).toBe(true)
+    expect(ui.effectivePanOnDrag.value).toEqual([1])
+    expect(ui.elementsSelectable.value).toBe(true)
+  })
+
+  it('mouse mode box-selects only while Control is held so a plain left-drag can slash', () => {
+    learningSheetPickActive.value = false
+    const ui = useDiagramCanvasVueFlowUi(buildUiOptions({ inputMode: ref('mouse') }))
     expect(ui.selectNodesOnDrag.value).toBe(true)
     expect(ui.selectionKeyCode.value).toBe('Control')
     expect(ui.effectivePanOnDrag.value).toEqual([1])
@@ -54,6 +63,7 @@ describe('useDiagramCanvasVueFlowUi', () => {
     const ui = useDiagramCanvasVueFlowUi(
       buildUiOptions({
         enableTouchPanPinch: ref(true),
+        inputMode: ref('board'),
       })
     )
     expect(ui.selectNodesOnDrag.value).toBe(false)
@@ -128,7 +138,7 @@ describe('useDiagramCanvasVueFlowUi', () => {
     frozen.value = false
     expect(ui.elementsSelectable.value).toBe(true)
     expect(ui.zoomOnScroll.value).toBe(true)
-    expect(ui.selectionKeyCode.value).toBe('Control')
+    expect(ui.selectionKeyCode.value).toBe(true)
   })
 
   it('disables node selection during headless export screenshots', () => {

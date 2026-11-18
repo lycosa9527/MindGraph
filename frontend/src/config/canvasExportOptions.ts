@@ -2,7 +2,7 @@
  * Shared export preferences for the new canvas (mind map v2) export dropdown.
  * Persisted in sessionStorage for the current browser tab session.
  */
-import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
+import type { CanvasWorksheetTextOptions, WorksheetComparePair } from '@/config/canvasWorksheetText'
 
 export type CanvasExportColorMode = 'color' | 'wireframe'
 
@@ -16,6 +16,11 @@ export interface CanvasExportOptions {
   answerMode: CanvasExportAnswerMode
   /** Worksheet header fields — merged at export time from worksheet text settings. */
   worksheetText?: CanvasWorksheetTextOptions
+  /**
+   * Runtime-only dual-diagram rasters for compare worksheets.
+   * Not persisted to sessionStorage.
+   */
+  comparePair?: WorksheetComparePair
 }
 
 export const DEFAULT_CANVAS_EXPORT_OPTIONS: CanvasExportOptions = {
@@ -59,7 +64,9 @@ export function loadCanvasExportOptions(): CanvasExportOptions {
 
 export function saveCanvasExportOptions(options: CanvasExportOptions): void {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(options))
+    // comparePair holds large data URLs — never persist it.
+    const { comparePair: _comparePair, ...persisted } = options
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
   } catch {
     /* ignore private mode / quota */
   }

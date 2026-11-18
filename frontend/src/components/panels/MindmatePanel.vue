@@ -108,6 +108,7 @@ import {
 } from '@/utils/mindmateSeminarTeardown'
 import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
+import MindmateDiagramContextBar from './mindmate/MindmateDiagramContextBar.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
@@ -177,7 +178,7 @@ const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
 const homeMode = ref<'dialogue' | 'seminar'>('dialogue')
-const includeDiagramInfo = ref(false)
+const includeDiagramInfo = ref(true)
 const mindmateInputRef = ref<MindmateInputHandle | null>(null)
 const memberDialogOpen = ref(false)
 const memberDialogMode = ref<'create' | 'expand'>('create')
@@ -1528,7 +1529,6 @@ function isLastAssistantMessage(messageId: string): boolean {
     </div>
     <MindmateHeader
       v-if="!isFullpageMode"
-      v-model:include-diagram="includeDiagramInfo"
       :mode="mode"
       :title="displayTitle"
       :is-typing="isTypingTitle"
@@ -1680,7 +1680,17 @@ function isLastAssistantMessage(messageId: string): boolean {
             @remove-file="mindMate.removeFile"
             @suggestion-select="handleSuggestionSelect"
             @seminar-start="openSeminarFromBrief"
-          />
+          >
+            <template
+              v-if="!isFullpageMode && !isCollabChatroomMode"
+              #above-compose
+            >
+              <MindmateDiagramContextBar
+                v-model="includeDiagramInfo"
+                class="mindmate-diagram-context-above-input"
+              />
+            </template>
+          </MindmateInput>
         </div>
       </div>
 

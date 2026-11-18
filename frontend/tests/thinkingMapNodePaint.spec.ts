@@ -9,7 +9,9 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { DiagramNode } from '@/types'
 import { thinkingMapBorderWidth } from '@/utils/thinkingMapChrome'
 import {
+  doubleBubbleConnectorStroke,
   restoreThinkingMapDefaultNodeColors,
+  syncDoubleBubbleConnectionsToLeafBorders,
   thinkingMapDisplayedNodeColors,
   thinkingMapRenderedConnectorStroke,
 } from '@/utils/thinkingMapNodePaint'
@@ -229,13 +231,7 @@ describe('thinking map node paint', () => {
       style: { backgroundColor: '#2E90FA' },
     })
     expect(
-      thinkingMapRenderedConnectorStroke(
-        'double_bubble_map',
-        'rainbow',
-        '#2E90FA',
-        topic,
-        sameLine
-      )
+      thinkingMapRenderedConnectorStroke('double_bubble_map', 'rainbow', '#2E90FA', topic, sameLine)
     ).toBe('#1e293b')
   })
 
@@ -243,5 +239,74 @@ describe('thinking map node paint', () => {
     expect(thinkingMapBorderWidth(0, 1.5, 1.5)).toBe(0)
     expect(thinkingMapBorderWidth(undefined, 0, 1.5)).toBe(1.5)
     expect(thinkingMapBorderWidth(undefined, 2, 1.5)).toBe(2)
+    // Explicit user width beats solid theme chrome (paint width still present).
+    expect(thinkingMapBorderWidth(1.5, 3, 1.5)).toBe(3)
+  })
+
+  it('follows similarity and difference border colors for double-bubble connectors', () => {
+    const topic = node({ id: 'left-topic', type: 'topic', text: 'A' })
+    const similarity = node({
+      id: 'sim-1',
+      type: 'bubble',
+      data: { doubleBubbleRole: 'similarity' },
+      style: { borderColor: '#aa00aa' },
+    })
+    expect(doubleBubbleConnectorStroke('rainbow', '#2E90FA', topic, similarity)).toBe('#aa00aa')
+
+    const leftDiff = node({
+      id: 'ld-1',
+      type: 'bubble',
+      data: { doubleBubbleRole: 'leftDiff', groupIndex: 0 },
+      style: { backgroundColor: '#FEE4E2', borderColor: '#F04438' },
+    })
+    expect(doubleBubbleConnectorStroke('rainbow', '#2E90FA', topic, leftDiff)).toBe('#F04438')
+
+    // Topic border alone does not drive the stroke when the leaf still has chrome/default paint.
+    const plainSim = node({
+      id: 'sim-2',
+      type: 'bubble',
+      data: { doubleBubbleRole: 'similarity' },
+    })
+    const paintedTopic = node({
+      id: 'left-topic',
+      type: 'topic',
+      style: { borderColor: '#00ff00' },
+    })
+    expect(doubleBubbleConnectorStroke('rainbow', undefined, paintedTopic, plainSim)).toBe(
+      MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+    )
+  })
+
+  it('syncs only leaf-touching edges when a difference border is painted', () => {
+    const connections = [
+      {
+        id: 'edge-left-topic-ld-1',
+        source: 'left-topic',
+        target: 'ld-1',
+        style: { strokeColor: '#111111' },
+      },
+      {
+        id: 'edge-left-topic-sim-1',
+        source: 'left-topic',
+        target: 'sim-1',
+        style: { strokeColor: '#222222' },
+      },
+    ]
+    const nodes = [
+      node({ id: 'left-topic', type: 'topic' }),
+      node({
+        id: 'ld-1',
+        type: 'bubble',
+        data: { doubleBubbleRole: 'leftDiff', groupIndex: 0 },
+      }),
+      node({
+        id: 'sim-1',
+        type: 'bubble',
+        data: { doubleBubbleRole: 'similarity' },
+      }),
+    ]
+    syncDoubleBubbleConnectionsToLeafBorders(connections, nodes, ['ld-1', 'left-topic'], '#F04438')
+    expect(connections[0]?.style?.strokeColor).toBe('#F04438')
+    expect(connections[1]?.style?.strokeColor).toBe('#222222')
   })
 })

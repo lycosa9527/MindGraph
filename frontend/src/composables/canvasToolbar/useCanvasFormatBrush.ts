@@ -5,20 +5,22 @@
  */
 import { ref } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import { snapshotFormatBrushStyleForNode } from '@/composables/canvasToolbar/formatBrushSnapshot'
 import {
   FORMAT_BRUSH_DOUBLE_CLICK_MS,
   formatBrushTargetsFromSelection,
   resolveFormatPainterClick,
 } from '@/composables/canvasToolbar/formatBrushStyle'
-import { snapshotFormatBrushStyleForNode } from '@/composables/canvasToolbar/formatBrushSnapshot'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { i18n } from '@/i18n'
 import type { DiagramSession } from '@/stores/diagram'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode, NodeStyle } from '@/types'
 import { safeI18nTranslate } from '@/utils/safeI18nTranslate'
+import { syncDoubleBubbleConnectionsToLeafBorders } from '@/utils/thinkingMapNodePaint'
 
 export const formatBrushActive = ref(false)
 export const formatBrushLocked = ref(false)
@@ -118,6 +120,24 @@ function applyCopiedFormatBrush(ids: string[]): void {
   if (paintedIds.length === 0) {
     toast().warning(t('canvas.toolbar.formatBrushApplyFailed'))
     return
+  }
+  // Match toolbar border apply: thinking-map connectors follow painted borders.
+  if (style.borderColor && isThinkingMapDiagramType(store.type) && store.data?.connections) {
+    const border = style.borderColor
+    if (store.type === 'double_bubble_map' && store.data.nodes) {
+      syncDoubleBubbleConnectionsToLeafBorders(
+        store.data.connections,
+        store.data.nodes,
+        paintedIds,
+        border
+      )
+    } else {
+      const touched = new Set(paintedIds)
+      for (const connection of store.data.connections) {
+        if (!touched.has(connection.source) && !touched.has(connection.target)) continue
+        connection.style = { ...(connection.style || {}), strokeColor: border }
+      }
+    }
   }
   suppressPaneCancel = true
   queueMicrotask(() => {

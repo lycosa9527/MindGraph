@@ -10,6 +10,7 @@ import {
   DEFAULT_PADDING,
   DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
@@ -142,6 +143,17 @@ export interface DoubleBubbleMeasureHint {
   fontWeight?: string
 }
 
+function styleFromMeasureHint(hint: DoubleBubbleMeasureHint | undefined): {
+  fontSize?: number
+  fontWeight?: string
+} {
+  if (!hint) return {}
+  return {
+    ...(hint.fontSize != null ? { fontSize: hint.fontSize } : {}),
+    ...(hint.fontWeight != null ? { fontWeight: hint.fontWeight } : {}),
+  }
+}
+
 type DoubleBubbleSpecItem = string | { id?: string; text?: string; name?: string }
 
 function normalizeDoubleBubbleItems(raw: unknown): Array<{ id?: string; text: string }> {
@@ -266,7 +278,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     ...(leftSecondary ? { textSecondary: leftSecondary } : {}),
     type: 'topic',
     position: { x: layout.leftTopicX - topicR, y: layout.centerY - topicR },
-    style: { size: topicR * 2, noWrap: true },
+    style: { size: topicR * 2, noWrap: true, ...styleFromMeasureHint(leftHint) },
   })
 
   // Right topic (circle)
@@ -276,7 +288,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     ...(rightSecondary ? { textSecondary: rightSecondary } : {}),
     type: 'topic',
     position: { x: layout.rightTopicX - topicR, y: layout.centerY - topicR },
-    style: { size: topicR * 2, noWrap: true },
+    style: { size: topicR * 2, noWrap: true, ...styleFromMeasureHint(rightHint) },
   })
 
   // Similarities (capsules)
@@ -289,6 +301,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   similarities.forEach((sim, index) => {
     const cy = simStartY + index * layout.simVerticalSpacing
     const simId = takeDoubleBubbleMapStableId(claimedIds, sim.id)
+    const simHint = hints[sim.id ?? simId] ?? hints[`similarity-${index}`]
     nodes.push({
       id: simId,
       text: sim.text,
@@ -306,8 +319,10 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         height: layout.simCap.height,
         size: simR * 2,
         noWrap: true,
+        ...styleFromMeasureHint(simHint),
       },
     })
+    const similarityStroke = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
     connections.push(
       {
         id: `edge-${DOUBLE_BUBBLE_LEFT_TOPIC_ID}-${simId}`,
@@ -318,6 +333,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         targetPosition: 'left',
         sourceHandle: 'right',
         targetHandle: 'left',
+        style: { strokeColor: similarityStroke },
       },
       {
         id: `edge-${DOUBLE_BUBBLE_RIGHT_TOPIC_ID}-${simId}`,
@@ -328,6 +344,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         targetPosition: 'right',
         sourceHandle: 'left',
         targetHandle: 'right',
+        style: { strokeColor: similarityStroke },
       }
     )
   })
@@ -352,6 +369,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     const leftGloss = leftDiffSecondary[index]
     const pairColor = thinkingMapStampedBranchColor(index)
     const leftId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
+    const leftDiffHint = hints[diff.id ?? leftId] ?? hints[`left-diff-${index}`]
     nodes.push({
       id: leftId,
       text: diff.text,
@@ -371,6 +389,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         noWrap: true,
         backgroundColor: pairColor.fill,
         borderColor: pairColor.border,
+        ...styleFromMeasureHint(leftDiffHint),
       },
     })
     connections.push({
@@ -391,6 +410,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     const rightGloss = rightDiffSecondary[index]
     const pairColor = thinkingMapStampedBranchColor(index)
     const rightId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
+    const rightDiffHint = hints[diff.id ?? rightId] ?? hints[`right-diff-${index}`]
     nodes.push({
       id: rightId,
       text: diff.text,
@@ -410,6 +430,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         noWrap: true,
         backgroundColor: pairColor.fill,
         borderColor: pairColor.border,
+        ...styleFromMeasureHint(rightDiffHint),
       },
     })
     connections.push({

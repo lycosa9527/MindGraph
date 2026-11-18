@@ -132,6 +132,84 @@ function stepSpecText(step: string | { id?: string; text: string }): string {
 }
 
 /**
+ * Final index after removing ``fromIndex`` then inserting before/after ``targetIndex``.
+ * Null when the move would leave the step in place.
+ */
+export function resolveFlowMapStepMoveInsertAt(
+  fromIndex: number,
+  targetIndex: number,
+  placement: 'before' | 'after'
+): number | null {
+  if (fromIndex < 0 || targetIndex < 0) return null
+  let insertAt: number
+  if (placement === 'before') {
+    insertAt = fromIndex < targetIndex ? targetIndex - 1 : targetIndex
+  } else {
+    const targetAfterRemove = fromIndex < targetIndex ? targetIndex - 1 : targetIndex
+    insertAt = targetAfterRemove + 1
+  }
+  return insertAt === fromIndex ? null : insertAt
+}
+
+/** Move one slot in a parallel array (secondary gloss steps / groups). */
+export function moveFlowMapParallelSlot<T>(items: T[], fromIndex: number, insertAt: number): void {
+  if (fromIndex < 0 || fromIndex >= items.length || insertAt < 0 || insertAt === fromIndex) {
+    return
+  }
+  const [moved] = items.splice(fromIndex, 1)
+  items.splice(Math.max(0, Math.min(insertAt, items.length)), 0, moved)
+}
+
+/**
+ * Move a collected step before/after another. Child lists stay pinned to ``stepId``;
+ * index-only leftover specs remapped via the same old→new index map.
+ */
+export function moveFlowMapCollectedStep(
+  steps: Array<string | { id?: string; text: string }>,
+  substeps: FlowSubstepEntry[],
+  fromIndex: number,
+  targetIndex: number,
+  placement: 'before' | 'after'
+): number | null {
+  if (
+    fromIndex < 0 ||
+    targetIndex < 0 ||
+    fromIndex >= steps.length ||
+    targetIndex >= steps.length
+  ) {
+    return null
+  }
+  const insertAt = resolveFlowMapStepMoveInsertAt(fromIndex, targetIndex, placement)
+  if (insertAt == null) return null
+
+  const indexOrder = Array.from({ length: steps.length }, (_, index) => index)
+  const [movedOld] = indexOrder.splice(fromIndex, 1)
+  indexOrder.splice(insertAt, 0, movedOld)
+  const oldToNew = new Map(indexOrder.map((oldIdx, newIdx) => [oldIdx, newIdx] as const))
+
+  const [moved] = steps.splice(fromIndex, 1)
+  steps.splice(insertAt, 0, moved)
+
+  for (const entry of substeps) {
+    const id = entry.stepId
+    if (id) {
+      const newIdx = steps.findIndex((step) => stepSpecId(step) === id)
+      if (newIdx >= 0) {
+        entry.stepIndex = newIdx
+        entry.step = stepSpecText(steps[newIdx])
+      }
+      continue
+    }
+    if (typeof entry.stepIndex === 'number' && oldToNew.has(entry.stepIndex)) {
+      const newIdx = oldToNew.get(entry.stepIndex) ?? entry.stepIndex
+      entry.stepIndex = newIdx
+      entry.step = stepSpecText(steps[newIdx])
+    }
+  }
+  return insertAt
+}
+
+/**
  * Swap two collected steps in place. Child lists stay pinned to ``stepId``
  * (UUID travels with the step). Index-only leftover specs swap child lists.
  */

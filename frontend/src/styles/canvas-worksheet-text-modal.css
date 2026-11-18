@@ -67,6 +67,198 @@
   background: #f5f5f4;
 }
 
+.worksheet-text-modal__preview-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+}
+
+.worksheet-text-modal__preview-mode-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.dark .worksheet-text-modal__preview-mode-label {
+  color: #a8a29e;
+}
+
+/* Soft blue active chip — replaces default stone black in this modal only. */
+.worksheet-text-modal .admin-swiss-segment.is-active {
+  color: #1d4ed8;
+  background: #dbeafe;
+  box-shadow: inset 0 0 0 1px #93c5fd;
+}
+
+.worksheet-text-modal .admin-swiss-segment.is-active .i18n-label__secondary {
+  color: rgb(29 78 216 / 0.75);
+}
+
+.dark .worksheet-text-modal .admin-swiss-segment.is-active {
+  color: #dbeafe;
+  background: #1e3a8a;
+  box-shadow: inset 0 0 0 1px #3b82f6;
+}
+
+.dark .worksheet-text-modal .admin-swiss-segment.is-active .i18n-label__secondary {
+  color: rgb(219 234 254 / 0.8);
+}
+
+.worksheet-text-modal__preview-slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 0.65rem;
+}
+
+.worksheet-text-modal__preview-slots .worksheet-text-modal__field-input {
+  min-width: 0;
+}
+
+/* Slot source pickers — keep value + caret on one row (not the text-input styles). */
+.worksheet-text-modal .worksheet-text-modal__select.el-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #d6d3d1 inset;
+  gap: 0.35rem;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px #a8a29e inset;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px #78716c inset,
+    0 0 0 1px #d6d3d1;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__selection {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__selected-item,
+.worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1c1917;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder {
+  color: #78716c;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__suffix {
+  flex-shrink: 0;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__caret {
+  color: #57534e;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__input-wrapper {
+  position: absolute;
+  opacity: 0;
+  z-index: -1;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.worksheet-text-modal .worksheet-text-modal__select .el-select__input {
+  border: none;
+  width: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.worksheet-text-modal__preview-slots-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #78716c;
+}
+
+.dark .worksheet-text-modal__preview-slots-hint {
+  color: #a8a29e;
+}
+
+.worksheet-text-modal__paper-diagram.is-compare {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 180px;
+}
+
+.worksheet-text-modal__compare-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 160px;
+  flex: 1;
+}
+
+.worksheet-text-modal__compare-preview.is-vertical {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.worksheet-text-modal__compare-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.35rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.worksheet-text-modal__compare-panel-body {
+  flex: 1;
+  min-height: 110px;
+}
+
+.worksheet-text-modal__compare-img {
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+}
+
+.worksheet-text-modal__compare-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #78716c;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .worksheet-text-modal__preview-kicker,
 .worksheet-text-modal__kicker {
   display: flex;
@@ -515,6 +707,33 @@
   border-color: #4b5563;
   color: #fafaf9;
   background: #111827;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper {
+  background: #111827;
+  box-shadow: 0 0 0 1px #4b5563 inset;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px #6b7280 inset;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px #a8a29e inset,
+    0 0 0 1px #4b5563;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__selected-item {
+  color: #fafaf9;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder {
+  color: #9ca3af;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__caret {
+  color: #a8a29e;
 }
 
 @media (max-width: 760px) {

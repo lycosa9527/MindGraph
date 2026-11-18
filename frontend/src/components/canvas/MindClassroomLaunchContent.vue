@@ -16,11 +16,13 @@ import {
   Trophy,
 } from '@lucide/vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   requestClassroomRestart,
   requestClassroomStart,
@@ -54,6 +56,7 @@ const props = withDefaults(
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const diagramStore = useDiagramSession()
 const classroomStore = useMindClassroomStore()
 const {
   mastery,
@@ -69,6 +72,8 @@ const {
   voiceWarmup,
   startInFlight,
 } = storeToRefs(classroomStore)
+/** Eight thinking maps: classroom launch is gated until lecture engine supports them. */
+const thinkingMapClassroomComingSoon = computed(() => isThinkingMapDiagramType(diagramStore.type))
 const hasPrepared = computed(() => preparedSteps.value.length > 0)
 const progressStats = computed(() => mindClassroomProgressStats(jobProgress.value))
 const buttonChrome = computed(() =>
@@ -85,9 +90,17 @@ const buttonChrome = computed(() =>
   })
 )
 const queueBusy = computed(() => buttonChrome.value.busy)
-const startLocked = computed(() => buttonChrome.value.locked)
-const showRestart = computed(() => buttonChrome.value.showRestart)
-const startLabelKey = computed(() => buttonChrome.value.labelKey)
+const startLocked = computed(
+  () => thinkingMapClassroomComingSoon.value || buttonChrome.value.locked
+)
+const showRestart = computed(
+  () => !thinkingMapClassroomComingSoon.value && buttonChrome.value.showRestart
+)
+const startLabelKey = computed(() =>
+  thinkingMapClassroomComingSoon.value
+    ? 'canvas.mindClassroom.startComingSoon'
+    : buttonChrome.value.labelKey
+)
 const startLabel = computed(() =>
   t(startLabelKey.value, {
     name: progressStats.value.branchName,
@@ -211,6 +224,7 @@ function handleRadioGroupKeydown<T extends string>(
 }
 
 function handleStart(): void {
+  if (thinkingMapClassroomComingSoon.value) return
   if (startLocked.value) return
   if (!authStore.isAuthenticated) {
     notify.warningKey('canvas.mindClassroom.queue.loginRequired')
@@ -220,6 +234,7 @@ function handleStart(): void {
 }
 
 function handleRestart(): void {
+  if (thinkingMapClassroomComingSoon.value) return
   if (!authStore.isAuthenticated) {
     notify.warningKey('canvas.mindClassroom.queue.loginRequired')
     return
@@ -471,9 +486,10 @@ function handleRestart(): void {
           type="button"
           class="mc-launch__start"
           :class="{
-            'is-busy': buttonChrome.tone === 'busy',
-            'is-ready': buttonChrome.tone === 'ready',
-            'is-failed': buttonChrome.tone === 'failed',
+            'is-busy': !thinkingMapClassroomComingSoon && buttonChrome.tone === 'busy',
+            'is-ready': !thinkingMapClassroomComingSoon && buttonChrome.tone === 'ready',
+            'is-failed': !thinkingMapClassroomComingSoon && buttonChrome.tone === 'failed',
+            'is-coming-soon': thinkingMapClassroomComingSoon,
           }"
           :style="queueBusy ? { '--mc-launch-fill': `${startFillPercent}%` } : undefined"
           :disabled="startLocked"

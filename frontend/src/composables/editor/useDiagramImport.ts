@@ -1,11 +1,15 @@
 /**
- * useDiagramImport - Import diagram from encrypted `.mg` file (landing page)
+ * useDiagramImport - Import diagram from encrypted `.mg` / `.cmap`, or hand-drawn photo
  * Validates spec and stores in sessionStorage for CanvasPage to load
  */
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { prepareConversationImageCapture } from '@/composables/kitty/prepareConversationImageCapture'
+import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -14,6 +18,9 @@ import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'
 import { MG_FILE_NOT_ENCRYPTED, decodeMgFileToJsonText } from '@/utils/mgInterchange'
+import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
+
+const HANDDRAWN_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp'
 
 export type DiagramImportExtension = 'mg' | 'cmap'
 
@@ -85,6 +92,8 @@ export function useDiagramImport() {
   const route = useRoute()
   const router = useRouter()
   const notify = useNotifications()
+  const { promptLanguage } = useLanguage()
+  const handdrawnImportBusy = ref(false)
 
   async function parseImportFile(
     file: File,
@@ -170,6 +179,83 @@ export function useDiagramImport() {
     triggerImportInPlace(CONCEPT_MAP_IMPORT)
   }
 
+  /**
+   * Hand-drawn / photographed mind map → vision rebuild → editable canvas.
+   * Canvas-only: no library save or Document Summary required.
+   */
+  async function importHanddrawnFile(file: File): Promise<boolean> {
+    const prepared = prepareConversationImageCapture(file)
+    if (!prepared.ok) {
+      if (prepared.reason === 'invalid_type') {
+        notify.errorKey('canvas.toolbar.importHanddrawnInvalidType')
+      } else if (prepared.reason === 'too_large') {
+        notify.errorKey('canvas.toolbar.importHanddrawnTooLarge')
+      }
+      return false
+    }
+
+    if (handdrawnImportBusy.value) return false
+    handdrawnImportBusy.value = true
+    notify.infoKey('canvas.toolbar.importHanddrawnProgress')
+
+    try {
+      const result = await processConversationImageUpload({
+        file: prepared.file,
+        language: promptLanguage.value,
+        applyToLibrary: false,
+      })
+
+      if (result.mode === 'handdrawn' && result.spec) {
+        const diagramStore = useDiagramStore()
+        const loaded = diagramStore.loadFromSpec(
+          mergeMindMapPresentationExtrasIntoSpec(
+            result.spec,
+            diagramStore.data as Record<string, unknown> | null
+          ),
+          'mindmap'
+        )
+        if (!loaded) {
+          notify.errorKey('canvas.toolbar.importHanddrawnFailed')
+          return false
+        }
+        useLLMResultsStore().reset()
+        notify.successKey('canvas.toolbar.importHanddrawnSuccess')
+        return true
+      }
+
+      notify.infoKey('canvas.toolbar.importHanddrawnNotDetected')
+      return false
+    } catch (error) {
+      console.error('Hand-drawn import failed:', error)
+      const message = error instanceof Error ? error.message : ''
+      if (/no hand-drawn mind map detected/i.test(message)) {
+        notify.infoKey('canvas.toolbar.importHanddrawnNotDetected')
+      } else if (/unauthorized|QWEN_API_KEY|DashScope/i.test(message)) {
+        notify.errorKey('canvas.toolbar.importHanddrawnApiUnauthorized')
+      } else if (message && message !== 'Image processing failed') {
+        notify.error(message)
+      } else {
+        notify.errorKey('canvas.toolbar.importHanddrawnFailed')
+      }
+      return false
+    } finally {
+      handdrawnImportBusy.value = false
+    }
+  }
+
+  function triggerHanddrawnImportInPlace(): void {
+    if (handdrawnImportBusy.value) return
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = HANDDRAWN_IMAGE_ACCEPT
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      void importHanddrawnFile(file)
+    }
+    input.click()
+  }
+
   function triggerImport(): void {
     const input = document.createElement('input')
     input.type = 'file'
@@ -193,5 +279,11 @@ export function useDiagramImport() {
     input.click()
   }
 
-  return { triggerImport, triggerImportInPlace, triggerConceptMapImportInPlace }
+  return {
+    handdrawnImportBusy,
+    triggerImport,
+    triggerImportInPlace,
+    triggerConceptMapImportInPlace,
+    triggerHanddrawnImportInPlace,
+  }
 }
