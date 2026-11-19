@@ -228,4 +228,48 @@ describe('useCanvasToolbarFormatting format brush', () => {
       '#445566'
     )
   })
+
+  it('paints flow step styles onto a substep and syncs the connector stroke', () => {
+    const store = useDiagramStore()
+    expect(
+      store.loadFromSpec(
+        {
+          title: 'Plan',
+          steps: [{ id: 'step-a', text: 'A' }],
+          substeps: [{ step: 'A', stepId: 'step-a', stepIndex: 0, substeps: ['A1'] }],
+        },
+        'flow_map',
+        { emitLoaded: false }
+      )
+    ).toBe(true)
+    const stepId = 'step-a'
+    const subId = store.data?.nodes.find((node) => node.type === 'flowSubstep')?.id
+    expect(subId).toBeTruthy()
+    store.updateNode(stepId, {
+      style: {
+        backgroundColor: '#abcdef',
+        borderColor: '#123456',
+        textColor: '#111111',
+        fontWeight: 'bold',
+      },
+    })
+    store.selectNodes(stepId)
+    handleFormatBrush?.()
+    expect(subId).toBeTruthy()
+    if (!subId) {
+      return
+    }
+    expect(applyFormatBrushToNode(subId)).toBe(true)
+    const painted = store.data?.nodes.find((node) => node.id === subId)
+    expect(painted?.style?.backgroundColor).toBe('#abcdef')
+    expect(painted?.style?.borderColor).toBe('#123456')
+    expect(painted?.style?.textColor).toBe('#111111')
+    expect(painted?.style?.fontWeight).toBe('bold')
+    const edge = store.data?.connections?.find(
+      (conn) =>
+        (conn.source === stepId && conn.target === subId) ||
+        (conn.source === subId && conn.target === stepId)
+    )
+    expect(edge?.style?.strokeColor).toBe('#123456')
+  })
 })

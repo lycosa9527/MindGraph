@@ -57,19 +57,17 @@ function detailMessage(detail: unknown, fallback: string): string {
 }
 
 /**
- * Resize + POST /api/kitty/conversation_image for the active library diagram.
+ * Resize + POST /api/kitty/conversation_image.
+ * Omit ``diagramId`` for canvas-only hand-drawn rebuild (no library / Doc Summary).
  */
 export async function processConversationImageUpload(options: {
   file: File
-  diagramId: string
+  diagramId?: string
   diagramTitle?: string
   language?: string
   applyToLibrary?: boolean
 }): Promise<ConversationImageResult> {
-  const diagramId = options.diagramId.trim()
-  if (!diagramId) {
-    throw new Error('diagram_id is required')
-  }
+  const diagramId = options.diagramId?.trim() || ''
 
   const resized = await resizeImageFileForVisionUpload(options.file)
   const formData = new FormData()
@@ -80,7 +78,10 @@ export async function processConversationImageUpload(options: {
   if (options.diagramTitle?.trim()) {
     formData.append('diagram_title', options.diagramTitle.trim())
   }
-  formData.append('apply_to_library', options.applyToLibrary === false ? 'false' : 'true')
+  formData.append(
+    'apply_to_library',
+    !diagramId || options.applyToLibrary === false ? 'false' : 'true'
+  )
 
   const response = await apiUpload('/api/kitty/conversation_image', formData)
   const result = (await response.json().catch(() => ({}))) as ApiResult

@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from models.domain.training import TrainingCourse, TrainingCourseAsset, TrainingCourseStep
-from services.features.training.courses.constants import normalize_mindmap_canvas_mode
+from services.features.training.courses.constants import (
+    normalize_mindmap_canvas_mode,
+    optional_glasses_line,
+    optional_glasses_pace,
+    optional_glasses_qr,
+    optional_glasses_rate,
+    optional_glasses_reveal,
+)
 from services.features.training.storage.keys import training_public_asset_url
 
 
@@ -117,6 +124,11 @@ def serialize_step(
         "focus_key": payload.get("focus_key"),
         "ui_lock": payload.get("ui_lock"),
         "notes": str(payload.get("notes") or ""),
+        "glasses_line": optional_glasses_line(payload.get("glasses_line")),
+        "glasses_reveal": optional_glasses_reveal(payload.get("glasses_reveal")),
+        "glasses_qr": optional_glasses_qr(payload.get("glasses_qr")),
+        "glasses_pace": optional_glasses_pace(payload.get("glasses_pace")),
+        "glasses_rate": optional_glasses_rate(payload.get("glasses_rate")),
         "mark_step": payload.get("mark_step") or 1,
         "mark_steps": payload.get("mark_steps") or 1,
         "interact": payload.get("interact"),
@@ -157,6 +169,7 @@ def serialize_course(
 def snapshot_step_payload(step_body: dict[str, Any]) -> dict[str, Any]:
     """Compact step stored on the Redis session."""
     return {
+        "position": step_body.get("position"),
         "type": step_body.get("type"),
         "diagram_type": step_body.get("diagram_type"),
         "topic_options": step_body.get("topic_options") or [],
@@ -176,6 +189,11 @@ def snapshot_step_payload(step_body: dict[str, Any]) -> dict[str, Any]:
         "modal_key": step_body.get("modal_key"),
         "focus_key": step_body.get("focus_key"),
         "ui_lock": step_body.get("ui_lock"),
+        "glasses_line": optional_glasses_line(step_body.get("glasses_line")),
+        "glasses_reveal": optional_glasses_reveal(step_body.get("glasses_reveal")),
+        "glasses_qr": optional_glasses_qr(step_body.get("glasses_qr")),
+        "glasses_pace": optional_glasses_pace(step_body.get("glasses_pace")),
+        "glasses_rate": optional_glasses_rate(step_body.get("glasses_rate")),
         "mark_step": step_body.get("mark_step") or 1,
         "mark_steps": step_body.get("mark_steps") or 1,
         "interact": step_body.get("interact"),

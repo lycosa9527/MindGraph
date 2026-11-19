@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 import { AlertTriangle, ArrowLeft, Clock3, FileText, Users } from '@lucide/vue'
 
 import LearningSpaceCreditLine from '@/components/learningSpace/LearningSpaceCreditLine.vue'
+import LearningSpaceGlassesCard from '@/components/learningSpace/LearningSpaceGlassesCard.vue'
 import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import LearningSpaceWorkGrader from '@/components/learningSpace/LearningSpaceWorkGrader.vue'
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
@@ -289,6 +290,7 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
         <div class="ls-metric__hint"><I18nText k="learningSpace.metricClassesHint" /></div>
       </button>
     </div>
+    <LearningSpaceGlassesCard />
   </template>
 
   <!-- Assignments list / detail -->

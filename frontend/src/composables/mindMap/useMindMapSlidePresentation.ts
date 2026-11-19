@@ -13,6 +13,8 @@ import {
 import { waitForMindMapSlidePlayReady } from '@/composables/mindMap/waitForMindMapSlidePlayReady'
 import { useDiagramStore } from '@/stores'
 import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
+import { buildDoubleBubbleSlides } from '@/utils/doubleBubbleSlides'
+import { buildFlowMapSlides } from '@/utils/flowMapSlides'
 import {
   type MindMapSlide,
   type MindMapSlideTraversalMode,
@@ -101,17 +103,29 @@ export function useMindMapSlidePresentation(options: {
       slides.value = []
       return
     }
-    slides.value = buildMindMapSlides(
-      data.nodes ?? [],
-      data.connections ?? [],
-      (id) => diagramStore.getMindMapDescendantIds(id),
-      traversalMode.value
-    )
+    const nodes = data.nodes ?? []
+    if (diagramStore.type === 'double_bubble_map') {
+      slides.value = buildDoubleBubbleSlides(nodes)
+    } else if (diagramStore.type === 'flow_map') {
+      slides.value = buildFlowMapSlides(nodes, traversalMode.value)
+    } else {
+      slides.value = buildMindMapSlides(
+        nodes,
+        data.connections ?? [],
+        (id) => diagramStore.getMindMapDescendantIds(id),
+        traversalMode.value
+      )
+    }
     slideIndex.value = 0
   }
 
   function emitFitSlide(slide: MindMapSlide): void {
-    if (slide.branchNodeId) {
+    // Thinking-map carousels (double-bubble / flow) have no mind-map collapse path.
+    if (
+      slide.branchNodeId &&
+      diagramStore.type !== 'double_bubble_map' &&
+      diagramStore.type !== 'flow_map'
+    ) {
       diagramStore.expandMindMapPathToNode(slide.branchNodeId)
     }
     void nextTick(() => {

@@ -27,6 +27,7 @@ import {
   quickAccessRemoteHidden,
   useQuickAccessRemoteAccount,
 } from '@/composables/sidebar/useQuickAccessRemote'
+import { useGlassesCourseSync } from '@/composables/training/useGlassesSlidePlay'
 import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
@@ -54,6 +55,7 @@ useSlideRemoteDesktopPoll()
 useQuickAccessRemoteAccount()
 useTrainingFollow()
 useTrainingSessionEngine()
+useGlassesCourseSync()
 
 const UserSettingsModal = defineAsyncComponent(
   () => import('@/components/settings/UserSettingsModal.vue')

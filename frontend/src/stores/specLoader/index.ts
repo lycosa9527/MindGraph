@@ -30,6 +30,7 @@ import type { SpecLoaderResult } from './types'
 import { applyLearningSheetHiddenNodes } from './utils'
 
 export {
+  clearDefaultTemplateCache,
   defaultTemplateForUi,
   getBilingualDefaultTemplate,
   getDefaultTemplate,

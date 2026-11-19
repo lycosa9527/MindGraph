@@ -209,8 +209,8 @@ const marks = computed(() =>
 }
 .slide-preview__index {
   position: absolute;
+  top: 0.3rem;
   right: 0.35rem;
-  bottom: 0.3rem;
   z-index: 3;
   color: #78716c;
   font-size: 0.65rem;

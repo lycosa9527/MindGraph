@@ -440,12 +440,17 @@ LEARNING_SUBMISSION_EXPR = (
     f"JOIN learning_class_memberships m ON m.class_id = a.class_id "
     f"WHERE a.id = assignment_id AND m.user_id = {_LS_SELF})"
 )
+GLASSES_SHEET_EXPR = f"{LEARNING_ORG_VISIBLE} OR owner_user_id = rls_current_user_id()"
 LEARNING_SPACE_POLICIES = (
     ("learning_pilot_teachers", LEARNING_PILOT_EXPR),
     ("learning_classes", LEARNING_CLASS_EXPR),
     ("learning_class_memberships", LEARNING_MEMBERSHIP_EXPR),
     ("learning_assignments", LEARNING_ASSIGNMENT_EXPR),
     ("learning_submissions", LEARNING_SUBMISSION_EXPR),
+    ("learning_sheet_tokens", GLASSES_SHEET_EXPR),
+    ("learning_sheet_captures", GLASSES_SHEET_EXPR),
+    ("learning_sheet_copies", GLASSES_SHEET_EXPR),
+    ("glasses_wearer_binds", GLASSES_SHEET_EXPR),
 )
 
 

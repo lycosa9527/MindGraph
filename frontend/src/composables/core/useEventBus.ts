@@ -866,6 +866,9 @@ export type EventTypes = {
     status: string
   }
 
+  /** Bound glasses nudged the open canvas. The diagram drains the queue once. */
+  'glasses:nudge': Record<string, never>
+
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }
 }

@@ -313,7 +313,17 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   const { removeBubbleMapNodes } = bubbleMapOpsSlice
   const { addBraceMapPart, addBraceMapChildren, removeBraceMapNodes } = braceMapOpsSlice
   const { addDoubleBubbleMapNode, removeDoubleBubbleMapNodes } = doubleBubbleMapOpsSlice
-  const { toggleFlowMapOrientation, addFlowMapStep, addFlowMapSubstep } = flowMapOpsSlice
+  const {
+    toggleFlowMapOrientation,
+    setFlowMapSubstepArrangement,
+    getFlowMapSubstepArrangement,
+    setFlowMapStructureMode,
+    getFlowMapStructureMode,
+    addFlowMapStep,
+    insertFlowMapStepAt,
+    addFlowMapSubstep,
+    insertFlowMapSubstepAt,
+  } = flowMapOpsSlice
   const {
     removeTreeMapNodes,
     getTreeMapDescendantIds,
@@ -688,8 +698,14 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     removeDoubleBubbleMapNodes,
     buildFlowMapSpecFromNodes,
     addFlowMapStep,
+    insertFlowMapStepAt,
     addFlowMapSubstep,
+    insertFlowMapSubstepAt,
     toggleFlowMapOrientation,
+    setFlowMapSubstepArrangement,
+    getFlowMapSubstepArrangement,
+    setFlowMapStructureMode,
+    getFlowMapStructureMode,
     addTreeMapCategory,
     addTreeMapChild,
     moveTreeMapBranch,

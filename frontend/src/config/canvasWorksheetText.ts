@@ -3,9 +3,39 @@
  * Persisted in sessionStorage for the current browser tab session.
  */
 import {
+  type WorksheetCompareArrangement,
+  normalizeWorksheetCompareArrangement,
+} from '@/utils/worksheetCompareLayout'
+import {
   type WorksheetDiagramCrop,
   normalizeWorksheetDiagramCrop,
 } from '@/utils/worksheetDiagramCrop'
+
+export type WorksheetMode = 'single' | 'compare'
+
+export type { WorksheetCompareArrangement }
+
+export type WorksheetCompareSourceKind = 'current' | 'model' | 'snapshot'
+
+export type WorksheetCompareSlot = {
+  kind: WorksheetCompareSourceKind
+  /** Model id or snapshot version number as string. */
+  id?: string
+}
+
+/** Runtime raster pair for compare export (not persisted). */
+export type WorksheetCompareRaster = {
+  dataUrl: string
+  width: number
+  height: number
+  label: string
+  blob: Blob
+}
+
+export type WorksheetComparePair = {
+  left: WorksheetCompareRaster
+  right: WorksheetCompareRaster
+}
 
 export interface CanvasWorksheetTextOptions {
   /** When false, export is a plain DOC/PDF with no classroom header. */
@@ -35,7 +65,33 @@ export interface CanvasWorksheetTextOptions {
   diagramCropRight: number
   diagramCropBottom: number
   diagramCropLeft: number
+  /** Single diagram (default) or side-by-side compare. */
+  worksheetMode: WorksheetMode
+  /** Left|right vs top/bottom packing for compare mode. */
+  compareLayout: WorksheetCompareArrangement
+  compareLeft: WorksheetCompareSlot
+  compareRight: WorksheetCompareSlot
+  /** Right/bottom panel placement (left/top reuses diagramOffset*). */
+  compareRightOffsetX: number
+  compareRightOffsetY: number
+  compareRightScale: number
+  compareRightCropTop: number
+  compareRightCropRight: number
+  compareRightCropBottom: number
+  compareRightCropLeft: number
+  /** Print a small glasses QR at the bottom-right of the PDF page. */
+  showSheetQr: boolean
+  /** `mg://sheet/{uuid}` minted for this account. Empty until the toggle succeeds. */
+  sheetQrPayload: string
+  /** One PDF page per student, each with `mg://sheet/{uuid}/{seq}`. */
+  classPersonalize: boolean
+  /** Class whose roster is printed. Null until the teacher picks one. */
+  classId: number | null
+  /** QR text for each numbered page, in sequence order. */
+  sheetCopyPayloads: string[]
 }
+
+export const DEFAULT_COMPARE_SLOT: WorksheetCompareSlot = { kind: 'current' }
 
 export const DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS: CanvasWorksheetTextOptions = {
   learningSheetMode: false,
@@ -53,6 +109,22 @@ export const DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS: CanvasWorksheetTextOptions =
   diagramCropRight: 0,
   diagramCropBottom: 0,
   diagramCropLeft: 0,
+  worksheetMode: 'single',
+  compareLayout: 'horizontal',
+  compareLeft: { ...DEFAULT_COMPARE_SLOT },
+  compareRight: { ...DEFAULT_COMPARE_SLOT },
+  compareRightOffsetX: 0,
+  compareRightOffsetY: 0,
+  compareRightScale: 1,
+  compareRightCropTop: 0,
+  compareRightCropRight: 0,
+  compareRightCropBottom: 0,
+  compareRightCropLeft: 0,
+  showSheetQr: false,
+  sheetQrPayload: '',
+  classPersonalize: false,
+  classId: null,
+  sheetCopyPayloads: [],
 }
 
 /** Classroom-friendly preset applied from the modal reset action. */
@@ -80,6 +152,52 @@ function readScale(value: unknown, fallback: number): number {
 
 function readCropEdge(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+export function normalizeWorksheetCompareSlot(value: unknown): WorksheetCompareSlot {
+  if (!value || typeof value !== 'object') return { ...DEFAULT_COMPARE_SLOT }
+  const raw = value as { kind?: unknown; id?: unknown }
+  const kind = raw.kind
+  if (kind === 'model' || kind === 'snapshot') {
+    const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : undefined
+    if (!id) return { ...DEFAULT_COMPARE_SLOT }
+    return { kind, id }
+  }
+  return { ...DEFAULT_COMPARE_SLOT }
+}
+
+export function normalizeWorksheetMode(value: unknown): WorksheetMode {
+  return value === 'compare' ? 'compare' : 'single'
+}
+
+export function isWorksheetCompareMode(options: CanvasWorksheetTextOptions | undefined): boolean {
+  return options?.worksheetMode === 'compare'
+}
+
+export function worksheetCompareSlotKey(slot: WorksheetCompareSlot): string {
+  if (slot.kind === 'current') return 'current'
+  return `${slot.kind}:${slot.id ?? ''}`
+}
+
+export function parseWorksheetCompareSlotKey(key: string): WorksheetCompareSlot {
+  if (key === 'current' || !key) return { ...DEFAULT_COMPARE_SLOT }
+  const sep = key.indexOf(':')
+  if (sep <= 0) return { ...DEFAULT_COMPARE_SLOT }
+  const kind = key.slice(0, sep)
+  const id = key.slice(sep + 1).trim()
+  if ((kind === 'model' || kind === 'snapshot') && id) {
+    return { kind, id }
+  }
+  return { ...DEFAULT_COMPARE_SLOT }
+}
+
+function readClassId(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null
+}
+
+function readPayloads(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
 }
 
 export function worksheetDiagramCropFromOptions(
@@ -126,6 +244,12 @@ export function loadCanvasWorksheetTextOptions(): CanvasWorksheetTextOptions {
       bottom: readCropEdge(parsed.diagramCropBottom),
       left: readCropEdge(parsed.diagramCropLeft),
     })
+    const rightCrop = normalizeWorksheetDiagramCrop({
+      top: readCropEdge(parsed.compareRightCropTop),
+      right: readCropEdge(parsed.compareRightCropRight),
+      bottom: readCropEdge(parsed.compareRightCropBottom),
+      left: readCropEdge(parsed.compareRightCropLeft),
+    })
     return {
       learningSheetMode: readBoolean(parsed.learningSheetMode, defaults.learningSheetMode),
       showTopic: readBoolean(parsed.showTopic, defaults.showTopic),
@@ -145,6 +269,23 @@ export function loadCanvasWorksheetTextOptions(): CanvasWorksheetTextOptions {
       diagramCropRight: crop.right,
       diagramCropBottom: crop.bottom,
       diagramCropLeft: crop.left,
+      worksheetMode: normalizeWorksheetMode(parsed.worksheetMode),
+      compareLayout: normalizeWorksheetCompareArrangement(parsed.compareLayout),
+      compareLeft: normalizeWorksheetCompareSlot(parsed.compareLeft),
+      compareRight: normalizeWorksheetCompareSlot(parsed.compareRight),
+      compareRightOffsetX: readOffset(parsed.compareRightOffsetX, defaults.compareRightOffsetX),
+      compareRightOffsetY: readOffset(parsed.compareRightOffsetY, defaults.compareRightOffsetY),
+      compareRightScale: readScale(parsed.compareRightScale, defaults.compareRightScale),
+      compareRightCropTop: rightCrop.top,
+      compareRightCropRight: rightCrop.right,
+      compareRightCropBottom: rightCrop.bottom,
+      compareRightCropLeft: rightCrop.left,
+      showSheetQr: readBoolean(parsed.showSheetQr, defaults.showSheetQr),
+      sheetQrPayload:
+        typeof parsed.sheetQrPayload === 'string' ? parsed.sheetQrPayload : defaults.sheetQrPayload,
+      classPersonalize: readBoolean(parsed.classPersonalize, defaults.classPersonalize),
+      classId: readClassId(parsed.classId),
+      sheetCopyPayloads: readPayloads(parsed.sheetCopyPayloads),
     }
   } catch {
     return { ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS }

@@ -39,12 +39,14 @@ import { useLanguage } from '@/composables'
 import { showcaseCoverMediaPending } from '@/composables/admin/showcaseMediaStatus'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { useAuthStore } from '@/stores'
 import { useShowcaseStore } from '@/stores/showcase'
 import { useUIStore } from '@/stores/ui'
 import { type ShowcasePost, getShowcasePost, getShowcasePosts } from '@/utils/apiClient'
 
 const { t } = useLanguage()
+const inSlide = isTrainingInlineHost()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const showcaseStore = useShowcaseStore()
@@ -361,7 +363,7 @@ watch(searchQuery, () => {
         <div class="mb-3 flex items-center justify-between gap-4">
           <div class="flex min-w-0 items-start gap-2">
             <button
-              v-if="uiStore.sidebarCollapsed"
+              v-if="uiStore.sidebarCollapsed && !inSlide"
               type="button"
               class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white text-gray-600 transition-colors hover:bg-gray-50"
               :title="t('sidebar.expandSidebar')"

@@ -21,6 +21,7 @@ import { useBrowserPluginInstalled } from '@/composables/browserPluginPresence'
 import { executeLandingPrompt } from '@/composables/mindgraph/runLandingPromptGeneration'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import {
   LANDING_PROMPT_EXAMPLE_KEYS,
   LANDING_PROMPT_MAX_LENGTH,
@@ -43,6 +44,7 @@ const route = useRoute()
 const router = useRouter()
 const deckNav = useTrainingDeckNav()
 const { t } = useLanguage()
+const inSlide = isTrainingInlineHost()
 const browserPluginInstalled = useBrowserPluginInstalled()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
@@ -231,7 +233,7 @@ onMounted(() => {
 <template>
   <div class="intl-landing">
     <el-button
-      v-if="uiStore.sidebarCollapsed"
+      v-if="uiStore.sidebarCollapsed && !inSlide"
       text
       circle
       size="small"

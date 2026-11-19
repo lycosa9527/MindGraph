@@ -118,20 +118,18 @@ def _build_spec(meta: dict[str, Any]) -> WorksheetDocxSpec:
         diagram_crop_right=_as_float(meta.get("diagramCropRight", meta.get("diagram_crop_right")), 0.0),
         diagram_crop_bottom=_as_float(meta.get("diagramCropBottom", meta.get("diagram_crop_bottom")), 0.0),
         diagram_crop_left=_as_float(meta.get("diagramCropLeft", meta.get("diagram_crop_left")), 0.0),
+        label_a=str(meta.get("labelA", meta.get("label_a", ""))),
+        label_b=str(meta.get("labelB", meta.get("label_b", ""))),
+        compare_layout=(
+            "vertical"
+            if str(meta.get("compareLayout", meta.get("compare_layout", ""))).strip().lower() == "vertical"
+            else "horizontal"
+        ),
     )
 
 
-@router.post("/export_worksheet_docx")
-async def export_worksheet_docx(
-    meta: str = Form(...),
-    diagram: UploadFile = File(...),
-    _user: User = Depends(get_current_user),
-) -> Response:
-    """Build an editable DOCX learning sheet with the uploaded diagram image."""
-    payload = _parse_meta(meta)
-    spec = _build_spec(payload)
-
-    content_type = (diagram.content_type or "").lower()
+async def _read_diagram_upload(upload: UploadFile) -> bytes:
+    content_type = (upload.content_type or "").lower()
     if content_type and content_type not in {
         "image/png",
         "image/jpeg",
@@ -142,16 +140,14 @@ async def export_worksheet_docx(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Diagram must be a PNG or JPEG image",
         )
-
     try:
-        diagram_bytes = await diagram.read(_MAX_DIAGRAM_BYTES + 1)
+        diagram_bytes = await upload.read(_MAX_DIAGRAM_BYTES + 1)
     except FILE_IO_ERRORS as exc:
         logger.warning("Failed reading worksheet diagram upload: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not read diagram image",
         ) from exc
-
     if not diagram_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -162,9 +158,24 @@ async def export_worksheet_docx(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Diagram image is too large",
         )
+    return diagram_bytes
+
+
+@router.post("/export_worksheet_docx")
+async def export_worksheet_docx(
+    meta: str = Form(...),
+    diagram: UploadFile = File(...),
+    diagram_b: UploadFile | None = File(None),
+    _user: User = Depends(get_current_user),
+) -> Response:
+    """Build an editable DOCX learning sheet with the uploaded diagram image."""
+    payload = _parse_meta(meta)
+    spec = _build_spec(payload)
+    diagram_bytes = await _read_diagram_upload(diagram)
+    diagram_b_bytes = await _read_diagram_upload(diagram_b) if diagram_b is not None else None
 
     try:
-        docx_bytes = build_worksheet_docx(spec, diagram_bytes)
+        docx_bytes = build_worksheet_docx(spec, diagram_bytes, diagram_b_bytes)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

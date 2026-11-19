@@ -307,3 +307,118 @@ class LearningSubmission(Base):
         lazy="selectin",
     )
     student: Mapped["User"] = relationship("User", foreign_keys=[student_user_id], lazy="selectin")
+
+
+class LearningSheetToken(Base):
+    """Printed learning-sheet QR. The UUID names the course diagram, not the student."""
+
+    __tablename__ = "learning_sheet_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    diagram_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    course_spec: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
+
+
+class LearningSheetCapture(Base):
+    """One glasses photo of a printed sheet, plus the server OCR result."""
+
+    __tablename__ = "learning_sheet_captures"
+    __table_args__ = (Index("ix_learning_sheet_captures_owner_created", "owner_user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sheet_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("learning_sheet_tokens.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    image_ref: Mapped[str] = mapped_column(String(240), nullable=False)
+    student_name: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    class_name: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    ocr_spec: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    ocr_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    copy_seq: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
+
+
+class LearningSheetCopy(Base):
+    """One printed page of a class set. The sequence is the number in that page's QR."""
+
+    __tablename__ = "learning_sheet_copies"
+    __table_args__ = (UniqueConstraint("sheet_id", "seq", name="uq_learning_sheet_copies_sheet_seq"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sheet_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("learning_sheet_tokens.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    student_user_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    student_name: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    class_name: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    owner_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
+
+
+class GlassesWearerBind(Base):
+    """QR the signed-in user shows so the glasses photo is stored on that account."""
+
+    __tablename__ = "glasses_wearer_binds"
+    __table_args__ = (UniqueConstraint("owner_user_id", name="uq_glasses_wearer_binds_owner"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    organization_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    image_ref: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    bound_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)

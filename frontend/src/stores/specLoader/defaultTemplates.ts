@@ -62,13 +62,37 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
     },
     flow_map: {
       title: lt('diagram.defaults.process', lang),
+      orientation: 'horizontal',
+      substepArrangement: 'row',
       steps: range(4, 'diagram.defaults.stepN', lang),
-      substeps: Array.from({ length: 4 }, (_, si) => ({
-        step: lt('diagram.defaults.stepN', lang, { n: si + 1 }),
-        substeps: Array.from({ length: 2 }, (_, ssi) =>
-          lt('diagram.defaults.substepNM', lang, { n: si + 1, m: ssi + 1 })
-        ),
-      })),
+      // Classroom-normative demo: step1×3, step2×2, steps 3–4 bare.
+      // stepIndex pins children even when labels are translated.
+      substeps: [
+        {
+          step: lt('diagram.defaults.stepN', lang, { n: 1 }),
+          stepIndex: 0,
+          substeps: Array.from({ length: 3 }, (_, ssi) =>
+            lt('diagram.defaults.substepNM', lang, { n: 1, m: ssi + 1 })
+          ),
+        },
+        {
+          step: lt('diagram.defaults.stepN', lang, { n: 2 }),
+          stepIndex: 1,
+          substeps: Array.from({ length: 2 }, (_, ssi) =>
+            lt('diagram.defaults.substepNM', lang, { n: 2, m: ssi + 1 })
+          ),
+        },
+        {
+          step: lt('diagram.defaults.stepN', lang, { n: 3 }),
+          stepIndex: 2,
+          substeps: [],
+        },
+        {
+          step: lt('diagram.defaults.stepN', lang, { n: 4 }),
+          stepIndex: 3,
+          substeps: [],
+        },
+      ],
     },
     multi_flow_map: {
       event: lt('diagram.defaults.mainEvent', lang),
@@ -109,6 +133,11 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
 
 const CACHE = new Map<string, Record<string, Record<string, unknown>>>()
 
+/** Drop cached blanks so HMR / locale reloads pick up template edits. */
+export function clearDefaultTemplateCache(): void {
+  CACHE.clear()
+}
+
 function cloneTemplate(spec: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(spec)) as Record<string, unknown>
 }
@@ -124,6 +153,13 @@ function templateTable(language: LocaleCode): Record<string, Record<string, unkn
   const built = templatesForLocale(language)
   CACHE.set(language, built)
   return built
+}
+
+// Vite HMR: rebuild blanks when this module updates (avoids stale CACHE).
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    clearDefaultTemplateCache()
+  })
 }
 
 export function getDefaultTemplate(

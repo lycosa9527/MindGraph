@@ -21,6 +21,7 @@ import base64
 import binascii
 import json
 import logging
+import uuid
 from enum import Enum
 from typing import Any, AsyncGenerator, Callable, Dict, Optional
 
@@ -68,6 +69,7 @@ class TTSRealtimeClient:
         response_format: AudioFormat = AudioFormat.MP3_24000HZ_MONO,
         sample_rate: int = 24000,
         language_type: Optional[str] = None,
+        speech_rate: Optional[float] = None,
         # Event handlers
         on_audio_chunk: Optional[Callable[[bytes], None]] = None,
         on_session_created: Optional[Callable[[str], None]] = None,
@@ -97,6 +99,7 @@ class TTSRealtimeClient:
         self.response_format = response_format
         self.sample_rate = sample_rate
         self.language_type = language_type
+        self.speech_rate = speech_rate
 
         # WebSocket connection
         self.ws = None
@@ -113,6 +116,7 @@ class TTSRealtimeClient:
         self.session_id = None
         self._response_done_event = asyncio.Event()
         self._session_created_event = asyncio.Event()
+        self._session_finished_event = asyncio.Event()
 
         logger.debug("[TTS] Initialized: model=%s, voice=%s, mode=%s", model, voice, mode)
 
@@ -185,6 +189,8 @@ class TTSRealtimeClient:
         # Add language_type if specified
         if self.language_type:
             session_config["language_type"] = self.language_type
+        if self.speech_rate is not None:
+            session_config["speech_rate"] = self.speech_rate
 
         event = {"type": "session.update", "session": session_config}
 
@@ -214,10 +220,13 @@ class TTSRealtimeClient:
         if self.mode != SessionMode.COMMIT:
             logger.warning("[TTS] commit_text() only works in commit mode")
             return
+        await self.flush_text()
 
+    async def flush_text(self):
+        """Synthesize the buffer now, including a short tail the server has not segmented."""
         event = {"type": "input_text_buffer.commit"}
         await self._send_event(event)
-        logger.debug("[TTS] Committed text buffer")
+        logger.debug("[TTS] Flushed text buffer")
 
     async def finish_session(self):
         """Finish the session (no more text will be sent)"""
@@ -232,6 +241,13 @@ class TTSRealtimeClient:
         except asyncio.TimeoutError:
             logger.warning("[TTS] Timeout waiting for response.done")
 
+    async def wait_for_session_finished(self, timeout: float = 30.0):
+        """Wait until the server has flushed every segment, including the last few characters."""
+        try:
+            await asyncio.wait_for(self._session_finished_event.wait(), timeout=timeout)
+        except asyncio.TimeoutError:
+            logger.warning("[TTS] Timeout waiting for session.finished")
+
     async def wait_for_session_created(self, timeout: float = 10.0):
         """Wait for session.created event"""
         try:
@@ -243,6 +259,8 @@ class TTSRealtimeClient:
         """Send event to WebSocket server"""
         if not self._connected or not self.ws:
             raise RuntimeError("Not connected")
+        if "event_id" not in event:
+            event["event_id"] = f"event_{uuid.uuid4().hex}"
 
         try:
             await self.ws.send(json.dumps(event))
@@ -267,6 +285,8 @@ class TTSRealtimeClient:
         except ConnectionClosed:
             logger.info("[TTS] WebSocket connection closed")
             self._connected = False
+            self._session_finished_event.set()
+            self._response_done_event.set()
         except (OSError, ConnectionError, WebSocketException) as e:
             logger.error("[TTS] Message handler error: %s", e, exc_info=True)
             self._connected = False
@@ -313,6 +333,8 @@ class TTSRealtimeClient:
         elif event_type == "session.finished":
             logger.info("[TTS] Session finished")
             self._connected = False
+            self._session_finished_event.set()
+            self._response_done_event.set()
 
         elif event_type == "error":
             error_msg = event.get("error", {}).get("message", "Unknown error")
@@ -378,10 +400,11 @@ class TTSRealtimeClient:
                 yield audio_chunks.pop(0)
 
         # Finish session
+        await self.flush_text()
         await self.finish_session()
 
-        # Wait for final audio chunks
-        await self.wait_for_response_done()
+        # Wait for every segment, including the tail.
+        await self.wait_for_session_finished()
 
         # Yield remaining audio chunks
         while audio_chunks:

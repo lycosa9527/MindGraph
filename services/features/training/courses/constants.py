@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 STEP_TYPES = frozenset({"canvas", "slide", "video", "page"})
 # Archived page keys stay valid so stored courses that named removed modules still load.
 PAGE_KEYS = frozenset(
@@ -125,6 +127,63 @@ def optional_notes(value: object) -> str:
     if len(text) > 4000:
         raise ValueError("notes too long")
     return text
+
+
+GLASSES_REVEALS = frozenset({"clockwise", "highlight", "stages"})
+GLASSES_LINE_MAX = 400
+
+
+def optional_glasses_line(value: object) -> str:
+    """Spoken line MindGlass shows for this slide. Blank means there is no line."""
+    text = str(value or "").strip()
+    if len(text) > GLASSES_LINE_MAX:
+        raise ValueError("glasses_line too long")
+    return text
+
+
+def optional_glasses_reveal(value: object) -> str:
+    """How the open slide plays after the glasses scan its code."""
+    text = str(value or "").strip()
+    if text not in GLASSES_REVEALS:
+        return ""
+    return text
+
+
+GLASSES_PACE_DEFAULT = 280
+GLASSES_RATE_DEFAULT = 1.0
+
+
+def optional_glasses_qr(value: object) -> bool:
+    """Whether this slide draws the play code. Only a real true counts."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes"}
+    return False
+
+
+def optional_glasses_pace(value: object) -> int:
+    """Milliseconds between bubbles. Out of range falls back to the default."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return GLASSES_PACE_DEFAULT
+    try:
+        number = int(float(value))
+    except ValueError:
+        return GLASSES_PACE_DEFAULT
+    return min(800, max(160, number))
+
+
+def optional_glasses_rate(value: object) -> float:
+    """Speech rate for the generated voice. Out of range falls back to 1."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return GLASSES_RATE_DEFAULT
+    try:
+        number = float(value)
+    except ValueError:
+        return GLASSES_RATE_DEFAULT
+    if not math.isfinite(number):
+        return GLASSES_RATE_DEFAULT
+    return round(min(1.6, max(0.6, number)), 2)
 
 
 MARK_STEPS_MIN = 1

@@ -253,6 +253,20 @@ async def limit_request_body_size(request: Request, call_next):
     return await call_next(request)
 
 
+def _host_name(netloc: str) -> str:
+    """Hostname without the port. Bracketed IPv6 keeps the address inside the brackets."""
+    if netloc.startswith("["):
+        end = netloc.find("]")
+        return netloc[1:end].lower() if end > 1 else ""
+    return netloc.split(":", 1)[0].lower()
+
+
+def _loopback_pair(origin_host: str, request_host: str) -> bool:
+    """True when both sides are this machine. The dev server uses another localhost port."""
+    loopback = {"localhost", "127.0.0.1", "::1"}
+    return _host_name(origin_host) in loopback and _host_name(request_host) in loopback
+
+
 async def csrf_protection(request: Request, call_next):
     """
     CSRF protection middleware for state-changing operations.
@@ -303,7 +317,9 @@ async def csrf_protection(request: Request, call_next):
                 else:
                     # Cross-origin: logged only — intentional SameSite-cookie CSRF tradeoff.
                     # Tighten with Origin allowlist or mandatory X-CSRF-Token if policy changes.
-                    logger.warning(
+                    # The Vite dev server is another localhost port; that is not a warning.
+                    log = logger.debug if _loopback_pair(origin_host, request_host) else logger.warning
+                    log(
                         "Cross-origin request detected: Origin=%s, Host=%s",
                         origin_host,
                         request_host,

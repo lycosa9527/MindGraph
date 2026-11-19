@@ -1,5 +1,7 @@
 """Slide interaction payload stays on the course step and drops unknown modes."""
 
+import pytest
+
 from services.features.training.courses.diagram_spec import clean_diagram_spec
 from services.features.training.courses.interact import clean_interact
 from services.features.training.courses.repository import _step_payload
@@ -90,6 +92,33 @@ def test_step_payload_and_snapshot_keep_interact() -> None:
     snapshot = snapshot_step_payload({"type": "canvas", "interact": payload["interact"]})
     assert snapshot["interact"]["mode"] == "read"
     assert snapshot_step_payload({"type": "page"}).get("interact") is None
+
+
+def test_step_payload_keeps_glasses_cue() -> None:
+    """The spoken line and reveal mode survive save and the play snapshot."""
+    payload = _step_payload(
+        {
+            "type": "slide",
+            "glasses_line": " Welcome to MindGlass demo, please tap to continue. ",
+            "glasses_reveal": "clockwise",
+        }
+    )
+    assert payload["glasses_line"] == "Welcome to MindGlass demo, please tap to continue."
+    assert payload["glasses_reveal"] == "clockwise"
+    assert payload["glasses_qr"] is False
+    assert payload["glasses_pace"] == 280
+    assert payload["glasses_rate"] == 1.0
+    marked = _step_payload({"type": "slide", "glasses_qr": True, "glasses_pace": 40, "glasses_rate": 3})
+    assert marked["glasses_qr"] is True
+    assert marked["glasses_pace"] == 160
+    assert marked["glasses_rate"] == 1.6
+    assert _step_payload({"type": "slide", "glasses_qr": "false"})["glasses_qr"] is False
+    assert _step_payload({"type": "slide", "glasses_reveal": "spin"})["glasses_reveal"] == ""
+    snapshot = snapshot_step_payload(payload)
+    assert snapshot["glasses_line"].startswith("Welcome")
+    assert snapshot["glasses_reveal"] == "clockwise"
+    with pytest.raises(ValueError, match="glasses_line"):
+        _step_payload({"type": "slide", "glasses_line": "x" * 401})
 
 
 def test_step_payload_keeps_diagram_spec() -> None:

@@ -119,8 +119,8 @@ const leadSecondary = computed(() =>
   >
     <div class="welcome-panel-hero">
       <MindmateAgentAvatar
-        :size="48"
-        branding-size="md"
+        :size="72"
+        branding-size="lg"
         avatar-class="welcome-panel-avatar"
       />
       <div class="welcome-panel-copy">
@@ -161,7 +161,7 @@ const leadSecondary = computed(() =>
   flex: 0 0 auto;
   min-height: 0;
   justify-content: flex-start;
-  padding: 28px 20px 0;
+  padding: 48px 20px 0;
 }
 
 .welcome-panel-hero {
@@ -175,8 +175,8 @@ const leadSecondary = computed(() =>
 
 .welcome-panel-hero :deep(.mindmate-agent-avatar-ring),
 .welcome-panel-hero :deep(.welcome-panel-avatar) {
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
 }
 

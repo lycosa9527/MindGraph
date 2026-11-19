@@ -14,7 +14,11 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
 import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
-import { FLOW_SUBSTEP_NODE_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
+import {
+  FLOW_SUBSTEP_NODE_MAX_WIDTH,
+  FLOW_SUBSTEP_PILL_MIN_HEIGHT,
+  FLOW_SUBSTEP_PILL_MIN_WIDTH,
+} from '@/composables/diagrams/layoutConfig'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
@@ -24,6 +28,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import { FLOW_SUBSTEP_FONT_SIZE } from '@/utils/flowPillBox'
 import { flowPillContentMaxPx } from '@/utils/flowPillBox'
 import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
@@ -95,8 +100,13 @@ const nodeStyle = computed(() => {
     backgroundColor,
     color: themeNodePaint.value?.textColor || props.data.style?.textColor || THINKING_MAP_LEAF_TEXT,
     fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
-    fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? MIND_MAP_GEOMETRY.fontSize)}px`,
-    padding: thinkingMapBoxPadding(true),
+    fontSize: `${thinkingMapDisplayedFontSize(
+      props.data.style?.fontSize,
+      isFlowMap.value
+        ? (themeNodePaint.value?.fontSize ?? FLOW_SUBSTEP_FONT_SIZE)
+        : (themeNodePaint.value?.fontSize ?? MIND_MAP_GEOMETRY.fontSize)
+    )}px`,
+    padding: isFlowMap.value ? '5px 10px' : thinkingMapBoxPadding(true),
     boxShadow: MIND_MAP_GEOMETRY.branchShadow,
     fontWeight: props.data.style?.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
@@ -120,16 +130,16 @@ const nodeStyle = computed(() => {
     return {
       ...shapedStyle,
       width: 'max-content',
-      minWidth: '120px',
+      minWidth: `${FLOW_SUBSTEP_PILL_MIN_WIDTH}px`,
       minHeight:
-        props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
+        props.data.style?.nodeShape === 'underline' ? 0 : `${FLOW_SUBSTEP_PILL_MIN_HEIGHT}px`,
       maxWidth: `${FLOW_SUBSTEP_NODE_MAX_WIDTH}px`,
     }
   }
   return shapedStyle
 })
 
-const SUBSTEP_MAX_TEXT_WIDTH = 180
+const SUBSTEP_MAX_TEXT_WIDTH = 140
 
 const substepMaxWidth = computed(() => {
   if (!isFlowMap.value) return '140px'
@@ -140,13 +150,13 @@ const substepMaxWidth = computed(() => {
     ((props.data.label as string) || '').trim(),
     diagramStore.data?.connections
   )
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.fontSize
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || FLOW_SUBSTEP_FONT_SIZE
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const fontFamily = String(nodeStyle.value.fontFamily || '')
   return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, SUBSTEP_MAX_TEXT_WIDTH, {
     fontWeight,
     fontFamily: fontFamily || undefined,
-    columnCeiling: flowPillContentMaxPx(FLOW_SUBSTEP_NODE_MAX_WIDTH),
+    columnCeiling: flowPillContentMaxPx(FLOW_SUBSTEP_NODE_MAX_WIDTH, 'substep'),
   })}px`
 })
 
@@ -291,8 +301,8 @@ function handleBranchMovePointerUp(): void {
 <style scoped>
 .flow-substep-node {
   width: max-content;
-  min-width: 100px;
-  min-height: 50px;
+  min-width: 72px;
+  min-height: 32px;
   overflow: visible;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   transition:

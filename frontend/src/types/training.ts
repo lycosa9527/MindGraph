@@ -74,6 +74,16 @@ export interface TrainingCourseStep {
   focus_key?: string | null
   ui_lock?: string | null
   notes?: string | null
+  /** Line MindGlass shows and speaks when it scans this slide's code. */
+  glasses_line?: string | null
+  /** ``clockwise`` swooshes bubbles in. ``stages`` plays a double bubble. ``highlight`` pulses chosen nodes. */
+  glasses_reveal?: '' | 'clockwise' | 'highlight' | 'stages' | null
+  /** Draw the play code on this slide. */
+  glasses_qr?: boolean
+  /** Milliseconds between bubbles when the animation plays. */
+  glasses_pace?: number | null
+  /** Speech rate used the last time the voiceover was generated. */
+  glasses_rate?: number | null
   mark_step?: number
   mark_steps?: number
   /** Guided reading, drag-to-build, or a node quiz. Absent means off. */

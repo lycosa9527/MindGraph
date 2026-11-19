@@ -3,6 +3,11 @@
  */
 import type { CanvasExportLayout } from '@/config/canvasExportOptions'
 import {
+  type WorksheetCompareArrangement,
+  placeImageInComparePanel,
+  splitWorksheetCompareRegion,
+} from '@/utils/worksheetCompareLayout'
+import {
   type WorksheetDiagramCrop,
   normalizeWorksheetDiagramCrop,
   worksheetDiagramCropFractions,
@@ -134,6 +139,14 @@ type JsPdfLike = {
     height: number
   ) => void
   addPage: () => void
+  setFontSize?: (size: number) => void
+  setTextColor?: (r: number, g?: number, b?: number) => void
+  text?: (
+    text: string,
+    x: number,
+    y: number,
+    options?: { align?: 'left' | 'center' | 'right' }
+  ) => void
 }
 
 export function fitImageRectOnA4Page(
@@ -273,6 +286,54 @@ export async function cropRasterDataUrl(
   }
 }
 
+export const SHEET_QR_SIZE_MM = 18
+
+export function sheetQrRectMm(
+  pageWidthMm: number,
+  pageHeightMm: number,
+  marginMm = 10,
+  sizeMm = SHEET_QR_SIZE_MM
+): { x: number; y: number; size: number } {
+  return {
+    x: pageWidthMm - marginMm - sizeMm,
+    y: pageHeightMm - marginMm - sizeMm,
+    size: sizeMm,
+  }
+}
+
+export function addSheetQrToPdfPage(pdf: JsPdfLike, dataUrl: string, marginMm = 10): void {
+  if (!dataUrl) return
+  const rect = sheetQrRectMm(
+    pdf.internal.pageSize.getWidth(),
+    pdf.internal.pageSize.getHeight(),
+    marginMm
+  )
+  pdf.addImage(dataUrl, pdfRasterFormatFromDataUrl(dataUrl), rect.x, rect.y, rect.size, rect.size)
+}
+
+export async function loadSheetQrDataUrl(payload: string): Promise<string | null> {
+  const text = payload.trim()
+  if (!text) return null
+  const response = await fetch(`/api/qrcode?data=${encodeURIComponent(text)}&size=216`)
+  if (!response.ok) return null
+  const blob = await response.blob()
+  return await new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null)
+    reader.onerror = () => resolve(null)
+    reader.readAsDataURL(blob)
+  })
+}
+
+export async function loadSheetQrDataUrls(payloads: string[]): Promise<string[]> {
+  const urls: string[] = []
+  for (const payload of payloads) {
+    const url = await loadSheetQrDataUrl(payload)
+    if (url) urls.push(url)
+  }
+  return urls
+}
+
 export function addWorksheetPageToPdf(
   pdf: JsPdfLike,
   diagramDataUrl: string,
@@ -326,4 +387,95 @@ export function addWorksheetPageToPdf(
     diagramRect.width,
     diagramRect.height
   )
+}
+
+type WorksheetComparePanelImage = {
+  dataUrl: string
+  widthPx: number
+  heightPx: number
+  label?: string
+}
+
+export type WorksheetComparePanelPlacement = {
+  offsetX?: number
+  offsetY?: number
+  scale?: number
+}
+
+/**
+ * One A4 page: optional header + two diagram panels (left|right or top/bottom) with labels.
+ */
+export function addWorksheetComparePageToPdf(
+  pdf: JsPdfLike,
+  left: WorksheetComparePanelImage,
+  right: WorksheetComparePanelImage,
+  headerDataUrl: string | null,
+  headerWidthPx: number,
+  headerHeightPx: number,
+  marginMm = 10,
+  headerGapMm = 4,
+  arrangement: WorksheetCompareArrangement = 'horizontal',
+  leftPlacement: WorksheetComparePanelPlacement = {},
+  rightPlacement: WorksheetComparePanelPlacement = {}
+): void {
+  const pageW = pdf.internal.pageSize.getWidth()
+  const pageH = pdf.internal.pageSize.getHeight()
+  let regionTopMm = marginMm
+
+  if (headerDataUrl && headerWidthPx > 0 && headerHeightPx > 0) {
+    const headerMaxW = pageW - marginMm * 2
+    const headerAspect = headerWidthPx / headerHeightPx
+    const headerDrawW = headerMaxW
+    const headerDrawH = headerDrawW / headerAspect
+    pdf.addImage(
+      headerDataUrl,
+      pdfRasterFormatFromDataUrl(headerDataUrl),
+      marginMm,
+      regionTopMm,
+      headerDrawW,
+      headerDrawH
+    )
+    regionTopMm += headerDrawH + headerGapMm
+  }
+
+  const regionWidth = pageW - marginMm * 2
+  const regionHeight = pageH - regionTopMm - marginMm
+  const layout = splitWorksheetCompareRegion(
+    marginMm,
+    regionTopMm,
+    regionWidth,
+    regionHeight,
+    undefined,
+    undefined,
+    arrangement
+  )
+
+  for (const [panel, image, placement] of [
+    [layout.first, left, leftPlacement],
+    [layout.second, right, rightPlacement],
+  ] as const) {
+    const fitted = placeImageInComparePanel(
+      image.widthPx,
+      image.heightPx,
+      panel,
+      placement.offsetX ?? 0,
+      placement.offsetY ?? 0,
+      placement.scale ?? 1
+    )
+    pdf.addImage(
+      image.dataUrl,
+      pdfRasterFormatFromDataUrl(image.dataUrl),
+      fitted.x,
+      fitted.y,
+      fitted.width,
+      fitted.height
+    )
+    const label = image.label?.trim()
+    if (label && pdf.setFontSize && pdf.setTextColor && pdf.text) {
+      pdf.setFontSize(9)
+      pdf.setTextColor(80)
+      const labelY = panel.y + panel.height + layout.labelHeightMm * 0.75
+      pdf.text(label, panel.x + panel.width / 2, labelY, { align: 'center' })
+    }
+  }
 }

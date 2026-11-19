@@ -16,6 +16,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import {
   hasActiveWorksheetHeader,
+  isWorksheetCompareMode,
   resolveWorksheetTopicText,
   worksheetDiagramCropFromOptions,
 } from '@/config/canvasWorksheetText'
@@ -59,10 +60,14 @@ import type { MindMapVectorSvgResult } from '@/utils/diagramMindMapVectorSvg'
 import {
   type PdfPageOrientation,
   addRasterImageToA4PdfPage,
+  addSheetQrToPdfPage,
+  addWorksheetComparePageToPdf,
   addWorksheetPageToPdf,
   compressRasterDataUrlForA4Pdf,
   cropRasterDataUrl,
   isPdfExportCommand,
+  loadSheetQrDataUrl,
+  loadSheetQrDataUrls,
   resolvePdfOrientationFromExportOptions,
 } from '@/utils/diagramPdfExport'
 import { type WorksheetHeaderLabels, captureWorksheetHeader } from '@/utils/diagramWorksheetHeader'
@@ -71,6 +76,7 @@ import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 import { encodeMgFileContents } from '@/utils/mgInterchange'
 import {
   ZERO_WORKSHEET_DIAGRAM_CROP,
+  worksheetDiagramCropFractions,
   worksheetDiagramCropIsActive,
   worksheetDiagramHasCustomPlacement,
 } from '@/utils/worksheetDiagramCrop'
@@ -162,6 +168,94 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     )
   }
 
+  async function buildCompareWorksheetPdf(
+    orientation: PdfPageOrientation,
+    headerCapture: PdfRasterCapture | null,
+    exportOptions?: CanvasExportOptions
+  ): Promise<InstanceType<(typeof import('jspdf'))['jsPDF']> | null> {
+    const pair = resolveExportOptions(exportOptions).comparePair
+    if (!pair) return null
+    const { jsPDF } = await import('jspdf')
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'mm',
+      format: 'a4',
+    })
+    const worksheetText = resolveExportOptions(exportOptions).worksheetText
+    const leftCrop = worksheetDiagramCropFromOptions(worksheetText)
+    const rightCrop = {
+      top: worksheetText?.compareRightCropTop ?? 0,
+      right: worksheetText?.compareRightCropRight ?? 0,
+      bottom: worksheetText?.compareRightCropBottom ?? 0,
+      left: worksheetText?.compareRightCropLeft ?? 0,
+    }
+    const leftCropped = await cropRasterDataUrl(
+      pair.left.dataUrl,
+      pair.left.width,
+      pair.left.height,
+      leftCrop
+    )
+    const rightCropped = await cropRasterDataUrl(
+      pair.right.dataUrl,
+      pair.right.width,
+      pair.right.height,
+      rightCrop
+    )
+    const leftFrac = worksheetDiagramCropFractions(leftCrop)
+    const rightFrac = worksheetDiagramCropFractions(rightCrop)
+    const leftW = leftCropped.applied
+      ? Math.max(1, Math.round(pair.left.width * leftFrac.cw))
+      : pair.left.width
+    const leftH = leftCropped.applied
+      ? Math.max(1, Math.round(pair.left.height * leftFrac.ch))
+      : pair.left.height
+    const rightW = rightCropped.applied
+      ? Math.max(1, Math.round(pair.right.width * rightFrac.cw))
+      : pair.right.width
+    const rightH = rightCropped.applied
+      ? Math.max(1, Math.round(pair.right.height * rightFrac.ch))
+      : pair.right.height
+    const left = await compressRasterDataUrlForA4Pdf(leftCropped.dataUrl, leftW, leftH, orientation)
+    const right = await compressRasterDataUrlForA4Pdf(
+      rightCropped.dataUrl,
+      rightW,
+      rightH,
+      orientation
+    )
+    addWorksheetComparePageToPdf(
+      pdf,
+      {
+        dataUrl: left.dataUrl,
+        widthPx: left.width,
+        heightPx: left.height,
+        label: pair.left.label,
+      },
+      {
+        dataUrl: right.dataUrl,
+        widthPx: right.width,
+        heightPx: right.height,
+        label: pair.right.label,
+      },
+      headerCapture?.dataUrl ?? null,
+      headerCapture?.width ?? 0,
+      headerCapture?.height ?? 0,
+      10,
+      4,
+      worksheetText?.compareLayout ?? 'horizontal',
+      {
+        offsetX: worksheetText?.diagramOffsetX ?? 0,
+        offsetY: worksheetText?.diagramOffsetY ?? 0,
+        scale: worksheetText?.diagramScale ?? 1,
+      },
+      {
+        offsetX: worksheetText?.compareRightOffsetX ?? 0,
+        offsetY: worksheetText?.compareRightOffsetY ?? 0,
+        scale: worksheetText?.compareRightScale ?? 1,
+      }
+    )
+    return pdf
+  }
+
   async function buildA4PdfFromImages(
     images: PdfRasterCapture[],
     orientation: PdfPageOrientation,
@@ -175,6 +269,16 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       format: 'a4',
     })
     const worksheetText = resolveExportOptions(exportOptions).worksheetText
+    const sheetQrPayload = worksheetText?.showSheetQr ? worksheetText.sheetQrPayload.trim() : ''
+    const copyPayloads = worksheetText?.classPersonalize ? worksheetText.sheetCopyPayloads : []
+    const personalized = copyPayloads.length > 1
+    const sheetQrDataUrl = sheetQrPayload ? await loadSheetQrDataUrl(sheetQrPayload) : null
+    const qrUrls = personalized
+      ? await loadSheetQrDataUrls(copyPayloads)
+      : sheetQrDataUrl
+        ? [sheetQrDataUrl]
+        : []
+    const pageCount = personalized && images.length > 0 ? qrUrls.length : images.length
     const diagramOffsetX = worksheetText?.diagramOffsetX ?? 0
     const diagramOffsetY = worksheetText?.diagramOffsetY ?? 0
     const diagramScale = worksheetText?.diagramScale ?? 1
@@ -185,8 +289,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       diagramScale,
       diagramCrop
     )
-    for (let index = 0; index < images.length; index += 1) {
-      const image = images[index]
+    for (let index = 0; index < pageCount; index += 1) {
+      const image = personalized ? images[0] : images[index]
       if (index > 0) {
         pdf.addPage('a4', orientation)
       }
@@ -197,8 +301,9 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         orientation,
         image.image
       )
-      const includeHeader = headerCapture !== null && index === 0
-      const placeDiagram = includeHeader || (index === 0 && hasCustomPlacement && !headerCapture)
+      const includeHeader = headerCapture !== null && (personalized || index === 0)
+      const placeDiagram =
+        includeHeader || ((personalized || index === 0) && hasCustomPlacement && !headerCapture)
       let diagramDataUrl = compressed.dataUrl
       let placedCrop = diagramCrop
       if (placeDiagram && worksheetDiagramCropIsActive(diagramCrop)) {
@@ -246,6 +351,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         )
       } else {
         addRasterImageToA4PdfPage(pdf, compressed.dataUrl, compressed.width, compressed.height)
+      }
+      const qrUrl = personalized ? qrUrls[index] : index === 0 ? (qrUrls[0] ?? '') : ''
+      if (qrUrl) {
+        addSheetQrToPdfPage(pdf, qrUrl)
       }
     }
     return pdf
@@ -445,9 +554,27 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const answerMode: CanvasExportOptions['answerMode'] = includeAnswers ? 'include' : 'exclude'
     const useVector = canUseMindMapVectorExport(diagramStore) && !includeAnswers
 
+    const headerCaptureEarly = await resolveWorksheetHeaderCapture(exportOptions)
+    if (isWorksheetCompareMode(resolveExportOptions(exportOptions).worksheetText)) {
+      const comparePdf = await buildCompareWorksheetPdf(
+        orientation,
+        headerCaptureEarly,
+        exportOptions
+      )
+      if (comparePdf) {
+        const filename = exportFilename(getTitle(), 'pdf')
+        if (!(await handOffPdf(comparePdf, filename))) return
+        logDiagramExport(format)
+        notify.successKey('canvas.export.pdfSuccess')
+        return
+      }
+      notify.errorKey('canvas.worksheetText.compareCaptureFailed')
+      return
+    }
+
     if (useVector) {
       const vector = await captureMindMapVectorSvg()
-      const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
+      const headerCapture = headerCaptureEarly
       const pdf = await exportMindMapVectorPdfDocument({
         orientation,
         vectors: [vector],
@@ -471,7 +598,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       ),
     ]
 
-    const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
+    const headerCapture = headerCaptureEarly
     const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture, exportOptions)
     const filename = exportFilename(getTitle(), 'pdf')
     if (!(await handOffPdf(pdf, filename))) return
@@ -492,6 +619,25 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
+
+      if (isWorksheetCompareMode(mergedOptions.worksheetText)) {
+        if (!mergedOptions.comparePair?.left || !mergedOptions.comparePair?.right) {
+          notify.errorKey('canvas.worksheetText.compareNeedTwo')
+          return
+        }
+        const orientation = resolvePdfOrientation(format, container, mergedOptions)
+        const headerCapture = await resolveWorksheetHeaderCapture(mergedOptions)
+        const comparePdf = await buildCompareWorksheetPdf(orientation, headerCapture, mergedOptions)
+        if (!comparePdf) {
+          notify.errorKey('canvas.worksheetText.compareCaptureFailed')
+          return
+        }
+        const filename = exportFilename(getTitle(), 'pdf')
+        if (!(await handOffPdf(comparePdf, filename))) return
+        logDiagramExport(format)
+        notify.successKey('canvas.export.pdfSuccess')
+        return
+      }
 
       if (isLearningSheetRasterCapture(diagramStore)) {
         const orientation = resolvePdfOrientation(format, container, mergedOptions)
@@ -583,8 +729,21 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         mergedOptions,
         includeAnswers ? 'include' : 'exclude'
       )
+      const comparePair = mergedOptions.comparePair
+      if (isWorksheetCompareMode(worksheetText)) {
+        if (!comparePair?.left?.blob || !comparePair?.right?.blob) {
+          notify.errorKey('canvas.worksheetText.compareNeedTwo')
+          return
+        }
+      }
+      const isCompare = Boolean(
+        isWorksheetCompareMode(worksheetText) && comparePair?.left?.blob && comparePair?.right?.blob
+      )
+
       let diagramBlob: Blob
-      if (canUseMindMapVectorExport(diagramStore) && !includeAnswers) {
+      if (isCompare && comparePair) {
+        diagramBlob = comparePair.left.blob
+      } else if (canUseMindMapVectorExport(diagramStore) && !includeAnswers) {
         const raster = await runLearningSheetRasterCapture(
           diagramStore,
           sheetOptions,
@@ -602,6 +761,9 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const title = getTitle()
       const formData = new FormData()
       formData.append('diagram', diagramBlob, 'diagram.png')
+      if (isCompare && comparePair) {
+        formData.append('diagram_b', comparePair.right.blob, 'diagram_b.png')
+      }
       formData.append(
         'meta',
         JSON.stringify({
@@ -621,6 +783,16 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           diagramCropRight: worksheetText.diagramCropRight,
           diagramCropBottom: worksheetText.diagramCropBottom,
           diagramCropLeft: worksheetText.diagramCropLeft,
+          compareLayout: worksheetText.compareLayout ?? 'horizontal',
+          compareRightOffsetX: worksheetText.compareRightOffsetX ?? 0,
+          compareRightOffsetY: worksheetText.compareRightOffsetY ?? 0,
+          compareRightScale: worksheetText.compareRightScale ?? 1,
+          compareRightCropTop: worksheetText.compareRightCropTop ?? 0,
+          compareRightCropRight: worksheetText.compareRightCropRight ?? 0,
+          compareRightCropBottom: worksheetText.compareRightCropBottom ?? 0,
+          compareRightCropLeft: worksheetText.compareRightCropLeft ?? 0,
+          labelA: isCompare && comparePair ? comparePair.left.label : '',
+          labelB: isCompare && comparePair ? comparePair.right.label : '',
           labels: {
             name: t('canvas.worksheetText.fieldName'),
             className: t('canvas.worksheetText.fieldClass'),

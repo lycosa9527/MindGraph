@@ -8,6 +8,7 @@ import {
 import type { MindMapVectorSvgResult } from '@/utils/diagramMindMapVectorSvg'
 import {
   type PdfPageOrientation,
+  addSheetQrToPdfPage,
   fitImageRectInA4Region,
   fitImageRectOnA4Page,
 } from '@/utils/diagramPdfExport'
@@ -65,7 +66,8 @@ async function embedSvgOnPage(
  */
 export async function buildA4PdfFromMindMapVectors(
   pages: MindMapVectorPdfPageInput[],
-  orientation: PdfPageOrientation
+  orientation: PdfPageOrientation,
+  sheetQrDataUrl: string | string[] | null = null
 ): Promise<JsPdfDoc> {
   if (pages.length === 0) {
     throw new Error('Mind-map vector PDF requires at least one page')
@@ -78,16 +80,21 @@ export async function buildA4PdfFromMindMapVectors(
     unit: 'mm',
     format: 'a4',
   })
-  const subsetText = collectMindMapVectorPdfSubsetText(pages.map((page) => page.vector.svg))
+  const qrUrls = (
+    Array.isArray(sheetQrDataUrl) ? sheetQrDataUrl : sheetQrDataUrl ? [sheetQrDataUrl] : []
+  ).filter((item) => item.trim().length > 0)
+  const personalized = qrUrls.length > 1 && pages.length > 0
+  const drawnPages = personalized ? qrUrls.map(() => pages[0]) : pages
+  const subsetText = collectMindMapVectorPdfSubsetText(drawnPages.map((page) => page.vector.svg))
   await registerMindMapVectorPdfFonts(pdf, subsetText)
 
-  for (let index = 0; index < pages.length; index += 1) {
-    const page = pages[index]
+  for (let index = 0; index < drawnPages.length; index += 1) {
+    const page = drawnPages[index]
     if (index > 0) {
       pdf.addPage('a4', orientation)
     }
 
-    const header = index === 0 ? (page.headerCapture ?? null) : null
+    const header = personalized || index === 0 ? (page.headerCapture ?? null) : null
     const offsetX = page.diagramOffsetX ?? 0
     const offsetY = page.diagramOffsetY ?? 0
     const scale = page.diagramScale ?? 1
@@ -118,7 +125,7 @@ export async function buildA4PdfFromMindMapVectors(
         crop
       )
       await embedSvgOnPage(pdf, page.vector, rect, crop)
-    } else if (index === 0 && hasCustomPlacement) {
+    } else if ((personalized || index === 0) && hasCustomPlacement) {
       const rect = fitImageRectInA4Region(
         pdf,
         page.vector.width,
@@ -134,6 +141,10 @@ export async function buildA4PdfFromMindMapVectors(
     } else {
       const rect = fitImageRectOnA4Page(pdf, page.vector.width, page.vector.height)
       await embedSvgOnPage(pdf, page.vector, rect)
+    }
+    const qrUrl = personalized ? qrUrls[index] : index === 0 ? (qrUrls[0] ?? '') : ''
+    if (qrUrl) {
+      addSheetQrToPdfPage(pdf, qrUrl)
     }
   }
 

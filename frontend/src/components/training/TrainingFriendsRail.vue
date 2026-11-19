@@ -49,7 +49,7 @@ useTrainingHeartbeat(() =>
 )
 
 watch(
-  () => [training.snapshot.session_id, visible.value],
+  () => `${training.snapshot.session_id ?? ''}:${visible.value}`,
   () => {
     if (visible.value) void training.fetchRoster()
   },

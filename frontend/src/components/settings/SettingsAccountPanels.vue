@@ -12,6 +12,7 @@ import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import ChangePasswordForm from '@/components/auth/ChangePasswordForm.vue'
 import ChangePhoneModal from '@/components/auth/ChangePhoneModal.vue'
 import DingTalkPairModal from '@/components/auth/DingTalkPairModal.vue'
+import GlassesBindModal from '@/components/settings/GlassesBindModal.vue'
 import LoginDevicesModal from '@/components/auth/LoginDevicesModal.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
@@ -275,6 +276,10 @@ function openBrowserPluginPage(): void {
       mode="bind"
       :linked-staff-id="form.dingtalkStaffMasked"
       @completed="form.handleDingtalkBindCompleted"
+    />
+    <GlassesBindModal
+      v-model="form.showGlassesBindModal"
+      @completed="form.handleGlassesBindCompleted"
     />
     <DingTalkPairModal
       v-model="form.showUnbindDingTalkModal"

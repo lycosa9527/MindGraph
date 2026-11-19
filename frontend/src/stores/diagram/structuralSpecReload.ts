@@ -1,4 +1,5 @@
-import type { DiagramNode } from '@/types'
+import { FORMAT_BRUSH_KEYS } from '@/composables/canvasToolbar/formatBrushStyle'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 
 import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
 
@@ -64,6 +65,54 @@ export function nodeLabelSignature(node: DiagramNode): string {
   return `${node.text ?? ''}\u0001${node.textSecondary ?? ''}`
 }
 
+/**
+ * Loader stamps layout sizes; keep hand-painted format keys from the previous node.
+ * Double-bubble rebuilds re-stamp rainbow fill/border on diffs — without this, format
+ * brush / style edits vanish after typography or add/delete relayout.
+ * Do not re-spread previous layout sizes (`width` / `minWidth` / …) — flow row stretch
+ * would otherwise stick on `data.nodes` after a structural reload.
+ */
+export function mergeReloadedNodeStyle(
+  previous: NodeStyle | undefined,
+  next: NodeStyle | undefined
+): NodeStyle | undefined {
+  if (!previous && !next) return undefined
+  if (!previous) return next ? { ...next } : undefined
+  const formatFromPrevious: NodeStyle = {}
+  for (const key of FORMAT_BRUSH_KEYS) {
+    const value = previous[key]
+    if (value !== undefined) {
+      ;(formatFromPrevious as Record<string, unknown>)[key] = value
+    }
+  }
+  if (!next) {
+    return Object.keys(formatFromPrevious).length > 0 ? formatFromPrevious : undefined
+  }
+  return { ...next, ...formatFromPrevious }
+}
+
+function connectionStyleKey(connection: Connection): string {
+  if (connection.id) return `id:${connection.id}`
+  return `ends:${connection.source}\u0001${connection.target}`
+}
+
+/** Keep connector stroke (and other edge style) when structure reloads recreate edges. */
+export function mergeReloadedConnections(
+  connections: Connection[],
+  previous: Connection[] | undefined
+): Connection[] {
+  if (!previous || previous.length === 0) return connections
+  const prevByKey = new Map(previous.map((conn) => [connectionStyleKey(conn), conn] as const))
+  return connections.map((conn) => {
+    const prev = prevByKey.get(connectionStyleKey(conn))
+    if (!prev?.style) return conn
+    return {
+      ...conn,
+      style: { ...conn.style, ...prev.style },
+    }
+  })
+}
+
 /** Keep typography and worksheet answers on nodes whose ids survive a structure reload. */
 export function mergeReloadedNodeFields(
   nodes: DiagramNode[],
@@ -76,12 +125,13 @@ export function mergeReloadedNodeFields(
     const prev = prevById.get(node.id)
     if (!prev) return node
     const answers = structural ? hiddenAnswerFields(prev) : undefined
+    const mergedStyle = mergeReloadedNodeStyle(prev.style, node.style)
     if (structural && wasBlanked(prev)) {
       return {
         ...node,
         text: LEARNING_SHEET_BLANK_TEXT,
         textSecondary: '',
-        ...(prev.style ? { style: { ...prev.style, ...node.style } } : {}),
+        ...(mergedStyle ? { style: mergedStyle } : {}),
         data: {
           ...(node.data ?? {}),
           ...(answers ?? {}),
@@ -92,10 +142,10 @@ export function mergeReloadedNodeFields(
         },
       }
     }
-    if (!prev.style && !answers) return node
+    if (!mergedStyle && !answers) return node
     return {
       ...node,
-      ...(prev.style ? { style: { ...prev.style, ...node.style } } : {}),
+      ...(mergedStyle ? { style: mergedStyle } : {}),
       ...(answers ? { data: { ...(node.data ?? {}), ...answers } } : {}),
     }
   })

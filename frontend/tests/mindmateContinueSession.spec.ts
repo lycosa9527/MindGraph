@@ -17,6 +17,12 @@ vi.mock('@/composables', () => ({
   }),
 }))
 
+vi.mock('@/composables/mindmate/useMindMateBranding', () => ({
+  useMindMateBranding: () => ({
+    displayName: { value: 'MindMate' },
+  }),
+}))
+
 vi.mock('@/components/common/I18nText.vue', () => ({
   default: {
     props: ['k'],

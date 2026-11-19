@@ -164,7 +164,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(presentation).toBeGreaterThan(-1)
     expect(speech).toBeGreaterThan(presentation)
     expect(teachingTab).toContain('canvas.mindMapPresentationToolbar.slides')
-    expect(teachingTab).toContain('v-if="caps.mindMapV2"')
+    expect(teachingTab).toContain('v-if="caps.nodeCarousel"')
     expect(teachingTab).toContain('data-testid="mindmap-ribbon-speech-mode"')
     const page = readSrc('src/pages/CanvasPage.vue')
     const overlayExit = page.indexOf('<MindMapSlideOverlay')

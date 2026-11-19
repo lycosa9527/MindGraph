@@ -22,6 +22,11 @@ defineProps<{
     canMintDingtalkBind: boolean
     openBindDingTalkModal: () => void
     openUnbindDingTalkModal: () => void
+    glassesBindingStatus: string
+    glassesLinked: boolean
+    glassesBindLoading: boolean
+    openGlassesBindModal: () => void
+    unbindGlasses: () => void
   }
 }>()
 </script>
@@ -126,6 +131,51 @@ defineProps<{
       >
         <I18nText k="auth.dingtalkBindNoMindbot" />
       </p>
+    </div>
+
+    <div>
+      <label
+        class="language-settings-swiss__kicker"
+        for="account-binding-glasses"
+      >
+        <I18nText k="auth.glassesBindSection" />
+      </label>
+      <div class="flex items-center gap-2">
+        <input
+          id="account-binding-glasses"
+          :value="form.glassesBindingStatus"
+          type="text"
+          name="account-binding-glasses"
+          disabled
+          class="swiss-glass-field__input min-w-0 flex-1"
+        />
+        <button
+          v-if="form.glassesLinked"
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
+          :disabled="form.glassesBindLoading"
+          @click="form.unbindGlasses()"
+        >
+          <Loader2
+            v-if="form.glassesBindLoading"
+            class="w-3.5 h-3.5 animate-spin"
+          />
+          <I18nText k="auth.glassesBindUnbind" />
+        </button>
+        <button
+          v-else
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
+          :disabled="form.glassesBindLoading"
+          @click="form.openGlassesBindModal()"
+        >
+          <Loader2
+            v-if="form.glassesBindLoading"
+            class="w-3.5 h-3.5 animate-spin"
+          />
+          <I18nText k="auth.glassesBindButton" />
+        </button>
+      </div>
     </div>
   </div>
 </template>

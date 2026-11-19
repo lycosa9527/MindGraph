@@ -45,17 +45,20 @@ async def process_conversation_image(
     mime_type: str,
     filename: str,
     language: str,
-    diagram_id: str,
+    diagram_id: str = "",
     diagram_title: Optional[str] = None,
     apply_to_library: bool = True,
 ) -> Dict[str, Any]:
-    """Classify image and persist extract; optionally rebuild a hand-drawn map.
+    """Classify image and optionally persist extract / rebuild a hand-drawn map.
+
+    When ``diagram_id`` is empty (canvas-only import), return a rebuilt mind-map
+    ``spec`` without Document Summary or library writes. OCR fallback still
+    requires a library ``diagram_id``.
 
     Returns a JSON-serializable result with ``mode`` ``handdrawn`` | ``text``.
     """
     diagram_id = (diagram_id or "").strip()
-    if not diagram_id:
-        raise ValueError("diagram_id is required")
+    canvas_only = not diagram_id
     if not image_bytes:
         raise ValueError("Empty image")
 
@@ -63,26 +66,57 @@ async def process_conversation_image(
     language = (language or "zh").strip() or "zh"
 
     vision = None
+    vision_error: Optional[str] = None
     try:
         vision = await detect_and_rebuild_mindmap_from_image(
             image_bytes,
             mime_type=mime_type,
             language=language,
         )
+    except ValueError as exc:
+        # Missing / invalid local config (e.g. empty QWEN_API_KEY).
+        vision_error = str(exc).strip() or "Vision configuration error"
+        logger.warning(
+            "[ConversationImage] vision config failed user=%s: %s",
+            user_id,
+            vision_error,
+        )
     except VISION_MINDMAP_CALL_ERRORS as exc:
+        vision_error = str(exc).strip() or type(exc).__name__
         logger.warning(
             "[ConversationImage] vision detect failed user=%s: %s",
             user_id,
-            exc,
+            vision_error,
         )
 
     if vision is not None and vision.is_mindmap and vision.spec is not None:
         agent = MindMapAgent(model="qwen")
-        is_valid, validation_msg = agent.validate_output(vision.spec)
+        # Vision prompt allows any branch count; do not enforce generation 4–8 hierarchy.
+        is_valid, validation_msg = agent.validate_output(
+            vision.spec,
+            enforce_hierarchy=False,
+        )
         if is_valid:
             enhanced = await agent.enhance_spec(vision.spec)
             if isinstance(enhanced, dict) and enhanced.get("topic"):
                 outline = mindmap_spec_to_outline_markdown(enhanced)
+                topic = str(enhanced.get("topic") or "").strip()
+                if canvas_only:
+                    return {
+                        "success": True,
+                        "mode": "handdrawn",
+                        "is_mindmap": True,
+                        "confidence": vision.confidence,
+                        "reason": vision.reason,
+                        "spec": enhanced,
+                        "diagram_type": agent.diagram_type,
+                        "topic": topic,
+                        "package_id": None,
+                        "doc_summary_saved": False,
+                        "library": {},
+                        "outline_markdown": outline,
+                        "reply_key": "handdrawn",
+                    }
                 package_id = await _persist_doc_summary_markdown(
                     user_id=user_id,
                     diagram_id=diagram_id,
@@ -108,7 +142,6 @@ async def process_conversation_image(
                         title=diagram_title or page_title,
                         organization_id=organization_id,
                     )
-                topic = str(enhanced.get("topic") or "").strip()
                 return {
                     "success": True,
                     "mode": "handdrawn",
@@ -134,6 +167,14 @@ async def process_conversation_image(
                 user_id,
                 validation_msg,
             )
+
+    if canvas_only:
+        if vision_error:
+            # Prefer actionable API/config errors over a generic "not detected".
+            if "401" in vision_error or "Unauthorized" in vision_error:
+                raise ValueError("DashScope vision API unauthorized (check QWEN_API_KEY)")
+            raise ValueError(f"Vision recognition failed: {vision_error[:240]}")
+        raise ValueError("No hand-drawn mind map detected")
 
     ocr_text = _ocr_image_bytes(image_bytes, mime_type=mime_type, filename=filename)
     if not ocr_text:

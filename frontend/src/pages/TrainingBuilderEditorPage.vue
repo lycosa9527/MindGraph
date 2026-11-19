@@ -18,6 +18,7 @@ import {
   isBoundToStep,
 } from '@/composables/training/builderDiagramBridge'
 import { readFocusNodeId } from '@/composables/training/trainingInteract'
+import { glassesHoldVoice } from '@/composables/training/useGlassesSlidePlay'
 import { useTrainingBuilderSession } from '@/composables/training/useTrainingBuilderSession'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 
@@ -83,7 +84,10 @@ function fitPlayCanvas(): void {
 }
 
 watch(previewing, (on) => {
-  if (!on) return
+  if (!on) {
+    glassesHoldVoice.value = false
+    return
+  }
   fitPlayCanvas()
 })
 
@@ -164,7 +168,10 @@ function onVodResize(size: { width: number; height: number }): void {
           :thumb="stageThumb"
           :hibernated="hibernated"
           :playing="previewing"
-          :play-audio="!previewing || current.page_key === 'canvas' || current.type === 'canvas'"
+          :play-audio="
+            !glassesHoldVoice &&
+            (!previewing || current.page_key === 'canvas' || current.type === 'canvas')
+          "
           :can-next="previewCanNext"
           @wake="builder.wake()"
           @topics="onTopicsDrop"

@@ -9,6 +9,8 @@ import {
   FLOW_MAP_PILL_WIDTH,
   FLOW_STEP_NODE_MAX_WIDTH,
   FLOW_SUBSTEP_NODE_MAX_WIDTH,
+  FLOW_SUBSTEP_PILL_MIN_HEIGHT,
+  FLOW_SUBSTEP_PILL_MIN_WIDTH,
   FLOW_TOPIC_NODE_MAX_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
@@ -20,7 +22,7 @@ import {
 
 export const FLOW_TOPIC_FONT_SIZE = 18
 export const FLOW_STEP_FONT_SIZE = 16
-export const FLOW_SUBSTEP_FONT_SIZE = 14
+export const FLOW_SUBSTEP_FONT_SIZE = 12
 
 export type FlowPillRole = 'topic' | 'step' | 'substep'
 
@@ -36,24 +38,35 @@ const FLOW_PILL_ROLE = {
     fontWeight: 'bold',
     textCap: 300,
     maxBox: FLOW_TOPIC_NODE_MAX_WIDTH,
+    minWidth: FLOW_MAP_PILL_WIDTH,
+    minHeight: FLOW_MAP_PILL_HEIGHT,
+    paddingX: MIND_MAP_GEOMETRY.paddingXOval * 2,
+    paddingY: MIND_MAP_GEOMETRY.paddingY * 2,
   },
   step: {
     fontSize: FLOW_STEP_FONT_SIZE,
     fontWeight: 'normal',
     textCap: 250,
     maxBox: FLOW_STEP_NODE_MAX_WIDTH,
+    minWidth: FLOW_MAP_PILL_WIDTH,
+    minHeight: FLOW_MAP_PILL_HEIGHT,
+    paddingX: MIND_MAP_GEOMETRY.paddingXOval * 2,
+    paddingY: MIND_MAP_GEOMETRY.paddingY * 2,
   },
   substep: {
     fontSize: FLOW_SUBSTEP_FONT_SIZE,
     fontWeight: 'normal',
-    textCap: 180,
+    textCap: 140,
     maxBox: FLOW_SUBSTEP_NODE_MAX_WIDTH,
+    minWidth: FLOW_SUBSTEP_PILL_MIN_WIDTH,
+    minHeight: FLOW_SUBSTEP_PILL_MIN_HEIGHT,
+    paddingX: MIND_MAP_GEOMETRY.paddingX * 2,
+    paddingY: 10,
   },
 } as const
 
 /** Horizontal padding of a flow pill (oval padding, both sides). */
 const FLOW_PILL_PADDING_X = MIND_MAP_GEOMETRY.paddingXOval * 2
-const FLOW_PILL_PADDING_Y = MIND_MAP_GEOMETRY.paddingY * 2
 const FLOW_PILL_BORDER = MIND_MAP_GEOMETRY.borderWidth * 2
 
 export interface FlowPillBox {
@@ -62,8 +75,9 @@ export interface FlowPillBox {
 }
 
 /** Text column inside a flow pill: CSS max minus padding and border. */
-export function flowPillContentMaxPx(maxBoxWidth: number): number {
-  return Math.max(8, maxBoxWidth - FLOW_PILL_PADDING_X - FLOW_PILL_BORDER)
+export function flowPillContentMaxPx(maxBoxWidth: number, role: FlowPillRole = 'step'): number {
+  const paddingX = FLOW_PILL_ROLE[role].paddingX
+  return Math.max(8, maxBoxWidth - paddingX - FLOW_PILL_BORDER)
 }
 
 export function measureFlowPillBox(
@@ -71,19 +85,25 @@ export function measureFlowPillBox(
   fontSize: number,
   textCap: number,
   maxBoxWidth: number,
-  options: MindMapTextMeasureOptions = {}
+  options: MindMapTextMeasureOptions & {
+    minWidth?: number
+    minHeight?: number
+    paddingX?: number
+    paddingY?: number
+  } = {}
 ): FlowPillBox {
+  const paddingX = options.paddingX ?? FLOW_PILL_PADDING_X
+  const paddingY = options.paddingY ?? MIND_MAP_GEOMETRY.paddingY * 2
+  const minWidth = options.minWidth ?? FLOW_MAP_PILL_WIDTH
+  const minHeight = options.minHeight ?? FLOW_MAP_PILL_HEIGHT
   const block = measureThinkingMapLabelBlockPx((text || '').trim() || ' ', fontSize, textCap, {
     ...options,
-    columnCeiling: options.columnCeiling ?? flowPillContentMaxPx(maxBoxWidth),
+    columnCeiling: options.columnCeiling ?? Math.max(8, maxBoxWidth - paddingX - FLOW_PILL_BORDER),
   })
-  const rawWidth = Math.ceil(block.width) + FLOW_PILL_PADDING_X + FLOW_PILL_BORDER
+  const rawWidth = Math.ceil(block.width) + paddingX + FLOW_PILL_BORDER
   return {
-    boxWidth: Math.min(maxBoxWidth, Math.max(FLOW_MAP_PILL_WIDTH, rawWidth)),
-    boxHeight: Math.max(
-      FLOW_MAP_PILL_HEIGHT,
-      Math.ceil(block.height + FLOW_PILL_PADDING_Y + FLOW_PILL_BORDER)
-    ),
+    boxWidth: Math.min(maxBoxWidth, Math.max(minWidth, rawWidth)),
+    boxHeight: Math.max(minHeight, Math.ceil(block.height + paddingY + FLOW_PILL_BORDER)),
   }
 }
 
@@ -102,6 +122,10 @@ export function measureFlowRolePill(
   return measureFlowPillBox(text, font.fontSize ?? base.fontSize, base.textCap, base.maxBox, {
     fontWeight: font.fontWeight ?? base.fontWeight,
     fontFamily: font.fontFamily,
+    minWidth: base.minWidth,
+    minHeight: base.minHeight,
+    paddingX: base.paddingX,
+    paddingY: base.paddingY,
   })
 }
 
@@ -120,7 +144,7 @@ export function flowSecondaryExtraHeight(
   const base = FLOW_PILL_ROLE[role]
   const fontSize = font.fontSize ?? base.fontSize
   const box = measureFlowRolePill(text, role, font)
-  const column = flowPillContentMaxPx(box.boxWidth)
+  const column = flowPillContentMaxPx(box.boxWidth, role)
   const block = measureThinkingMapLabelBlockPx(gloss, secondaryFontSize(fontSize), column, {
     columnCeiling: column,
     fontWeight: 'normal',

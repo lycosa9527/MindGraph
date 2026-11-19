@@ -71,7 +71,16 @@ export async function exportMindMapVectorPdfDocument(options: {
 }): Promise<InstanceType<(typeof import('jspdf'))['jsPDF']>> {
   // Lazy-load PDF stack so wawoff2/jsPDF never enter the app bootstrap graph.
   const { buildA4PdfFromMindMapVectors } = await import('@/utils/diagramMindMapVectorPdf')
+  const { loadSheetQrDataUrl, loadSheetQrDataUrls } = await import('@/utils/diagramPdfExport')
   const worksheetText = options.exportOptions?.worksheetText
+  const copyPayloads = worksheetText?.classPersonalize ? worksheetText.sheetCopyPayloads : []
+  const sheetQrPayload = worksheetText?.showSheetQr ? worksheetText.sheetQrPayload.trim() : ''
+  const sheetQrDataUrl =
+    copyPayloads.length > 1
+      ? await loadSheetQrDataUrls(copyPayloads)
+      : sheetQrPayload
+        ? await loadSheetQrDataUrl(sheetQrPayload)
+        : null
   return buildA4PdfFromMindMapVectors(
     options.vectors.map((vector, index) => ({
       vector,
@@ -81,6 +90,7 @@ export async function exportMindMapVectorPdfDocument(options: {
       diagramScale: worksheetText?.diagramScale ?? 1,
       diagramCrop: worksheetDiagramCropFromOptions(worksheetText),
     })),
-    options.orientation
+    options.orientation,
+    sheetQrDataUrl
   )
 }

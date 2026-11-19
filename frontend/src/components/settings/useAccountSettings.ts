@@ -51,6 +51,9 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
   const showOAuthBindModal = ref(false)
   const showBindDingTalkModal = ref(false)
   const showUnbindDingTalkModal = ref(false)
+  const showGlassesBindModal = ref(false)
+  const glassesBindLoading = ref(false)
+  const glassesLinked = ref(false)
   const dingtalkBindLoading = ref(false)
   const dingtalkBindStatus = ref<DingtalkBindStatus | null>(null)
   const oauthLinksLoading = ref(false)
@@ -89,14 +92,19 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     return t('auth.bindingUnlinked')
   })
 
-  const showAccountBindingsSection = computed(() =>
-    shouldShowAccountBindingsSection({
-      schoolId: authStore.user?.schoolId,
-      featureWechatLogin: featureWechatLogin.value,
-      wechatAvailable: oauthLinks.value?.wechat_enabled === true,
-      wechatLinked: oauthLinks.value?.wechat != null,
-      featureMindbot: featureMindbot.value,
-    })
+  const showAccountBindingsSection = computed(
+    () =>
+      Boolean(authStore.user) ||
+      shouldShowAccountBindingsSection({
+        schoolId: authStore.user?.schoolId,
+        featureWechatLogin: featureWechatLogin.value,
+        wechatAvailable: oauthLinks.value?.wechat_enabled === true,
+        wechatLinked: oauthLinks.value?.wechat != null,
+        featureMindbot: featureMindbot.value,
+      })
+  )
+  const glassesBindingStatus = computed(() =>
+    glassesLinked.value ? t('auth.glassesBindLinked') : t('auth.bindingUnlinked')
   )
 
   const showWechatOAuthRow = computed(() =>
@@ -212,6 +220,50 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     void fetchDingtalkBindStatus()
   }
 
+  async function fetchGlassesBindStatus() {
+    if (!authStore.user) {
+      glassesLinked.value = false
+      return
+    }
+    glassesBindLoading.value = true
+    try {
+      const response = await apiRequest('/api/learning-space/glasses/bind', { method: 'GET' })
+      if (response.ok) {
+        const body = (await response.json()) as { linked?: boolean }
+        glassesLinked.value = body.linked === true
+      }
+    } catch {
+      glassesLinked.value = false
+    } finally {
+      glassesBindLoading.value = false
+    }
+  }
+
+  function openGlassesBindModal() {
+    showGlassesBindModal.value = true
+  }
+
+  async function unbindGlasses() {
+    glassesBindLoading.value = true
+    try {
+      const response = await apiRequest('/api/learning-space/glasses/bind/unbind', { method: 'POST' })
+      if (!response.ok) {
+        notify.errorKey('auth.glassesBindUnbindError')
+        return
+      }
+      glassesLinked.value = false
+      notify.successKey('auth.glassesBindUnbindSuccess')
+    } catch {
+      notify.errorKey('auth.glassesBindUnbindError')
+    } finally {
+      glassesBindLoading.value = false
+    }
+  }
+
+  function handleGlassesBindCompleted() {
+    glassesLinked.value = true
+  }
+
   function openWechatBindModal() {
     showOAuthBindModal.value = true
   }
@@ -320,6 +372,7 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
         showOAuthBindModal.value = false
         showBindDingTalkModal.value = false
         showUnbindDingTalkModal.value = false
+        showGlassesBindModal.value = false
         return
       }
       resetNameDraft()
@@ -342,6 +395,16 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     (shouldFetch) => {
       if (shouldFetch) {
         void fetchDingtalkBindStatus()
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => isOpen.value && Boolean(authStore.user),
+    (shouldFetch) => {
+      if (shouldFetch) {
+        void fetchGlassesBindStatus()
       }
     },
     { immediate: true }
@@ -377,6 +440,13 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     dingtalkBindingStatus,
     showBindDingTalkModal,
     showUnbindDingTalkModal,
+    showGlassesBindModal,
+    glassesBindLoading,
+    glassesLinked,
+    glassesBindingStatus,
+    openGlassesBindModal,
+    unbindGlasses,
+    handleGlassesBindCompleted,
     openBindDingTalkModal,
     openUnbindDingTalkModal,
     handleDingtalkBindCompleted,

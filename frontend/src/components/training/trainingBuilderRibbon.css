@@ -29,6 +29,15 @@
   background: #fff;
   box-shadow: 0 10px 18px -8px rgb(15 23 42 / 0.12);
 }
+.builder-ribbon__panel--canvas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.builder-ribbon__panel--canvas > :deep(*) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .builder-ribbon__pane {
   display: flex;
   flex-wrap: wrap;

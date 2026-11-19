@@ -33,6 +33,11 @@ import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubb
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
 import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import { openThinkingMapAiExpand } from '@/composables/aiBrainstorm/openThinkingMapAiExpand'
+import { useWorksheetCompareSources } from '@/composables/canvas/useWorksheetCompareSources'
+import {
+  WorksheetCompareSourcesMissingError,
+  captureWorksheetComparePair,
+} from '@/composables/canvas/worksheetCompareCapture'
 import {
   type FloatingToolbarSize,
   formatBrushActive,
@@ -44,6 +49,7 @@ import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLa
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramCanvasFontFaces } from '@/composables/diagram/useDiagramCanvasFontFaces'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -67,6 +73,7 @@ import {
   useFoldableCanvasRefit,
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapBrainstormDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapBrainstormDrop'
+import { useGlassesCanvasRemote } from '@/composables/diagramCanvas/useGlassesCanvasRemote'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
@@ -106,7 +113,10 @@ import {
   canvasInputUsesSlash,
   shouldAttachCanvasTouchLayer,
 } from '@/config/canvasInputMode'
-import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
+import {
+  type CanvasWorksheetTextOptions,
+  isWorksheetCompareMode,
+} from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { useCanvasExportStore } from '@/stores/canvasExport'
@@ -117,6 +127,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 import { type MindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
+import { loadImageElement } from '@/utils/diagramPdfExport'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
@@ -125,6 +136,8 @@ import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import DiagramCanvasZoomPaneOverlays from './DiagramCanvasZoomPaneOverlays.vue'
+import DoubleBubbleDirectionalAddOverlay from './DoubleBubbleDirectionalAddOverlay.vue'
+import FlowMapDirectionalAddOverlay from './FlowMapDirectionalAddOverlay.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
 import MindMapSummaryOverlay from './MindMapSummaryOverlay.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
@@ -170,6 +183,7 @@ interface Props {
 }
 
 const { t } = useLanguage()
+const notify = useNotifications()
 const props = withDefaults(defineProps<Props>(), {
   showBackground: true,
   showMinimap: false,
@@ -343,6 +357,7 @@ const {
   presentationPenColor,
   interactionFrozen: exportCapturing,
   handToolPan: useHandToolPanClass,
+  inputMode: toRef(props, 'inputMode'),
 })
 
 // Vue Flow 1.48's prop only accepts boolean | null, and null would clear this.
@@ -529,6 +544,7 @@ watch(
 
 const {
   nodeExplainVisible,
+  nodeExplainPinned,
   nodeExplainTarget,
   nodeExplainText,
   nodeExplainThinking,
@@ -603,6 +619,14 @@ useFoldableCanvasRefit(canvasContainer, () => {
   fitDiagram(false)
 })
 
+useGlassesCanvasRemote({
+  getViewport,
+  setViewport,
+  fit: () => {
+    fitToFullCanvas(true)
+  },
+})
+
 const {
   getExportContainer,
   getExportTitle,
@@ -625,19 +649,77 @@ const {
   worksheetModalPreferLearningSheet,
 } = storeToRefs(canvasExportStore)
 
-function handleWorksheetTextSave(payload: {
+const { labelForSlot: worksheetCompareLabelForSlot } = useWorksheetCompareSources(
+  computed(() => worksheetTextModalOpen.value)
+)
+
+async function rasterizeLiveForCompare(preview?: {
+  colorMode?: CanvasExportColorMode
+  answerMode?: CanvasExportAnswerMode
+}): Promise<{ dataUrl: string; width: number; height: number }> {
+  const dataUrl = await captureWorksheetPreviewPng({
+    ...exportOptions.value,
+    colorMode: preview?.colorMode ?? exportOptions.value.colorMode,
+    answerMode: preview?.answerMode ?? exportOptions.value.answerMode,
+  })
+  if (!dataUrl) {
+    throw new Error('compare-raster-empty')
+  }
+  const image = await loadImageElement(dataUrl)
+  return {
+    dataUrl,
+    width: image.naturalWidth || image.width,
+    height: image.naturalHeight || image.height,
+  }
+}
+
+async function handleWorksheetTextSave(payload: {
   worksheetText: CanvasWorksheetTextOptions
   colorMode: CanvasExportColorMode
   layout: CanvasExportLayout
   answerMode: CanvasExportAnswerMode
   format: 'pdf' | 'worksheet_docx'
+  onExportFailed?: () => void
 }) {
+  let comparePair: import('@/config/canvasWorksheetText').WorksheetComparePair | undefined
+  try {
+    if (isWorksheetCompareMode(payload.worksheetText)) {
+      comparePair =
+        (await canvasExportStore.runExportSession(async () =>
+          captureWorksheetComparePair({
+            left: payload.worksheetText.compareLeft,
+            right: payload.worksheetText.compareRight,
+            labelForSlot: worksheetCompareLabelForSlot,
+            rasterizeLive: () =>
+              rasterizeLiveForCompare({
+                colorMode: payload.colorMode,
+                answerMode: payload.answerMode,
+              }),
+          })
+        )) ?? undefined
+      if (!comparePair) {
+        notify.errorKey('canvas.worksheetText.compareCaptureFailed')
+        payload.onExportFailed?.()
+        return
+      }
+    }
+  } catch (error) {
+    console.error('[worksheetCompare] export capture failed:', error)
+    notify.errorKey(
+      error instanceof WorksheetCompareSourcesMissingError
+        ? 'canvas.worksheetText.compareNeedTwo'
+        : 'canvas.worksheetText.compareCaptureFailed'
+    )
+    payload.onExportFailed?.()
+    return
+  }
   canvasExportStore.commitWorksheetAndExport(
     payload.worksheetText,
     payload.colorMode,
     payload.format,
     payload.layout,
-    payload.answerMode
+    payload.answerMode,
+    comparePair
   )
 }
 
@@ -654,6 +736,33 @@ async function captureWorksheetPreview(preview?: {
       answerMode: preview?.answerMode ?? exportOptions.value.answerMode,
     })
   )
+}
+
+async function captureWorksheetComparePreview(
+  slots: {
+    left: CanvasWorksheetTextOptions['compareLeft']
+    right: CanvasWorksheetTextOptions['compareRight']
+  },
+  preview?: {
+    colorMode?: CanvasExportColorMode
+    answerMode?: CanvasExportAnswerMode
+  }
+): Promise<{ left: string; right: string; leftLabel: string; rightLabel: string } | null> {
+  const pair = await canvasExportStore.runExportSession(async () =>
+    captureWorksheetComparePair({
+      left: slots.left,
+      right: slots.right,
+      labelForSlot: worksheetCompareLabelForSlot,
+      rasterizeLive: () => rasterizeLiveForCompare(preview),
+    })
+  )
+  if (!pair) return null
+  return {
+    left: pair.left.dataUrl,
+    right: pair.right.dataUrl,
+    leftLabel: pair.left.label,
+    rightLabel: pair.right.label,
+  }
 }
 
 function handleViewportChangeWithToolbar(...args: Parameters<typeof handleViewportChange>) {
@@ -1027,6 +1136,20 @@ defineExpose({
       @size-change="handleFloatingToolbarSizeChange"
     />
 
+    <DoubleBubbleDirectionalAddOverlay
+      v-if="diagramStore.type === 'double_bubble_map'"
+      :container-ref="canvasContainer"
+      :teleport-target="presentationTeleportTarget"
+      :edit-locked="presentationDiagramEditLocked"
+    />
+
+    <FlowMapDirectionalAddOverlay
+      v-if="diagramStore.type === 'flow_map'"
+      :container-ref="canvasContainer"
+      :teleport-target="presentationTeleportTarget"
+      :edit-locked="presentationDiagramEditLocked"
+    />
+
     <ContextMenu
       :visible="contextMenuVisible"
       :x="contextMenuX"
@@ -1040,6 +1163,7 @@ defineExpose({
 
     <MindMapNodeExplainBubble
       v-model:visible="nodeExplainVisible"
+      v-model:pinned="nodeExplainPinned"
       :target="nodeExplainTarget"
       :text="nodeExplainText"
       :thinking="nodeExplainThinking"
@@ -1082,6 +1206,7 @@ defineExpose({
       :default-topic="worksheetDefaultTopic"
       :prefer-learning-sheet="worksheetModalPreferLearningSheet"
       :capture-diagram-preview="captureWorksheetPreview"
+      :capture-compare-preview="captureWorksheetComparePreview"
       @save="handleWorksheetTextSave"
     />
   </div>

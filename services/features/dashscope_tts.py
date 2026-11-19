@@ -100,6 +100,7 @@ class DashscopeTtsService:
         voice: Optional[str] = None,
         model_id: Optional[str] = None,
         output_format: Optional[AudioFormat] = None,
+        rate: Optional[float] = None,
     ) -> Optional[bytes]:
         """
         Synthesize text to speech and return audio bytes.
@@ -151,6 +152,7 @@ class DashscopeTtsService:
                 response_format=output_format,
                 sample_rate=24000,  # Default sample rate
                 language_type=None,  # Auto-detect language
+                speech_rate=rate,
                 on_audio_chunk=on_audio_chunk,
             )
 
@@ -158,14 +160,12 @@ class DashscopeTtsService:
             await client.connect()
             await client.wait_for_session_created()
 
-            # Send text
+            # Send text, then force the tail out. The first response.done is only
+            # one segment; the last few characters arrive before session.finished.
             await client.append_text(text)
-
-            # Finish session
+            await client.flush_text()
             await client.finish_session()
-
-            # Wait for completion
-            await client.wait_for_response_done(timeout=30.0)
+            await client.wait_for_session_finished(timeout=30.0)
 
             # Close connection
             await client.close()

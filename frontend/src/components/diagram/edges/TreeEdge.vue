@@ -20,22 +20,23 @@ const { getNodes } = useVueFlow(diagramStore.vueFlowId)
 const path = computed(() => {
   const labelX = (props.sourceX + props.targetX) / 2
   const labelY = (props.sourceY + props.targetY) / 2
-  const verticalFlow =
-    diagramStore.type === 'flow_map' && Math.abs(props.sourceX - props.targetX) <= 2
-  if (verticalFlow) {
-    const spans = nodeSpansCrossingVertical(
-      getNodes.value,
-      props.sourceX,
-      props.sourceY,
-      props.targetY
-    )
+  if (diagramStore.type === 'flow_map') {
+    // Classroom flow: each substep gets its own vertical drop from the step
+    // bottom edge (at the substep's X), not an orthogonal bus.
+    const x = props.targetX
+    const spans = nodeSpansCrossingVertical(getNodes.value, x, props.sourceY, props.targetY)
     if (spans.length > 0) {
       const parts = verticalSegmentsOutsideSpans(props.sourceY, props.targetY, spans)
-      const edgePath = parts
-        .map((part) => `M ${props.sourceX} ${part.from} L ${props.sourceX} ${part.to}`)
-        .join(' ')
-      return { edgePath, labelX: props.sourceX, labelY }
+      const edgePath = parts.map((part) => `M ${x} ${part.from} L ${x} ${part.to}`).join(' ')
+      return { edgePath, labelX: x, labelY }
     }
+    const [edgePath] = getStraightPath({
+      sourceX: x,
+      sourceY: props.sourceY,
+      targetX: x,
+      targetY: props.targetY,
+    })
+    return { edgePath, labelX: x, labelY }
   }
   const [edgePath] = getStraightPath({
     sourceX: props.sourceX,

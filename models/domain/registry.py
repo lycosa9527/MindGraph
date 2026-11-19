@@ -60,10 +60,13 @@ from models.domain.library_demo import UserLibraryDemo
 from models.domain.user_dropdown import UserDropdownItem
 from models.domain.vod import VodFolder, VodMedia
 from models.domain.learning_space import (
+    GlassesWearerBind,
     LearningAssignment,
     LearningClass,
     LearningClassMembership,
     LearningPilotTeacher,
+    LearningSheetCapture,
+    LearningSheetToken,
     LearningSubmission,
 )
 from models.domain.mind_classroom import MindClassroomJob, MindClassroomSlide
@@ -237,5 +240,8 @@ __all__ = [
     "LearningClass",
     "LearningClassMembership",
     "LearningAssignment",
+    "GlassesWearerBind",
+    "LearningSheetCapture",
+    "LearningSheetToken",
     "LearningSubmission",
 ]

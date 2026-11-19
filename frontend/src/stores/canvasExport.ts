@@ -115,7 +115,8 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
     colorMode: CanvasExportColorMode,
     format: 'pdf' | 'worksheet_docx' = 'pdf',
     layout?: CanvasExportLayout,
-    answerMode?: CanvasExportAnswerMode
+    answerMode?: CanvasExportAnswerMode,
+    comparePair?: CanvasExportOptions['comparePair']
   ): void {
     setWorksheetTextOptions(worksheetText)
     const nextLayout = layout ?? exportOptions.value.layout
@@ -131,6 +132,7 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
           layout: nextLayout,
           answerMode: nextAnswerMode,
           worksheetText,
+          comparePair,
         },
         worksheetText
       ),

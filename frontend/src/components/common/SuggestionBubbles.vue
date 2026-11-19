@@ -23,7 +23,7 @@ const DEFAULT_SUGGESTION_KEYS = [
 const props = withDefaults(
   defineProps<{
     /** Catalog keys. Empty uses the MindMate starter prompts. */
-    suggestionKeys?: string[]
+    suggestionKeys?: readonly string[]
     /** Raw prompt text. No presenter line — these are not message keys. */
     suggestions?: string[]
     /** Wrap in place. Bubble width follows the label, with no sideways scroll. */

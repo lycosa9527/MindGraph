@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MindGlass</string>
+    <string name="brand">Mind Platform</string>
+    <string name="built_by">built by MTEL</string>
+    <string name="mode_course">课程</string>
+    <string name="mode_canvas">画布</string>
+    <string name="mode_settings">设置</string>
+    <string name="setting_bind">绑定</string>
+    <string name="setting_unbind">解除绑定</string>
+    <string name="setting_exit">退出</string>
+    <string name="setting_look">看绑定码</string>
+    <string name="setting_bound">已绑定</string>
+    <string name="setting_cleared">已解除</string>
+    <string name="remote_title">画布遥控</string>
+    <string name="remote_hint">单击发送</string>
+    <string name="remote_up">上</string>
+    <string name="remote_down">下</string>
+    <string name="remote_left">左</string>
+    <string name="remote_right">右</string>
+    <string name="remote_zoom_in">放大</string>
+    <string name="remote_zoom_out">缩小</string>
+    <string name="remote_fit">适应</string>
+    <string name="remote_need_bind">先看绑定码</string>
+    <string name="remote_failed">发送失败</string>
+    <string name="status_connecting">连接中</string>
+    <string name="status_connected">已连接</string>
+    <string name="status_offline">离线</string>
+    <string name="status_wait_course">老师还没开始上课，请等待</string>
+    <string name="status_course_started">老师已开始上课，请稍候</string>
+    <string name="status_course_over">课程已结束，这是最后一页</string>
+    <string name="status_course_bind">请先绑定眼镜</string>
+    <string name="status_course_failed">这页课程没有打开</string>
+    <string name="status_shooting">正在拍摄</string>
+    <string name="status_sent">学生图示已发送</string>
+    <string name="status_failed">发送失败</string>
+    <string name="status_no_camera">没有相机</string>
+    <string name="status_need_camera">需要相机权限</string>
+</resources>

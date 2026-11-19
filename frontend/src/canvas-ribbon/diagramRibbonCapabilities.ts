@@ -26,6 +26,8 @@ export type DiagramRibbonCapabilities = {
   /** Eight thinking maps (not concept maps, not mind maps). */
   thinkingMapChrome: boolean
   flowOrientation: boolean
+  /** Substep row/stack structure switch (flow map only). */
+  flowSubstepArrangement: boolean
   conceptMap: boolean
   waterfall: boolean
   oneSentence: boolean
@@ -47,6 +49,8 @@ export type DiagramRibbonCapabilities = {
   subgraph: boolean
   /** PNG / SVG / PDF / .mg. Mind-map v2 keeps its shorter menu. */
   standardExport: boolean
+  /** 节点轮播. Mind-map v2 and double-bubble maps. */
+  nodeCarousel: boolean
 }
 
 const MIND_MAP_TYPES = new Set(['mindmap', 'mind_map'])
@@ -85,6 +89,7 @@ export function diagramRibbonCapabilities(
     mindMapFormat: v2 || thinkingMap || conceptMap,
     thinkingMapChrome: thinkingMap,
     flowOrientation: type === 'flow_map',
+    flowSubstepArrangement: type === 'flow_map',
     conceptMap,
     waterfall: true,
     oneSentence: true,
@@ -99,5 +104,6 @@ export function diagramRibbonCapabilities(
     subgraph:
       v2 || conceptMap || (typeof type === 'string' && AI_SUBGRAPH_THINKING_MAP_TYPES.has(type)),
     standardExport: !v2,
+    nodeCarousel: v2 || type === 'double_bubble_map' || type === 'flow_map',
   }
 }

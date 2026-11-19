@@ -26,11 +26,15 @@ async def kitty_rest_conversation_image(
     current_user: User,
     file: UploadFile = File(...),
     language: str = Form("zh"),
-    diagram_id: str = Form(...),
+    diagram_id: str = Form(""),
     diagram_title: Optional[str] = Form(None),
     apply_to_library: bool = Form(True),
 ) -> dict:
-    """Process a conversation image (hand-drawn rebuild or OCR extract)."""
+    """Process a conversation image (hand-drawn rebuild or OCR extract).
+
+    Empty ``diagram_id`` is canvas-only: return rebuilt mind-map spec without
+    Document Summary / library writes.
+    """
     mime = normalize_conversation_image_content_type(
         content_type=file.content_type,
         filename=file.filename,

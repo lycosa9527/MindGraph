@@ -8,12 +8,14 @@ import { onMounted } from 'vue'
 import { Mic, PanelLeftOpen } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 
 const { t } = useLanguage()
+const inSlide = isTrainingInlineHost()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const voiceNotes = useVoiceNotesStore()
@@ -31,7 +33,7 @@ onMounted(() => {
   <div class="voice-notes-page flex flex-1 flex-col min-h-0 overflow-hidden bg-stone-50">
     <header class="flex h-14 shrink-0 items-center gap-2 border-b border-stone-200 bg-white px-4">
       <button
-        v-if="uiStore.sidebarCollapsed"
+        v-if="uiStore.sidebarCollapsed && !inSlide"
         type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-100 bg-white text-stone-600 transition-colors hover:bg-stone-50"
         :title="t('sidebar.expandSidebar')"

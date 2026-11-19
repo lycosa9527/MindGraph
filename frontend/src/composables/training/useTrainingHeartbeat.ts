@@ -30,7 +30,7 @@ export function useTrainingHeartbeat(enabled: () => boolean): void {
   }
 
   watch(
-    () => [enabled(), training.snapshot.session_id, training.snapshot.state],
+    () => `${enabled()}:${training.snapshot.session_id ?? ''}:${training.snapshot.state}`,
     () => {
       if (enabled() && training.isActive) {
         void tick()

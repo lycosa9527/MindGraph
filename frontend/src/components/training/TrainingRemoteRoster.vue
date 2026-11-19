@@ -16,7 +16,7 @@ const training = useTrainingStore()
 const canLoadMore = computed(() => training.rosterRows.length < training.rosterTotal)
 
 watch(
-  () => [training.snapshot.session_id, training.isActive],
+  () => `${training.snapshot.session_id ?? ''}:${training.isActive}`,
   () => {
     if (training.isActive && training.snapshot.session_id) {
       void training.fetchRoster()

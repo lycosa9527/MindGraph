@@ -3,7 +3,7 @@
  * One slide: the sidebar, the account chip, and the page beside them.
  * Gallery cards, sidebar links, and canvas Back stay on this slide.
  */
-import { computed, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, onUnmounted, provide, ref, useTemplateRef, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
@@ -11,6 +11,7 @@ import { PanelLeftOpen } from '@lucide/vue'
 
 import AppSidebar from '@/components/sidebar/AppSidebar.vue'
 import TrainingCanvasPreview from '@/components/training/TrainingCanvasPreview.vue'
+import TrainingCanvasVoiceBadge from '@/components/training/TrainingCanvasVoiceBadge.vue'
 import TrainingSlideAudio from '@/components/training/TrainingSlideAudio.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { builderSlideSidebarClosed } from '@/composables/training/builderSlideChrome'
@@ -33,7 +34,9 @@ import {
 } from '@/composables/training/trainingUiLock'
 import { trainingLivePage } from '@/config/trainingPageLive'
 import type { TrainingPageKey } from '@/config/trainingPages'
+import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 import type { TrainingCourseStep } from '@/types/training'
+import { apiRequest } from '@/utils/apiClient'
 
 provideTrainingInlineHost()
 const frameEl = ref<HTMLElement | null>(null)
@@ -48,15 +51,31 @@ const props = withDefaults(
     /** Null keeps playback audible and the builder quiet until the editor asks. */
     playAudio?: boolean | null
     step?: TrainingCourseStep | null
+    courseId?: string | null
     /** Use the builder slide's sidebar instead of starting open. */
     useBuilderChrome?: boolean
   }>(),
-  { authoring: false, step: null, playAudio: null, useBuilderChrome: false }
+  { authoring: false, step: null, playAudio: null, courseId: null, useBuilderChrome: false }
 )
 
 const shouldPlayAudio = computed(() =>
   props.playAudio === null ? !props.authoring : props.playAudio
 )
+const voicePlaying = ref(false)
+const audioRef = useTemplateRef<{ toggleVoice: () => Promise<void> }>('audioRef')
+
+const builder = useTrainingBuilderStore()
+
+async function onVoiceToggle(): Promise<void> {
+  const courseId = (props.courseId || builder.courseId || '').trim()
+  const index = props.step?.position
+  if (!courseId || typeof index !== 'number') return
+  await apiRequest('/api/learning-space/glasses/voice/cue', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ course_id: courseId, index }),
+  })
+}
 const { t } = useLanguage()
 /** Playback pages start open. The builder and its preview share one closed flag. */
 const localSidebarClosed = ref(props.authoring)
@@ -83,6 +102,12 @@ const override = ref<TrainingDeckTarget | null>(null)
 
 const livePage = computed(() => trainingLivePage(shownPage.value))
 const isCanvas = computed(() => shownPage.value === 'canvas')
+const showVoiceBadge = computed(() => {
+  if (!props.authoring || !props.step) return false
+  const file = (props.step.voice_url || '').trim()
+  const line = (props.step.glasses_line || '').trim()
+  return Boolean(file || line)
+})
 
 const shownPage = computed(() => {
   if (props.authoring && props.step?.page_key) return props.step.page_key
@@ -141,6 +166,13 @@ const releaseSink = pushTrainingDeckSink((target) => {
   openPage(target.pageKey, target.diagramType)
 })
 
+watch(
+  () => props.step?.voice_url,
+  () => {
+    voicePlaying.value = false
+  }
+)
+
 watch(frameEl, (el) => {
   setTrainingDialogHost(scopeId, el)
 })
@@ -167,6 +199,12 @@ onUnmounted(() => {
         @toggle-collapsed="toggleSlideSidebar"
       />
       <div class="live-shell__main">
+        <TrainingCanvasVoiceBadge
+          v-if="showVoiceBadge"
+          :playing="voicePlaying"
+          :aside="sidebarClosed"
+          @toggle="onVoiceToggle"
+        />
         <ElButton
           v-if="sidebarClosed"
           text
@@ -205,8 +243,11 @@ onUnmounted(() => {
       </div>
     </div>
     <TrainingSlideAudio
-      v-if="shouldPlayAudio && step"
+      v-if="step && (shouldPlayAudio || showVoiceBadge)"
+      ref="audioRef"
       :step="step"
+      :autoplay="shouldPlayAudio"
+      @playing="voicePlaying = $event"
     />
   </div>
 </template>

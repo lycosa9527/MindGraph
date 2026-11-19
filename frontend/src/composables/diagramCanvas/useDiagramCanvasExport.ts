@@ -14,6 +14,7 @@ import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
 import { getDiagramCanvasPdfHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
+import { formatDoubleBubbleWorksheetTopic } from '@/utils/doubleBubbleWorksheetTopic'
 
 type CanvasViewport = { x: number; y: number; zoom: number }
 
@@ -28,7 +29,7 @@ export interface UseDiagramCanvasExportOptions {
 export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   const { vueFlowWrapper, diagramStore, fitForExport, getViewport, setViewport } = options
 
-  const { currentLanguage } = useLanguage()
+  const { currentLanguage, t } = useLanguage()
   const uiStore = useUIStore()
 
   function getExportContainer(): HTMLElement | null {
@@ -36,6 +37,12 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   }
 
   function getExportTitle(): string {
+    if (diagramStore.type === 'double_bubble_map' && !diagramStore.isUserEditedTitle) {
+      const formatted = formatDoubleBubbleWorksheetTopic(diagramStore.data?.nodes, (left, right) =>
+        t('canvas.worksheetText.doubleBubbleTopicDefault', { left, right })
+      )
+      if (formatted) return formatted
+    }
     return resolveDiagramTitleForSave(
       diagramStore.effectiveTitle,
       diagramStore.type,

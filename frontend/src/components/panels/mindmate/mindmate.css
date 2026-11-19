@@ -1265,6 +1265,11 @@
 
 .mindmate-panel.panel-mode .suggestions-above-input-panel {
   padding: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.mindmate-panel.panel-mode.welcome-mode .suggestions-above-input-panel {
+  margin-bottom: 24px;
 }
 
 /* Canvas MindMate sidebar: welcome needs an inner scroll or the composer clips. */
@@ -1292,5 +1297,5 @@
 .mindmate-panel.panel-mode.welcome-mode .welcome-panel {
   flex: 0 0 auto;
   min-height: auto;
-  padding: 28px 20px 0;
+  padding: 48px 20px 0;
 }

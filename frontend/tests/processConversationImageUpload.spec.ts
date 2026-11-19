@@ -13,6 +13,10 @@ vi.mock('@/composables/media/resizeImageFileForVisionUpload', () => ({
   resizeImageFileForVisionUpload: (...args: unknown[]) => resizeImageFileForVisionUpload(...args),
 }))
 
+vi.mock('@/composables/mindMap/audience/withMindMapAudienceContext', () => ({
+  appendMindMapAudienceFormField: () => undefined,
+}))
+
 describe('processConversationImageUpload', () => {
   beforeEach(() => {
     apiUpload.mockReset()
@@ -82,12 +86,33 @@ describe('processConversationImageUpload', () => {
     expect(result.packageId).toBe(3)
   })
 
-  it('rejects missing diagram id', async () => {
-    await expect(
-      processConversationImageUpload({
-        file: new File(['x'], 'x.jpg', { type: 'image/jpeg' }),
-        diagramId: '  ',
-      })
-    ).rejects.toThrow('diagram_id')
+  it('allows canvas-only upload without diagram id', async () => {
+    const file = new File([new Uint8Array([1])], 'map.jpg', { type: 'image/jpeg' })
+    apiUpload.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        mode: 'handdrawn',
+        is_mindmap: true,
+        topic: 'Sky',
+        spec: { topic: 'Sky', children: [{ text: 'Cloud' }] },
+        doc_summary_saved: false,
+        library: {},
+      }),
+    })
+
+    const result = await processConversationImageUpload({
+      file,
+      language: 'zh',
+      applyToLibrary: false,
+    })
+
+    const form = apiUpload.mock.calls[0][1] as FormData
+    expect(form.get('diagram_id')).toBe('')
+    expect(form.get('apply_to_library')).toBe('false')
+    expect(result.mode).toBe('handdrawn')
+    expect(result.topic).toBe('Sky')
+    expect(result.docSummarySaved).toBe(false)
+    expect(result.appliedToLibrary).toBe(false)
   })
 })

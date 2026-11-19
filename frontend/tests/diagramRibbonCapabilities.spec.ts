@@ -18,6 +18,7 @@ describe('diagramRibbonCapabilities', () => {
     expect(caps.outline).toBe(true)
     expect(caps.standardExport).toBe(false)
     expect(caps.learningSheetPanel).toBe(true)
+    expect(caps.nodeCarousel).toBe(true)
   })
 
   it('gives classic mind maps the tree tools without v2 chrome', () => {
@@ -27,6 +28,7 @@ describe('diagramRibbonCapabilities', () => {
     expect(caps.subgraph).toBe(false)
     expect(caps.standardExport).toBe(true)
     expect(caps.learningSheetPanel).toBe(false)
+    expect(caps.nodeCarousel).toBe(false)
   })
 
   it('keeps thinking-map AI tools and type slots', () => {
@@ -49,12 +51,17 @@ describe('diagramRibbonCapabilities', () => {
 
     const flow = diagramRibbonCapabilities('flow_map', false)
     expect(flow.flowOrientation).toBe(true)
+    expect(flow.flowSubstepArrangement).toBe(true)
     expect(flow.subgraph).toBe(false)
+    expect(flow.nodeCarousel).toBe(true)
+    expect(diagramRibbonCapabilities('circle_map', false).flowSubstepArrangement).toBe(false)
 
     expect(diagramRibbonCapabilities('tree_map', false).subgraph).toBe(true)
     expect(diagramRibbonCapabilities('brace_map', false).subgraph).toBe(true)
     expect(diagramRibbonCapabilities('bubble_map', false).subgraph).toBe(false)
     expect(diagramRibbonCapabilities('double_bubble_map', false).subgraph).toBe(false)
+    expect(diagramRibbonCapabilities('double_bubble_map', false).nodeCarousel).toBe(true)
+    expect(diagramRibbonCapabilities('bubble_map', false).nodeCarousel).toBe(false)
     expect(diagramRibbonCapabilities('multi_flow_map', false).subgraph).toBe(false)
     expect(diagramRibbonCapabilities('bridge_map', false).subgraph).toBe(false)
 

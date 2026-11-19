@@ -245,6 +245,47 @@
   flex-shrink: 0;
 }
 
+.worksheet-text-modal__align-btn--qr {
+  margin-left: 0.35rem;
+}
+
+.worksheet-text-modal__class-select {
+  margin-left: 0.35rem;
+  max-width: 8rem;
+  border: 1px solid #d6d3d1;
+  border-radius: 999px;
+  background: #fff;
+  color: #1c1917;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.worksheet-text-modal__align-btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.worksheet-text-modal__sheet-qr {
+  position: absolute;
+  z-index: 3;
+  background: #fff;
+  pointer-events: none;
+}
+
+.worksheet-text-modal__paper--landscape .worksheet-text-modal__sheet-qr {
+  width: 6.06cqw;
+  height: 6.06cqw;
+  right: 3.37cqw;
+  bottom: 3.37cqw;
+}
+
+.worksheet-text-modal__paper--portrait .worksheet-text-modal__sheet-qr {
+  width: 8.57cqw;
+  height: 8.57cqw;
+  right: 4.76cqw;
+  bottom: 4.76cqw;
+}
+
 .worksheet-text-modal__align-btn[aria-pressed='true'] {
   background: #1c1917;
   border-color: #1c1917;

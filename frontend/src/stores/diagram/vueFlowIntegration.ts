@@ -35,7 +35,10 @@ import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSibli
 import { nodeIdsWithImage, thinkingMapImageNodeIds } from '@/utils/nodeImageFrame'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
-import { thinkingMapRenderedConnectorStroke } from '@/utils/thinkingMapNodePaint'
+import {
+  doubleBubbleConnectorStroke,
+  thinkingMapRenderedConnectorStroke,
+} from '@/utils/thinkingMapNodePaint'
 
 import {
   recalculateBraceMapLayout,
@@ -409,6 +412,26 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
+        // Row mode stretches a step pill to cover its substep row.
+        if (
+          node.type === 'flow' &&
+          typeof node.style?.width === 'number' &&
+          !imageIds.has(node.id)
+        ) {
+          const w = node.style.width
+          vueFlowNode.width = w
+          vueFlowNode.style = {
+            ...vueFlowNode.style,
+            width: w,
+            minWidth: w,
+          }
+          if (vueFlowNode.data) {
+            vueFlowNode.data = {
+              ...vueFlowNode.data,
+              style: { ...(vueFlowNode.data.style || {}), width: w, minWidth: w },
+            }
+          }
+        }
         return vueFlowNode
       })
     }
@@ -502,18 +525,28 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         } else if (thinkingMap) {
           const sourceNode = nodes.find((node) => node.id === effectiveConn.source)
           const targetNode = nodes.find((node) => node.id === effectiveConn.target)
+          const strokeColor =
+            diagramType === 'double_bubble_map'
+              ? doubleBubbleConnectorStroke(
+                  diagramData._mindmap_theme,
+                  effectiveConn.style?.strokeColor,
+                  sourceNode,
+                  targetNode,
+                  connections
+                )
+              : thinkingMapRenderedConnectorStroke(
+                  diagramType,
+                  diagramData._mindmap_theme,
+                  effectiveConn.style?.strokeColor,
+                  sourceNode,
+                  targetNode,
+                  connections
+                )
           effectiveConn = {
             ...effectiveConn,
             style: {
               ...(effectiveConn.style || {}),
-              strokeColor: thinkingMapRenderedConnectorStroke(
-                diagramType,
-                diagramData._mindmap_theme,
-                effectiveConn.style?.strokeColor,
-                sourceNode,
-                targetNode,
-                connections
-              ),
+              strokeColor,
             },
           }
         } else if (diagramType === 'concept_map') {

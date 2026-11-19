@@ -207,11 +207,11 @@ onUnmounted(() => {
 }
 .teacher-preview__drag-list {
   position: absolute;
-  top: 0.75rem;
+  top: 6.75rem;
   right: 0;
   z-index: 40;
   width: min(16rem, 42%);
-  max-height: calc(100% - 5.5rem);
+  max-height: calc(100% - 12rem);
 }
 .teacher-preview__kicker {
   display: flex;
@@ -229,11 +229,10 @@ onUnmounted(() => {
 .teacher-preview--canvas .teacher-preview__kicker {
   position: absolute;
   top: 0.55rem;
-  left: 50%;
+  left: 0.55rem;
   z-index: 2;
   width: max-content;
-  max-width: calc(100% - 8rem);
-  transform: translateX(-50%);
+  max-width: calc(100% - 19rem);
   border-radius: 999px;
 }
 .teacher-preview__interact {

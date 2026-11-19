@@ -32,7 +32,7 @@ _REV_0125 = Path("alembic/versions/rev_0125_learning_space_school_rls.py")
 
 def test_learning_space_policies_are_school_scoped() -> None:
     """Every Learning Space table uses org visibility, not any authenticated user."""
-    assert len(LEARNING_SPACE_POLICIES) == 5
+    assert len(LEARNING_SPACE_POLICIES) == 9
     for table, expr in LEARNING_SPACE_POLICIES:
         assert "rls_org_id_in_readable_list(organization_id)" in expr, table
         assert "rls_panel_legacy_org_visible" not in expr, table

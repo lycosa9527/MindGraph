@@ -39,6 +39,8 @@ import {
 import {
   type FlowSubstepEntry,
   findFlowSubstepEntry,
+  moveFlowMapCollectedStep,
+  moveFlowMapParallelSlot,
   swapFlowMapCollectedSteps,
 } from '../specLoader/flowMapSubsteps'
 import { emitCtxEvent } from './events'
@@ -257,7 +259,11 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     return false
   }
 
-  function moveFlowMapNode(sourceId: string, targetId: string): boolean {
+  function moveFlowMapNode(
+    sourceId: string,
+    targetId: string,
+    placement?: 'before' | 'after'
+  ): boolean {
     const spec = ctx.buildFlowMapSpecFromNodes()
     if (!spec || !ctx.data.value) return false
     const steps = spec.steps as Array<string | { id?: string; text: string }>
@@ -269,7 +275,24 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
     let success: boolean
 
-    if (srcNode && tgtNode && isFlowMapSubstepNode(srcNode) && isFlowMapStepNode(tgtNode)) {
+    if (
+      srcNode &&
+      tgtNode &&
+      isFlowMapStepNode(srcNode) &&
+      isFlowMapStepNode(tgtNode) &&
+      (placement === 'before' || placement === 'after')
+    ) {
+      const si = readFlowStepIndex(srcNode)
+      const ti = readFlowStepIndex(tgtNode)
+      if (si < 0 || ti < 0 || si >= steps.length || ti >= steps.length) return false
+      const insertAt = moveFlowMapCollectedStep(steps, substepsList, si, ti, placement)
+      if (insertAt == null) return false
+      const secondary = spec.secondary as
+        { steps?: string[]; substeps?: Array<{ substeps?: string[] }> } | undefined
+      if (secondary?.steps) moveFlowMapParallelSlot(secondary.steps, si, insertAt)
+      if (secondary?.substeps) moveFlowMapParallelSlot(secondary.substeps, si, insertAt)
+      success = ctx.loadFromSpec(spec, 'flow_map', STRUCTURAL_SPEC_RELOAD)
+    } else if (srcNode && tgtNode && isFlowMapSubstepNode(srcNode) && isFlowMapStepNode(tgtNode)) {
       const srcStepIdx = readFlowStepIndex(srcNode)
       const srcSubIdx = readFlowSubstepIndex(srcNode)
       const tgtStepIdx = readFlowStepIndex(tgtNode)
@@ -475,7 +498,11 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     return true
   }
 
-  function moveNodeBySwap(sourceId: string, targetId: string): boolean {
+  function moveNodeBySwap(
+    sourceId: string,
+    targetId: string,
+    placement?: 'before' | 'after'
+  ): boolean {
     const dt = ctx.type.value
     if (!dt || !ctx.data.value) return false
 
@@ -491,7 +518,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         success = swapDoubleBubbleMapNodes(sourceId, targetId)
         break
       case 'flow_map':
-        return moveFlowMapNode(sourceId, targetId)
+        return moveFlowMapNode(sourceId, targetId, placement)
       case 'multi_flow_map':
         success = swapMultiFlowMapNodes(sourceId, targetId)
         break

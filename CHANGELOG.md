@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.225] - 2026-11-19
+
+> **Bound glasses follow the teacher's course, and a learning sheet can print a code for each student.**
+
+### Added
+
+- **Bind a smart device** — Settings shows a bind code. The glasses photograph it and attach to this account. The same row unbinds them.
+- **Course on the glasses** — Starting a course sends the current slide to every glasses pair bound in the organization. A tap on the glasses asks the computer to advance; the computer stays the source of truth.
+- **Learning-sheet codes** — A sheet can print one glasses code, or one page per student in a chosen class.
+- **Photographed sheets** — Sheets the glasses capture show up in the learning space, as the diagram or the photo.
+- **Course builder glasses bar** — Look, teach, sheet capture, voiceover, and playback animation for the glasses.
+
+### Fixed
+
+- **Slide voiceover** — The last words of a generated voiceover are kept, and the builder can set how fast that voice speaks.
+
+### Tests
+
+- [`frontend/tests/glassesPlay.spec.ts`](frontend/tests/glassesPlay.spec.ts), [`frontend/tests/glassesSlideReveal.spec.ts`](frontend/tests/glassesSlideReveal.spec.ts), [`frontend/tests/glassesCanvasRemote.spec.ts`](frontend/tests/glassesCanvasRemote.spec.ts)
+- [`tests/test_glasses_play.py`](tests/test_glasses_play.py), [`tests/test_glasses_remote.py`](tests/test_glasses_remote.py), [`tests/test_learning_space_glasses.py`](tests/test_learning_space_glasses.py)
+
+## [5.180.224] - 2026-11-19
+
+> **Hand-drawn import on the canvas, thinking-map Mind Classroom gated, learning-sheet dual-diagram compare, pinable node-explain cards, and flow / double-bubble add + carousel polish; canvas MindMate defaults to including the open diagram.**
+
+### Added
+
+- **Canvas file import — image / hand-drawn** — **文件 → 导入 → 图片/手绘图** recognizes a hand-drawn mind map and rebuilds it on the canvas (canvas-only when there is no library diagram id; outline extract still goes to Document Summary when a library diagram is linked). Plain photos still fall back to text extraction.
+- **Node explain pin** — The explain card has **钉在画布上**. Pinned cards stay on the canvas, detach from the node, and can be dragged; unpin or close removes them.
+- **Flow map add handles** — Selecting the topic, a step, or a substep shows directional **+** controls: insert a step before/after on the chain (left/right or top/bottom by structure), and append or insert substeps. Substep packing follows **横排** (left/right) or **竖排** (top/bottom).
+- **Flow map structure** — Ribbon controls for vertical vs horizontal chain layout and for substep row vs stack packing, with matching insert and format-brush behavior.
+- **Flow map carousel** — Node carousel builds flow slides: overview → each main step (**主步骤**), or overview → each step then each of that step’s substeps (**子步骤遍历**).
+- **Double-bubble add handles** — Directional **+** overlays for similarities and each side’s differences, aligned with double-bubble identity helpers.
+- **Double-bubble carousel** — Thinking-map style slides for double-bubble maps (overview and focused similarity/difference groups).
+- **Learning-sheet compare layout** — Under **图示模式**, choose **左右对比** or **上下对比**. Each panel can receive its own dragged diagram; active chips use a soft-blue selected state.
+- **Canvas MindMate diagram bar** — **图示信息** (**不包括** / **包括**) sits between the suggestion bubbles and the compose field (panel mode only; hidden in collab). Equal-width segments so the capsule stays balanced.
+
+### Changed
+
+- **Mind Classroom on thinking maps** — For the eight thinking-map types, launch is gated as coming soon (start locked, restart hidden) until the lecture engine supports them. Mind maps and concept maps are unchanged.
+- **Flow map default template** — Blank/new flow maps use the editor default template path, not the AI-generation layout path. Default substep packing is **横向排列** (row).
+- **Flow topic → first step edge** — Axis-aligned plain line with no arrowhead in all structure modes.
+- **Canvas MindMate header** — New-chat (**MessageCirclePlus**) sits to the right of the history menu; the history dropdown clips and scrolls inside the popover so long lists no longer spill over the panel.
+- **Canvas MindMate suggestions** — Welcome prompts are diagram-focused: how to teach the diagram, what teaching activities it supports, and evaluate the diagram (three bubbles).
+- **Canvas MindMate composer** — Placeholder reminds teachers to switch **图示信息** to **包括** when asking about the diagram. **包括** is the default. Suggestion chips sit a bit higher above the composer; the welcome greeting and 72px portrait sit a bit lower in the panel.
+- **Canvas MindMate branding** — Panel title and welcome agent name follow the school MindMate agent name (same as the MindMate page). The research-ribbon chip shows **MindMate AI**, or **{agent name} AI** when the school set a privatized name; the Bot icon stays on the toolbar.
+- **Format brush / thinking-map paint** — Flow and double-bubble insert and style paths pick up the same brush and node-paint rules used on other thinking maps where applicable.
+
+### Fixed
+
+- **History dropdown** — Long conversation lists stay inside the white popover with native scroll instead of overflowing onto suggestions and the input.
+- **Diagram context segment** — **不包括** / **包括** use equal-width segments so the active pill is not skewed by the longer label.
+- **Compare sources** — Exporting a compare sheet when one side has no usable diagram asks you to pick a source for both sides.
+
+### Removed
+
+- Unused hand-drawn “save to the library first” copy, and the unused substep-layout toast. Structure changes use the single structure-mode confirmation.
+
+### Tests
+
+- [`frontend/tests/flowMapAddHandles.spec.ts`](frontend/tests/flowMapAddHandles.spec.ts), [`frontend/tests/flowMapSlides.spec.ts`](frontend/tests/flowMapSlides.spec.ts), [`frontend/tests/flowMapSubstepArrangement.spec.ts`](frontend/tests/flowMapSubstepArrangement.spec.ts), [`frontend/tests/flowMapDefaultTemplate.spec.ts`](frontend/tests/flowMapDefaultTemplate.spec.ts)
+- [`frontend/tests/doubleBubbleAddHandles.spec.ts`](frontend/tests/doubleBubbleAddHandles.spec.ts), [`frontend/tests/doubleBubbleSlides.spec.ts`](frontend/tests/doubleBubbleSlides.spec.ts), [`frontend/tests/doubleBubbleWorksheetTopic.spec.ts`](frontend/tests/doubleBubbleWorksheetTopic.spec.ts)
+- Updated flow substeps, ribbon capabilities, format brush, structural reload, and related canvas specs
+
 ## [5.180.223] - 2026-11-12
 
 > **Seminars invite teachers from other schools by code, and the seminar leader can name member roles freely.**

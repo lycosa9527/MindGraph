@@ -62,6 +62,7 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useAuthStore, useMindClassroomStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
@@ -72,6 +73,8 @@ import './mindMapClassroomRemote.css'
 type RemoteTool = {
   id: string
   labelKey: string
+  /** Pre-resolved label (overrides labelKey in chrome). */
+  label?: string
   testid?: string
   insertKind?: DiagramInsertGlyph
   icon?: Component
@@ -99,6 +102,10 @@ const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMap
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const { displayName: mindMateDisplayName, hasCustomAgentName } = useMindMateBranding()
+const mindMateLabel = computed(() =>
+  hasCustomAgentName.value ? `${mindMateDisplayName.value} AI` : t('canvas.ribbon.mindMate')
+)
 const notify = useNotifications()
 const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
@@ -228,13 +235,16 @@ const editTools = computed<RemoteTool[]>(() => [
     dimmed: action.needsSelection && !ribbon.hasSelection,
     run: () => ribbon.runDiagramInsert(action.id),
   })),
-  ...(caps.value.flowOrientation
+  ...(caps.value.flowSubstepArrangement
     ? [
         {
-          id: 'direction',
-          labelKey: 'canvas.toolbar.directionLabel',
+          id: 'flow-structure',
+          labelKey: 'canvas.toolbar.flowStructureVertical',
           icon: ArrowDownUp,
-          run: () => ribbon.toggleFlowOrientation(),
+          run: () => {
+            const mode = ribbon.flowStructureMode
+            ribbon.setFlowStructureMode(mode === 'vertical' ? 'row' : 'vertical')
+          },
         },
       ]
     : []),
@@ -356,6 +366,7 @@ const teachingTools = computed<RemoteTool[]>(() => [
   {
     id: 'mindmate',
     labelKey: 'canvas.ribbon.mindMate',
+    label: mindMateLabel.value,
     icon: Bot,
     active: ribbon.isMindmateOpen,
     run: () => ribbon.toggleMindmate(),
@@ -557,7 +568,7 @@ function onClose(): void {
           :aria-label="
             tool.id === 'explain' && ribbon.explainLockedUntilConfirm
               ? t('canvas.floatingToolbar.explainNeedsConfirm')
-              : t(tool.labelKey)
+              : tool.label || t(tool.labelKey)
           "
           :aria-pressed="tool.active"
           @pointerdown="onRemoteToolPointerDown(tool, $event)"
@@ -576,7 +587,9 @@ function onClose(): void {
             :stroke-width="2"
           />
           <span class="mm-remote__label">
+            <template v-if="tool.label">{{ tool.label }}</template>
             <I18nText
+              v-else
               :k="tool.labelKey"
               dense
             />

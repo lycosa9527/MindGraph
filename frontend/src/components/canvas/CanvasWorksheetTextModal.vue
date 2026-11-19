@@ -5,18 +5,22 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { ElInput } from 'element-plus'
+import { ElInput, ElOption, ElSelect } from 'element-plus'
 
 import { FileText } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import WorksheetComparePanelPreview from '@/components/canvas/WorksheetComparePanelPreview.vue'
 import WorksheetDiagramAlignBar from '@/components/canvas/WorksheetDiagramAlignBar.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useWorksheetClassCopies } from '@/composables/canvas/useWorksheetClassCopies'
+import { useWorksheetCompareSources } from '@/composables/canvas/useWorksheetCompareSources'
 import {
   DIAGRAM_CROP_EDGES,
   useWorksheetDiagramPreviewDrag,
 } from '@/composables/canvas/useWorksheetDiagramPreviewDrag'
+import { useWorksheetSheetQr } from '@/composables/canvas/useWorksheetSheetQr'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type {
@@ -28,11 +32,16 @@ import {
   CLASSROOM_WORKSHEET_TEXT_PRESET,
   type CanvasWorksheetTextOptions,
   DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
+  type WorksheetCompareArrangement,
+  type WorksheetMode,
   hasActiveWorksheetHeader,
+  parseWorksheetCompareSlotKey,
   resolveWorksheetTopicText,
+  worksheetCompareSlotKey,
 } from '@/config/canvasWorksheetText'
 import '@/styles/canvas-worksheet-diagram-preview.css'
 import '@/styles/canvas-worksheet-text-modal.css'
+import { normalizeWorksheetCompareArrangement } from '@/utils/worksheetCompareLayout'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -48,6 +57,16 @@ const props = withDefaults(
       colorMode?: CanvasExportColorMode
       answerMode?: CanvasExportAnswerMode
     }) => Promise<string | null>
+    captureComparePreview?: (
+      slots: {
+        left: CanvasWorksheetTextOptions['compareLeft']
+        right: CanvasWorksheetTextOptions['compareRight']
+      },
+      preview?: {
+        colorMode?: CanvasExportColorMode
+        answerMode?: CanvasExportAnswerMode
+      }
+    ) => Promise<{ left: string; right: string; leftLabel: string; rightLabel: string } | null>
   }>(),
   {
     colorMode: 'color',
@@ -56,6 +75,7 @@ const props = withDefaults(
     preferLearningSheet: false,
     answerMode: 'exclude',
     captureDiagramPreview: undefined,
+    captureComparePreview: undefined,
   }
 )
 
@@ -67,6 +87,8 @@ const emit = defineEmits<{
       layout: CanvasExportLayout
       answerMode: CanvasExportAnswerMode
       format: 'pdf' | 'worksheet_docx'
+      /** Called when compare capture fails so the modal can re-enable Export. */
+      onExportFailed?: () => void
     },
   ]
 }>()
@@ -88,6 +110,8 @@ const draftLayout = ref<CanvasExportLayout>('landscape')
 const diagramPreviewUrl = ref<string | null>(null)
 const previewLoading = ref(false)
 const previewFailed = ref(false)
+/** True after Export click until the parent closes the modal (or capture fails). */
+const exportSubmitting = ref(false)
 let previewRequestId = 0
 
 const previewTopic = computed(() => resolveWorksheetTopicText(draft.value, props.defaultTopic))
@@ -105,6 +129,81 @@ const modalTitle = computed(() =>
 const showSheetFields = computed(
   () => dedicatedLearningSheet.value || draft.value.learningSheetMode
 )
+
+const isCompareMode = computed(() => draft.value.worksheetMode === 'compare')
+const compareSourcesEnabled = computed(() => visible.value && isCompareMode.value)
+const { sourceOptions, hasModels, hasSnapshots, labelForSlot } =
+  useWorksheetCompareSources(compareSourcesEnabled)
+
+const worksheetModeOptions = computed(() => [
+  {
+    label: t('canvas.worksheetText.modeSingle'),
+    labelKey: 'canvas.worksheetText.modeSingle',
+    value: 'single' as const,
+  },
+  {
+    label: t('canvas.worksheetText.modeCompare'),
+    labelKey: 'canvas.worksheetText.modeCompare',
+    value: 'compare' as const,
+  },
+])
+
+const worksheetModeModel = computed({
+  get: (): WorksheetMode => draft.value.worksheetMode,
+  set: (value: WorksheetMode) => {
+    draft.value.worksheetMode = value
+  },
+})
+
+const compareLayoutOptions = computed(() => [
+  {
+    label: t('canvas.worksheetText.compareLayoutHorizontal'),
+    labelKey: 'canvas.worksheetText.compareLayoutHorizontal',
+    value: 'horizontal' as const,
+  },
+  {
+    label: t('canvas.worksheetText.compareLayoutVertical'),
+    labelKey: 'canvas.worksheetText.compareLayoutVertical',
+    value: 'vertical' as const,
+  },
+])
+
+const compareLayoutModel = computed({
+  get: (): WorksheetCompareArrangement =>
+    normalizeWorksheetCompareArrangement(draft.value.compareLayout),
+  set: (value: WorksheetCompareArrangement) => {
+    draft.value.compareLayout = normalizeWorksheetCompareArrangement(value)
+  },
+})
+
+const compareFirstSlotLabelKey = computed(() =>
+  compareLayoutModel.value === 'vertical'
+    ? 'canvas.worksheetText.compareSlotTop'
+    : 'canvas.worksheetText.compareSlotLeft'
+)
+const compareSecondSlotLabelKey = computed(() =>
+  compareLayoutModel.value === 'vertical'
+    ? 'canvas.worksheetText.compareSlotBottom'
+    : 'canvas.worksheetText.compareSlotRight'
+)
+
+const compareLeftKey = computed({
+  get: () => worksheetCompareSlotKey(draft.value.compareLeft),
+  set: (value: string) => {
+    draft.value.compareLeft = parseWorksheetCompareSlotKey(value)
+  },
+})
+
+const compareRightKey = computed({
+  get: () => worksheetCompareSlotKey(draft.value.compareRight),
+  set: (value: string) => {
+    draft.value.compareRight = parseWorksheetCompareSlotKey(value)
+  },
+})
+
+const compareLeftPreviewUrl = ref<string | null>(null)
+const compareRightPreviewUrl = ref<string | null>(null)
+const comparePreviewLoading = ref(false)
 
 const previewInstruction = computed(() => {
   const custom = draft.value.instructionText.trim()
@@ -201,6 +300,13 @@ function diagramNumberModel(
     | 'diagramCropRight'
     | 'diagramCropBottom'
     | 'diagramCropLeft'
+    | 'compareRightOffsetX'
+    | 'compareRightOffsetY'
+    | 'compareRightScale'
+    | 'compareRightCropTop'
+    | 'compareRightCropRight'
+    | 'compareRightCropBottom'
+    | 'compareRightCropLeft'
 ) {
   return computed({
     get: () => draft.value[field],
@@ -217,7 +323,16 @@ const diagramCropTop = diagramNumberModel('diagramCropTop')
 const diagramCropRight = diagramNumberModel('diagramCropRight')
 const diagramCropBottom = diagramNumberModel('diagramCropBottom')
 const diagramCropLeft = diagramNumberModel('diagramCropLeft')
-const diagramDragEnabled = computed(() => Boolean(diagramPreviewUrl.value))
+const compareRightOffsetX = diagramNumberModel('compareRightOffsetX')
+const compareRightOffsetY = diagramNumberModel('compareRightOffsetY')
+const compareRightScale = diagramNumberModel('compareRightScale')
+const compareRightCropTop = diagramNumberModel('compareRightCropTop')
+const compareRightCropRight = diagramNumberModel('compareRightCropRight')
+const compareRightCropBottom = diagramNumberModel('compareRightCropBottom')
+const compareRightCropLeft = diagramNumberModel('compareRightCropLeft')
+const diagramDragEnabled = computed(() => Boolean(diagramPreviewUrl.value) && !isCompareMode.value)
+const sheetQr = useWorksheetSheetQr(draft, () => props.defaultTopic)
+const classCopies = useWorksheetClassCopies(draft, () => sheetQr.ensure())
 
 const {
   diagramBodyRef,
@@ -257,6 +372,17 @@ function seedDraftFromProps() {
     ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
     ...props.options,
     learningSheetMode: props.preferLearningSheet,
+    worksheetMode:
+      props.options.worksheetMode ?? DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.worksheetMode,
+    compareLayout: normalizeWorksheetCompareArrangement(
+      props.options.compareLayout ?? DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.compareLayout
+    ),
+    compareLeft: props.options.compareLeft ?? {
+      ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.compareLeft,
+    },
+    compareRight: props.options.compareRight ?? {
+      ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.compareRight,
+    },
   }
   if (props.preferLearningSheet) {
     next.learningSheetMode = true
@@ -276,10 +402,60 @@ function clearPreviewState() {
   previewLoading.value = false
   previewFailed.value = false
   diagramPreviewUrl.value = null
+  compareLeftPreviewUrl.value = null
+  compareRightPreviewUrl.value = null
+  comparePreviewLoading.value = false
   resetInteraction()
 }
 
+async function refreshComparePreview() {
+  if (!props.captureComparePreview) {
+    previewFailed.value = true
+    compareLeftPreviewUrl.value = null
+    compareRightPreviewUrl.value = null
+    return
+  }
+  const requestId = ++previewRequestId
+  comparePreviewLoading.value = true
+  previewFailed.value = false
+  try {
+    const pair = await props.captureComparePreview(
+      {
+        left: draft.value.compareLeft,
+        right: draft.value.compareRight,
+      },
+      {
+        colorMode: draftColorMode.value,
+        answerMode: sheetAnswerMode(),
+      }
+    )
+    if (requestId !== previewRequestId) return
+    if (pair) {
+      compareLeftPreviewUrl.value = pair.left
+      compareRightPreviewUrl.value = pair.right
+      previewFailed.value = false
+      return
+    }
+    if (!compareLeftPreviewUrl.value || !compareRightPreviewUrl.value) {
+      previewFailed.value = true
+    }
+  } catch {
+    if (requestId !== previewRequestId) return
+    compareLeftPreviewUrl.value = null
+    compareRightPreviewUrl.value = null
+    previewFailed.value = true
+  } finally {
+    if (requestId === previewRequestId) {
+      comparePreviewLoading.value = false
+    }
+  }
+}
+
 async function refreshDiagramPreview() {
+  if (isCompareMode.value) {
+    await refreshComparePreview()
+    return
+  }
   if (!props.captureDiagramPreview) {
     previewFailed.value = true
     diagramPreviewUrl.value = null
@@ -319,7 +495,8 @@ async function refreshDiagramPreview() {
 watch(
   () => props.options,
   () => {
-    if (visible.value) {
+    // Do not clobber in-progress compare export (mode/slots) when the store saves.
+    if (visible.value && !exportSubmitting.value) {
       seedDraftFromProps()
     }
   },
@@ -330,9 +507,11 @@ watch(
   () => visible.value,
   (open) => {
     if (!open) {
+      exportSubmitting.value = false
       clearPreviewState()
       return
     }
+    exportSubmitting.value = false
     seedDraftFromProps()
     void refreshDiagramPreview()
   }
@@ -343,6 +522,20 @@ watch(draftColorMode, () => {
     void refreshDiagramPreview()
   }
 })
+
+watch(
+  () =>
+    [
+      draft.value.worksheetMode,
+      worksheetCompareSlotKey(draft.value.compareLeft),
+      worksheetCompareSlotKey(draft.value.compareRight),
+    ] as const,
+  () => {
+    if (visible.value) {
+      void refreshDiagramPreview()
+    }
+  }
+)
 
 watch(draftLayout, async () => {
   if (!visible.value) return
@@ -355,20 +548,31 @@ function close() {
 }
 
 function commitExport(format: 'pdf' | 'worksheet_docx') {
-  const worksheetText = { ...draft.value }
+  if (exportSubmitting.value) return
+  // Deep-clone slots so a later seedDraftFromProps cannot mutate the export payload.
+  const worksheetText: CanvasWorksheetTextOptions = {
+    ...draft.value,
+    compareLeft: { ...draft.value.compareLeft },
+    compareRight: { ...draft.value.compareRight },
+  }
   const liveTopic = props.defaultTopic.trim()
   // Don't freeze the current title into sessionStorage when user didn't override it.
   if (liveTopic && worksheetText.topicText.trim() === liveTopic) {
     worksheetText.topicText = ''
   }
+  exportSubmitting.value = true
   emit('save', {
     worksheetText,
     colorMode: draftColorMode.value,
     layout: draftLayout.value,
     answerMode: sheetAnswerMode(),
     format,
+    onExportFailed: () => {
+      exportSubmitting.value = false
+    },
   })
-  visible.value = false
+  // Keep the modal open until the parent finishes compare capture + commitWorksheetAndExport
+  // (which closes via the store). Closing early races destroy-on-close with canvas paint.
 }
 
 function handleExportPdf() {
@@ -414,6 +618,81 @@ async function handleReset() {
         class="worksheet-text-modal__preview-pane"
         :aria-label="t('canvas.worksheetText.previewLabel')"
       >
+        <div
+          v-if="showSheetFields"
+          class="worksheet-text-modal__preview-mode"
+        >
+          <span class="worksheet-text-modal__preview-mode-label">
+            <I18nText k="canvas.worksheetText.diagramMode" />
+          </span>
+          <AdminSwissSegmented
+            v-model="worksheetModeModel"
+            fit
+            :options="worksheetModeOptions"
+            :aria-label="t('canvas.worksheetText.diagramMode')"
+          />
+        </div>
+        <div
+          v-if="showSheetFields && isCompareMode"
+          class="worksheet-text-modal__preview-mode"
+        >
+          <span class="worksheet-text-modal__preview-mode-label">
+            <I18nText k="canvas.worksheetText.compareLayout" />
+          </span>
+          <AdminSwissSegmented
+            v-model="compareLayoutModel"
+            fit
+            :options="compareLayoutOptions"
+            :aria-label="t('canvas.worksheetText.compareLayout')"
+          />
+        </div>
+        <div
+          v-if="showSheetFields && isCompareMode"
+          class="worksheet-text-modal__preview-slots"
+        >
+          <div class="worksheet-text-modal__field-input">
+            <span class="worksheet-text-modal__kicker">
+              <I18nText :k="compareFirstSlotLabelKey" />
+            </span>
+            <ElSelect
+              v-model="compareLeftKey"
+              class="worksheet-text-modal__select"
+              :placeholder="t('canvas.worksheetText.compareSourceCurrent')"
+              teleported
+            >
+              <ElOption
+                v-for="option in sourceOptions"
+                :key="`left-${option.value}`"
+                :label="option.label"
+                :value="option.value"
+              />
+            </ElSelect>
+          </div>
+          <div class="worksheet-text-modal__field-input">
+            <span class="worksheet-text-modal__kicker">
+              <I18nText :k="compareSecondSlotLabelKey" />
+            </span>
+            <ElSelect
+              v-model="compareRightKey"
+              class="worksheet-text-modal__select"
+              :placeholder="t('canvas.worksheetText.compareSourceCurrent')"
+              teleported
+            >
+              <ElOption
+                v-for="option in sourceOptions"
+                :key="`right-${option.value}`"
+                :label="option.label"
+                :value="option.value"
+              />
+            </ElSelect>
+          </div>
+          <p
+            v-if="!hasModels && !hasSnapshots"
+            class="worksheet-text-modal__preview-slots-hint"
+          >
+            <I18nText k="canvas.worksheetText.compareSourcesHint" />
+          </p>
+        </div>
         <div class="worksheet-text-modal__preview-kicker">
           <span><I18nText k="canvas.worksheetText.previewLabel" /></span>
           <span class="worksheet-text-modal__preview-kicker-meta">
@@ -484,8 +763,44 @@ async function handleReset() {
                 <I18nText k="canvas.worksheetText.instructionPrefix" />{{ previewInstruction }}
               </p>
             </div>
-            <div class="worksheet-text-modal__paper-diagram">
+            <div
+              class="worksheet-text-modal__paper-diagram"
+              :class="{ 'is-compare': isCompareMode }"
+            >
               <div
+                v-if="isCompareMode"
+                class="worksheet-text-modal__compare-preview"
+                :class="{
+                  'is-vertical': compareLayoutModel === 'vertical',
+                }"
+              >
+                <WorksheetComparePanelPreview
+                  v-model:offset-x="diagramOffsetX"
+                  v-model:offset-y="diagramOffsetY"
+                  v-model:scale="diagramScale"
+                  v-model:crop-top="diagramCropTop"
+                  v-model:crop-right="diagramCropRight"
+                  v-model:crop-bottom="diagramCropBottom"
+                  v-model:crop-left="diagramCropLeft"
+                  :preview-url="compareLeftPreviewUrl"
+                  :loading="comparePreviewLoading"
+                  :label="labelForSlot(draft.compareLeft)"
+                />
+                <WorksheetComparePanelPreview
+                  v-model:offset-x="compareRightOffsetX"
+                  v-model:offset-y="compareRightOffsetY"
+                  v-model:scale="compareRightScale"
+                  v-model:crop-top="compareRightCropTop"
+                  v-model:crop-right="compareRightCropRight"
+                  v-model:crop-bottom="compareRightCropBottom"
+                  v-model:crop-left="compareRightCropLeft"
+                  :preview-url="compareRightPreviewUrl"
+                  :loading="comparePreviewLoading"
+                  :label="labelForSlot(draft.compareRight)"
+                />
+              </div>
+              <div
+                v-else
                 ref="diagramBodyRef"
                 class="worksheet-text-modal__paper-diagram-body"
                 :class="{ 'is-dragging': dragging, 'is-resizing': resizing }"
@@ -575,18 +890,38 @@ async function handleReset() {
                 </p>
               </div>
             </div>
+            <img
+              v-if="sheetQr.src"
+              :src="sheetQr.src"
+              class="worksheet-text-modal__sheet-qr"
+              alt=""
+              draggable="false"
+            />
           </div>
         </div>
         <div
-          v-if="diagramPreviewUrl"
+          v-if="
+            (diagramPreviewUrl && !isCompareMode) ||
+            (isCompareMode && (compareLeftPreviewUrl || compareRightPreviewUrl))
+          "
           class="worksheet-text-modal__preview-hint"
         >
           <p class="worksheet-text-modal__preview-hint-text">
             <I18nText k="canvas.worksheetText.dragDiagramHint" />
           </p>
           <WorksheetDiagramAlignBar
+            v-if="!isCompareMode"
             :align="diagramAlign"
+            :qr-on="draft.showSheetQr"
+            :qr-busy="sheetQr.busy"
+            :class-on="draft.classPersonalize"
+            :class-busy="classCopies.busy"
+            :classes="classCopies.classes"
+            :class-id="draft.classId"
             @align="alignDiagram"
+            @toggle-qr="sheetQr.toggle"
+            @toggle-class="classCopies.toggle"
+            @select-class="classCopies.select"
           />
         </div>
       </aside>
@@ -623,6 +958,7 @@ async function handleReset() {
             >
               <I18nText k="canvas.worksheetText.learningSheetPanelHint" />
             </p>
+
             <div class="worksheet-text-modal__row">
               <span class="worksheet-text-modal__label">
                 <I18nText k="canvas.worksheetText.showTopic" />
@@ -769,6 +1105,7 @@ async function handleReset() {
           <button
             type="button"
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            :disabled="exportSubmitting"
             @click="handleExportDocx"
           >
             <I18nText k="canvas.worksheetText.exportDocx" />
@@ -776,6 +1113,7 @@ async function handleReset() {
           <button
             type="button"
             class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="exportSubmitting"
             @click="handleExportPdf"
           >
             <I18nText k="canvas.worksheetText.exportPdf" />

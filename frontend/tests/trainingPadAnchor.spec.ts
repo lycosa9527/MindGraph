@@ -21,13 +21,13 @@ describe('trainingPadBox', () => {
       innerWidth: 1440,
       innerHeight: 900,
       viewOffsetLeft: 0,
-      viewOffsetTop: 0,
+      viewOffsetTop: 80,
       viewWidth: 1440,
       viewHeight: 700,
       railOpen: true,
     })
     expect(chrome.right).toBe(16 + 18 * 16 + 12)
-    expect(chrome.bottom).toBe(16 + 200)
+    expect(chrome.bottom).toBe(16 + 120)
     expect(chrome.maxHeight).toBe(668)
   })
 })

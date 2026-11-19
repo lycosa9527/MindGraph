@@ -164,13 +164,15 @@ describe('bilingual inserted node labels', () => {
     const flow = loadBilingual('flow_map')
     expect(applyVoiceDiagramAddNodes(flow, [{ text: '蒸发' }])).toBe(1)
     expect(glossOf('蒸发')).toBeUndefined()
-    expect(glossOf('子步骤3.1')).toBe('Substep 3.1')
+    // Default blank keeps step1×3 / step2×2; glosses must survive a voice step add.
+    expect(glossOf('子步骤1.1')).toBe('Substep 1.1')
+    expect(glossOf('子步骤2.2')).toBe('Substep 2.2')
 
     setActivePinia(createPinia())
     loadBilingual('flow_map')
     expect(addKittyNodeForInlineRec(useDiagramStore(), (key) => key)).toBeTruthy()
     expect(glossOf('新属性')).toBe('New Attribute')
-    expect(glossOf('子步骤3.2')).toBe('Substep 3.2')
+    expect(glossOf('子步骤1.3')).toBe('Substep 1.3')
 
     setActivePinia(createPinia())
     const multiFlow = loadBilingual('multi_flow_map')

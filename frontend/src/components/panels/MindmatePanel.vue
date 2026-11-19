@@ -49,6 +49,7 @@ import { useMindmateSavedSeminar } from '@/composables/mindmate/useMindmateSaved
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useMindmateSeminarFaces } from '@/composables/mindmate/useMindmateSeminarFaces'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import {
   useAuthStore,
   useDiagramStore,
@@ -108,6 +109,7 @@ import {
 } from '@/utils/mindmateSeminarTeardown'
 import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
+import MindmateDiagramContextBar from './mindmate/MindmateDiagramContextBar.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
@@ -172,12 +174,13 @@ const authStore = useAuthStore()
 const diagramStore = useDiagramStore()
 const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
+const inSlide = isTrainingInlineHost()
 const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
 const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
 const homeMode = ref<'dialogue' | 'seminar'>('dialogue')
-const includeDiagramInfo = ref(false)
+const includeDiagramInfo = ref(true)
 const mindmateInputRef = ref<MindmateInputHandle | null>(null)
 const memberDialogOpen = ref(false)
 const memberDialogMode = ref<'create' | 'expand'>('create')
@@ -1431,7 +1434,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :class="{ 'mindmate-fullpage-toolbar--welcome': showWelcome && !isCollabChatroomMode }"
     >
       <button
-        v-if="uiStore.sidebarCollapsed"
+        v-if="uiStore.sidebarCollapsed && !inSlide"
         type="button"
         class="mindmate-toolbar-icon shrink-0"
         :title="t('sidebar.expandSidebar')"
@@ -1546,7 +1549,6 @@ function isLastAssistantMessage(messageId: string): boolean {
     </div>
     <MindmateHeader
       v-if="!isFullpageMode"
-      v-model:include-diagram="includeDiagramInfo"
       :mode="mode"
       :title="displayTitle"
       :is-typing="isTypingTitle"
@@ -1698,7 +1700,17 @@ function isLastAssistantMessage(messageId: string): boolean {
             @remove-file="mindMate.removeFile"
             @suggestion-select="handleSuggestionSelect"
             @seminar-start="openSeminarFromBrief"
-          />
+          >
+            <template
+              v-if="!isFullpageMode && !isCollabChatroomMode"
+              #above-compose
+            >
+              <MindmateDiagramContextBar
+                v-model="includeDiagramInfo"
+                class="mindmate-diagram-context-above-input"
+              />
+            </template>
+          </MindmateInput>
         </div>
       </div>
 

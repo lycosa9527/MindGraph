@@ -105,12 +105,15 @@ async def kitty_conversation_image(
     request: Request,
     file: UploadFile = File(...),
     language: str = Form("zh"),
-    diagram_id: str = Form(...),
+    diagram_id: str = Form(""),
     diagram_title: Optional[str] = Form(None),
     apply_to_library: bool = Form(True),
     current_user: User = Depends(get_current_user),
 ):
-    """Conversation image: hand-drawn mind-map rebuild or OCR → Document Summary."""
+    """Conversation image: hand-drawn mind-map rebuild or OCR → Document Summary.
+
+    Empty ``diagram_id`` is canvas-only (spec only; no library / Doc Summary).
+    """
     if not await kitty_http_allowed(current_user):
         raise HTTPException(status_code=403, detail="Kitty is disabled")
     identifier = get_rate_limit_identifier(current_user, request)

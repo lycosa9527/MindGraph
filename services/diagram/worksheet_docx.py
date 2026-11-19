@@ -73,6 +73,9 @@ class WorksheetDocxSpec:
     diagram_crop_right: float = 0.0
     diagram_crop_bottom: float = 0.0
     diagram_crop_left: float = 0.0
+    label_a: str = ""
+    label_b: str = ""
+    compare_layout: Literal["horizontal", "vertical"] = "horizontal"
 
 
 def _clamp_offset(value: float) -> float:
@@ -240,6 +243,74 @@ def _fit_diagram_size_mm(
     return width_mm, height_mm
 
 
+def _add_caption(document: Document, text: str) -> None:
+    caption = text.strip()
+    if not caption:
+        return
+    paragraph = document.add_paragraph(caption)
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_before = Pt(2)
+    paragraph.paragraph_format.space_after = Pt(4)
+    for run in paragraph.runs:
+        run.font.size = Pt(9)
+
+
+def _add_compare_diagrams(
+    document: Document,
+    left_bytes: bytes,
+    right_bytes: bytes,
+    content_width_mm: float,
+    content_height_mm: float,
+    label_a: str,
+    label_b: str,
+    compare_layout: Literal["horizontal", "vertical"] = "horizontal",
+) -> None:
+    """Two panels with optional captions — side-by-side or stacked."""
+    gap_mm = 6.0
+    diagram_box_h_mm = max(40.0, content_height_mm * DIAGRAM_HEIGHT_FRACTION)
+    stacked = compare_layout == "vertical"
+    if stacked:
+        panel_w = max(20.0, content_width_mm)
+        panel_h = max(20.0, (diagram_box_h_mm - gap_mm) / 2.0)
+    else:
+        panel_w = max(20.0, (content_width_mm - gap_mm) / 2.0)
+        panel_h = diagram_box_h_mm
+    left_w, left_h = _fit_diagram_size_mm(left_bytes, panel_w, panel_h)
+    right_w, right_h = _fit_diagram_size_mm(right_bytes, panel_w, panel_h)
+
+    if stacked:
+        table = document.add_table(rows=4, cols=1)
+        table.autofit = True
+        image_cells = (table.rows[0].cells[0], table.rows[2].cells[0])
+        caption_cells = (table.rows[1].cells[0], table.rows[3].cells[0])
+    else:
+        table = document.add_table(rows=2, cols=2)
+        table.autofit = True
+        image_cells = (table.rows[0].cells[0], table.rows[0].cells[1])
+        caption_cells = (table.rows[1].cells[0], table.rows[1].cells[1])
+
+    for cell, blob, width_mm, height_mm in (
+        (image_cells[0], left_bytes, left_w, left_h),
+        (image_cells[1], right_bytes, right_w, right_h),
+    ):
+        paragraph = cell.paragraphs[0]
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = paragraph.add_run()
+        try:
+            run.add_picture(io.BytesIO(blob), width=Mm(width_mm), height=Mm(height_mm))
+        except _DOCX_IMAGE_ERRORS as exc:
+            raise ValueError("diagram image is invalid or unsupported") from exc
+
+    for cell, caption in ((caption_cells[0], label_a), (caption_cells[1], label_b)):
+        text = caption.strip()
+        if not text:
+            continue
+        paragraph = cell.paragraphs[0]
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = paragraph.add_run(text)
+        run.font.size = Pt(9)
+
+
 def _add_diagram(
     document: Document,
     diagram_bytes: bytes,
@@ -286,7 +357,11 @@ def _add_diagram(
         raise ValueError("diagram image is invalid or unsupported") from exc
 
 
-def build_worksheet_docx(spec: WorksheetDocxSpec, diagram_bytes: bytes) -> bytes:
+def build_worksheet_docx(
+    spec: WorksheetDocxSpec,
+    diagram_bytes: bytes,
+    diagram_b_bytes: bytes | None = None,
+) -> bytes:
     """Return a .docx blob with editable text fields and an embedded diagram PNG/JPEG."""
     if not diagram_bytes:
         raise ValueError("diagram image is required")
@@ -316,21 +391,34 @@ def build_worksheet_docx(spec: WorksheetDocxSpec, diagram_bytes: bytes) -> bytes
             f"{labels.instruction_prefix}{instruction}",
         )
 
-    _add_diagram(
-        document,
-        diagram_bytes,
-        content_w,
-        content_h,
-        spec.diagram_offset_x,
-        spec.diagram_offset_y,
-        spec.diagram_scale,
-        (
-            spec.diagram_crop_top,
-            spec.diagram_crop_right,
-            spec.diagram_crop_bottom,
-            spec.diagram_crop_left,
-        ),
-    )
+    if diagram_b_bytes:
+        _add_compare_diagrams(
+            document,
+            diagram_bytes,
+            diagram_b_bytes,
+            content_w,
+            content_h,
+            spec.label_a,
+            spec.label_b,
+            spec.compare_layout,
+        )
+    else:
+        _add_diagram(
+            document,
+            diagram_bytes,
+            content_w,
+            content_h,
+            spec.diagram_offset_x,
+            spec.diagram_offset_y,
+            spec.diagram_scale,
+            (
+                spec.diagram_crop_top,
+                spec.diagram_crop_right,
+                spec.diagram_crop_bottom,
+                spec.diagram_crop_left,
+            ),
+        )
+        _add_caption(document, spec.label_a)
     _stamp_run_fonts(document)
 
     buffer = io.BytesIO()

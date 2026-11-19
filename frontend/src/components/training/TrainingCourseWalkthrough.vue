@@ -221,11 +221,11 @@ function onNext(): void {
 }
 .course-walkthrough__drag-list {
   position: absolute;
-  top: 0.75rem;
+  top: 4.25rem;
   right: 0;
   z-index: 6;
   width: min(16rem, 42%);
-  max-height: calc(100% - 5.5rem);
+  max-height: calc(100% - 10rem);
 }
 .course-walkthrough__player {
   position: absolute;

@@ -26,6 +26,7 @@ import {
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import TrainingArrowPicker from '@/components/training/TrainingArrowPicker.vue'
 import TrainingBuilderAudioField from '@/components/training/TrainingBuilderAudioField.vue'
+import TrainingBuilderGlassBar from '@/components/training/TrainingBuilderGlassBar.vue'
 import TrainingBuilderMascotField from '@/components/training/TrainingBuilderMascotField.vue'
 import TrainingBuilderPickButton from '@/components/training/TrainingBuilderPickButton.vue'
 import TrainingBuilderRibbonBar from '@/components/training/TrainingBuilderRibbonBar.vue'
@@ -124,6 +125,7 @@ const RIBBON_TABS = [
   { id: 'media', labelKey: 'training.builder.ribbonMedia' },
   { id: 'steps', labelKey: 'training.builder.groupSteps' },
   { id: 'interact', labelKey: 'training.builder.groupInteract' },
+  { id: 'glass', labelKey: 'training.builder.ribbonGlass' },
 ] as const
 
 type BuilderRibbonTab = (typeof RIBBON_TABS)[number]['id']
@@ -742,11 +744,21 @@ function clearSpotlight(): void {
           </div>
         </section>
       </div>
+      <div
+        v-show="ribbonTab === 'glass'"
+        class="builder-ribbon__pane"
+      >
+        <section class="builder-ribbon__group">
+          <div class="builder-ribbon__tools">
+            <TrainingBuilderGlassBar />
+          </div>
+        </section>
+      </div>
     </div>
     <div
       v-show="showCanvasTools"
       :id="BUILDER_CANVAS_TOOLS_TARGET"
-      class="builder-ribbon__panel"
+      class="builder-ribbon__panel builder-ribbon__panel--canvas"
     />
   </div>
 </template>

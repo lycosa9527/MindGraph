@@ -5,6 +5,7 @@ import { ElButton } from 'element-plus'
 
 import {
   Clapperboard,
+  Glasses,
   Info,
   ListOrdered,
   PanelLeftClose,
@@ -46,6 +47,7 @@ const TAB_ICONS = {
   media: Clapperboard,
   steps: ListOrdered,
   interact: Puzzle,
+  glass: Glasses,
 } as const
 
 const { t } = useLanguage()
@@ -64,7 +66,14 @@ const courseTabsActive = computed(
 )
 
 function tabIcon(id: string): (typeof TAB_ICONS)[keyof typeof TAB_ICONS] {
-  if (id === 'slide' || id === 'marks' || id === 'media' || id === 'steps' || id === 'interact') {
+  if (
+    id === 'slide' ||
+    id === 'marks' ||
+    id === 'media' ||
+    id === 'steps' ||
+    id === 'interact' ||
+    id === 'glass'
+  ) {
     return TAB_ICONS[id]
   }
   return Presentation
@@ -333,6 +342,10 @@ function onTabKey(event: KeyboardEvent): void {
 .ribbon-bar__glyph--interact {
   background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%);
   box-shadow: 0 1px 2px rgb(244 63 94 / 0.35);
+}
+.ribbon-bar__glyph--glass {
+  background: linear-gradient(135deg, #67e8f9 0%, #6366f1 100%);
+  box-shadow: 0 1px 2px rgb(99 102 241 / 0.35);
 }
 .ribbon-bar__save {
   flex-shrink: 0;

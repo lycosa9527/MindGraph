@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
+from services.features.dashscope_tts import get_tts_service
 from services.features.training.courses.repository import (
     create_course,
     delete_course,
@@ -28,6 +29,7 @@ from services.features.training.training_logger import (
     log_training,
     step_type_summary,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 from utils.db.session_open import system_rls_session
 
@@ -40,6 +42,13 @@ class CourseMenuBody(BaseModel):
     """Name shown in the user avatar menu. Blank hides the course."""
 
     label: str = Field(default="", max_length=40)
+
+
+class VoiceoverBody(BaseModel):
+    """Line to speak, and how fast the female voice reads it."""
+
+    text: str = Field(min_length=1, max_length=400)
+    rate: float = Field(default=1.0, ge=0.6, le=1.6)
 
 
 class CourseWriteBody(BaseModel):
@@ -206,3 +215,30 @@ async def remove_training_course(
         title=title,
     )
     return {"ok": True}
+
+
+@router.post("/voiceover")
+async def synthesize_course_voiceover(
+    body: VoiceoverBody,
+    current_user: User = Depends(get_current_user),
+):
+    """MP3 of the slide line, spoken by DashScope's female voice Cherry."""
+    _require_author(current_user)
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty text")
+    tts = get_tts_service()
+    if not tts.is_available():
+        raise HTTPException(status_code=503, detail="TTS unavailable")
+    try:
+        audio = await tts.synthesize_text(text, voice="Cherry", rate=round(body.rate, 2))
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("course voiceover failed: %s", exc)
+        raise HTTPException(status_code=502, detail="TTS synthesis failed") from exc
+    if not audio:
+        raise HTTPException(status_code=502, detail="TTS returned no audio")
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )

@@ -12,6 +12,7 @@ import {
   syncBoundBuilderStep,
 } from '@/composables/training/builderDiagramBridge'
 import { uploadedSlideSteps } from '@/composables/training/trainingBuilderSteps'
+import { flushPublishedBuilderSpec } from '@/composables/training/trainingCanvasSpec'
 import { requestTrainingModalsClose } from '@/composables/training/trainingCommands'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
 import {
@@ -25,7 +26,6 @@ import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
 import { useTrainingBuilderAutosave } from '@/composables/training/useTrainingBuilderAutosave'
 import { useTrainingBuilderSaveStatus } from '@/composables/training/useTrainingBuilderSaveStatus'
-import { flushPublishedBuilderSpec } from '@/composables/training/trainingCanvasSpec'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
 import { TRAINING_MODALS } from '@/config/trainingUiTargets'
 import { useTrainingStore } from '@/stores/training'
