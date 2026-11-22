@@ -114,9 +114,16 @@ def _vod_feature_on() -> bool:
 
 
 def _page_is_plain_http(request: Request) -> bool:
-    """True only for a real http page. A MagicMock scheme must not add http hosts."""
+    """True only when the browser page itself is http.
+
+    TLS-terminating nginx keeps the ASGI scheme as ``http`` and sets
+    ``X-Forwarded-Proto: https``. Those responses stay https-only.
+    ``is_https`` covers that header; a MagicMock scheme still adds nothing.
+    """
     scheme = request.url.scheme
-    return isinstance(scheme, str) and scheme == "http"
+    if not isinstance(scheme, str) or scheme != "http":
+        return False
+    return not is_https(request)
 
 
 def _vod_connect_clause(request: Request) -> str:

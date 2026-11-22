@@ -60,6 +60,74 @@ def test_vite_index_csp_lists_vod_upload_hosts() -> None:
 
 
 @pytest.mark.asyncio
+async def test_forwarded_https_omits_plain_http_cos_hosts() -> None:
+    """A TLS proxy reports scheme http. Login cookies must not gain http COS hosts."""
+    request = MagicMock()
+    request.url.scheme = "http"
+    request.url.path = "/api/auth/login"
+    request.state = SimpleNamespace(csp_nonce=None)
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=True):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            mock_config.FEATURE_VOD = True
+            mock_config.FEATURE_CLIP_TEACHING = True
+            mock_config.TENCENT_VOD_LICENSE_URL = ""
+            with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
+                with patch.object(middleware_module, "cos_training_enabled", return_value=False):
+                    with patch.object(
+                        middleware_module,
+                        "cos_auth_login_csp_enabled",
+                        return_value=False,
+                    ):
+                        with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert "https://*.cos.ap-chongqing.myqcloud.com" in csp
+    assert "http://*.cos.ap-chongqing.myqcloud.com" not in csp
+    assert "http://" not in csp
+
+
+@pytest.mark.asyncio
+async def test_direct_http_page_keeps_plain_http_cos_hosts() -> None:
+    """Vite's http page still needs the plain-http COS hosts the uploader posts to."""
+    request = MagicMock()
+    request.url.scheme = "http"
+    request.url.path = "/"
+    request.state = SimpleNamespace(csp_nonce=None)
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = True
+            mock_config.FEATURE_VOD = True
+            mock_config.FEATURE_CLIP_TEACHING = False
+            mock_config.TENCENT_VOD_LICENSE_URL = ""
+            with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
+                with patch.object(middleware_module, "cos_training_enabled", return_value=False):
+                    with patch.object(
+                        middleware_module,
+                        "cos_auth_login_csp_enabled",
+                        return_value=False,
+                    ):
+                        with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert "http://*.cos.ap-chongqing.myqcloud.com" in csp
+
+
+@pytest.mark.asyncio
 async def test_production_csp_allows_vod_upload_when_feature_on() -> None:
     """FEATURE_VOD adds upload, play, script, and default media hosts."""
     request = MagicMock()
