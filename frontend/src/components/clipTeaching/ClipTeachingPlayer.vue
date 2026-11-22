@@ -196,9 +196,16 @@ defineExpose({ currentMs })
       @timeupdate="onTime"
       @play="onPlay"
     />
+    <video
+      v-else-if="slot"
+      :id="playerId"
+      :key="slot"
+      class="clip-player-stage"
+      preload="auto"
+      playsinline
+    />
     <div
       v-else
-      :id="slot ? playerId : undefined"
       class="clip-player-stage"
     />
     <div class="clip-player-rail">
