@@ -350,7 +350,7 @@ describe('training course playback', () => {
       'account',
       'language-settings',
       'thinking-coins',
-      'update-log',
+      'product-roadmap',
       'login',
     ]
     expect(trainingModalsForPage('mindgraph').map((modal) => modal.key)).toEqual(shell)

@@ -10,6 +10,7 @@ from config.cos_env_prefix import (
     uses_live_production_prefixes,
 )
 from config.settings import config
+from services.features.roadmap.product_roadmap import ROADMAP_OBJECT_KEY
 from services.infrastructure.sync.cos_sync_env import normalized_cos_sync_prefix
 from services.utils.tencent_cos_client import COS_KEY_PREFIX
 
@@ -27,7 +28,7 @@ def log_cos_prefix_posture() -> None:
     logger.info(
         "[COS] layout=%s documents=%s showcase=%s zhihui=%s temp_images=%s "
         "training=%s workshop=%s seminar=%s auth_login=%s clip_teaching=%s "
-        "backups=%s sync=%s load_from_cos=%s",
+        "backups=%s sync=%s roadmap=%s load_from_cos=%s",
         layout,
         config.COS_DOCUMENTS_PREFIX,
         config.COS_SHOWCASE_PREFIX,
@@ -40,6 +41,7 @@ def log_cos_prefix_posture() -> None:
         config.COS_CLIP_TEACHING_PREFIX,
         COS_KEY_PREFIX,
         normalized_cos_sync_prefix(),
+        ROADMAP_OBJECT_KEY,
         config.COURSE_BUILDER_LOAD_FROM_COS,
     )
     if cos_production_tree_enabled():

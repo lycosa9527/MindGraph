@@ -5,6 +5,7 @@ export type TrainingModalKey =
   | 'language-settings'
   | 'account'
   | 'thinking-coins'
+  | 'product-roadmap'
   | 'update-log'
   | 'october-update'
   | 'login'
@@ -54,8 +55,8 @@ export const TRAINING_MODALS: TrainingModalDef[] = [
     focuses: [],
   },
   {
-    key: 'update-log',
-    labelKey: 'auth.updateLog',
+    key: 'product-roadmap',
+    labelKey: 'auth.productRoadmap',
     pages: SHELL_PAGES,
     focuses: [],
   },

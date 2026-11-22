@@ -17,7 +17,7 @@ import {
   LogIn,
   LogOut,
   Presentation,
-  ScrollText,
+  Route,
   Settings,
   Share2,
   Star,
@@ -299,9 +299,9 @@ function handleVoiceNotes(): void {
               <AudioLines class="w-4 h-4 mr-2" />
               <I18nText k="auth.voiceNotes" />
             </el-dropdown-item>
-            <el-dropdown-item @click="s.openUpdateLogModal">
-              <ScrollText class="w-4 h-4 mr-2" />
-              <I18nText k="auth.updateLog" />
+            <el-dropdown-item @click="s.openProductRoadmapModal">
+              <Route class="w-4 h-4 mr-2" />
+              <I18nText k="auth.productRoadmap" />
             </el-dropdown-item>
             <el-dropdown-item
               v-if="showPwaInstall"
@@ -393,9 +393,9 @@ function handleVoiceNotes(): void {
               <AudioLines class="w-4 h-4 mr-2" />
               <I18nText k="auth.voiceNotes" />
             </el-dropdown-item>
-            <el-dropdown-item @click="s.openUpdateLogModal">
-              <ScrollText class="w-4 h-4 mr-2" />
-              <I18nText k="auth.updateLog" />
+            <el-dropdown-item @click="s.openProductRoadmapModal">
+              <Route class="w-4 h-4 mr-2" />
+              <I18nText k="auth.productRoadmap" />
             </el-dropdown-item>
             <el-dropdown-item
               v-if="showPwaInstall"

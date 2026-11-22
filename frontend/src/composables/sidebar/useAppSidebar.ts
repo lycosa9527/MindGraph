@@ -306,7 +306,7 @@ export function useAppSidebar() {
   const userSettingsTab = ref<UserSettingsTab>('account')
   const showThinkingCoinsModal = ref(false)
   const thinkingCoinsModalTab = ref<'wallet' | 'subscription'>('wallet')
-  const showUpdateLogModal = ref(false)
+  const showProductRoadmapModal = ref(false)
   const thinkingCoinEarnTasks = ref<ThinkingCoinEarnTask[]>([])
   let thinkingCoinWalletFetchGeneration = 0
 
@@ -570,8 +570,8 @@ export function useAppSidebar() {
     openUserSettings('account')
   }
 
-  function openUpdateLogModal() {
-    showUpdateLogModal.value = true
+  function openProductRoadmapModal() {
+    showProductRoadmapModal.value = true
   }
 
   function openLanguageSettingsModal() {
@@ -910,7 +910,7 @@ export function useAppSidebar() {
     thinkingCoinsBalanceFormatted,
     thinkingCoinEarnTasks,
     refreshThinkingCoinEarnTasks,
-    showUpdateLogModal,
+    showProductRoadmapModal,
     toggleSidebar,
     setMode,
     openLoginModal,
@@ -918,7 +918,7 @@ export function useAppSidebar() {
     openThinkingCoinsModal,
     openThinkingCoinsUpgrade,
     openThinkingCoinsUpgradeSchool,
-    openUpdateLogModal,
+    openProductRoadmapModal,
     openLanguageSettingsModal,
     handleLogout,
     startNewChat,

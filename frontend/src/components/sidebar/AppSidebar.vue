@@ -12,8 +12,8 @@ import { ElButton } from 'element-plus'
 import { PanelLeftClose } from '@lucide/vue'
 
 import LoginModal from '@/components/auth/LoginModal.vue'
+import ProductRoadmapModal from '@/components/auth/ProductRoadmapModal.vue'
 import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
-import UpdateLogModal from '@/components/auth/UpdateLogModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import UserSettingsModal from '@/components/settings/UserSettingsModal.vue'
 import OctoberUpdateModal from '@/components/training/OctoberUpdateModal.vue'
@@ -77,7 +77,7 @@ const {
   showLoginModal,
   showThinkingCoinsModal,
   thinkingCoinsModalTab,
-  showUpdateLogModal,
+  showProductRoadmapModal,
   authStore,
   isAuthenticated,
   brandHeaderLayout,
@@ -105,8 +105,8 @@ function openTrainingModal(key: TrainingModalKey): void {
     sidebar.openLoginModal()
     return
   }
-  if (key === 'update-log') {
-    sidebar.openUpdateLogModal()
+  if (key === 'product-roadmap' || key === 'update-log') {
+    sidebar.openProductRoadmapModal()
     return
   }
   if (key === 'october-update') {
@@ -118,6 +118,7 @@ const TRAINING_HOST_MODALS = new Set<TrainingModalKey>([
   'language-settings',
   'account',
   'thinking-coins',
+  'product-roadmap',
   'update-log',
   'october-update',
   'login',
@@ -127,7 +128,7 @@ const TRAINING_MODAL_OWNER = 'AppSidebarTrainingModals'
 function closeTrainingHostModals(): void {
   showUserSettingsModal.value = false
   showThinkingCoinsModal.value = false
-  showUpdateLogModal.value = false
+  showProductRoadmapModal.value = false
   showOctoberUpdate.value = false
   showLoginModal.value = false
 }
@@ -191,11 +192,19 @@ const releaseModalLocks = [
     },
   }),
   registerTrainingUiLock({
+    key: 'product-roadmap',
+    scope: lockScope,
+    isOpen: () => showProductRoadmapModal.value,
+    setOpen: (open: boolean) => {
+      showProductRoadmapModal.value = open
+    },
+  }),
+  registerTrainingUiLock({
     key: 'update-log',
     scope: lockScope,
-    isOpen: () => showUpdateLogModal.value,
+    isOpen: () => showProductRoadmapModal.value,
     setOpen: (open: boolean) => {
-      showUpdateLogModal.value = open
+      showProductRoadmapModal.value = open
     },
   }),
   registerTrainingUiLock({
@@ -323,7 +332,7 @@ onBeforeUnmount(() => {
       @success="authStore.checkAuth()"
     />
     <LoginModal v-model:visible="showLoginModal" />
-    <UpdateLogModal v-model:visible="showUpdateLogModal" />
+    <ProductRoadmapModal v-model:visible="showProductRoadmapModal" />
     <OctoberUpdateModal v-model:visible="showOctoberUpdate" />
     <ThinkingCoinsModal
       v-model:visible="showThinkingCoinsModal"

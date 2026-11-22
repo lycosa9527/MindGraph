@@ -62,7 +62,9 @@ import { orgMemberById } from '@/utils/workshopDmInbox'
 const UserSettingsModal = defineAsyncComponent(
   () => import('@/components/settings/UserSettingsModal.vue')
 )
-const UpdateLogModal = defineAsyncComponent(() => import('@/components/auth/UpdateLogModal.vue'))
+const ProductRoadmapModal = defineAsyncComponent(
+  () => import('@/components/auth/ProductRoadmapModal.vue')
+)
 const ChannelSettingsDialog = defineAsyncComponent(
   () => import('@/components/workshop-chat/ChannelSettingsDialog.vue')
 )
@@ -122,7 +124,7 @@ const topicEditId = ref(0)
 const topicEditChannelId = ref(0)
 const showChannelHeaderPopover = ref(false)
 const showAccountModal = ref(false)
-const showUpdateLogModal = ref(false)
+const showProductRoadmapModal = ref(false)
 const showTeachingGroupsManage = ref(false)
 
 const messageSearchQuery = ref('')
@@ -1113,8 +1115,8 @@ function handleSignOut(): void {
 function handlePersonalNavigate(page: string): void {
   if (page === 'profile') {
     showAccountModal.value = true
-  } else if (page === 'update-log') {
-    showUpdateLogModal.value = true
+  } else if (page === 'product-roadmap' || page === 'update-log') {
+    showProductRoadmapModal.value = true
   }
 }
 
@@ -1889,9 +1891,9 @@ function handleTopicMove(topicId: number): void {
       v-model:visible="showAccountModal"
       initial-tab="account"
     />
-    <UpdateLogModal
-      v-if="showUpdateLogModal"
-      v-model:visible="showUpdateLogModal"
+    <ProductRoadmapModal
+      v-if="showProductRoadmapModal"
+      v-model:visible="showProductRoadmapModal"
     />
   </div>
 </template>

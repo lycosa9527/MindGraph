@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { LayoutGrid, LogOut, ScrollText, User } from '@lucide/vue'
+import { LayoutGrid, LogOut, Route, User } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
@@ -116,10 +116,10 @@ function handleSignOut(): void {
       <button
         type="button"
         class="ws-popover-item"
-        @click="go('update-log')"
+        @click="go('product-roadmap')"
       >
-        <ScrollText class="ws-popover-icon" />
-        <I18nText k="auth.updateLog" />
+        <Route class="ws-popover-icon" />
+        <I18nText k="auth.productRoadmap" />
       </button>
 
       <div class="ws-popover-divider" />

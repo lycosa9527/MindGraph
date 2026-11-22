@@ -30,7 +30,7 @@ from routers.admin import database_router as admin_database
 from routers.admin import env_router as admin_env
 from routers.admin import logs_router as admin_logs
 from routers.admin import realtime_router as admin_realtime
-from routers.core import changelog, pages, update_notification
+from routers.core import pages, product_roadmap, update_notification
 from routers.core.health import router as health_router
 from routers.core.vue_spa import router as vue_spa
 from routers.features.kitty import router as kitty
@@ -117,7 +117,7 @@ def register_routers(app: FastAPI) -> None:
     """
     app.include_router(health_router)
 
-    app.include_router(changelog.router, prefix="/api")
+    app.include_router(product_roadmap.router, prefix="/api")
 
     app.include_router(pages)
     app.include_router(api.router)

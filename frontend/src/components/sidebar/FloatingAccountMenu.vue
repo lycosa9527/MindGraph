@@ -6,7 +6,7 @@
  */
 import { provide } from 'vue'
 
-import { LoginModal, UpdateLogModal } from '@/components/auth'
+import { LoginModal, ProductRoadmapModal } from '@/components/auth'
 import UserSettingsModal from '@/components/settings/UserSettingsModal.vue'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 
@@ -15,7 +15,7 @@ import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
 const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
 
-const { showUserSettingsModal, userSettingsTab, showLoginModal, showUpdateLogModal, authStore } =
+const { showUserSettingsModal, userSettingsTab, showLoginModal, showProductRoadmapModal, authStore } =
   sidebar
 </script>
 
@@ -31,7 +31,7 @@ const { showUserSettingsModal, userSettingsTab, showLoginModal, showUpdateLogMod
       @success="authStore.checkAuth()"
     />
     <LoginModal v-model:visible="showLoginModal" />
-    <UpdateLogModal v-model:visible="showUpdateLogModal" />
+    <ProductRoadmapModal v-model:visible="showProductRoadmapModal" />
   </div>
 </template>
 

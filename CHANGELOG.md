@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.227] - 2026-11-22
+
+> **The account menu opens a product roadmap instead of the update log. A super admin keeps one shared board.**
+
+### Added
+
+- **产品路线图** — The account menu opens a four-column board: 正在做, 接下来, 考虑中, 已上线. A card shows the feature, the module, who owns it, and a Chinese year-month.
+- **One board for every server** — Save writes `shared/roadmap/product_roadmap.json`. That folder is not split by dev, test, or production, so all three read the same file.
+- **Super-admin edit** — Everyone can read the board. Only a super admin can add, edit, or remove cards.
+
+### Removed
+
+- **更新日志** — The account-menu update log is gone. `CHANGELOG.md` remains the developer changelog.
+
+### Tests
+
+- [`tests/services/test_product_roadmap.py`](tests/services/test_product_roadmap.py)
+
 ## [5.180.226] - 2026-11-22
 
 > **切片式教学: one lesson with a video, a playback trim, chapters on the timeline, a slide strip, and organization comments.**

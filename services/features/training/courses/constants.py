@@ -32,6 +32,7 @@ MODAL_KEYS = frozenset(
         "language-settings",
         "account",
         "thinking-coins",
+        "product-roadmap",
         "update-log",
         "october-update",
         "login",
