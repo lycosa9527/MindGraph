@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'வருகை தரும் விரிவுரையாளர் பள்ளியின் ஆசிரியரை அதே ஐகான் பக்கத்திற்கு இழுக்க முடியும்.',
   'admin.feature.vod': 'தேவைக்கேற்ப மேகம்',
   'admin.feature.vodHint': 'மேலாண்மை குழுவில் உள்ள டென்சென்ட் கிளவுட் ஆன்-டிமாண்ட் மீடியா லைப்ரரி பள்ளி நிர்வாகிகளை வீடியோக்களை உலாவவும் பதிவேற்றவும் அனுமதிக்கிறது.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'அம்ச சுவிட்சை ஏற்ற முடியவில்லை',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Запрошений лектор може перетягнути вчителя школи на ту саму сторінку з іконками.',
   'admin.feature.vod': 'Хмара на вимогу',
   'admin.feature.vodHint': 'Хмарна мультимедійна бібліотека Tencent Cloud на панелі керування дозволяє адміністраторам шкіл переглядати та завантажувати відео.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Не вдалося завантажити прапорці функцій',

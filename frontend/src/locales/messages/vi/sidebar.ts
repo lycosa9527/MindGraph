@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Gói',
   'sidebar.settings': 'Settings',
   'sidebar.library': 'Thư viện',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Đặc vụ {name}',

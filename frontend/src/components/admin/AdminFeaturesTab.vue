@@ -46,6 +46,7 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_workshop_chat: boolean
   feature_training: boolean
   feature_vod: boolean
+  feature_clip_teaching: boolean
   feature_student_learning_space: boolean
   feature_markets: boolean
   feature_mindbot: boolean
@@ -87,6 +88,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_VOD',
     labelKey: 'admin.feature.vod',
     hintKey: 'admin.feature.vodHint',
+  },
+  {
+    apiKey: 'feature_clip_teaching',
+    envKey: 'FEATURE_CLIP_TEACHING',
+    labelKey: 'admin.feature.clipTeaching',
+    hintKey: 'admin.feature.clipTeachingHint',
   },
   {
     apiKey: 'feature_student_learning_space',

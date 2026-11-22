@@ -58,6 +58,7 @@ from models.domain.training import (
 )
 from models.domain.library_demo import UserLibraryDemo
 from models.domain.user_dropdown import UserDropdownItem
+from models.domain.clip_lesson import ClipLesson, ClipLessonChapter, ClipLessonComment
 from models.domain.vod import VodFolder, VodMedia
 from models.domain.learning_space import (
     GlassesWearerBind,
@@ -234,6 +235,9 @@ __all__ = [
     "TrainingCourseCompletion",
     "UserDropdownItem",
     "UserLibraryDemo",
+    "ClipLesson",
+    "ClipLessonChapter",
+    "ClipLessonComment",
     "VodFolder",
     "VodMedia",
     "LearningPilotTeacher",

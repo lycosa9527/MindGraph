@@ -110,15 +110,24 @@ def _browser_cos_connect_enabled() -> bool:
 
 def _vod_feature_on() -> bool:
     """True only for a real on flag. A MagicMock config must not widen CSP."""
-    return config.FEATURE_VOD is True
+    return config.FEATURE_VOD is True or config.FEATURE_CLIP_TEACHING is True
 
 
-def _vod_connect_clause() -> str:
+def _page_is_plain_http(request: Request) -> bool:
+    """True only for a real http page. A MagicMock scheme must not add http hosts."""
+    scheme = request.url.scheme
+    return isinstance(scheme, str) and scheme == "http"
+
+
+def _vod_connect_clause(request: Request) -> str:
     """connect-src origins for upload and TCPlayer when the online library is on."""
     if not _vod_feature_on():
         return ""
     license_url = str(getattr(config, "TENCENT_VOD_LICENSE_URL", "") or "")
-    sources = vod_browser_connect_sources(license_url)
+    sources = vod_browser_connect_sources(
+        license_url,
+        include_plain_http=_page_is_plain_http(request),
+    )
     if not sources:
         return ""
     return f" {sources}"
@@ -149,6 +158,8 @@ def max_request_body_size_for_path(path: str) -> int:
     if path == "/api/export_worksheet_docx":
         return WORKSHEET_DOCX_MAX_BODY_SIZE
     if path == "/api/training/assets/complete":
+        return TRAINING_ASSET_MAX_BODY_SIZE
+    if path.startswith("/api/clip-lessons/") and path.endswith("/video"):
         return TRAINING_ASSET_MAX_BODY_SIZE
     if path == DIFY_FILES_UPLOAD_PATH:
         return DIFY_FILES_UPLOAD_MAX_BODY_SIZE
@@ -395,9 +406,10 @@ async def add_security_headers(request: Request, call_next):
     - data: URIs: Required for canvas-to-image conversions
     - connect-src / media-src: when Showcase, training, or /auth login-hero COS
       is on, allow the configured bucket virtual-host endpoints for
-      browser→COS presigned PUT / media. When FEATURE_VOD is on, connect-src
-      allows upload and TCPlayer play hosts, script-src allows tcsdk.com, and
-      media-src allows the default vod2 play domain.
+      browser→COS presigned PUT / media. When FEATURE_VOD or
+      FEATURE_CLIP_TEACHING is on, connect-src allows upload and TCPlayer play
+      hosts, script-src allows tcsdk.com, and media-src allows the default vod2
+      play domain.
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
     Reviewed: 2025-10-26 - All directives verified against actual codebase
@@ -428,11 +440,12 @@ async def add_security_headers(request: Request, call_next):
     frame_ancestors = "'self'" if same_origin_frame else "'none'"
     # Direct browser PUT to private COS (Showcase / Course Builder). Omit when
     # COS is off so connect-src stays least-privilege. Online-library uploads
-    # add VOD upload, play, and tcsdk.com hosts only when FEATURE_VOD is on.
+    # add VOD upload, play, and tcsdk.com hosts only when FEATURE_VOD or
+    # FEATURE_CLIP_TEACHING is on.
     # SPA serve strips Vite CSP <meta> so this header is the sole document policy.
     cos_connect = cos_browser_csp_sources() if _browser_cos_connect_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
-    vod_connect_clause = _vod_connect_clause()
+    vod_connect_clause = _vod_connect_clause(request)
     vod_script_clause = _vod_script_clause()
     vod_media_clause = _vod_media_clause()
     media_src = f"media-src 'self' blob:{cos_connect_clause}{vod_media_clause}; "

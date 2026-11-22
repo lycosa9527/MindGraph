@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'простор знања',
   'meta.pageTitle.learningSpace': 'простор за учење',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'библиотека',
   'meta.pageTitle.libraryBookmark': 'обележивач',
   'meta.pageTitle.libraryViewer': 'читати',

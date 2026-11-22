@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Le conférencier invité peut attirer l\'enseignant de l\'école vers la même page d\'icônes.',
   'admin.feature.vod': 'Cloud à la demande',
   'admin.feature.vodHint': 'La bibliothèque multimédia à la demande Tencent Cloud dans le panneau de gestion permet aux administrateurs scolaires de parcourir et de télécharger des vidéos.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Impossible de charger les indicateurs de fonctionnalités',

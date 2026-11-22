@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import {
   BookOpen,
   ChevronDown,
+  Clapperboard,
   ClipboardList,
   GraduationCap,
   LayoutGrid,
@@ -351,6 +352,29 @@ const mindmateUnreadLabel = computed(() => {
             <LibraryCommentsHistory />
           </div>
         </transition>
+
+        <I18nTooltip
+          v-if="!s.isLearningSpaceStudent && s.featureClipTeaching && s.hasOrganization"
+          k="sidebar.clipTeaching"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('clip-teaching')"
+            @click="s.setMode('clip-teaching')"
+          >
+            <Clapperboard
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              ><I18nText k="sidebar.clipTeaching"
+            /></span>
+          </div>
+        </I18nTooltip>
 
         <!-- Workshop Chat (研习社) — above 管理面板 -->
         <I18nTooltip

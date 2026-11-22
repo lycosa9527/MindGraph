@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Dosen tamu dapat menarik guru sekolah tersebut ke halaman ikon yang sama.',
   'admin.feature.vod': 'Awan sesuai permintaan',
   'admin.feature.vodHint': 'Pustaka media on-demand Tencent Cloud di panel manajemen memungkinkan administrator sekolah menelusuri dan mengunggah video.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Tidak dapat memuat tanda fitur',

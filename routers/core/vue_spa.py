@@ -330,7 +330,7 @@ async def _serve_index(request: Request) -> HTMLResponse:
     html = stamp_brand_metadata(
         stamp_vod_csp_marker(
             strip_document_csp_meta(inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)),
-            config.FEATURE_VOD is True,
+            config.FEATURE_VOD is True or config.FEATURE_CLIP_TEACHING is True,
         )
     )
     origin = public_site_origin_from_request(request)

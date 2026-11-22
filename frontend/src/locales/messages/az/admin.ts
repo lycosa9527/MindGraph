@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Qonaq müəllim məktəbin müəllimini eyni ikona səhifəsinə çəkə bilər.',
   'admin.feature.vod': 'Tələb üzrə bulud',
   'admin.feature.vodHint': 'İdarəetmə panelindəki Tencent Cloud on-demand media kitabxanası məktəb administratorlarına videolara baxmaq və yükləmək imkanı verir.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Funksiya bayraqları yüklənmədi',

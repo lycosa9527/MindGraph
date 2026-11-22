@@ -83,6 +83,8 @@ export default {
   'admin.feature.trainingHint': '到校讲师可将该校教师拉到同一图示页。',
   'admin.feature.vod': '在线视频库',
   'admin.feature.vodHint': '管理面板中的在线视频库，供学校管理员浏览和上传视频。',
+  'admin.feature.clipTeaching': '切片式教学',
+  'admin.feature.clipTeachingHint': '侧栏中的切片课：上传视频、设置播放区间和章节，并配课件与评论。默认关闭。',
   'admin.feature.studentLearningSpace': '学习空间',
   'admin.feature.studentLearningSpaceHint':
     '班级图示作业：试点教师、建班导入、布置与批改。默认开启。',

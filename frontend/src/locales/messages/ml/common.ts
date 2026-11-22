@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'വിജ്ഞാന ഇടം',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'ലൈബ്രറി',
   'meta.pageTitle.libraryBookmark': 'ബുക്ക്മാർക്ക്',
   'meta.pageTitle.libraryViewer': 'വായിച്ചു',

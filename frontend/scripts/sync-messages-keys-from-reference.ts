@@ -17,6 +17,7 @@ const NS_ORDER = [
   'common',
   'mindmate',
   'canvas',
+  'clipTeaching',
   'workshop',
   'admin',
   'knowledge',
@@ -118,6 +119,24 @@ function formatNamespaceExport(
   return `export default ${formatted} as const\n`
 }
 
+function patchIndexClipTeaching(locale: string, dry: boolean): boolean {
+  const indexPath = join(ROOT, locale, 'index.ts')
+  if (!existsSync(indexPath)) return false
+  const rawPrev = readFileSync(indexPath, 'utf8')
+  if (rawPrev.includes('clipTeaching')) return false
+  const next = rawPrev
+    .replace(
+      "import common from './common.ts'",
+      "import clipTeaching from './clipTeaching.ts'\nimport common from './common.ts'"
+    )
+    .replace('  ...common,\n', '  ...clipTeaching,\n  ...common,\n')
+  if (next === rawPrev) {
+    throw new Error(`Failed to patch index.ts for ${locale}`)
+  }
+  if (!dry) writeFileSync(indexPath, next, 'utf8')
+  return true
+}
+
 function patchIndexThinkingCoins(locale: string, dry: boolean): boolean {
   const indexPath = join(ROOT, locale, 'index.ts')
   if (!existsSync(indexPath)) {
@@ -175,6 +194,9 @@ async function main(): Promise<void> {
       }
     }
     if (patchIndexThinkingCoins(loc, dry)) {
+      indexChanged += 1
+    }
+    if (patchIndexClipTeaching(loc, dry)) {
       indexChanged += 1
     }
   }

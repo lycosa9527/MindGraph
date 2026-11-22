@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Packages',
   'sidebar.settings': 'Settings',
   'sidebar.library': 'Library',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',

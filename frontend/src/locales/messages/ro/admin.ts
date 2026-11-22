@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Lectorul vizitator îl poate trage pe profesorul școlii la aceeași pagină cu pictograme.',
   'admin.feature.vod': 'Biblioteca video online',
   'admin.feature.vodHint': 'O bibliotecă video online în panoul de administrare pentru ca administratorii școlii să răsfoiască și să încarce videoclipuri.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'spatiu de invatare',
   'admin.feature.studentLearningSpaceHint': 'Teme cu diagrama de clasă: profesori pilot, introducere în construcția clasei, aranjare și corectare. Activat implicit.',
   'admin.featureLoadFailed': 'Nu se poate încărca comutatorul de funcții',

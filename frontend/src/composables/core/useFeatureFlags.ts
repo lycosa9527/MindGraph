@@ -42,6 +42,7 @@ export function useFeatureFlags() {
   const featureWorkshopChat = computed(() => live.value?.feature_workshop_chat ?? false)
   const featureTraining = computed(() => live.value?.feature_training ?? false)
   const featureVod = computed(() => live.value?.feature_vod ?? false)
+  const featureClipTeaching = computed(() => live.value?.feature_clip_teaching ?? false)
   const featureStudentLearningSpace = computed(
     () => live.value?.feature_student_learning_space ?? true
   )
@@ -69,6 +70,7 @@ export function useFeatureFlags() {
     featureWorkshopChat,
     featureTraining,
     featureVod,
+    featureClipTeaching,
     featureStudentLearningSpace,
     featureMarkets,
     featureMindbot,

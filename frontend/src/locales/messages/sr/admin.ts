@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Гостујући предавач може повући наставника школе на исту страницу са иконама.',
   'admin.feature.vod': 'Онлине видеотека',
   'admin.feature.vodHint': 'Онлајн видеотека у административној табли за администраторе школе да прегледају и отпремају видео снимке.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'простор за учење',
   'admin.feature.studentLearningSpaceHint': 'Дијаграм часа домаћи задатак: учитељи пилот, увод у изградњу часа, уређење и корекција. Омогућено подразумевано.',
   'admin.featureLoadFailed': 'Није могуће учитати прекидач функција',

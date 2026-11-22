@@ -27,6 +27,7 @@ interface FeatureFlagsResponse {
   feature_workshop_chat: boolean
   feature_training?: boolean
   feature_vod?: boolean
+  feature_clip_teaching?: boolean
   feature_student_learning_space?: boolean
   feature_markets: boolean
   feature_mindbot: boolean
@@ -67,6 +68,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_workshop_chat: false,
       feature_training: false,
       feature_vod: false,
+      feature_clip_teaching: false,
       feature_student_learning_space: true,
       feature_markets: false,
       feature_mindbot: false,
@@ -134,6 +136,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_org_access: raw.feature_org_access ?? {},
           feature_training: raw.feature_training ?? false,
           feature_vod: raw.feature_vod ?? false,
+          feature_clip_teaching: raw.feature_clip_teaching ?? false,
           feature_student_learning_space: raw.feature_student_learning_space ?? true,
           feature_markets: raw.feature_markets ?? false,
           feature_mindbot: raw.feature_mindbot ?? false,
@@ -151,7 +154,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         }
         flags.value = data
         lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
-        maybeReloadForVodCsp(data.feature_vod ?? false)
+        maybeReloadForVodCsp((data.feature_vod ?? false) || (data.feature_clip_teaching ?? false))
         return data
       } catch (error) {
         console.error('[FeatureFlags] Fetch error:', error)
@@ -223,6 +226,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_vod ?? false
   }
 
+  function getFeatureClipTeaching(): boolean {
+    return flags.value?.feature_clip_teaching ?? false
+  }
+
   function getFeatureStudentLearningSpace(): boolean {
     return flags.value?.feature_student_learning_space ?? true
   }
@@ -284,6 +291,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureWorkshopChat,
     getFeatureTraining,
     getFeatureVod,
+    getFeatureClipTeaching,
     getFeatureStudentLearningSpace,
     hasLiveFeatureFlags,
     getFeatureMarkets,

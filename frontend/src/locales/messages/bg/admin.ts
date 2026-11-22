@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Гостуващият преподавател може да изтегли учителя от училището към същата страница с икони.',
   'admin.feature.vod': 'Онлайн видео библиотека',
   'admin.feature.vodHint': 'Онлайн видео библиотека в административния панел за училищни администратори, за да преглеждат и качват видеоклипове.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'учебно пространство',
   'admin.feature.studentLearningSpaceHint': 'Домашна работа по диаграма на клас: пилотни учители, въведение в изграждането на класа, подреждане и корекция. Активирано по подразбиране.',
   'admin.featureLoadFailed': 'Не може да се зареди превключвател на функции',

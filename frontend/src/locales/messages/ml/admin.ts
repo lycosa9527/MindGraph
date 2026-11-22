@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'വിസിറ്റിംഗ് ലെക്ചറർക്ക് സ്‌കൂളിലെ അധ്യാപകനെ അതേ ഐക്കൺ പേജിലേക്ക് വലിക്കാം.',
   'admin.feature.vod': 'ആവശ്യാനുസരണം ക്ലൗഡ്',
   'admin.feature.vodHint': 'മാനേജ്‌മെൻ്റ് പാനലിലെ ടെൻസെൻ്റ് ക്ലൗഡ് ഓൺ-ഡിമാൻഡ് മീഡിയ ലൈബ്രറി സ്‌കൂൾ അഡ്മിനിസ്ട്രേറ്റർമാരെ വീഡിയോകൾ ബ്രൗസ് ചെയ്യാനും അപ്‌ലോഡ് ചെയ്യാനും അനുവദിക്കുന്നു.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ഫീച്ചർ സ്വിച്ച് ലോഡ് ചെയ്യാനാവുന്നില്ല',

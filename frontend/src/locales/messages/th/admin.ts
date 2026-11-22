@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'วิทยากรรับเชิญสามารถดึงครูของโรงเรียนไปที่หน้าไอคอนเดียวกันได้',
   'admin.feature.vod': 'คลาวด์ตามความต้องการ',
   'admin.feature.vodHint': 'ไลบรารีสื่อตามความต้องการของ Tencent Cloud ในแผงการจัดการช่วยให้ผู้ดูแลระบบของโรงเรียนเรียกดูและอัปโหลดวิดีโอได้',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ไม่สามารถโหลดแฟล็กฟีเจอร์',

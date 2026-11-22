@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'พื้นที่ความรู้',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'ห้องสมุด',
   'meta.pageTitle.libraryBookmark': 'บุ๊กมาร์ก',
   'meta.pageTitle.libraryViewer': 'ตัวดูห้องสมุด',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'A vendégelőadó ugyanarra az ikonoldalra húzhatja az iskola tanárát.',
   'admin.feature.vod': 'Online videotár',
   'admin.feature.vodHint': 'Online videotár az adminisztrációs panelen, ahol az iskolai adminisztrátorok böngészhetnek és feltölthetnek videókat.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'tanulási tér',
   'admin.feature.studentLearningSpaceHint': 'Osztálydiagram házi feladat: kísérleti tanárok, bevezetés az óraépítésbe, rendezés és javítás. Alapértelmezés szerint engedélyezve.',
   'admin.featureLoadFailed': 'Nem sikerült betölteni a funkciókapcsolót',

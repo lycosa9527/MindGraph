@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'vedomostný priestor',
   'meta.pageTitle.learningSpace': 'priestor na učenie',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'knižnica',
   'meta.pageTitle.libraryBookmark': 'záložka',
   'meta.pageTitle.libraryViewer': 'čítať',

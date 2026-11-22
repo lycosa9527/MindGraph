@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Die besoekende dosent kan die onderwyser van die skool na dieselfde ikoonbladsy toe trek.',
   'admin.feature.vod': 'Wolk op aanvraag',
   'admin.feature.vodHint': 'Die Tencent Cloud-mediabiblioteek op aanvraag in die bestuurspaneel laat skooladministrateurs toe om deur video\'s te blaai en op te laai.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Kon nie kenmerkvlagte laai nie',

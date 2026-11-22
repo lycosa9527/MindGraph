@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Tashrif buyurgan o\'qituvchi maktab o\'qituvchisini xuddi shu piktogramma sahifasiga jalb qilishi mumkin.',
   'admin.feature.vod': 'Talab bo\'yicha bulut',
   'admin.feature.vodHint': 'Boshqaruv panelidagi Tencent Cloud talab bo\'yicha media kutubxonasi maktab ma\'murlariga videolarni ko\'rib chiqish va yuklash imkonini beradi.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Funksiya bayraqlari yuklanmadi',

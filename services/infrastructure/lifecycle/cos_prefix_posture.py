@@ -26,7 +26,8 @@ def log_cos_prefix_posture() -> None:
         layout = f"env-root:{cos_env_root()}"
     logger.info(
         "[COS] layout=%s documents=%s showcase=%s zhihui=%s temp_images=%s "
-        "training=%s workshop=%s seminar=%s auth_login=%s backups=%s sync=%s load_from_cos=%s",
+        "training=%s workshop=%s seminar=%s auth_login=%s clip_teaching=%s "
+        "backups=%s sync=%s load_from_cos=%s",
         layout,
         config.COS_DOCUMENTS_PREFIX,
         config.COS_SHOWCASE_PREFIX,
@@ -36,6 +37,7 @@ def log_cos_prefix_posture() -> None:
         config.COS_WORKSHOP_PREFIX,
         config.COS_SEMINAR_PREFIX,
         config.COS_AUTH_LOGIN_PREFIX,
+        config.COS_CLIP_TEACHING_PREFIX,
         COS_KEY_PREFIX,
         normalized_cos_sync_prefix(),
         config.COURSE_BUILDER_LOAD_FROM_COS,

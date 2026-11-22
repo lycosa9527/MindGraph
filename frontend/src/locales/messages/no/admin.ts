@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Besøkslektor kan trekke læreren ved skolen til samme ikonside.',
   'admin.feature.vod': 'Online videobibliotek',
   'admin.feature.vodHint': 'Et online videobibliotek i administrasjonspanelet der skoleadministratorer kan bla gjennom og laste opp videoer.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'læringsrom',
   'admin.feature.studentLearningSpaceHint': 'Klasseskjema lekser: pilotlærere, introduksjon til klassekonstruksjon, opplegg og retting. Aktivert som standard.',
   'admin.featureLoadFailed': 'Kan ikke laste inn funksjonsbryteren',

@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Bilgi alanı',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Kitaplık',
   'meta.pageTitle.libraryBookmark': 'Yer imi',
   'meta.pageTitle.libraryViewer': 'Kitaplık görüntüleyici',

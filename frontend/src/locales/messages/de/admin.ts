@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Der Gastdozent kann den Lehrer der Schule auf die gleiche Symbolseite ziehen.',
   'admin.feature.vod': 'Cloud auf Abruf',
   'admin.feature.vodHint': 'Die On-Demand-Medienbibliothek von Tencent Cloud im Verwaltungsbereich ermöglicht Schuladministratoren das Durchsuchen und Hochladen von Videos.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Feature-Flags konnten nicht geladen werden',

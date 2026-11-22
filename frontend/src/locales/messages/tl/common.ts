@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Espasyo ng kaalaman',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Aklatan',
   'meta.pageTitle.libraryBookmark': 'bookmark',
   'meta.pageTitle.libraryViewer': 'Viewer ng aklatan',

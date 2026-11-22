@@ -83,6 +83,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_workshop_chat: bool
     feature_training: bool = False
     feature_vod: bool = False
+    feature_clip_teaching: bool = False
     feature_student_learning_space: bool = True
     feature_markets: bool
     feature_mindbot: bool
@@ -138,6 +139,7 @@ async def get_feature_flags(
         feature_workshop_chat=workshop_chat_flag,
         feature_training=config.FEATURE_TRAINING,
         feature_vod=config.FEATURE_VOD,
+        feature_clip_teaching=config.FEATURE_CLIP_TEACHING,
         feature_student_learning_space=config.FEATURE_STUDENT_LEARNING_SPACE,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,

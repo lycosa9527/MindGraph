@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'ಸಂದರ್ಶಕ ಉಪನ್ಯಾಸಕರು ಶಾಲೆಯ ಶಿಕ್ಷಕರನ್ನು ಅದೇ ಐಕಾನ್ ಪುಟಕ್ಕೆ ಎಳೆಯಬಹುದು.',
   'admin.feature.vod': 'ಬೇಡಿಕೆಯ ಮೇಲೆ ಮೇಘ',
   'admin.feature.vodHint': 'ಮ್ಯಾನೇಜ್‌ಮೆಂಟ್ ಪ್ಯಾನೆಲ್‌ನಲ್ಲಿರುವ ಟೆನ್ಸೆಂಟ್ ಕ್ಲೌಡ್ ಆನ್-ಡಿಮಾಂಡ್ ಮೀಡಿಯಾ ಲೈಬ್ರರಿಯು ಶಾಲಾ ನಿರ್ವಾಹಕರಿಗೆ ವೀಡಿಯೊಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಲು ಮತ್ತು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಅನುಮತಿಸುತ್ತದೆ.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ವೈಶಿಷ್ಟ್ಯ ಸ್ವಿಚ್ ಅನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',

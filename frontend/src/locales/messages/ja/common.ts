@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'ナレッジスペース',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'ライブラリ',
   'meta.pageTitle.libraryBookmark': 'ブックマーク',
   'meta.pageTitle.libraryViewer': 'ライブラリビューア',

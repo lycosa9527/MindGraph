@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': '패키지',
   'sidebar.settings': 'Settings',
   'sidebar.library': '라이브러리',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': '에이전트 {name}',

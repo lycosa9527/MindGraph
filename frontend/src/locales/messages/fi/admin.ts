@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Vieraileva luennoitsija voi vetää koulun opettajan samalle kuvakesivulle.',
   'admin.feature.vod': 'Online-videokirjasto',
   'admin.feature.vodHint': 'Hallintapaneelissa oleva online-videokirjasto, jonka avulla koulun ylläpitäjät voivat selata ja ladata videoita.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'oppimistilaa',
   'admin.feature.studentLearningSpaceHint': 'Luokkakaavion kotitehtävät: pilottiopettajat, johdatus luokan rakentamiseen, järjestelyyn ja korjaukseen. Oletuksena käytössä.',
   'admin.featureLoadFailed': 'Ominaisuuden kytkintä ei voi ladata',

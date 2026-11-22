@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'தகவல் தொகுப்பு',
   'sidebar.settings': 'Settings',
   'sidebar.library': 'நூலகம்',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'முகவர் {name}',

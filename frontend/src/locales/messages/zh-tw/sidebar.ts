@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': '資料包',
   'sidebar.settings': '設置',
   'sidebar.library': '圖書館',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',

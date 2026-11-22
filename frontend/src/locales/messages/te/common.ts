@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'జ్ఞాన స్థలం',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'లైబ్రరీ',
   'meta.pageTitle.libraryBookmark': 'బుక్మార్క్',
   'meta.pageTitle.libraryViewer': 'చదివాడు',

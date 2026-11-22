@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'แพ็กเกจ',
   'sidebar.settings': 'Settings',
   'sidebar.library': 'ห้องสมุด',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'เอเจนต์ {name}',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Maaaring hilahin ng dumadalaw na lektor ang guro ng paaralan sa parehong pahina ng icon.',
   'admin.feature.vod': 'Cloud on demand',
   'admin.feature.vodHint': 'Ang Tencent Cloud on-demand media library sa management panel ay nagbibigay-daan sa mga administrator ng paaralan na mag-browse at mag-upload ng mga video.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Hindi ma-load ang mga feature na flag',

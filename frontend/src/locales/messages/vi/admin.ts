@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Giảng viên thỉnh giảng có thể kéo giáo viên của trường về trang biểu tượng tương tự.',
   'admin.feature.vod': 'Đám mây theo yêu cầu',
   'admin.feature.vodHint': 'Thư viện phương tiện theo yêu cầu của Tencent Cloud trong bảng quản lý cho phép quản trị viên trường học duyệt và tải video lên.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Không thể tải cờ tính năng',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Ο επισκέπτης ομιλητής μπορεί να τραβήξει τον δάσκαλο του σχολείου στην ίδια σελίδα εικονιδίου.',
   'admin.feature.vod': 'Ηλεκτρονική βιβλιοθήκη βίντεο',
   'admin.feature.vodHint': 'Μια ηλεκτρονική βιβλιοθήκη βίντεο στον πίνακα διαχείρισης για τους διαχειριστές του σχολείου για να περιηγηθούν και να ανεβάσουν βίντεο.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'χώρο μάθησης',
   'admin.feature.studentLearningSpaceHint': 'Εργασία διαγράμματος τάξης: πιλοτικοί δάσκαλοι, εισαγωγή στην κατασκευή τάξης, διάταξη και διόρθωση. Ενεργοποιημένο από προεπιλογή.',
   'admin.featureLoadFailed': 'Δεν είναι δυνατή η φόρτωση του διακόπτη λειτουργιών',

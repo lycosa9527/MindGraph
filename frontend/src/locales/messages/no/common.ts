@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'kunnskapsrom',
   'meta.pageTitle.learningSpace': 'læringsrom',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'bibliotek',
   'meta.pageTitle.libraryBookmark': 'bokmerke',
   'meta.pageTitle.libraryViewer': 'lese',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Hosťujúci lektor môže stiahnuť učiteľa školy na rovnakú stránku ikon.',
   'admin.feature.vod': 'Online videotéka',
   'admin.feature.vodHint': 'Online videoknižnica v administračnom paneli pre školských administrátorov na prehliadanie a nahrávanie videí.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'priestor na učenie',
   'admin.feature.studentLearningSpaceHint': 'Domáca úloha v diagrame tried: pilotní učitelia, úvod do konštrukcie triedy, usporiadanie a oprava. Predvolene povolené.',
   'admin.featureLoadFailed': 'Nie je možné načítať prepínač funkcií',

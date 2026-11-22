@@ -16,6 +16,7 @@ export const I18N_NS_FILES = [
   'common',
   'mindmate',
   'canvas',
+  'clipTeaching',
   'workshop',
   'training',
   'admin',

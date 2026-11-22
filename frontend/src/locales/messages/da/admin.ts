@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Besøgsunderviseren kan trække skolens lærer til samme ikonside.',
   'admin.feature.vod': 'Online video bibliotek',
   'admin.feature.vodHint': 'Et online videobibliotek i administrationspanelet, hvor skoleadministratorer kan gennemse og uploade videoer.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'læringsrum',
   'admin.feature.studentLearningSpaceHint': 'Klassediagram hjemmearbejde: pilotlærere, introduktion til klassekonstruktion, arrangement og rettelse. Aktiveret som standard.',
   'admin.featureLoadFailed': 'Funktionskontakten kunne ikke indlæses',

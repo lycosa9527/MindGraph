@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.226] - 2026-11-22
+
+> **切片式教学: one lesson with a video, a playback trim, chapters on the timeline, a slide strip, and organization comments.**
+
+### Added
+
+- **切片式教学** — Sidebar entry behind `FEATURE_CLIP_TEACHING` (default off). Hidden for learning-space students and for accounts with no organization. One lesson is one video plus one deck.
+- **Playback trim and chapters** — The owner sets an in/out range. Chapters are segments on a rail under the picture; a click seeks. A tighter trim drops chapters that fall outside it. Marks stay on the lesson and are not written onto the Tencent file.
+- **Slide strip and comments** — A PPTX fills the strip on the right after the preview is ready. Anyone in the same organization can post a comment and one level of replies.
+- **Where the files go** — A development machine keeps the video and the deck in `static/clip-lessons`. Test and production send the deck to COS (`test/clip-teaching` or `clip-teaching/mindgraph`) and the video to Tencent VOD.
+
+### Fixed
+
+- **Video upload from Vite** — The uploader calls COS with the page scheme. An `http://` dev page can now reach the same park hosts the policy already allowed over `https://`.
+
+### Tests
+
+- [`tests/test_clip_lesson_rules.py`](tests/test_clip_lesson_rules.py), [`tests/test_clip_lesson_storage.py`](tests/test_clip_lesson_storage.py)
+- [`frontend/tests/clipTeachingTimeline.spec.ts`](frontend/tests/clipTeachingTimeline.spec.ts)
+
 ## [5.180.225] - 2026-11-19
 
 > **Bound glasses follow the teacher's course, and a learning sheet can print a code for each student.**

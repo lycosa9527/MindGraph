@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'يمكن للمحاضر الزائر سحب معلم المدرسة إلى نفس صفحة الأيقونة.',
   'admin.feature.vod': 'السحابة عند الطلب',
   'admin.feature.vodHint': 'تتيح مكتبة الوسائط عند الطلب Tencent Cloud الموجودة في لوحة الإدارة لمسؤولي المدرسة تصفح مقاطع الفيديو وتحميلها.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'غير قادر على تحميل مفتاح الميزة',

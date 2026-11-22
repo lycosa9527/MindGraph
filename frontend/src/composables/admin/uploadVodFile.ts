@@ -1,7 +1,7 @@
 /**
  * Client upload to Tencent VOD via vod-js-sdk-v6 + our upload signature.
  */
-import { type VodMediaItem, registerVodMedia, signVodUpload } from '@/utils/vodApi'
+import { registerVodMedia, signVodUpload } from '@/utils/vodApi'
 
 export interface VodUploadProgress {
   percent: number
@@ -51,7 +51,11 @@ export async function uploadVodFile(options: {
   organizationId?: number | null
   folderId?: string | null
   onProgress?: (progress: VodUploadProgress) => void
-}): Promise<VodMediaItem> {
+  signUpload?: () => Promise<{ signature: string; source_context: string }>
+  registerMedia?: (payload: { fileId: string; title: string; sourceContext: string }) => Promise<{
+    id: string
+  }>
+}): Promise<{ id: string }> {
   // The SDK asks for a signature on ApplyUploadUGC, again on retry, and again
   // on CommitUploadUGC. oneTimeValid signatures cannot be reused. Tencent
   // stores the source context from the apply call, which finishes before
@@ -64,7 +68,9 @@ export async function uploadVodFile(options: {
     allowReport: false,
     enableRaceRegion: false,
     getSignature: async () => {
-      const sign = await signVodUpload(options.organizationId)
+      const sign = options.signUpload
+        ? await options.signUpload()
+        : await signVodUpload(options.organizationId)
       if (!uploadStarted) {
         sourceContext = sign.source_context
       }
@@ -81,6 +87,13 @@ export async function uploadVodFile(options: {
   const fileId = String(done.fileId || '').trim()
   if (!fileId) {
     throw new Error('vod_upload_no_file_id')
+  }
+  if (options.registerMedia) {
+    return options.registerMedia({
+      fileId,
+      title: options.title,
+      sourceContext,
+    })
   }
   return registerVodMedia({
     fileId,

@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'χώρο γνώσης',
   'meta.pageTitle.learningSpace': 'χώρο μάθησης',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'βιβλιοθήκη',
   'meta.pageTitle.libraryBookmark': 'σελιδοδείκτη',
   'meta.pageTitle.libraryViewer': 'ανάγνωση',

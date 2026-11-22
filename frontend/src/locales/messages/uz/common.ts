@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Bilim makoni',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Kutubxona',
   'meta.pageTitle.libraryBookmark': 'Xatcho’p',
   'meta.pageTitle.libraryViewer': 'Kutubxona ko’rishi',

@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Πακέτο πληροφοριών',
   'sidebar.settings': 'στήνω',
   'sidebar.library': 'βιβλιοθήκη',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Πράκτορας {name}',

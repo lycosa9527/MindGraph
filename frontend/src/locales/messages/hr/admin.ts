@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Gostujući predavač može povući nastavnika škole na istu stranicu ikone.',
   'admin.feature.vod': 'Online videoteka',
   'admin.feature.vodHint': 'Mrežna videoteka u administratorskoj ploči za školske administratore za pregledavanje i učitavanje videozapisa.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'prostor za učenje',
   'admin.feature.studentLearningSpaceHint': 'Domaća zadaća dijagrama razreda: pilot učitelji, uvod u konstrukciju razreda, raspored i ispravak. Omogućeno prema zadanim postavkama.',
   'admin.featureLoadFailed': 'Nije moguće učitati prekidač značajki',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'El profesor visitante puede llevar al profesor de la escuela a la misma página de iconos.',
   'admin.feature.vod': 'Nube bajo demanda',
   'admin.feature.vodHint': 'La biblioteca multimedia bajo demanda de Tencent Cloud en el panel de administración permite a los administradores escolares buscar y cargar videos.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'No se pudieron cargar los indicadores de funciones',

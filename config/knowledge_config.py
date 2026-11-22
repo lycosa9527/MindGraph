@@ -409,3 +409,11 @@ class LearningSpaceCosConfigMixin:
     def COS_LEARNING_SPACE_PRESIGN_GET_TTL(self) -> int:
         """Seconds for COS→browser presigned GET URLs (short-lived)."""
         return int(self._get_cached_value("COS_LEARNING_SPACE_PRESIGN_GET_TTL", "300"))
+
+    @property
+    def COS_CLIP_TEACHING_PREFIX(self) -> str:
+        """COS key prefix for clip decks. Default ``{env}/clip-teaching``."""
+        return cos_feature_prefix(
+            "clip-teaching",
+            self._get_cached_value("COS_CLIP_TEACHING_PREFIX", ""),
+        )

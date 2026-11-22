@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': '지식 공간',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': '라이브러리',
   'meta.pageTitle.libraryBookmark': '북마크',
   'meta.pageTitle.libraryViewer': '라이브러리 뷰어',

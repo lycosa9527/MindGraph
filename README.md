@@ -221,6 +221,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_TRAINING` | `False` | Org training follow |
 | `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂 slide lecture (visible but greyed until ready) |
 | `FEATURE_VOD` | `False` | Admin online video library |
+| `FEATURE_CLIP_TEACHING` | `False` | Sidebar clip teaching (切片式教学) |
 | `FEATURE_MARKETS` | `False` | Market catalog and Alipay checkout |
 
 Kitty Agent stays on in every deployment. Full flag list: `config/features_config.py`.

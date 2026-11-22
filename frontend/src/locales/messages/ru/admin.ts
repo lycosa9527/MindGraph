@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Приглашенный лектор может перетащить преподавателя школы на ту же страницу с иконками.',
   'admin.feature.vod': 'Облако по требованию',
   'admin.feature.vodHint': 'Медиатека Tencent Cloud по запросу на панели управления позволяет администраторам школы просматривать и загружать видео.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Не удалось загрузить переключатель функций.',

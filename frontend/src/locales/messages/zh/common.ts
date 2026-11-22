@@ -92,6 +92,7 @@ export default {
   'meta.pageTitle.default': '迈特教研',
   'meta.pageTitle.knowledgeSpace': '知识空间',
   'meta.pageTitle.learningSpace': '学习空间',
+  'meta.pageTitle.clipTeaching': '切片式教学',
   'meta.pageTitle.library': '图书馆',
   'meta.pageTitle.libraryBookmark': '书签',
   'meta.pageTitle.libraryViewer': '阅读',

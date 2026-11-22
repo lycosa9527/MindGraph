@@ -168,6 +168,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_VOD", "False").lower() == "true"
 
     @property
+    def FEATURE_CLIP_TEACHING(self):
+        """Enable sidebar clip teaching (切片式教学).
+
+        Disabled by default. Set FEATURE_CLIP_TEACHING=True in .env to enable.
+        Playback uses the same Tencent VOD credentials as the online library.
+        """
+        return self._get_cached_value("FEATURE_CLIP_TEACHING", "False").lower() == "true"
+
+    @property
     def FEATURE_STUDENT_LEARNING_SPACE(self):
         """Enable classroom Learning Space (student accounts / homework).
 

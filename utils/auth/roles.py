@@ -49,6 +49,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
     "feature_training": "FEATURE_TRAINING",
     "feature_vod": "FEATURE_VOD",
+    "feature_clip_teaching": "FEATURE_CLIP_TEACHING",
     "feature_student_learning_space": "FEATURE_STUDENT_LEARNING_SPACE",
 }
 

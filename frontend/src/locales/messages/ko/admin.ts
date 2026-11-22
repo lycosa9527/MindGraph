@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': '방문 강사는 해당 학교의 교사를 동일한 아이콘 페이지로 끌어올 수 있습니다.',
   'admin.feature.vod': '온디맨드 클라우드',
   'admin.feature.vodHint': '관리 패널의 Tencent Cloud 주문형 미디어 라이브러리를 통해 학교 관리자는 비디오를 검색하고 업로드할 수 있습니다.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': '기능 플래그를 불러오지 못했습니다',

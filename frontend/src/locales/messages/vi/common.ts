@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Không gian tri thức',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Thư viện',
   'meta.pageTitle.libraryBookmark': 'Dấu trang',
   'meta.pageTitle.libraryViewer': 'Trình xem thư viện',

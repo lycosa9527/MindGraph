@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'विजिटिंग लेक्चरर स्कूल के शिक्षक को उसी आइकन पेज पर खींच सकता है।',
   'admin.feature.vod': 'मांग पर बादल',
   'admin.feature.vodHint': 'प्रबंधन पैनल में Tencent क्लाउड ऑन-डिमांड मीडिया लाइब्रेरी स्कूल प्रशासकों को वीडियो ब्राउज़ करने और अपलोड करने की अनुमति देती है।',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'नहीं हो सका: load feature flags',

@@ -81,12 +81,25 @@ def license_connect_origin(license_url: str) -> str:
     return f"https://{host}"
 
 
-def vod_browser_connect_sources(license_url: str = "") -> str:
-    """Space-separated connect-src origins for upload and playback."""
-    origins: list[str] = list(VOD_UPLOAD_API_ORIGINS)
+def vod_upload_cos_origins(scheme: str = "https") -> tuple[str, ...]:
+    """One-label COS hosts for each park. ``scheme`` is ``https`` or ``http``."""
+    origins: list[str] = []
     for region in VOD_UPLOAD_COS_REGIONS:
-        origins.append(f"https://*.cos.{region}.myqcloud.com")
-        origins.append(f"https://*.cos.{region}.tencentcos.cn")
+        origins.append(f"{scheme}://*.cos.{region}.myqcloud.com")
+        origins.append(f"{scheme}://*.cos.{region}.tencentcos.cn")
+    return tuple(origins)
+
+
+def vod_browser_connect_sources(license_url: str = "", *, include_plain_http: bool = False) -> str:
+    """Space-separated connect-src origins for upload and playback.
+
+    cos-js-sdk-v5 posts ``/?uploads`` with the page scheme. An ``http://`` Vite
+    page therefore needs the same COS hosts on ``http`` as well as ``https``.
+    """
+    origins: list[str] = list(VOD_UPLOAD_API_ORIGINS)
+    origins.extend(vod_upload_cos_origins("https"))
+    if include_plain_http:
+        origins.extend(vod_upload_cos_origins("http"))
     origins.extend(VOD_PLAY_CONNECT_ORIGINS)
     origins.extend(VOD_PLAY_FILE_ORIGINS)
     license_origin = license_connect_origin(license_url)

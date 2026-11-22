@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Bilik məkanı',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Kitabxana',
   'meta.pageTitle.libraryBookmark': 'Əlfəcin',
   'meta.pageTitle.libraryViewer': 'Kitabxana baxışı',

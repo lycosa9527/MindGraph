@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'tudástér',
   'meta.pageTitle.learningSpace': 'tanulási tér',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'könyvtár',
   'meta.pageTitle.libraryBookmark': 'könyvjelző',
   'meta.pageTitle.libraryViewer': 'olvas',

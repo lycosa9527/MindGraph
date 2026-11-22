@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': '邁特教研',
   'meta.pageTitle.knowledgeSpace': '知識空間',
   'meta.pageTitle.learningSpace': '學習空間',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': '圖書館',
   'meta.pageTitle.libraryBookmark': '書籤',
   'meta.pageTitle.libraryViewer': '閱讀',

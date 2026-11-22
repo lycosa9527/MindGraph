@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Lektori vizitues mund ta tërheqë mësuesin e shkollës në të njëjtën faqe ikonë.',
   'admin.feature.vod': 'Re sipas kërkesës',
   'admin.feature.vodHint': 'Biblioteka e medias sipas kërkesës së Tencent Cloud në panelin e menaxhimit lejon administratorët e shkollave të shfletojnë dhe ngarkojnë video.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Flamujt e funksioneve nuk u ngarkuan',

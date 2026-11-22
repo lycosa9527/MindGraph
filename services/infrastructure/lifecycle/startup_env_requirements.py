@@ -216,19 +216,33 @@ def _markets_gap() -> StartupEnvGap | None:
 
 
 def _vod_gap() -> StartupEnvGap | None:
-    if not _truthy("FEATURE_VOD"):
+    vod_on = _truthy("FEATURE_VOD")
+    clip_on = _truthy("FEATURE_CLIP_TEACHING")
+    if not vod_on and not clip_on:
         return None
     if vod_credentials_configured() and not _vod_secrets_are_templates():
         return None
+    if vod_on and clip_on:
+        title = "FEATURE_VOD"
+        opened = "Clip teaching and the online video library are on."
+        turn_off = "  Or set FEATURE_VOD=False and FEATURE_CLIP_TEACHING=False"
+    elif clip_on:
+        title = "FEATURE_CLIP_TEACHING"
+        opened = "Clip teaching is on."
+        turn_off = "  Or set FEATURE_CLIP_TEACHING=False"
+    else:
+        title = "FEATURE_VOD"
+        opened = "The online video library is on."
+        turn_off = "  Or set FEATURE_VOD=False"
     return StartupEnvGap(
-        "FEATURE_VOD",
+        title,
         (
-            "The online video library is on. Tencent VOD credentials are missing.",
+            f"{opened} Tencent VOD credentials are missing.",
             "  TENCENT_VOD_APP_ID=<VOD SubAppId>",
             "  TENCENT_VOD_PLAY_KEY=<default distribution play key>",
             "  TENCENT_VOD_SECRET_ID / TENCENT_VOD_SECRET_KEY",
             "    (or TENCENT_SMS_SECRET_ID / TENCENT_SMS_SECRET_KEY)",
-            "  Or set FEATURE_VOD=False",
+            turn_off,
         ),
     )
 

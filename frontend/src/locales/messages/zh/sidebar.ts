@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': '资料包',
   'sidebar.settings': '设置',
   'sidebar.library': '图书馆',
+  'sidebar.clipTeaching': '切片式教学',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',

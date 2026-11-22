@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'مدرس مهمان می تواند معلم مدرسه را به همان صفحه نماد بکشد.',
   'admin.feature.vod': 'ابر بر حسب تقاضا',
   'admin.feature.vodHint': 'کتابخانه رسانه درخواستی Tencent Cloud در پانل مدیریت به مدیران مدرسه اجازه می دهد ویدیوها را مرور و آپلود کنند.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'نتوانستم پرچم‌های ویژگی را بارگیری کنم',

@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': '到校講師可將該校教師拉到同一圖示頁。',
   'admin.feature.vod': '線上視頻庫',
   'admin.feature.vodHint': '管理面板中的線上視頻庫，供學校管理員瀏覽和上傳視頻。',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': '學習空間',
   'admin.feature.studentLearningSpaceHint': '班級圖示作業：試點教師、建班導入、佈置與批改。默認開啓。',
   'admin.featureLoadFailed': '無法加載功能開關',

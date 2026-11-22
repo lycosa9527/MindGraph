@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'విజిటింగ్ లెక్చరర్ స్కూల్ టీచర్‌ని అదే ఐకాన్ పేజీకి లాగవచ్చు.',
   'admin.feature.vod': 'క్లౌడ్ ఆన్ డిమాండ్',
   'admin.feature.vodHint': 'మేనేజ్‌మెంట్ ప్యానెల్‌లోని టెన్సెంట్ క్లౌడ్ ఆన్-డిమాండ్ మీడియా లైబ్రరీ పాఠశాల నిర్వాహకులను వీడియోలను బ్రౌజ్ చేయడానికి మరియు అప్‌లోడ్ చేయడానికి అనుమతిస్తుంది.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ఫీచర్ స్విచ్‌ని లోడ్ చేయడం సాధ్యపడలేదు',

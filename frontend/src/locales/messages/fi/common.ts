@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'tiedon tilaa',
   'meta.pageTitle.learningSpace': 'oppimistilaa',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'kirjasto',
   'meta.pageTitle.libraryBookmark': 'kirjanmerkki',
   'meta.pageTitle.libraryViewer': 'lukea',

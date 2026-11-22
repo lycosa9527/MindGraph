@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'ज्ञान स्थान',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'पुस्तकालय',
   'meta.pageTitle.libraryBookmark': 'बुकमार्क',
   'meta.pageTitle.libraryViewer': 'पुस्तकालय दर्शक',

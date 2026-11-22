@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'సమాచార ప్యాకేజీ',
   'sidebar.settings': 'Settings',
   'sidebar.library': 'లైబ్రరీ',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'ఏజెంట్ {name}',

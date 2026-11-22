@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'De gastdocent kan de docent van de school naar dezelfde icoonpagina trekken.',
   'admin.feature.vod': 'Cloud op aanvraag',
   'admin.feature.vodHint': 'Met de on-demand mediabibliotheek van Tencent Cloud in het beheerpaneel kunnen schoolbeheerders video\'s bekijken en uploaden.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Kan functievlaggen niet laden',

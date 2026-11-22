@@ -127,6 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'පැකේජ',
   'sidebar.settings': 'Settings',
   'sidebar.library': 'පුස්‍තකාලය',
+  'sidebar.clipTeaching': 'Clip teaching',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'නියෝජිත {name}',

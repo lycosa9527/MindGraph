@@ -36,6 +36,10 @@ def test_vod_connect_sources_cover_upload_api_and_parks() -> None:
     assert "https://tcsdk.com" == vod_browser_script_sources()
     assert vod_browser_media_sources() == "https://*.vod2.myqcloud.com https://*.vod-qcloud.com"
     assert "https://*.myqcloud.com" not in sources.split()
+    assert "http://*.cos.ap-chongqing.myqcloud.com" not in sources.split()
+    plain = vod_browser_connect_sources(include_plain_http=True).split()
+    assert "http://*.cos.ap-chongqing.myqcloud.com" in plain
+    assert "http://*.cos.ap-chongqing.tencentcos.cn" in plain
 
 
 def test_license_url_adds_its_https_origin() -> None:
@@ -49,7 +53,7 @@ def test_license_url_adds_its_https_origin() -> None:
 def test_vite_index_csp_lists_vod_upload_hosts() -> None:
     """Dev meta CSP must match the server allowlist (Vite does not use the header)."""
     content = INDEX_HTML.read_text(encoding="utf-8")
-    for origin in vod_browser_connect_sources().split():
+    for origin in vod_browser_connect_sources(include_plain_http=True).split():
         assert origin in content
     assert vod_browser_script_sources() in content
     assert vod_browser_media_sources() in content
@@ -89,6 +93,40 @@ async def test_production_csp_allows_vod_upload_when_feature_on() -> None:
     assert "https://playvideo.vodplayvideo.net" in csp
     assert "https://tcsdk.com" in csp
     assert "media-src 'self' blob: https://*.vod2.myqcloud.com https://*.vod-qcloud.com;" in csp
+
+
+@pytest.mark.asyncio
+async def test_production_csp_allows_vod_upload_for_clip_teaching() -> None:
+    """FEATURE_CLIP_TEACHING needs the same play hosts when the library flag is off."""
+    request = MagicMock()
+    request.url.scheme = "https"
+    request.url.path = "/clip-teaching"
+    request.state = SimpleNamespace(csp_nonce="testnonce123")
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            mock_config.FEATURE_VOD = False
+            mock_config.FEATURE_CLIP_TEACHING = True
+            mock_config.TENCENT_VOD_LICENSE_URL = "https://license.vodplayvideo.net/x"
+            with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
+                with patch.object(middleware_module, "cos_training_enabled", return_value=False):
+                    with patch.object(
+                        middleware_module,
+                        "cos_auth_login_csp_enabled",
+                        return_value=False,
+                    ):
+                        with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert "https://vod2.qcloud.com" in csp
+    assert "https://tcsdk.com" in csp
 
 
 @pytest.mark.asyncio

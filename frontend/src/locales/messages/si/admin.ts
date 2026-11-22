@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'පැමිණෙන කථිකාචාර්යවරයාට පාසලේ ගුරුවරයා එම අයිකන පිටුවට ඇද ගත හැකිය.',
   'admin.feature.vod': 'ඉල්ලුම මත වලාකුළු',
   'admin.feature.vodHint': 'කළමනාකරණ පැනලයේ ඇති Tencent Cloud on-demand මාධ්‍ය පුස්තකාලය පාසල් පරිපාලකයින්ට වීඩියෝ බ්‍රවුස් කිරීමට සහ උඩුගත කිරීමට ඉඩ සලසයි.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'විශේෂාංග කොඩි පූරණය කළ නොහැකි විය',

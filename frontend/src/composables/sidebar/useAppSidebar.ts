@@ -79,6 +79,8 @@ export function useAppSidebar() {
     featureMindmateExport,
     featureWorkshopChat,
     featureTraining,
+    featureVod,
+    featureClipTeaching,
     featureMindbot,
     featureStudentLearningSpace,
     workshopChatPreviewOrgIds,
@@ -105,6 +107,7 @@ export function useAppSidebar() {
     if (path.startsWith('/showcase')) return 'showcase'
     if (path.startsWith('/zhihui')) return 'zhihui'
     if (path.startsWith('/library')) return 'library'
+    if (path.startsWith('/clip-teaching')) return 'clip-teaching'
     if (
       path.startsWith('/school-dashboard') ||
       path.startsWith('/smart-response') ||
@@ -337,6 +340,7 @@ export function useAppSidebar() {
     showcase: '/showcase',
     zhihui: '/zhihui',
     library: '/library',
+    'clip-teaching': '/clip-teaching',
     admin: '/admin',
     'workshop-chat': '/workshop-chat',
     training: '/training',
@@ -833,6 +837,8 @@ export function useAppSidebar() {
     featureZhihui,
     showZhihuiNav,
     featureLibrary,
+    featureVod,
+    featureClipTeaching,
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,

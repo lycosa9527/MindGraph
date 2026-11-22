@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'فضای دانش',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'کتابخانه',
   'meta.pageTitle.libraryBookmark': 'نشانک',
   'meta.pageTitle.libraryViewer': 'نمایشگر کتابخانه',

@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Ruang pengetahuan',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Perpustakaan',
   'meta.pageTitle.libraryBookmark': 'Markah',
   'meta.pageTitle.libraryViewer': 'Penampil perpustakaan',

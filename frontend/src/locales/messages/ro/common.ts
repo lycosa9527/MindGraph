@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'spațiu de cunoaștere',
   'meta.pageTitle.learningSpace': 'spatiu de invatare',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'bibliotecă',
   'meta.pageTitle.libraryBookmark': 'marcaj',
   'meta.pageTitle.libraryViewer': 'citire',

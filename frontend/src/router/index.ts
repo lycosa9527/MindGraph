@@ -272,6 +272,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('learningSpace') },
   },
   {
+    path: '/clip-teaching',
+    name: 'ClipTeaching',
+    component: () => import('@/pages/ClipTeachingListPage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('clipTeaching') },
+  },
+  {
+    path: '/clip-teaching/:id',
+    name: 'ClipTeachingLesson',
+    component: () => import('@/pages/ClipTeachingPage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('clipTeaching') },
+  },
+  {
     path: '/library',
     name: 'Library',
     component: () => import('@/pages/LibraryPage.vue'),

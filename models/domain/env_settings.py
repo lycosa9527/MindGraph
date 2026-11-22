@@ -207,6 +207,10 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable the admin online video library (在线视频库)",
     )
+    FEATURE_CLIP_TEACHING: bool = Field(
+        default=False,
+        description="Enable sidebar clip teaching (切片式教学)",
+    )
     FEATURE_STUDENT_LEARNING_SPACE: bool = Field(
         default=True,
         description="Enable classroom Learning Space (student accounts / homework)",

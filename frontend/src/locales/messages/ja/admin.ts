@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': '出張講師は学校の先生を同じアイコンページに誘導することができます。',
   'admin.feature.vod': 'クラウドオンデマンド',
   'admin.feature.vodHint': '管理パネルの Tencent Cloud オンデマンド メディア ライブラリを使用すると、学校管理者はビデオを閲覧してアップロードできます。',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': '読み込めません機能スイッチ',

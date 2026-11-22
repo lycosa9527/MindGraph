@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Il docente ospite può indirizzare l\'insegnante della scuola alla stessa pagina delle icone.',
   'admin.feature.vod': 'Nuvola su richiesta',
   'admin.feature.vodHint': 'La libreria multimediale on-demand di Tencent Cloud nel pannello di gestione consente agli amministratori scolastici di sfogliare e caricare video.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Impossibile caricare i indicatori di funzionalità',

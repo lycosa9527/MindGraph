@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Den gästande föreläsaren kan dra skolans lärare till samma ikonsida.',
   'admin.feature.vod': 'Online videobibliotek',
   'admin.feature.vodHint': 'Ett onlinevideobibliotek i adminpanelen där skoladministratörer kan bläddra och ladda upp videor.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'lärande utrymme',
   'admin.feature.studentLearningSpaceHint': 'Klassdiagram hemläxa: pilotlärare, introduktion till klasskonstruktion, arrangemang och korrigering. Aktiverad som standard.',
   'admin.featureLoadFailed': 'Det gick inte att ladda funktionsomkopplaren',

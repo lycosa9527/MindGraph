@@ -35,6 +35,7 @@ from utils.db_rls.policy_builder import (
     upgrade_learning_space_policies,
     upgrade_mindmate_seminar_policies,
 )
+from utils.db_rls.clip_lesson_policies import clip_lesson_table_names, install_clip_lesson_policies
 from utils.db_rls.split_policies import create_split_policies, upgrade_split_policies
 
 _USER_OR_STAFF = "user_id = rls_current_user_id() OR rls_platform_admin_only()"
@@ -138,6 +139,7 @@ _ONE_OFF_TABLES = (
     *(table for table, _expr in MAITE_CHILD_TABLES),
     "maite_task_references",
     *_ZHIHUI_TABLES,
+    *clip_lesson_table_names(),
 )
 
 
@@ -229,6 +231,7 @@ def _reapply_one_off_policies() -> None:
     _policy_split(_AUDIT_TABLE, _PANEL_WRITE, _PANEL_WRITE)
     _reapply_admin_activity()
     _reapply_expert_bindings()
+    install_clip_lesson_policies()
 
 
 def _reapply_admin_activity() -> None:

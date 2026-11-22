@@ -14,6 +14,7 @@ _FLAGS_OFF = (
     "FEATURE_DINGTALK_LOGIN",
     "FEATURE_MARKETS",
     "FEATURE_VOD",
+    "FEATURE_CLIP_TEACHING",
     "FEATURE_WORKSHOP_CHAT",
 )
 
@@ -120,6 +121,19 @@ def test_feature_flags_name_the_missing_keys(monkeypatch: pytest.MonkeyPatch) ->
         "FEATURE_WECHAT_LOGIN",
         "OAuth public URL",
     ]
+
+
+def test_clip_teaching_names_vod_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clip teaching uses the same Tencent VOD keys as the online library."""
+    _ready_env(monkeypatch)
+    monkeypatch.setenv("FEATURE_CLIP_TEACHING", "True")
+    monkeypatch.setenv("TENCENT_VOD_APP_ID", "")
+    monkeypatch.setenv("TENCENT_VOD_PLAY_KEY", "")
+    monkeypatch.setenv("TENCENT_VOD_SECRET_ID", "")
+    monkeypatch.setenv("TENCENT_VOD_SECRET_KEY", "")
+    gaps = gate.collect_startup_env_gaps()
+    assert [gap.title for gap in gaps] == ["FEATURE_CLIP_TEACHING"]
+    assert "FEATURE_CLIP_TEACHING=False" in "\n".join(gaps[0].lines)
 
 
 def test_production_captcha_and_database(monkeypatch: pytest.MonkeyPatch) -> None:

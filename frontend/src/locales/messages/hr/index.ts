@@ -6,6 +6,7 @@
 import admin from './admin.ts'
 import auth from './auth.ts'
 import canvas from './canvas.ts'
+import clipTeaching from './clipTeaching.ts'
 import common from './common.ts'
 import community from './community.ts'
 import showcase from './showcase.ts'
@@ -20,6 +21,7 @@ import workshop from './workshop.ts'
 import training from './training.ts'
 
 export default {
+  ...clipTeaching,
   ...common,
   ...mindmate,
   ...canvas,

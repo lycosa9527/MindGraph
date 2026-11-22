@@ -79,6 +79,8 @@ export default {
   'admin.feature.trainingHint': 'Misafir öğretim görevlisi okulun öğretmenini aynı simge sayfasına çekebilir.',
   'admin.feature.vod': 'İsteğe bağlı bulut',
   'admin.feature.vodHint': 'Yönetim panelindeki Tencent Cloud isteğe bağlı medya kitaplığı, okul yöneticilerinin videolara göz atmasına ve yüklemesine olanak tanır.',
+  'admin.feature.clipTeaching': 'Clip teaching',
+  'admin.feature.clipTeachingHint': 'Sidebar lessons: upload a video, set a playback range and chapters, and attach a deck and comments. Off by default.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Özellik bayrakları yüklenemedi',

@@ -284,6 +284,7 @@ def lines_startup_env_hint() -> list[str]:
         "  FEATURE_DINGTALK_LOGIN=True    EXTERNAL_BASE_URL",
         "  FEATURE_MARKETS=True           ALIPAY_APP_ID, ALIPAY_NOTIFY_BASE_URL, certs",
         "  FEATURE_VOD=True               TENCENT_VOD_APP_ID, TENCENT_VOD_PLAY_KEY, CAM keys",
+        "  FEATURE_CLIP_TEACHING=True     same Tencent VOD credentials",
         "  FEATURE_WORKSHOP_CHAT=True     COLLAB_FANOUT_ORIGIN_SECRET",
         "",
         "  cp env.example .env",

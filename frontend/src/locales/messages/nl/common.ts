@@ -91,6 +91,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Kennis ruimte',
   'meta.pageTitle.learningSpace': 'Learning Space',
+  'meta.pageTitle.clipTeaching': 'Clip teaching',
   'meta.pageTitle.library': 'Bibliotheek',
   'meta.pageTitle.libraryBookmark': 'Bladwijzer',
   'meta.pageTitle.libraryViewer': 'Bibliotheekkijker',
