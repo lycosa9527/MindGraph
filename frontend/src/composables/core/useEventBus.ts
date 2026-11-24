@@ -146,6 +146,7 @@ export type EventTypes = {
   'snapshot:requested': { silent?: boolean }
   'snapshot:recall_requested': { versionNumber: number }
   'snapshot:delete_requested': { versionNumber: number }
+  'snapshot:rename_requested': { versionNumber: number }
   'snapshot:current_requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
   /** Shared-diagram viewer applied a remote spec. Must not dirty autosave or reset sessions. */

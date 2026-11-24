@@ -5,6 +5,7 @@ import {
   enterDiagramShareSession,
   leaveDiagramShareSession,
 } from '@/composables/canvas/diagramShareSession'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -17,10 +18,12 @@ import {
   canMutateDiagramSnapshots,
   canProceedAfterVersionJumpPersist,
   shouldPersistBeforeVersionJump,
+  snapshotDisplayLabel,
 } from '@/composables/editor/diagramSnapshotVersions'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
+import { promptSwissGlassName } from '@/composables/sidebar/promptSwissGlassName'
 import { loadDiagramFontsForSpec } from '@/fonts/diagramSpecFonts'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
@@ -47,6 +50,7 @@ export function useCanvasPageLibrarySnapshots(options: {
   handleSnapshotRecall: (versionNumber: number) => Promise<void>
   handleRestoreCurrentVersion: () => Promise<void>
   handleSnapshotDelete: (versionNumber: number) => Promise<void>
+  handleSnapshotRename: (versionNumber: number) => Promise<void>
 } {
   const { diagramAutoSave, snapshotHistory, isDiagramOwner } = options
   const router = useRouter()
@@ -351,6 +355,25 @@ export function useCanvasPageLibrarySnapshots(options: {
     const diagramId = savedDiagramsStore.activeDiagramId
     if (!diagramId) return
 
+    const snap = snapshotHistory.snapshots.value.find((row) => row.version_number === versionNumber)
+    const name = snapshotDisplayLabel(
+      snap ?? { version_number: versionNumber, title: null },
+      t('canvas.ribbon.historySnapshot', { n: versionNumber })
+    )
+    try {
+      await swissGlassConfirm(
+        t('canvas.ribbon.historyDeleteConfirm', { name }),
+        t('canvas.ribbon.historyDelete'),
+        {
+          confirmButtonText: t('common.delete'),
+          cancelButtonText: t('common.cancel'),
+          type: 'warning',
+        }
+      )
+    } catch {
+      return
+    }
+
     const deleteResult = await snapshotHistory.deleteSnapshot(diagramId, versionNumber)
     if (deleteResult.ok) {
       notify.successKey('canvas.topBar.snapshotDeleted', { n: versionNumber })
@@ -359,10 +382,42 @@ export function useCanvasPageLibrarySnapshots(options: {
     }
   }
 
+  async function handleSnapshotRename(versionNumber: number): Promise<void> {
+    if (!canMutateSnapshots()) return
+    const diagramId = savedDiagramsStore.activeDiagramId
+    if (!diagramId) return
+
+    const snap = snapshotHistory.snapshots.value.find((row) => row.version_number === versionNumber)
+    const fallback = t('canvas.ribbon.historySnapshot', { n: versionNumber })
+    const initial = snapshotDisplayLabel(
+      snap ?? { version_number: versionNumber, title: null },
+      fallback
+    )
+    const nextTitle = await promptSwissGlassName(
+      t,
+      'canvas.ribbon.historyRenameTitle',
+      'canvas.ribbon.historyRenamePrompt',
+      'canvas.ribbon.historyVersions',
+      initial,
+      { maxLength: 100 }
+    )
+    if (!nextTitle || nextTitle === (snap?.title?.trim() || fallback)) {
+      return
+    }
+
+    const renameResult = await snapshotHistory.renameSnapshot(diagramId, versionNumber, nextTitle)
+    if (renameResult.ok) {
+      notify.successKey('canvas.ribbon.historyRenamed')
+    } else {
+      notify.error(renameResult.message || t('canvas.ribbon.historyRenameFailed'))
+    }
+  }
+
   return {
     loadDiagramFromLibrary,
     handleSnapshotRecall,
     handleRestoreCurrentVersion,
     handleSnapshotDelete,
+    handleSnapshotRename,
   }
 }

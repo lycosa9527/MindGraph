@@ -57,7 +57,9 @@ describe('diagramRibbonCapabilities', () => {
     expect(diagramRibbonCapabilities('circle_map', false).flowSubstepArrangement).toBe(false)
 
     expect(diagramRibbonCapabilities('tree_map', false).subgraph).toBe(true)
+    expect(diagramRibbonCapabilities('tree_map', false).nodeCarousel).toBe(true)
     expect(diagramRibbonCapabilities('brace_map', false).subgraph).toBe(true)
+    expect(diagramRibbonCapabilities('brace_map', false).nodeCarousel).toBe(true)
     expect(diagramRibbonCapabilities('bubble_map', false).subgraph).toBe(false)
     expect(diagramRibbonCapabilities('double_bubble_map', false).subgraph).toBe(false)
     expect(diagramRibbonCapabilities('double_bubble_map', false).nodeCarousel).toBe(true)

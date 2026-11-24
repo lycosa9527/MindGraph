@@ -45,16 +45,16 @@ const props = withDefaults(
   }
 )
 
-const firstLevelLabelKey = computed(() =>
-  props.diagramType === 'flow_map'
-    ? 'canvas.mindMapSlideOverlay.flowFirstLevel'
-    : 'canvas.mindMapSlideOverlay.firstLevel'
-)
-const deepLabelKey = computed(() =>
-  props.diagramType === 'flow_map'
-    ? 'canvas.mindMapSlideOverlay.flowDeep'
-    : 'canvas.mindMapSlideOverlay.deep'
-)
+const firstLevelLabelKey = computed(() => {
+  if (props.diagramType === 'flow_map') return 'canvas.mindMapSlideOverlay.flowFirstLevel'
+  if (props.diagramType === 'tree_map') return 'canvas.mindMapSlideOverlay.treeFirstLevel'
+  return 'canvas.mindMapSlideOverlay.firstLevel'
+})
+const deepLabelKey = computed(() => {
+  if (props.diagramType === 'flow_map') return 'canvas.mindMapSlideOverlay.flowDeep'
+  if (props.diagramType === 'tree_map') return 'canvas.mindMapSlideOverlay.treeDeep'
+  return 'canvas.mindMapSlideOverlay.deep'
+})
 
 const emit = defineEmits<{
   (e: 'toggleAutoPlay'): void

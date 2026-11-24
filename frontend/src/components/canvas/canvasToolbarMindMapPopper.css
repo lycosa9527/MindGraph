@@ -15,8 +15,8 @@
 
 /* History versions — Swiss stone panel (matches language / school-select poppers). */
 .mm-toolbar-popper--history.el-popper {
-  width: min(260px, calc(100vw - 24px)) !important;
-  max-width: min(260px, calc(100vw - 24px)) !important;
+  width: min(280px, calc(100vw - 24px)) !important;
+  max-width: min(280px, calc(100vw - 24px)) !important;
   box-sizing: border-box !important;
   padding: 4px !important;
   border: 1px solid #e7e5e4 !important;
@@ -55,7 +55,8 @@
 }
 
 .mm-history-versions__item {
-  display: block;
+  display: flex;
+  align-items: stretch;
   box-sizing: border-box;
   width: 100%;
   padding: 0;
@@ -63,18 +64,22 @@
   border-radius: 6px;
   background: transparent;
   text-align: left;
-  cursor: pointer;
   transition:
     background 0.12s ease,
     color 0.12s ease;
 }
 
-.mm-history-versions__item:hover:not(:disabled),
-.mm-history-versions__item:focus-visible:not(:disabled) {
+.mm-history-versions__item--plain {
+  display: block;
+  cursor: pointer;
+}
+
+.mm-history-versions__item:hover,
+.mm-history-versions__item:focus-within {
   background: #f5f5f4;
 }
 
-.mm-history-versions__item:active {
+.mm-history-versions__item-main:active {
   background: #e7e5e4;
 }
 
@@ -82,9 +87,13 @@
   background: #f5f5f4;
 }
 
-.mm-history-versions__item.is-dimmed,
-.mm-history-versions__item:disabled {
+.mm-history-versions__item.is-dimmed {
   opacity: 0.45;
+}
+
+.mm-history-versions__item-main:disabled,
+.mm-history-versions__more:disabled,
+.mm-history-versions__item--plain:disabled {
   cursor: not-allowed;
 }
 
@@ -94,11 +103,27 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 1.35em;
-  padding: 7px 24px 7px 10px;
+  padding: 7px 10px;
+}
+
+.mm-history-versions__item-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 7px 4px 7px 10px;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .mm-history-versions__item-copy {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
@@ -106,11 +131,14 @@
 
 .mm-history-versions__item-label {
   display: block;
+  overflow: hidden;
   color: #44403c;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mm-history-versions__item.is-active .mm-history-versions__item-label {
@@ -120,19 +148,183 @@
 
 .mm-history-versions__item-time {
   display: block;
+  overflow: hidden;
   color: #78716c;
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mm-history-versions__check {
-  position: absolute;
-  top: 50%;
-  right: 4px;
+  flex-shrink: 0;
   color: #57534e;
-  transform: translateY(-50%);
+}
+
+.mm-history-versions__item > .el-dropdown {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: stretch;
+}
+
+.mm-history-versions__more {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 100%;
+  min-height: 32px;
+  margin: 2px 2px 2px 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #78716c;
+  cursor: pointer;
+}
+
+.mm-history-versions__more:hover:not(:disabled),
+.mm-history-versions__more:focus-visible:not(:disabled) {
+  background: #e7e5e4;
+  color: #1c1917;
+}
+
+/*
+ * Nested snapshot actions — Swiss stone panel (same language as sidebar more menu).
+ * Keep above history toolbar popper (5100).
+ */
+.mm-history-versions-item-more-popper.el-popper {
+  z-index: 5150 !important;
+  min-width: 0 !important;
+  width: max-content !important;
+  max-width: min(calc(100vw - 24px), 200px) !important;
+  box-sizing: border-box !important;
+  padding: 3px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.07),
+    0 2px 4px -2px rgb(0 0 0 / 0.05) !important;
+  overflow: hidden !important;
+  list-style: none !important;
+}
+
+.mm-history-versions-item-more-popper .diagram-history-more__menu.el-dropdown-menu {
+  min-width: 0 !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  list-style: none !important;
+}
+
+.mm-history-versions-item-more-popper .el-dropdown-menu__item {
+  display: flex !important;
+  align-items: center;
+  min-width: 0 !important;
+  box-sizing: border-box;
+  width: auto !important;
+  max-width: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 6px;
+  list-style: none !important;
+  justify-content: flex-start !important;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.mm-history-versions-item-more-popper .el-dropdown-menu__item::before,
+.mm-history-versions-item-more-popper .el-dropdown-menu__item::after {
+  content: none !important;
+  display: none !important;
+}
+
+.mm-history-versions-item-more-popper .el-dropdown-menu__item:hover,
+.mm-history-versions-item-more-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917;
+}
+
+.mm-history-versions-item-more-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+.mm-history-versions-item-more-popper .el-dropdown-menu__item.is-divided {
+  margin-top: 4px !important;
+  border-top: 1px solid #e7e5e4 !important;
+  padding-top: 0 !important;
+}
+
+.mm-history-versions-item-more-popper .diagram-history-more__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #44403c;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.mm-history-versions-item-more-popper .el-dropdown-menu__item:hover .diagram-history-more__row,
+.mm-history-versions-item-more-popper .el-dropdown-menu__item:focus .diagram-history-more__row {
+  color: #1c1917;
+}
+
+.mm-history-versions-item-more-popper .diagram-history-more__row--danger,
+.mm-history-versions-item-more-popper
+  .el-dropdown-menu__item:hover
+  .diagram-history-more__row--danger,
+.mm-history-versions-item-more-popper
+  .el-dropdown-menu__item:focus
+  .diagram-history-more__row--danger {
+  color: #dc2626;
+}
+
+.dark .mm-history-versions-item-more-popper.el-popper {
+  border-color: #57534e !important;
+  background: #292524 !important;
+}
+
+.dark .mm-history-versions-item-more-popper .el-dropdown-menu__item:hover,
+.dark .mm-history-versions-item-more-popper .el-dropdown-menu__item:focus {
+  background: #44403c !important;
+  color: #fafaf9;
+}
+
+.dark .mm-history-versions-item-more-popper .el-dropdown-menu__item.is-divided {
+  border-top-color: #57534e !important;
+}
+
+.dark .mm-history-versions-item-more-popper .diagram-history-more__row {
+  color: #e7e5e4;
+}
+
+.dark .mm-history-versions-item-more-popper .diagram-history-more__row--danger,
+.dark
+  .mm-history-versions-item-more-popper
+  .el-dropdown-menu__item:hover
+  .diagram-history-more__row--danger,
+.dark
+  .mm-history-versions-item-more-popper
+  .el-dropdown-menu__item:focus
+  .diagram-history-more__row--danger {
+  color: #fca5a5;
 }
 
 .mm-history-versions__empty {
@@ -144,13 +336,13 @@
   line-height: 1.4;
 }
 
-.dark .mm-history-versions__item:hover:not(:disabled),
-.dark .mm-history-versions__item:focus-visible:not(:disabled),
+.dark .mm-history-versions__item:hover,
+.dark .mm-history-versions__item:focus-within,
 .dark .mm-history-versions__item.is-active {
   background: #44403c;
 }
 
-.dark .mm-history-versions__item:active {
+.dark .mm-history-versions__item-main:active {
   background: #57534e;
 }
 
@@ -167,6 +359,17 @@
 .dark .mm-history-versions__check {
   color: #d6d3d1;
 }
+
+.dark .mm-history-versions__more {
+  color: #a8a29e;
+}
+
+.dark .mm-history-versions__more:hover:not(:disabled),
+.dark .mm-history-versions__more:focus-visible:not(:disabled) {
+  background: #57534e;
+  color: #fafaf9;
+}
+
 
 /* Export dropdown — Swiss stone panel (matches AdminSwissSegmented / collab menus). */
 .mm-toolbar-popper--export.el-popper {

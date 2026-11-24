@@ -6,7 +6,7 @@ import { resizeImageFileForVisionUpload } from '@/composables/media/resizeImageF
 import { appendMindMapAudienceFormField } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { apiUpload } from '@/utils/apiClient'
 
-export type ConversationImageMode = 'handdrawn' | 'text'
+export type ConversationImageMode = 'handdrawn' | 'text' | 'review'
 
 export type ConversationImageResult = {
   mode: ConversationImageMode
@@ -17,6 +17,7 @@ export type ConversationImageResult = {
   ocrExcerpt?: string
   ocrText?: string
   spec?: Record<string, unknown>
+  diagramType?: string
   library?: {
     saved?: boolean
     desktop_queued?: boolean
@@ -35,6 +36,7 @@ type ApiResult = {
   ocr_excerpt?: string
   ocr_text?: string
   spec?: Record<string, unknown>
+  diagram_type?: string
   library?: {
     saved?: boolean
     desktop_queued?: boolean
@@ -66,6 +68,7 @@ export async function processConversationImageUpload(options: {
   diagramTitle?: string
   language?: string
   applyToLibrary?: boolean
+  canvasReview?: boolean
 }): Promise<ConversationImageResult> {
   const diagramId = options.diagramId?.trim() || ''
 
@@ -82,6 +85,9 @@ export async function processConversationImageUpload(options: {
     'apply_to_library',
     !diagramId || options.applyToLibrary === false ? 'false' : 'true'
   )
+  if (options.canvasReview) {
+    formData.append('canvas_review', 'true')
+  }
 
   const response = await apiUpload('/api/kitty/conversation_image', formData)
   const result = (await response.json().catch(() => ({}))) as ApiResult
@@ -89,7 +95,8 @@ export async function processConversationImageUpload(options: {
     throw new Error(detailMessage(result.detail, result.error || 'Image processing failed'))
   }
 
-  const mode: ConversationImageMode = result.mode === 'handdrawn' ? 'handdrawn' : 'text'
+  const mode: ConversationImageMode =
+    result.mode === 'handdrawn' || result.mode === 'review' ? result.mode : 'text'
 
   return {
     mode,
@@ -103,6 +110,7 @@ export async function processConversationImageUpload(options: {
     ocrExcerpt: typeof result.ocr_excerpt === 'string' ? result.ocr_excerpt : undefined,
     ocrText: typeof result.ocr_text === 'string' ? result.ocr_text : undefined,
     spec: result.spec,
+    diagramType: typeof result.diagram_type === 'string' ? result.diagram_type : undefined,
     library: result.library,
     appliedToLibrary: Boolean(result.library?.saved),
     desktopQueued: Boolean(result.library?.desktop_queued),

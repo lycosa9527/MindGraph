@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>专家系统与神经网络</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --bg: #f5f5f4;
+      --surface: #fff;
+      --blue: #3b5bdb;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: "Inter", "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "SimSun", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      height: 100%;
+      min-height: 0;
+    }
+    .stage {
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      flex-direction: column;
+      padding: 16px 12px 16px 20px;
+    }
+    .stage-head { margin: 0 0 10px; }
+    .kicker {
+      margin: 0;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    h1 { margin: 2px 0 0; font-size: 20px; }
+    .aim { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .canvas {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fafaf9;
+    }
+    .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+    .world svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+    .node {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border: 1.5px solid var(--blue);
+      background: #fff;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.25;
+      text-align: center;
+      box-shadow: 0 1px 2px rgb(28 25 23 / 0.08);
+      user-select: none;
+    }
+    .node.is-topic {
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .node.is-capsule { border-radius: 999px; }
+    .node.is-dim { opacity: 0.28; }
+    .node.is-lit {
+      z-index: 2;
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--node-line, var(--blue)) 55%, transparent);
+    }
+    .node.is-blank {
+      border-style: dashed;
+      color: #78716c !important;
+      font-weight: 700;
+    }
+    .node.is-drop { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .node.is-ok { box-shadow: 0 0 0 3px #86efac; }
+    .node.is-bad { box-shadow: 0 0 0 3px #fca5a5; }
+    .rail {
+      display: flex;
+      min-height: 0;
+      flex-direction: column;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .tasks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 14px 16px 0;
+    }
+    .task-tab {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafaf9;
+      padding: 8px 10px;
+      color: var(--ink);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .task-tab small { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .task-tab strong { font-size: 13px; }
+    .task-tab.is-on { border-color: var(--blue); background: #eef2ff; }
+    .task-tab.is-done { background: #f8fafc; }
+    .task-tab:disabled { opacity: 0.4; cursor: default; }
+    .phase { margin: 0; color: var(--blue); font-size: 12px; font-weight: 700; }
+    .note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .voice-row { display: flex; gap: 8px; }
+    .voice-row .choice { flex: 1; text-align: center; }
+    .actions.row { flex-direction: row; }
+    .actions.row .choice, .actions.row .next { flex: 1; text-align: center; }
+    .rail-body {
+      display: flex;
+      min-height: 0;
+      flex: 1;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+      padding: 14px 16px 16px;
+    }
+    .rail h2 { margin: 0; font-size: 16px; }
+    .rail p { margin: 0; color: #44403c; font-size: 14px; line-height: 1.55; }
+    .actions { display: flex; flex-direction: column; gap: 8px; }
+    button.choice, button.next {
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.choice {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      text-align: left;
+    }
+    button.choice:hover { background: #f5f5f4; }
+    button.next {
+      border: 0;
+      background: var(--blue);
+      color: #fff;
+    }
+    button.next:disabled { opacity: 0.45; cursor: not-allowed; }
+    .example {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f5f5f4;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .feedback { min-height: 1.4em; color: #b45309; font-size: 13px; font-weight: 600; }
+    .feedback.is-ok { color: #047857; }
+    .chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .chip {
+      border: 1px solid #93c5fd;
+      border-radius: 10px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 8px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: grab;
+    }
+    .chip.is-dragging { opacity: 0.45; }
+    .done { color: #047857; font-weight: 700; line-height: 1.55; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 46vh) minmax(0, 1fr); }
+      .rail { border-left: 0; border-top: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="stage">
+      <header class="stage-head">
+        <p class="kicker">人工智能入门 · 一节课</p>
+        <h1>专家系统与神经网络</h1>
+        <p class="aim">给初学人工智能的高中生。四项任务：读图、举例子、情境对应、拖拽练习。</p>
+      </header>
+      <div class="canvas" id="canvas">
+        <div class="world" id="world"></div>
+      </div>
+    </section>
+    <aside class="rail">
+      <div class="tasks" id="steps"></div>
+      <div class="rail-body" id="rail"></div>
+    </aside>
+  </div>
+  <script>
+    /**
+     * Layout ported from frontend/src/stores/specLoader/doubleBubbleMap.ts
+     * (computeLayout, capsuleFromRadius, columnAnchorY) and
+     * calculateBubbleMapRadius in textMeasurement.ts.
+     * Edges use the Vue Flow bezier control offset (curvature 0.25).
+     */
+    const PADDING = 40
+    const COLUMN_SPACING = 50
+    const MAX_CAPSULE_H = 65
+    const TOPIC_FONT = 18
+    const LEAF_FONT = 16
+    const RAINBOW = [
+      { line: '#2E90FA', text: '#175CD3', fill: '#EBF3FE' },
+      { line: '#12B76A', text: '#077D55', fill: '#E9F9F1' },
+      { line: '#F79009', text: '#B54708', fill: '#FEF3E2' },
+      { line: '#F04438', text: '#B42318', fill: '#FEECEB' },
+      { line: '#7A5AF8', text: '#5925DC', fill: '#F0EBFE' },
+    ]
+    const SPEC = {
+      left: '专家系统',
+      right: '神经网络',
+      similarities: ['模拟人类智能', '解决复杂问题', '应用广泛', '具备推理能力'],
+      leftDifferences: ['基于推理规则', '知识显性编码', '解释性强', '依赖专家经验', '维护成本高'],
+      rightDifferences: ['基于数据学习', '知识隐性分布', '解释性弱', '依赖大量数据', '训练成本高'],
+    }
+
+    const measureEl = document.createElement('div')
+    measureEl.setAttribute('aria-hidden', 'true')
+    measureEl.style.cssText = [
+      'position:absolute',
+      'left:0',
+      'top:0',
+      'visibility:hidden',
+      'pointer-events:none',
+      'width:max-content',
+      'white-space:nowrap',
+      'padding:0',
+      'line-height:1.4',
+      'box-sizing:content-box',
+      'font-family:"Inter","Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei","SimSun",system-ui,sans-serif',
+    ].join(';')
+    document.body.appendChild(measureEl)
+
+    function measureText(text, fontSize, bold) {
+      measureEl.style.fontSize = `${fontSize}px`
+      measureEl.style.fontWeight = bold ? '700' : '400'
+      measureEl.textContent = text.trim()
+      return {
+        width: measureEl.offsetWidth || 0,
+        height: measureEl.offsetHeight || fontSize * 1.4,
+      }
+    }
+
+    function bubbleRadius(text, fontSize, padding, minRadius, bold) {
+      const { width, height } = measureText(text, fontSize, bold)
+      const diagonal = Math.sqrt(width * width + height * height)
+      return Math.max(minRadius, Math.ceil(diagonal / 2 + padding))
+    }
+
+    function capsuleFromRadius(radius) {
+      const diameter = radius * 2
+      return {
+        width: Math.round(diameter * 1.22),
+        height: Math.min(Math.round(diameter * 0.56), MAX_CAPSULE_H),
+      }
+    }
+
+    function columnAnchorY(count, centerY, spacing, itemHeight) {
+      if (count <= 0) return centerY
+      const colHeight = (count - 1) * spacing + itemHeight
+      return centerY - colHeight / 2 + itemHeight / 2
+    }
+
+    function computeLayout(simCount, leftCount, rightCount, topicR, simR, leftDiffR, rightDiffR) {
+      const leftDiffCap = capsuleFromRadius(leftDiffR)
+      const rightDiffCap = capsuleFromRadius(rightDiffR)
+      const simCap = capsuleFromRadius(simR)
+      const simVerticalSpacing = simCap.height + 12
+      const diffSlotHeight = Math.max(
+        leftCount > 0 ? leftDiffCap.height : 0,
+        rightCount > 0 ? rightDiffCap.height : 0
+      )
+      const diffVerticalSpacing = diffSlotHeight + 10
+      const D = simR + 2 * COLUMN_SPACING + 2 * topicR
+      const maxLeftW = leftCount > 0 ? leftDiffCap.width : 0
+      const maxRightW = rightCount > 0 ? rightDiffCap.width : 0
+      const centerX = PADDING + D + maxLeftW
+      const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simCap.height : 0
+      const maxDiffCount = Math.max(leftCount, rightCount)
+      const diffColHeight = maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffSlotHeight : 0
+      const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
+      const centerY = (maxColHeight + PADDING * 2) / 2
+      return {
+        centerX,
+        centerY,
+        leftDiffX: centerX - D,
+        leftTopicX: centerX - simR - COLUMN_SPACING - topicR,
+        simX: centerX,
+        rightTopicX: centerX + simR + COLUMN_SPACING + topicR,
+        rightDiffX: centerX + D + maxRightW,
+        simVerticalSpacing,
+        diffVerticalSpacing,
+        simCap,
+        leftDiffCap,
+        rightDiffCap,
+        diffSlotHeight,
+      }
+    }
+
+    function controlOffset(distance, curvature) {
+      if (distance >= 0) return 0.5 * distance
+      return curvature * 25 * Math.sqrt(-distance)
+    }
+
+    function controlPoint(pos, x1, y1, x2, y2) {
+      const curvature = 0.25
+      if (pos === 'left') return [x1 - controlOffset(x1 - x2, curvature), y1]
+      if (pos === 'right') return [x1 + controlOffset(x2 - x1, curvature), y1]
+      if (pos === 'top') return [x1, y1 - controlOffset(y1 - y2, curvature)]
+      return [x1, y1 + controlOffset(y2 - y1, curvature)]
+    }
+
+    function bezier(x1, y1, pos1, x2, y2, pos2) {
+      const [cx1, cy1] = controlPoint(pos1, x1, y1, x2, y2)
+      const [cx2, cy2] = controlPoint(pos2, x2, y2, x1, y1)
+      return `M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}`
+    }
+
+    function buildModel() {
+      const topicR = Math.max(
+        bubbleRadius(SPEC.left, TOPIC_FONT, 12, 32, true),
+        bubbleRadius(SPEC.right, TOPIC_FONT, 12, 32, true)
+      )
+      const simR = Math.max(...SPEC.similarities.map((text) => bubbleRadius(text, LEAF_FONT, 5, 24, false)))
+      const leftDiffR = Math.max(...SPEC.leftDifferences.map((text) => bubbleRadius(text, LEAF_FONT, 5, 24, false)))
+      const rightDiffR = Math.max(...SPEC.rightDifferences.map((text) => bubbleRadius(text, LEAF_FONT, 5, 24, false)))
+      const layout = computeLayout(
+        SPEC.similarities.length,
+        SPEC.leftDifferences.length,
+        SPEC.rightDifferences.length,
+        topicR,
+        simR,
+        leftDiffR,
+        rightDiffR
+      )
+      const nodes = []
+      const edges = []
+      nodes.push({
+        id: 'left-topic',
+        role: 'topic',
+        text: SPEC.left,
+        x: layout.leftTopicX - topicR,
+        y: layout.centerY - topicR,
+        w: topicR * 2,
+        h: topicR * 2,
+        shape: 'circle',
+        fill: '#3B5BDB',
+        border: '#3B5BDB',
+        color: '#fff',
+      })
+      nodes.push({
+        id: 'right-topic',
+        role: 'topic',
+        text: SPEC.right,
+        x: layout.rightTopicX - topicR,
+        y: layout.centerY - topicR,
+        w: topicR * 2,
+        h: topicR * 2,
+        shape: 'circle',
+        fill: '#3B5BDB',
+        border: '#3B5BDB',
+        color: '#fff',
+      })
+      const simY = columnAnchorY(SPEC.similarities.length, layout.centerY, layout.simVerticalSpacing, layout.simCap.height)
+      SPEC.similarities.forEach((text, index) => {
+        const cy = simY + index * layout.simVerticalSpacing
+        const id = `sim-${index}`
+        nodes.push({
+          id,
+          role: 'similarity',
+          text,
+          x: layout.simX - layout.simCap.width / 2,
+          y: cy - layout.simCap.height / 2,
+          w: layout.simCap.width,
+          h: layout.simCap.height,
+          shape: 'capsule',
+          fill: '#ffffff',
+          border: '#3B5BDB',
+          color: '#1c1917',
+        })
+        edges.push({ from: 'left-topic', to: id, fromSide: 'right', toSide: 'left', color: '#3B5BDB' })
+        edges.push({ from: 'right-topic', to: id, fromSide: 'left', toSide: 'right', color: '#3B5BDB' })
+      })
+      const leftY = columnAnchorY(SPEC.leftDifferences.length, layout.centerY, layout.diffVerticalSpacing, layout.diffSlotHeight)
+      const rightY = columnAnchorY(SPEC.rightDifferences.length, layout.centerY, layout.diffVerticalSpacing, layout.diffSlotHeight)
+      SPEC.leftDifferences.forEach((text, index) => {
+        const paint = RAINBOW[index % RAINBOW.length]
+        const cy = leftY + index * layout.diffVerticalSpacing
+        const id = `left-${index}`
+        nodes.push({
+          id,
+          role: 'leftDiff',
+          pair: index,
+          text,
+          x: layout.leftDiffX - layout.leftDiffCap.width,
+          y: cy - layout.leftDiffCap.height / 2,
+          w: layout.leftDiffCap.width,
+          h: layout.leftDiffCap.height,
+          shape: 'capsule',
+          fill: paint.fill,
+          border: paint.line,
+          color: paint.text,
+        })
+        edges.push({ from: 'left-topic', to: id, fromSide: 'left', toSide: 'right', color: paint.line })
+      })
+      SPEC.rightDifferences.forEach((text, index) => {
+        const paint = RAINBOW[index % RAINBOW.length]
+        const cy = rightY + index * layout.diffVerticalSpacing
+        const id = `right-${index}`
+        nodes.push({
+          id,
+          role: 'rightDiff',
+          pair: index,
+          text,
+          x: layout.rightDiffX - layout.rightDiffCap.width,
+          y: cy - layout.rightDiffCap.height / 2,
+          w: layout.rightDiffCap.width,
+          h: layout.rightDiffCap.height,
+          shape: 'capsule',
+          fill: paint.fill,
+          border: paint.line,
+          color: paint.text,
+        })
+        edges.push({ from: 'right-topic', to: id, fromSide: 'right', toSide: 'left', color: paint.line })
+      })
+      return { nodes, edges }
+    }
+
+    const model = buildModel()
+    const nodeById = Object.fromEntries(model.nodes.map((node) => [node.id, node]))
+    let originX = Infinity
+    let originY = Infinity
+    let layoutW = 0
+    let layoutH = 0
+    model.nodes.forEach((node) => {
+      originX = Math.min(originX, node.x)
+      originY = Math.min(originY, node.y)
+    })
+    originX -= 24
+    originY -= 24
+    model.nodes.forEach((node) => {
+      layoutW = Math.max(layoutW, node.x + node.w - originX)
+      layoutH = Math.max(layoutH, node.y + node.h - originY)
+    })
+    layoutW += 24
+    layoutH += 24
+
+    const canvasEl = document.getElementById('canvas')
+    const world = document.getElementById('world')
+    const rail = document.getElementById('rail')
+    const stepsEl = document.getElementById('steps')
+
+    const TASKS = [
+      { name: '任务一', title: '读图' },
+      { name: '任务二', title: '举例子' },
+      { name: '任务三', title: '情境对应' },
+      { name: '任务四', title: '拖拽练习' },
+    ]
+
+    const LESSON = [
+      {
+        title: '这张图怎么读',
+        focus: 'all',
+        paras: [
+          '这张图在比较两种让电脑做判断的办法。左边的圆是专家系统，右边的圆是神经网络。',
+          '中间一列是共同点，左右最外侧是各自的不同点。',
+          '下面不一次看完。高亮到哪个节点，就先把那一个讲清楚。',
+        ],
+      },
+      {
+        title: '专家系统',
+        ids: ['left-topic'],
+        paras: [
+          '专家系统的原理很直接：懂行的人把知识写成规则，电脑再按规则做判断。',
+          '规则通常长这样：如果出现这些情况，那么得出这个结论。',
+          '电脑不发明知识。知识是人写进去的，电脑只是严格照着条文往下核对。',
+        ],
+      },
+      {
+        title: '神经网络',
+        ids: ['right-topic'],
+        paras: [
+          '神经网络不先写规则。它先看大量已经标好答案的例子，再自己找规律。',
+          '学完以后，规律不写成句子，而是散落在模型内部的一大批数字里。这些数字可以叫做权重。',
+          '现在只要记住：知识在数字里，不在能打开阅读的条文里。人能看到判断，却指不出「因为哪一条」。',
+        ],
+      },
+      {
+        title: '模拟人类智能',
+        ids: ['sim-0', 'left-topic', 'right-topic'],
+        paras: [
+          '两种办法都想让机器做一些原来靠人脑完成的事，比如辨认和判断。',
+          '它们模仿的是人的某些结果，不是把人脑原样装进电脑。',
+        ],
+      },
+      {
+        title: '解决复杂问题',
+        ids: ['sim-1', 'left-topic', 'right-topic'],
+        paras: [
+          '它们对付的不是简单计算，而是条件很多、人一下子看不完的问题。',
+          '后面的例子就是一张胸片：细节很多，要决定要不要进一步检查。',
+        ],
+      },
+      {
+        title: '应用广泛',
+        ids: ['sim-2', 'left-topic', 'right-topic'],
+        paras: [
+          '这两种办法都已经用在医院、工厂、银行和客服里。',
+          '所以这张图不是两个过时的名词，而是今天还在用的两条路。',
+        ],
+      },
+      {
+        title: '具备推理能力',
+        ids: ['sim-3', 'left-topic', 'right-topic'],
+        paras: [
+          '这里的「推理」是指：从已有线索走到一个判断。',
+          '专家系统顺着写好的规则一步步推。神经网络凭学到的规律直接给出判断。',
+          '两边都能走到结论，但走法不同。这不是数学证明里那种严格推导。',
+        ],
+      },
+      {
+        title: '规则，还是数据',
+        pair: 0,
+        paras: [
+          '左边「基于推理规则」：人先写好「如果……那么……」，系统只负责核对。',
+          '右边「基于数据学习」：没有人写这条句子。系统看过很多标好的例子之后，自己形成规律。',
+          '这是整张图最关键的分叉：知识是人写进去的，还是从例子里学出来的。',
+        ],
+      },
+      {
+        title: '知识看得见，还是藏着',
+        pair: 1,
+        paras: [
+          '「显性编码」就是知识写成文字，可以打开、检查、修改。',
+          '「隐性分布」就是知识散在内部的数字里，没有单独一条能念出来的规则。',
+          '专家系统的知识像一本手册。神经网络的知识是一堆读不成句子的数字。',
+        ],
+      },
+      {
+        title: '能不能讲出理由',
+        pair: 2,
+        paras: [
+          '有人问「为什么这样判」，专家系统可以回答：因为命中了某一条规则。这就是解释性强。',
+          '神经网络通常只能给出结论，说不出一条人能核对的规则。这就是解释性弱。',
+          '解释性弱不等于一定判错，而是它讲不清理由。',
+        ],
+      },
+      {
+        title: '靠专家，还是靠例子',
+        pair: 3,
+        paras: [
+          '专家系统做得好不好，取决于有没有懂行的人，把经验写成清楚的规则。经验写不出来，系统就建不起来。',
+          '神经网络做得好不好，取决于有没有足够多、而且标对了的例子。例子太少，或者标签标错，它就学不准。',
+        ],
+      },
+      {
+        title: '两种不同的费劲',
+        pair: 4,
+        paras: [
+          '规则会过时。标准一改，专家系统就要人把相关规则重新写一遍。这笔费用在人的维护上。',
+          '神经网络要更新，不能只改一句话。要按新标准准备新例子，再用计算机重新训练。这笔费用在数据和计算上。',
+        ],
+      },
+      {
+        title: '读图先记这一句',
+        focus: 'all',
+        paras: [
+          '两边都想做出判断。',
+          '要能解释、规则写得清楚，用专家系统。',
+          '要靠大量例子、又说不清规则，用神经网络。',
+        ],
+      },
+    ]
+
+    const STORY = [
+      {
+        phase: '背景',
+        title: '同一个科室，同一个问题',
+        focus: 'topics',
+        paras: [
+          '市一医院放射科，每天要看几百张胸片。医生要判断：这张片子要不要进一步检查。',
+          '值班医生不够。科室希望电脑先做一道初筛，把「建议复查」的片子标出来，再由医生复核。',
+          '问题只有一个：面对同一张片子，电脑凭什么做出这个判断？下面把两条路的过程走完。',
+        ],
+      },
+      {
+        phase: '过程 · 专家系统',
+        title: '先把经验写成规则',
+        ids: ['left-topic', 'left-0', 'left-1', 'left-3'],
+        paras: [
+          '放射科主任和工程师坐在一起。主任说出自己平时怎么看：如果肺野有片状阴影，并且病人发热，就建议复查。',
+          '工程师把这句话写成系统里的一条规则。一条条写完，系统里是一本可以打开的手册。',
+          '这一步对应图上的三点：基于推理规则，知识是写出来的文字，而且整本手册都依赖专家的经验。',
+        ],
+      },
+      {
+        phase: '过程 · 专家系统',
+        title: '一张新片子怎么走',
+        ids: ['left-topic', 'left-0', 'left-2'],
+        paras: [
+          '周一早上，一张新胸片到了。系统不靠感觉，而是按手册逐条核对：有没有片状阴影？病历里有没有发热？',
+          '两条都命中，系统标成「建议复查」，并写明：命中规则第 7 条。',
+          '医生点开第 7 条，能核对这句话写得对不对。能把理由指给人看，就是解释性强。',
+        ],
+      },
+      {
+        phase: '过程 · 专家系统',
+        title: '标准改了，要改手册',
+        ids: ['left-topic', 'left-4'],
+        paras: [
+          '两个月后，医院更新了标准：单纯发热不再作为复查理由，必须同时看到明确的影像特征。',
+          '旧的第 7 条如果还留着，系统会继续按旧标准标片。',
+          '主任必须和工程师把相关规则改掉。费的是专家一次次维护，所以这一侧写着维护成本高。',
+        ],
+      },
+      {
+        phase: '过程 · 神经网络',
+        title: '先准备标好的例子',
+        ids: ['right-topic', 'right-0', 'right-3'],
+        paras: [
+          '同一科室还有另一条路：不写规则。',
+          '他们准备了大约十万张胸片，每张都已经由医生标好「正常」或「建议复查」。这是教学里的一批例子，用来把过程走完。',
+          '网络只能跟着这些例子学。标签标错，它就会把错的当对的。例子要多，而且要标对，所以它依赖大量数据。',
+        ],
+      },
+      {
+        phase: '过程 · 神经网络',
+        title: '训练：规律留在数字里',
+        ids: ['right-topic', 'right-0', 'right-1'],
+        paras: [
+          '计算机反复看这些片子和标签，不断调整内部的一大批数字，直到它对大多数训练片子都能给出和医生一致的判断。',
+          '没有人把「片状阴影加发热」写成句子。规律留在那些数字里，分散着，读不出单独一条。',
+          '这就是基于数据学习，而且知识是隐性分布的。',
+        ],
+      },
+      {
+        phase: '过程 · 神经网络',
+        title: '一张新片子怎么走',
+        ids: ['right-topic', 'right-1', 'right-2'],
+        paras: [
+          '一张训练时没见过的片子进来。网络给出「建议复查」。',
+          '值班医生问：根据哪一条？屏幕上只有结论，没有第 7 条这样的条文。',
+          '它不是不会判断，而是讲不出一条人能核对的规则。所以解释性弱。',
+        ],
+      },
+      {
+        phase: '过程 · 神经网络',
+        title: '标准改了，要重新训练',
+        ids: ['right-topic', 'right-3', 'right-4'],
+        paras: [
+          '诊断标准改了以后，按旧标准标过的片子不再合适。',
+          '不能只改一句话。要按新标准重新标注一批片子，再用计算机训练一次。',
+          '费的是数据和计算时间，所以这一侧写着训练成本高。',
+        ],
+      },
+      {
+        phase: '对照',
+        title: '同一张片子，两条路',
+        focus: 'all',
+        paras: [
+          '回到周一那张胸片。问题一样：要不要进一步检查。',
+          '专家系统核对写好的规则，并能指出第 7 条。神经网络按学过的例子给判断，说不出条文。',
+          '选哪一边，先看你更需要「讲得清规则」，还是更需要「从大量例子里学」。',
+        ],
+      },
+    ]
+
+    const SCENARIOS = [
+      {
+        scene: '医院规定：每一个「建议复查」都要能向病人说明依据，而且依据必须是写得出来的条文。',
+        ask: '这种初筛，更该用哪一边？',
+        answer: 'left',
+        pair: 2,
+        ok: '要对人说明条文，用专家系统。它的知识在规则里，所以解释性强。',
+        bad: '知识在规则里，还是在数据里？要能说明依据，看左边的「解释性强」。',
+      },
+      {
+        scene: '科室有十万张标好的胸片，可是没人能把「什么样算异常」写成几条清楚的规则。',
+        ask: '这种情况下，更该用哪一边？',
+        answer: 'right',
+        pair: 0,
+        ok: '例子很多、规则写不出，就让神经网络从数据里学。',
+        bad: '知识在规则里，还是在数据里？写不出条文时，看右边的「基于数据学习」。',
+      },
+      {
+        scene: '诊断标准每个月都在调整，而且必须由主任亲自改系统里的条文，不改就会按旧标准标片。',
+        ask: '这样最费劲的是哪一边？',
+        answer: 'left',
+        pair: 4,
+        ok: '要人改条文，费的是专家系统的维护。',
+        bad: '知识在规则里，还是在数据里？改的是条文，就看左边的「维护成本高」。',
+      },
+      {
+        scene: '系统标了「建议复查」。值班医生问「命中了哪一条」，屏幕上只有结论，没有任何条文。',
+        ask: '这更像哪一边？',
+        answer: 'right',
+        pair: 2,
+        ok: '说不出条文，是因为神经网络的知识藏在数字里，解释性弱。',
+        bad: '知识在规则里，还是在数据里？答不出条文的那一边，是「解释性弱」。',
+      },
+      {
+        scene: '一种少见情况，全国只有几十个确诊病例，但专科医生能把判断标准写成明确规则。',
+        ask: '更该用哪一边？',
+        answer: 'left',
+        pair: 3,
+        ok: '例子很少、规则清楚，就把专家经验写成规则。',
+        bad: '知识在规则里，还是在数据里？样本少却规则清，靠的是「依赖专家经验」。',
+      },
+    ]
+
+    const state = {
+      step: 0,
+      maxStep: 0,
+      lesson: 0,
+      lessonStarted: false,
+      story: 0,
+      question: 0,
+      focus: null,
+      practice: false,
+      chips: [],
+      voiceOn: true,
+      feedback: '',
+      feedbackOk: false,
+      flashPair: false,
+      quizReady: false,
+    }
+
+    let zhVoice = null
+
+    function loadVoices() {
+      const voices = window.speechSynthesis?.getVoices?.() || []
+      zhVoice = voices.find((voice) => voice.lang === 'zh-CN')
+        || voices.find((voice) => voice.lang.toLowerCase().startsWith('zh'))
+        || null
+    }
+
+    if (window.speechSynthesis) {
+      loadVoices()
+      window.speechSynthesis.addEventListener('voiceschanged', loadVoices)
+    }
+
+    function cardSpeech(card) {
+      return card.paras.join('')
+    }
+
+    function stopSpeak() {
+      window.speechSynthesis?.cancel()
+    }
+
+    function speak(text) {
+      if (!window.speechSynthesis) return
+      stopSpeak()
+      if (!state.voiceOn || !text) return
+      loadVoices()
+      text.split(/(?<=[。！？])/).map((part) => part.trim()).filter(Boolean).forEach((part) => {
+        const utter = new SpeechSynthesisUtterance(part)
+        utter.lang = 'zh-CN'
+        utter.rate = 0.96
+        if (zhVoice) utter.voice = zhVoice
+        window.speechSynthesis.speak(utter)
+      })
+    }
+
+    function esc(text) {
+      return text.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]))
+    }
+
+    function handlePoint(node, side) {
+      const cy = node.y + node.h / 2
+      if (side === 'left') return [node.x, cy]
+      if (side === 'right') return [node.x + node.w, cy]
+      return [node.x + node.w / 2, cy]
+    }
+
+    function nodeClass(node) {
+      const classes = ['node', node.shape === 'circle' ? 'is-topic' : 'is-capsule']
+      if (state.focus && !state.focus.has(node.id)) classes.push('is-dim')
+      if (state.focus && state.focus.has(node.id)) classes.push('is-lit')
+      if (node.blank && !node.filled) classes.push('is-blank')
+      if (node.mark === 'ok') classes.push('is-ok')
+      if (node.mark === 'bad') classes.push('is-bad')
+      return classes.join(' ')
+    }
+
+    function nodeLabel(node) {
+      if (node.blank && !node.filled) return '?'
+      return node.filled ? node.placed : node.text
+    }
+
+    function renderDiagram() {
+      const edges = model.edges.map((edge) => {
+        const source = nodeById[edge.from]
+        const target = nodeById[edge.to]
+        const [x1, y1] = handlePoint(source, edge.fromSide)
+        const [x2, y2] = handlePoint(target, edge.toSide)
+        const d = bezier(x1, y1, edge.fromSide, x2, y2, edge.toSide)
+        const dim = state.focus && (!state.focus.has(edge.from) || !state.focus.has(edge.to))
+        return `<path d="${d}" fill="none" stroke="${edge.color}" stroke-width="2" opacity="${dim ? 0.2 : 0.9}" />`
+      }).join('')
+      const boxes = model.nodes.map((node) => {
+        const label = nodeLabel(node)
+        return `<div class="${nodeClass(node)}" data-id="${node.id}" style="left:${node.x - originX}px;top:${node.y - originY}px;width:${node.w}px;height:${node.h}px;background:${node.fill};border-color:${node.border};color:${node.color};--node-line:${node.border}">${label}</div>`
+      }).join('')
+      world.innerHTML = `<svg width="${layoutW}" height="${layoutH}">${edges}</svg>${boxes}`
+      world.style.width = `${layoutW}px`
+      world.style.height = `${layoutH}px`
+      world.querySelectorAll('.node').forEach((el) => {
+        el.addEventListener('dragover', (event) => {
+          if (!state.practice) return
+          const node = nodeById[el.dataset.id]
+          if (!node.blank || node.filled) return
+          event.preventDefault()
+          el.classList.add('is-drop')
+        })
+        el.addEventListener('dragleave', () => el.classList.remove('is-drop'))
+        el.addEventListener('drop', (event) => {
+          event.preventDefault()
+          el.classList.remove('is-drop')
+          dropOn(
+            el.dataset.id,
+            event.dataTransfer.getData('text/plain'),
+            event.dataTransfer.getData('application/x-chip')
+          )
+        })
+      })
+      fit()
+    }
+
+    function fit() {
+      const pad = 20
+      const scale = Math.min(
+        (canvasEl.clientWidth - pad * 2) / layoutW,
+        (canvasEl.clientHeight - pad * 2) / layoutH
+      )
+      const safe = Number.isFinite(scale) && scale > 0 ? scale : 1
+      const x = (canvasEl.clientWidth - layoutW * safe) / 2
+      const y = (canvasEl.clientHeight - layoutH * safe) / 2
+      world.style.transform = `translate(${x}px, ${y}px) scale(${safe})`
+    }
+
+    function idsOf(predicate) {
+      return new Set(model.nodes.filter(predicate).map((node) => node.id))
+    }
+
+    function showShared() {
+      state.focus = idsOf((node) => node.role === 'topic' || node.role === 'similarity')
+    }
+
+    function showAll() {
+      state.focus = null
+    }
+
+    function showPair(index) {
+      state.focus = idsOf((node) => node.role === 'topic' || node.pair === index)
+    }
+
+    function showRole(role) {
+      state.focus = idsOf((node) => node.role === 'topic' || node.role === role)
+    }
+
+    function applyCard(card) {
+      if (!card || card.focus === 'all') showAll()
+      else if (card.focus === 'topics') state.focus = idsOf((node) => node.role === 'topic')
+      else if (card.pair != null) showPair(card.pair)
+      else if (card.ids) state.focus = new Set(card.ids)
+      else showAll()
+    }
+
+    function renderSteps() {
+      stepsEl.innerHTML = TASKS.map((task, index) => {
+        const cls = index === state.step ? 'is-on' : index <= state.maxStep ? 'is-done' : ''
+        const disabled = index > state.maxStep ? 'disabled' : ''
+        return `<button type="button" class="task-tab ${cls}" data-task="${index}" ${disabled}><small>${task.name}</small><strong>${task.title}</strong></button>`
+      }).join('')
+      stepsEl.querySelectorAll('[data-task]').forEach((button) => {
+        button.addEventListener('click', () => openTask(Number(button.dataset.task)))
+      })
+    }
+
+    function renderRail() {
+      renderSteps()
+      if (state.step === 0) renderLesson()
+      else if (state.step === 1) renderStory()
+      else if (state.step === 2) renderScenario()
+      else renderPractice()
+      renderDiagram()
+      rail.scrollTop = 0
+    }
+
+    function voiceBar() {
+      if (!window.speechSynthesis) {
+        return '<p class="note">这个浏览器不能朗读，请直接看文字。</p>'
+      }
+      return `
+        <div class="voice-row">
+          <button type="button" class="choice" id="voice-toggle">${state.voiceOn ? '语音讲解：开' : '语音讲解：关'}</button>
+          <button type="button" class="choice" id="replay">重听这一段</button>
+        </div>
+        <p class="note">朗读使用这台电脑自带的中文语音，可以随时关掉。</p>`
+    }
+
+    function bindVoice(text) {
+      document.getElementById('voice-toggle')?.addEventListener('click', () => {
+        state.voiceOn = !state.voiceOn
+        if (!state.voiceOn) stopSpeak()
+        renderRail()
+        if (state.voiceOn) speak(text)
+      })
+      document.getElementById('replay')?.addEventListener('click', () => speak(text))
+    }
+
+    function parasHtml(paras) {
+      return paras.map((para) => `<p>${esc(para)}</p>`).join('')
+    }
+
+    function renderLesson() {
+      const card = LESSON[state.lesson]
+      applyCard(card)
+      const last = state.lesson === LESSON.length - 1
+      rail.innerHTML = `
+        <p class="phase">任务一 · 读图 · ${state.lesson + 1} / ${LESSON.length}</p>
+        <h2>${esc(card.title)}</h2>
+        ${parasHtml(card.paras)}
+        ${voiceBar()}
+        <div class="actions ${state.lessonStarted ? 'row' : ''}">
+          ${state.lessonStarted
+            ? `<button type="button" class="choice" id="prev" ${state.lesson === 0 ? 'disabled' : ''}>上一节点</button>
+               <button type="button" class="next" id="next">${last ? '进入任务二' : '下一节点'}</button>`
+            : '<button type="button" class="next" id="start">开始讲解</button>'}
+        </div>`
+      bindVoice(cardSpeech(card))
+      document.getElementById('start')?.addEventListener('click', () => {
+        state.lessonStarted = true
+        renderRail()
+        speak(cardSpeech(LESSON[state.lesson]))
+      })
+      document.getElementById('prev')?.addEventListener('click', () => moveLesson(-1))
+      document.getElementById('next')?.addEventListener('click', () => {
+        if (last) {
+          state.maxStep = Math.max(state.maxStep, 1)
+          state.step = 1
+          state.story = 0
+          renderRail()
+          speak(cardSpeech(STORY[0]))
+          return
+        }
+        moveLesson(1)
+      })
+    }
+
+    function moveLesson(delta) {
+      const next = state.lesson + delta
+      if (next < 0 || next >= LESSON.length) return
+      state.lesson = next
+      state.lessonStarted = true
+      renderRail()
+      speak(cardSpeech(LESSON[state.lesson]))
+    }
+
+    function renderStory() {
+      const card = STORY[state.story]
+      applyCard(card)
+      const last = state.story === STORY.length - 1
+      rail.innerHTML = `
+        <p class="phase">任务二 · 举例子 · ${esc(card.phase)} · ${state.story + 1} / ${STORY.length}</p>
+        <h2>${esc(card.title)}</h2>
+        ${parasHtml(card.paras)}
+        ${voiceBar()}
+        <div class="actions row">
+          <button type="button" class="choice" id="prev" ${state.story === 0 ? 'disabled' : ''}>上一步</button>
+          <button type="button" class="next" id="next">${last ? '进入任务三' : '下一步'}</button>
+        </div>`
+      bindVoice(cardSpeech(card))
+      document.getElementById('prev')?.addEventListener('click', () => moveStory(-1))
+      document.getElementById('next')?.addEventListener('click', () => {
+        if (last) {
+          state.maxStep = Math.max(state.maxStep, 2)
+          state.step = 2
+          state.question = 0
+          state.feedback = ''
+          state.flashPair = false
+          state.quizReady = false
+          stopSpeak()
+          renderRail()
+          return
+        }
+        moveStory(1)
+      })
+    }
+
+    function moveStory(delta) {
+      const next = state.story + delta
+      if (next < 0 || next >= STORY.length) return
+      state.story = next
+      renderRail()
+      speak(cardSpeech(STORY[state.story]))
+    }
+
+    function renderScenario() {
+      const card = SCENARIOS[state.question]
+      if (state.flashPair) showPair(card.pair)
+      else showAll()
+      rail.innerHTML = `
+        <p class="phase">任务三 · 情境对应 · ${state.question + 1} / ${SCENARIOS.length}</p>
+        <h2>${esc(card.ask)}</h2>
+        <div class="example">${esc(card.scene)}</div>
+        <div class="actions">
+          <button type="button" class="choice" data-side="left">专家系统</button>
+          <button type="button" class="choice" data-side="right">神经网络</button>
+        </div>
+        <p class="feedback ${state.feedbackOk ? 'is-ok' : ''}">${esc(state.feedback || '')}</p>
+        ${state.quizReady ? `<div class="actions"><button type="button" class="next" id="next">${state.question === SCENARIOS.length - 1 ? '进入任务四' : '下一情境'}</button></div>` : ''}`
+      rail.querySelectorAll('[data-side]').forEach((button) => {
+        button.addEventListener('click', () => answerScenario(button.dataset.side))
+      })
+      document.getElementById('next')?.addEventListener('click', nextScenario)
+    }
+
+    function answerScenario(side) {
+      const card = SCENARIOS[state.question]
+      state.feedbackOk = side === card.answer
+      state.feedback = state.feedbackOk ? card.ok : card.bad
+      state.flashPair = true
+      state.quizReady = state.feedbackOk
+      renderRail()
+    }
+
+    function nextScenario() {
+      state.flashPair = false
+      state.feedback = ''
+      state.feedbackOk = false
+      state.quizReady = false
+      if (state.question < SCENARIOS.length - 1) {
+        state.question += 1
+        renderRail()
+        return
+      }
+      state.maxStep = Math.max(state.maxStep, 3)
+      state.step = 3
+      startPractice()
+    }
+
+    function clearBlanks() {
+      state.practice = false
+      state.chips = []
+      model.nodes.forEach((node) => {
+        node.blank = false
+        node.filled = false
+        node.placed = ''
+        node.mark = ''
+      })
+    }
+
+    function openTask(index) {
+      if (index > state.maxStep || index === state.step) return
+      stopSpeak()
+      if (state.step === 3) clearBlanks()
+      state.step = index
+      if (index === 3) {
+        startPractice()
+        return
+      }
+      renderRail()
+      if (index === 0 && state.lessonStarted) speak(cardSpeech(LESSON[state.lesson]))
+      if (index === 1) speak(cardSpeech(STORY[state.story]))
+    }
+
+    function startPractice() {
+      stopSpeak()
+      state.practice = true
+      state.focus = null
+      model.nodes.forEach((node) => {
+        node.blank = node.role === 'leftDiff' || node.role === 'rightDiff'
+        node.filled = false
+        node.placed = ''
+        node.mark = ''
+        node.answer = node.text
+      })
+      const labels = model.nodes.filter((node) => node.blank).map((node) => node.answer)
+      state.chips = labels.map((text, index) => ({ id: `chip-${index}`, text }))
+      for (let i = state.chips.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[state.chips[i], state.chips[j]] = [state.chips[j], state.chips[i]]
+      }
+      renderRail()
+    }
+
+    function renderPractice() {
+      const left = model.nodes.filter((node) => node.blank && !node.filled).length
+      const done = left === 0
+      showAll()
+      rail.innerHTML = `
+        <p class="phase">任务四 · 拖拽练习</p>
+        <h2>把不同点拖回正确的一侧</h2>
+        <p>中间的共同点留在图上。左右两侧的不同点被挖空了。同一侧里的位置可以互换，拖到另一侧算错。</p>
+        <div class="chips">
+          ${state.chips.map((chip) => `<button type="button" class="chip" draggable="true" data-chip="${chip.id}">${esc(chip.text)}</button>`).join('')}
+        </div>
+        ${done
+          ? '<p class="done">要能解释、规则清楚，用专家系统；要靠大量例子、说不清规则，用神经网络。</p>'
+          : `<p class="feedback">还剩 ${left} 个空位</p>`}
+        <div class="actions"><button type="button" class="choice" id="restart">重新开始</button></div>`
+      rail.querySelectorAll('.chip').forEach((chip) => {
+        chip.addEventListener('dragstart', (event) => {
+          event.dataTransfer.setData('text/plain', chip.textContent)
+          event.dataTransfer.setData('application/x-chip', chip.dataset.chip)
+          chip.classList.add('is-dragging')
+        })
+        chip.addEventListener('dragend', () => chip.classList.remove('is-dragging'))
+      })
+      document.getElementById('restart').addEventListener('click', startPractice)
+    }
+
+    function dropOn(nodeId, given, chipId) {
+      const node = nodeById[nodeId]
+      if (!state.practice || !node?.blank || node.filled) return
+      const text = given.trim()
+      const usedId = chipId || state.chips.find((chip) => chip.text === text)?.id
+      const match = model.nodes.find((item) => (
+        item.role === node.role && item.blank && !item.filled && item.answer === text
+      ))
+      model.nodes.forEach((item) => { item.mark = '' })
+      if (!match) {
+        node.mark = 'bad'
+        renderDiagram()
+        window.setTimeout(() => { node.mark = ''; renderDiagram() }, 700)
+        return
+      }
+      if (match !== node) {
+        const swap = node.answer
+        node.answer = match.answer
+        match.answer = swap
+      }
+      node.filled = true
+      node.placed = text
+      node.mark = 'ok'
+      state.chips = state.chips.filter((chip) => chip.id !== usedId)
+      renderRail()
+      window.setTimeout(() => { node.mark = ''; renderDiagram() }, 700)
+    }
+
+    window.addEventListener('resize', fit)
+    new ResizeObserver(fit).observe(canvasEl)
+    renderRail()
+  </script>
+</body>
+</html>

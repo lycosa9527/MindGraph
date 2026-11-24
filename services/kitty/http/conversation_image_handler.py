@@ -29,6 +29,7 @@ async def kitty_rest_conversation_image(
     diagram_id: str = Form(""),
     diagram_title: Optional[str] = Form(None),
     apply_to_library: bool = Form(True),
+    canvas_review: bool = Form(False),
 ) -> dict:
     """Process a conversation image (hand-drawn rebuild or OCR extract).
 
@@ -62,6 +63,7 @@ async def kitty_rest_conversation_image(
             diagram_id=diagram_id,
             diagram_title=diagram_title,
             apply_to_library=bool(apply_to_library),
+            canvas_review=bool(canvas_review),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -73,20 +75,20 @@ async def kitty_rest_conversation_image(
         )
         raise HTTPException(status_code=500, detail="Image processing failed") from exc
 
-    if result.get("mode") == "handdrawn" and current_user.id:
+    if result.get("mode") in {"handdrawn", "review"} and current_user.id:
         title = (diagram_title or file.filename or "hand-drawn")[:200]
         schedule_module_activity(
             user=current_user,
             organization_id=org_id,
             module="kitty",
             redis_activity_type="diagram_generation",
-            details={"endpoint": "conversation_image", "mode": "handdrawn"},
+            details={"endpoint": "conversation_image", "mode": str(result.get("mode") or "")},
             detail=f"handdrawn title={title}",
             usage_source="mindgraph",
             usage_action="diagram_generate",
             title=title,
             prompt_preview="conversation_image_handdrawn",
-            diagram_type="mind_map",
+            diagram_type=str(result.get("diagram_type") or "mind_map"),
             diagram_id=diagram_id,
         )
     return result

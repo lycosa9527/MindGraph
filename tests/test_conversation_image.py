@@ -259,3 +259,47 @@ async def test_process_conversation_image_persist_failure_raises() -> None:
                 language="zh",
                 diagram_id="diag-2",
             )
+
+
+@pytest.mark.asyncio
+async def test_process_conversation_image_canvas_review_returns_typed_spec() -> None:
+    """Toolbar import waits for a manual confirm and does not write the library."""
+    vision = SimpleNamespace(
+        recognized=True,
+        diagram_type="flow_map",
+        confidence=0.95,
+        reason="chain",
+        spec={"title": "接收SSTV", "steps": ["准备阶段"], "substeps": []},
+        topic="接收SSTV",
+    )
+    with (
+        patch(
+            "services.knowledge.conversation_image.detect_and_rebuild_diagram_from_image",
+            new=AsyncMock(return_value=vision),
+        ) as detect_mock,
+        patch(
+            "services.knowledge.conversation_image.detect_and_rebuild_mindmap_from_image",
+            new=AsyncMock(),
+        ) as mindmap_mock,
+        patch(
+            "services.knowledge.conversation_image._persist_doc_summary_markdown",
+            new=AsyncMock(return_value=7),
+        ) as persist_mock,
+    ):
+        result = await process_conversation_image(
+            user_id=1,
+            organization_id=None,
+            image_bytes=b"fake-image",
+            mime_type="image/png",
+            filename="flow.png",
+            language="zh",
+            diagram_id="",
+            canvas_review=True,
+        )
+    assert result["mode"] == "review"
+    assert result["diagram_type"] == "flow_map"
+    assert result["spec"]["title"] == "接收SSTV"
+    assert result["doc_summary_saved"] is False
+    detect_mock.assert_awaited()
+    mindmap_mock.assert_not_awaited()
+    persist_mock.assert_not_awaited()

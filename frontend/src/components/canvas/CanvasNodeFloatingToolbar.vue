@@ -30,7 +30,7 @@ import { useNodeExplainEditGate } from '@/composables/mindMap/nodeExplainEditGat
 import { diagramPaintFontFamily, ensureDiagramCanvasFonts } from '@/fonts/diagramCanvasFonts'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
-import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
+import { type NodeShape, nodeShapeOptionsForDiagram } from '@/utils/nodeShapeStyle'
 import { createToolbarPointerAction } from '@/utils/toolbarPointerAction'
 
 import FloatingToolbarColorPicker from './FloatingToolbarColorPicker.vue'
@@ -52,12 +52,20 @@ const emit = defineEmits<{
 
 const rootEl = ref<HTMLElement | null>(null)
 const diagramStore = useDiagramSession()
+/** Dimension / structure labels: text chrome only (no shape, fill, or border). */
+const isTextOnlyLabelNode = computed(() => {
+  const nodeId = props.nodeId
+  if (!nodeId) return false
+  const node = diagramStore.data?.nodes?.find((item) => item.id === nodeId)
+  return node?.type === 'label'
+})
 const hideNodeShape = computed(() => {
   const nodeId = props.nodeId
   if (!nodeId) return false
   const node = diagramStore.data?.nodes?.find((item) => item.id === nodeId)
   return node?.type === 'boundary' || node?.type === 'label'
 })
+const hideNodeFillAndBorder = computed(() => isTextOnlyLabelNode.value)
 let sizeObserver: ResizeObserver | null = null
 
 function publishSize(el: HTMLElement | null): void {
@@ -147,6 +155,13 @@ watch(typographyOpen, (open) => {
   void ensureDiagramCanvasFonts(['SimSun', 'KaiTi', 'Inter', 'Space Grotesk'])
 })
 
+watch(hideNodeFillAndBorder, (hide) => {
+  if (!hide) return
+  if (activeColorPanel.value === 'fill' || activeColorPanel.value === 'border') {
+    activeColorPanel.value = null
+  }
+})
+
 const aiSubgraphVisible = computed(
   () => showCanvasAiFeatures.value && props.showAiSubgraph === true
 )
@@ -207,6 +222,8 @@ const shapeLabels: Record<NodeShape, string> = {
   oval: 'canvas.floatingToolbar.shapeOval',
   underline: 'canvas.floatingToolbar.shapeUnderline',
 }
+
+const shapeOptions = computed(() => nodeShapeOptionsForDiagram(diagramStore.type))
 
 function toggleColorPanel(panel: 'fill' | 'border' | 'text') {
   activeColorPanel.value = activeColorPanel.value === panel ? null : panel
@@ -298,7 +315,7 @@ const typographyPointer = createToolbarPointerAction()
           <template #dropdown>
             <ElDropdownMenu class="nft-dropdown-menu">
               <ElDropdownItem
-                v-for="shape in NODE_SHAPE_OPTIONS"
+                v-for="shape in shapeOptions"
                 :key="shape"
                 class="nft-dropdown-item"
                 :class="{ 'nft-dropdown-item--active': nodeShape === shape }"
@@ -310,10 +327,16 @@ const typographyPointer = createToolbarPointerAction()
           </template>
         </ElDropdown>
 
-        <span class="nft-divider" />
+        <span
+          v-if="!hideNodeFillAndBorder"
+          class="nft-divider"
+        />
 
-        <!-- Fill color -->
-        <div class="nft-color-wrap">
+        <!-- Fill color (hidden for dimension labels — text-only chrome) -->
+        <div
+          v-if="!hideNodeFillAndBorder"
+          class="nft-color-wrap"
+        >
           <button
             type="button"
             class="nft-btn nft-btn--color"
@@ -339,7 +362,10 @@ const typographyPointer = createToolbarPointerAction()
         </div>
 
         <!-- Border color -->
-        <div class="nft-color-wrap">
+        <div
+          v-if="!hideNodeFillAndBorder"
+          class="nft-color-wrap"
+        >
           <button
             type="button"
             class="nft-btn nft-btn--color"
@@ -827,7 +853,8 @@ const typographyPointer = createToolbarPointerAction()
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
   /* Keep in sync with CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR_PANEL */
   z-index: 5010;
-  min-width: 160px;
+  width: max-content;
+  min-width: 0;
 }
 
 .nft-shape-option,

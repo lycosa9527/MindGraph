@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CURRENT_DIAGRAM_VERSION,
+  activeSnapshotVersionAfterDelete,
   canMutateDiagramSnapshots,
   canProceedAfterVersionJumpPersist,
   formatSnapshotCreatedAt,
   newestSnapshotIdentity,
   shouldPersistBeforeVersionJump,
+  snapshotDisplayLabel,
   snapshotsNewestFirst,
 } from '@/composables/editor/diagramSnapshotVersions'
 import type { SnapshotMetadata } from '@/composables/editor/useSnapshotHistory'
@@ -70,5 +72,32 @@ describe('diagramSnapshotVersions', () => {
     expect(newestSnapshotIdentity(before)).toBe('2:2026-01-02T00:00:00Z')
     expect(newestSnapshotIdentity(afterCap)).toBe('99:2026-01-09T00:00:00Z')
     expect(newestSnapshotIdentity([])).toBe('')
+  })
+
+  it('prefers a trimmed title over the Snapshot {n} fallback', () => {
+    expect(snapshotDisplayLabel({ version_number: 2, title: '  Draft  ' }, 'Snapshot 2')).toBe(
+      'Draft'
+    )
+    expect(snapshotDisplayLabel({ version_number: 2, title: '   ' }, 'Snapshot 2')).toBe(
+      'Snapshot 2'
+    )
+    expect(snapshotDisplayLabel({ version_number: 2, title: null }, 'Snapshot 2')).toBe(
+      'Snapshot 2'
+    )
+  })
+
+  it('remaps the active snapshot after a delete renumbers versions', () => {
+    const before = [
+      { id: 10, version_number: 1, created_at: 'a' },
+      { id: 20, version_number: 2, created_at: 'b' },
+      { id: 30, version_number: 3, created_at: 'c' },
+    ]
+    const afterDeleteOldest = [
+      { id: 20, version_number: 1, created_at: 'b' },
+      { id: 30, version_number: 2, created_at: 'c' },
+    ]
+    expect(activeSnapshotVersionAfterDelete(3, before, afterDeleteOldest)).toBe(2)
+    expect(activeSnapshotVersionAfterDelete(1, before, afterDeleteOldest)).toBeNull()
+    expect(activeSnapshotVersionAfterDelete(null, before, afterDeleteOldest)).toBeNull()
   })
 })

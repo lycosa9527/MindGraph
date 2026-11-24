@@ -17,7 +17,6 @@ export type DiagramInsertActionId =
   | 'leaf'
   | 'part'
   | 'subpart'
-  | 'nextLevel'
   | 'similarity'
   | 'difference'
 
@@ -31,7 +30,6 @@ export type DiagramInsertGlyph =
   | 'leaf'
   | 'part'
   | 'subpart'
-  | 'nextLevel'
   | 'similarity'
   | 'difference'
   | 'cause'
@@ -101,12 +99,6 @@ export function diagramInsertActions(
         labelKey: 'canvas.toolbar.addSubpart',
         insertKind: 'subpart',
         shortcutKeys: ['Tab'],
-        needsSelection: false,
-      },
-      {
-        id: 'nextLevel',
-        labelKey: 'canvas.toolbar.addNextLevel',
-        insertKind: 'nextLevel',
         needsSelection: false,
       },
     ]

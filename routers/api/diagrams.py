@@ -42,6 +42,7 @@ from models.requests.requests_diagram import (
     DiagramKnowledgePackageRequest,
     DiagramMoveFolderRequest,
     DiagramUpdateRequest,
+    SnapshotRenameRequest,
     SnapshotTakeRequest,
 )
 from models.responses import (
@@ -880,6 +881,17 @@ async def _diagram_visible_in_cache(user_id: int, diagram_id: str) -> bool:
     return cached is not None
 
 
+def _snapshot_metadata(snapshot: DiagramSnapshot) -> SnapshotMetadata:
+    """Build list/detail metadata for a snapshot row."""
+    title = snapshot.title.strip() if isinstance(snapshot.title, str) else None
+    return SnapshotMetadata(
+        id=snapshot.id,
+        version_number=snapshot.version_number,
+        created_at=snapshot.created_at,
+        title=title or None,
+    )
+
+
 @router.post("/diagrams/{diagram_id}/snapshots", response_model=SnapshotMetadata)
 async def take_snapshot(
     diagram_id: str,
@@ -969,11 +981,7 @@ async def take_snapshot(
     org = await load_user_org(current_user)
     snapshot_mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_SNAPSHOT)
     coins_footer = mutation_to_footer(snapshot_mutation)
-    snapshot_meta = SnapshotMetadata(
-        id=snapshot.id,
-        version_number=snapshot.version_number,
-        created_at=snapshot.created_at,
-    )
+    snapshot_meta = _snapshot_metadata(snapshot)
     if coins_footer.get("eligible"):
         return {**snapshot_meta.model_dump(), "thinking_coins": coins_footer}
     return snapshot_meta
@@ -1003,16 +1011,54 @@ async def list_snapshots(
         .order_by(DiagramSnapshot.version_number.asc())
     )
     rows = result.scalars().all()
-    return SnapshotListResponse(
-        snapshots=[
-            SnapshotMetadata(
-                id=r.id,
-                version_number=r.version_number,
-                created_at=r.created_at,
-            )
-            for r in rows
-        ]
+    return SnapshotListResponse(snapshots=[_snapshot_metadata(r) for r in rows])
+
+
+@router.patch(
+    "/diagrams/{diagram_id}/snapshots/{version_number}",
+    response_model=SnapshotMetadata,
+)
+async def rename_snapshot(
+    diagram_id: str,
+    req: SnapshotRenameRequest,
+    request: Request,
+    version_number: int = Path(..., ge=1, le=10),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Rename a snapshot's display title without changing its version number."""
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit("diagram_snapshots", identifier, max_requests=60, window_seconds=60)
+
+    if not await _diagram_visible_in_cache(current_user.id, diagram_id):
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    snap_result = await db.execute(
+        select(DiagramSnapshot).where(
+            DiagramSnapshot.diagram_id == diagram_id,
+            DiagramSnapshot.version_number == version_number,
+            DiagramSnapshot.user_id == current_user.id,
+        )
     )
+    snapshot = snap_result.scalar_one_or_none()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    title = " ".join(req.title.split())
+    if not title:
+        raise HTTPException(status_code=422, detail="Title is required")
+
+    snapshot.title = title
+    await db.commit()
+    await db.refresh(snapshot)
+
+    logger.info(
+        "[Snapshots] User %s renamed snapshot v%d for diagram %s",
+        current_user.id,
+        version_number,
+        diagram_id,
+    )
+    return _snapshot_metadata(snapshot)
 
 
 @router.delete(
@@ -1070,16 +1116,7 @@ async def delete_snapshot(
         diagram_id,
         len(remaining),
     )
-    return SnapshotListResponse(
-        snapshots=[
-            SnapshotMetadata(
-                id=s.id,
-                version_number=s.version_number,
-                created_at=s.created_at,
-            )
-            for s in remaining
-        ]
-    )
+    return SnapshotListResponse(snapshots=[_snapshot_metadata(s) for s in remaining])
 
 
 @router.post(

@@ -49,7 +49,7 @@ export type DiagramRibbonCapabilities = {
   subgraph: boolean
   /** PNG / SVG / PDF / .mg. Mind-map v2 keeps its shorter menu. */
   standardExport: boolean
-  /** 节点轮播. Mind-map v2 and double-bubble maps. */
+  /** 节点轮播. Mind-map v2, double-bubble, flow, tree, and brace maps. */
   nodeCarousel: boolean
 }
 
@@ -104,6 +104,11 @@ export function diagramRibbonCapabilities(
     subgraph:
       v2 || conceptMap || (typeof type === 'string' && AI_SUBGRAPH_THINKING_MAP_TYPES.has(type)),
     standardExport: !v2,
-    nodeCarousel: v2 || type === 'double_bubble_map' || type === 'flow_map',
+    nodeCarousel:
+      v2 ||
+      type === 'double_bubble_map' ||
+      type === 'flow_map' ||
+      type === 'tree_map' ||
+      type === 'brace_map',
   }
 }

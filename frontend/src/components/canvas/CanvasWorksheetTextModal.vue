@@ -659,6 +659,7 @@ async function handleReset() {
               class="worksheet-text-modal__select"
               :placeholder="t('canvas.worksheetText.compareSourceCurrent')"
               teleported
+              popper-class="worksheet-text-modal-select-popper"
             >
               <ElOption
                 v-for="option in sourceOptions"
@@ -677,6 +678,7 @@ async function handleReset() {
               class="worksheet-text-modal__select"
               :placeholder="t('canvas.worksheetText.compareSourceCurrent')"
               teleported
+              popper-class="worksheet-text-modal-select-popper"
             >
               <ElOption
                 v-for="option in sourceOptions"

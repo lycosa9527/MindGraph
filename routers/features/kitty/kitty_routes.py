@@ -108,6 +108,7 @@ async def kitty_conversation_image(
     diagram_id: str = Form(""),
     diagram_title: Optional[str] = Form(None),
     apply_to_library: bool = Form(True),
+    canvas_review: bool = Form(False),
     current_user: User = Depends(get_current_user),
 ):
     """Conversation image: hand-drawn mind-map rebuild or OCR → Document Summary.
@@ -130,6 +131,7 @@ async def kitty_conversation_image(
         diagram_id=diagram_id,
         diagram_title=diagram_title,
         apply_to_library=apply_to_library,
+        canvas_review=canvas_review,
     )
 
 

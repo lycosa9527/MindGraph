@@ -14,6 +14,7 @@ import {
   Folder,
   GitBranch,
   GraduationCap,
+  GripHorizontal,
   Hand,
   LayoutGrid,
   Lightbulb,
@@ -61,6 +62,7 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
+import { openDragPractice } from '@/composables/mindMap/useDragPractice'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
@@ -350,6 +352,20 @@ const teachingTools = computed<RemoteTool[]>(() => [
     icon: FileText,
     run: () => ribbon.requestWorksheetText(true),
   },
+  ...(lsCanvas.showLearningSheet
+    ? [
+        {
+          id: 'drag-practice',
+          labelKey: 'canvas.dragPractice.toolbar',
+          icon: GripHorizontal,
+          dimmed: aiBlockedByCollab.value,
+          run: () => {
+            if (aiBlockedByCollab.value) return
+            openDragPractice()
+          },
+        },
+      ]
+    : []),
   {
     id: 'explain',
     labelKey: 'canvas.floatingToolbar.explain',

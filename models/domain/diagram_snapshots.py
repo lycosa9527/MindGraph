@@ -57,6 +57,7 @@ class DiagramSnapshot(Base):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     spec: Mapped[dict] = mapped_column(pg.JSONB, nullable=False)
+    title: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     diagram: Mapped["Diagram"] = relationship("Diagram", back_populates="snapshots", lazy="selectin")

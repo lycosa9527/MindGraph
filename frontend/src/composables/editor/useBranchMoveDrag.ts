@@ -32,6 +32,7 @@ import {
   isTopLevelTreeMapNode,
   usesHierarchicalMove,
 } from '@/composables/editor/branchMoveGroups'
+import { isDragPracticePicking } from '@/composables/mindMap/useDragPractice'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
@@ -285,7 +286,8 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     node: MindGraphNode,
     flowX: number,
     flowY: number,
-    pad: number
+    pad: number,
+    axis: 'vertical' | 'horizontal' = 'vertical'
   ): DropTarget | null {
     const pos = node.position ?? { x: 0, y: 0 }
     const { w: nodeW, h: nodeH } = getNodeDimensions(node)
@@ -297,10 +299,18 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     ) {
       return null
     }
+    const nodeId = node.id ?? ''
+    if (axis === 'horizontal') {
+      const relX = flowX - pos.x
+      const leftZone = nodeW * 0.28
+      const rightZone = nodeW * 0.72
+      if (relX < leftZone) return { type: 'before', nodeId }
+      if (relX > rightZone) return { type: 'after', nodeId }
+      return { type: 'child', nodeId }
+    }
     const relY = flowY - pos.y
     const topZone = nodeH * 0.28
     const bottomZone = nodeH * 0.72
-    const nodeId = node.id ?? ''
     if (relY < topZone) return { type: 'before', nodeId }
     if (relY > bottomZone) return { type: 'after', nodeId }
     return { type: 'child', nodeId }
@@ -370,7 +380,13 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         continue
       }
       if (h.has(nid) || nid === draggedId) continue
-      const hit = classifyBranchDrop(node, flowX, flowY, flowHitPad())
+      // Tree categories sit in a horizontal row — use left/right insert zones.
+      const storeNode = storeNodes?.find((item) => item.id === nid)
+      const axis =
+        dt === 'tree_map' && storeNode && isTopLevelTreeMapNode(nid, storeNodes)
+          ? 'horizontal'
+          : 'vertical'
+      const hit = classifyBranchDrop(node, flowX, flowY, flowHitPad(), axis)
       if (!hit) continue
       const { w: nodeW, h: nodeH } = getNodeDimensions(node)
       const area = nodeW * nodeH
@@ -497,13 +513,16 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       if (target.type === 'topic') {
         diagramStore.moveTreeMapBranch(nodeId, 'topic', target.nodeId)
       } else if (target.type === 'before' || target.type === 'after') {
-        diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
-      } else if (isTopLevelTreeMapNode(nodeId, diagramStore.data?.nodes)) {
-        diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
-      } else if (isTopLevelTreeMapNode(target.nodeId, diagramStore.data?.nodes)) {
+        diagramStore.moveTreeMapBranch(nodeId, target.type, target.nodeId)
+      } else if (
+        isTopLevelTreeMapNode(target.nodeId, diagramStore.data?.nodes) &&
+        !isTopLevelTreeMapNode(nodeId, diagramStore.data?.nodes)
+      ) {
+        // Leaf onto category center → append under that category.
         diagramStore.moveTreeMapBranch(nodeId, 'child', target.nodeId)
       } else {
-        diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
+        // Same-level center drop inserts after the target (not a swap).
+        diagramStore.moveTreeMapBranch(nodeId, 'after', target.nodeId)
       }
     } else {
       if (target.type === 'topic') {
@@ -680,7 +699,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   ): boolean {
     if (isDiagramPresentationReadOnly() || Boolean(diagramStore.isReadonly)) return false
     if (formatBrushActive.value) return false
-    if (isLearningSheetCustomPickActive()) return false
+    if (isLearningSheetCustomPickActive() || isDragPracticePicking()) return false
     if (options?.allowNodeMove && !options.allowNodeMove()) return false
     const dt = diagramStore.type
     if (!dt) return false

@@ -45,30 +45,15 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
         data.value.languages,
         isAddingPart ? 'diagram.newPart' : 'diagram.newSubpart'
       )
-    const claimed = new Set(data.value.nodes.map((n) => n.id).filter(Boolean))
-    claimed.add('brace-whole')
-    claimed.add('dimension-label')
-
-    const place = (parent: string, label: InsertLabelInput): string => {
-      const id = takeBraceMapStableId(claimed)
-      ctx.addNode({
-        id,
-        ...insertLabelFields(label),
-        type: 'brace',
-        position: { x: 0, y: 0 },
-        data: { [BRACE_MAP_UID_DATA_KEY]: id },
-      })
-      ctx.addConnection(parent, id)
-      return id
-    }
+    const claimed = claimedBraceIds()
 
     if (!isAddingPart && subpartTexts) {
-      for (const label of subpartTexts) place(attachParentId, label)
+      for (const label of subpartTexts) placeBraceChild(claimed, attachParentId, label)
     } else {
-      const newId = place(attachParentId, partText)
+      const newId = placeBraceChild(claimed, attachParentId, partText)
       if (isAddingPart && subpartTexts) {
-        place(newId, subpartTexts[0])
-        place(newId, subpartTexts[1])
+        placeBraceChild(claimed, newId, subpartTexts[0])
+        placeBraceChild(claimed, newId, subpartTexts[1])
       }
     }
 
@@ -95,23 +80,76 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     if (texts.length === 0 || parentId === 'dimension-label') return false
     if (!data.value.nodes.some((n) => n.id === parentId)) return false
 
-    const claimed = new Set(data.value.nodes.map((n) => n.id).filter(Boolean))
-    claimed.add('brace-whole')
-    claimed.add('dimension-label')
+    const claimed = claimedBraceIds()
     for (const label of texts) {
-      const id = takeBraceMapStableId(claimed)
-      ctx.addNode({
-        id,
-        ...insertLabelFields(label),
-        type: 'brace',
-        position: { x: 0, y: 0 },
-        data: { [BRACE_MAP_UID_DATA_KEY]: id },
-      })
-      ctx.addConnection(parentId, id)
+      placeBraceChild(claimed, parentId, label)
     }
 
     commitBraceMapAdd()
     return true
+  }
+
+  /**
+   * Insert one child under `parentId` at `atIndex` among that parent's outgoing edges.
+   * Connection order is the brace sibling order.
+   */
+  function insertBraceMapChild(
+    parentId: string,
+    text: InsertLabelInput,
+    atIndex: number
+  ): string | null {
+    if (type.value !== 'brace_map' || !data.value?.nodes || !data.value.connections) return null
+    if (parentId === 'dimension-label') return null
+    if (!data.value.nodes.some((node) => node.id === parentId)) return null
+
+    const id = placeBraceChild(claimedBraceIds(), parentId, text)
+    moveBraceChildToIndex(parentId, id, atIndex)
+    commitBraceMapAdd()
+    return id
+  }
+
+  function claimedBraceIds(): Set<string> {
+    const claimed = new Set((data.value?.nodes ?? []).map((node) => node.id).filter(Boolean))
+    claimed.add('brace-whole')
+    claimed.add('dimension-label')
+    return claimed
+  }
+
+  function placeBraceChild(claimed: Set<string>, parent: string, label: InsertLabelInput): string {
+    const id = takeBraceMapStableId(claimed)
+    ctx.addNode({
+      id,
+      ...insertLabelFields(label),
+      type: 'brace',
+      position: { x: 0, y: 0 },
+      data: { [BRACE_MAP_UID_DATA_KEY]: id },
+    })
+    ctx.addConnection(parent, id)
+    return id
+  }
+
+  /** After an append, move the new edge so it sits at `atIndex` among the parent's children. */
+  function moveBraceChildToIndex(parentId: string, childId: string, atIndex: number): void {
+    const connections = data.value?.connections
+    if (!connections) return
+    const from = connections.findIndex(
+      (edge) => edge.source === parentId && edge.target === childId
+    )
+    if (from < 0) return
+    const [edge] = connections.splice(from, 1)
+    if (!edge) return
+    let seen = 0
+    let insertAt = connections.length
+    const target = Math.max(0, atIndex)
+    for (let i = 0; i < connections.length; i += 1) {
+      if (connections[i]?.source !== parentId) continue
+      if (seen === target) {
+        insertAt = i
+        break
+      }
+      seen += 1
+    }
+    connections.splice(insertAt, 0, edge)
   }
 
   function removeBraceMapNodes(nodeIds: string[]): number {
@@ -179,5 +217,5 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     return deletedIds.length
   }
 
-  return { addBraceMapPart, addBraceMapChildren, removeBraceMapNodes }
+  return { addBraceMapPart, addBraceMapChildren, insertBraceMapChild, removeBraceMapNodes }
 }

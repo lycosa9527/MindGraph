@@ -735,3 +735,16 @@ class SnapshotTakeRequest(BaseModel):
     spec: Dict[str, Any] = Field(..., description="Diagram specification to snapshot (llm_results excluded)")
 
     model_config = ConfigDict(json_schema_extra={"example": {"spec": {"topic": "Central Topic", "children": []}}})
+
+
+class SnapshotRenameRequest(BaseModel):
+    """Request body for PATCH /api/diagrams/{id}/snapshots/{version_number}."""
+
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="User-facing snapshot label",
+    )
+
+    model_config = ConfigDict(json_schema_extra={"example": {"title": "Draft before review"}})

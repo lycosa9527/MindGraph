@@ -340,6 +340,7 @@ run_frontend() {
     tests/unloadCanvasForLibrarySwitch.spec.ts \
     tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
     tests/llmResultsTeardown.spec.ts tests/diagramImportLlmSlots.spec.ts \
+    tests/handdrawnImportManual.spec.ts \
     tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
     tests/thinkingMapsIdentity.spec.ts \
@@ -376,6 +377,11 @@ run_frontend() {
     tests/canvasWorksheetText.spec.ts tests/worksheetDiagramCrop.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
     tests/normalizeAuthUser.spec.ts \
+    tests/treeMapAddHandles.spec.ts tests/treeMapSlides.spec.ts tests/treeMapMoveInsert.spec.ts \
+    tests/treeMapStructure.spec.ts tests/braceMapAddHandles.spec.ts tests/braceMapSlides.spec.ts \
+    tests/braceMapInsert.spec.ts tests/dragPractice.spec.ts tests/dragPracticeMatch.spec.ts \
+    tests/diagramSnapshotVersions.spec.ts tests/diagramInsertActions.spec.ts \
+    tests/diagramRibbonCapabilities.spec.ts tests/thinkingMapNodeShape.spec.ts \
     tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \
     tests/toolbarLabelAbbreviation.spec.ts tests/toolbarLabelCollapse.spec.ts \
     tests/authBootstrapDedupe.spec.ts     tests/formatGalleryLanguageMenuLabel.spec.ts \

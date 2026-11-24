@@ -7,8 +7,20 @@ export type NodeShape = 'rounded' | 'rectangle' | 'oval' | 'underline'
 
 export const NODE_SHAPE_OPTIONS: NodeShape[] = ['rounded', 'rectangle', 'oval', 'underline']
 
+/** Flow maps use pill / box chrome; underline (mind-map branch) is not offered. */
+const FLOW_MAP_SHAPE_OPTIONS: NodeShape[] = ['rounded', 'rectangle', 'oval']
+
 /** Disk oval matches the toolbar mark (18×12): same height as the circle, wider. */
 export const CIRCLE_MAP_OVAL_WIDTH_RATIO = 3 / 2
+
+export function nodeShapeOptionsForDiagram(
+  diagramType: string | null | undefined
+): readonly NodeShape[] {
+  if (diagramType === 'flow_map' || diagramType === 'multi_flow_map') {
+    return FLOW_MAP_SHAPE_OPTIONS
+  }
+  return NODE_SHAPE_OPTIONS
+}
 
 export function resolveNodeShape(style: NodeStyle | undefined, isMindMap: boolean): NodeShape {
   if (style?.nodeShape) return style.nodeShape
