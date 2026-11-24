@@ -32,6 +32,9 @@
  * | id | english | Latin / QWERTY |
  * | tl | english | Latin / QWERTY |
  * | vi | english | No Telex/VNI in pack |
+ * | km | english | No Khmer layout in pack |
+ * | lo | english | No Lao layout in pack |
+ * | my | burmese | |
  * | tr | turkish | |
  * | pl | polish | |
  * | uk | ukrainian | |
@@ -155,6 +158,9 @@ export const PICKER_VIRTUAL_KEYBOARD_PRESET_BY_UI_LOCALE = {
   id: 'english',
   tl: 'english',
   vi: 'english',
+  km: 'english',
+  lo: 'english',
+  my: 'burmese',
   tr: 'turkish',
   pl: 'polish',
   uk: 'ukrainian',
@@ -205,7 +211,6 @@ const EXTENDED_UI_LOCALE_TO_PRESET: Partial<Record<LocaleCode, LayoutPresetName>
   ky: 'russian',
   mk: 'macedonian',
   mn: 'russian',
-  my: 'burmese',
   ne: 'hindi',
   tg: 'russian',
   tk: 'turkish',

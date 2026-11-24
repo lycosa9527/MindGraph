@@ -1,5 +1,5 @@
 /**
- * Blank-diagram labels for the 44 Settings languages.
+ * Blank-diagram labels for the 47 Settings languages.
  * Slots must survive interpolation, and machine-translation leftovers
  * (Lenovo for 联想, leaked __MG_ tokens, the wrong language) must not ship.
  */
@@ -81,8 +81,8 @@ function shown(value: string): string {
 describe('diagram default placeholders across picker locales', () => {
   const english = readPlaceholders('en')
 
-  it('lists 44 interface languages', () => {
-    expect(INTERFACE_LANGUAGE_PICKER_CODES).toHaveLength(44)
+  it('lists 47 interface languages', () => {
+    expect(INTERFACE_LANGUAGE_PICKER_CODES).toHaveLength(47)
   })
 
   for (const code of INTERFACE_LANGUAGE_PICKER_CODES) {

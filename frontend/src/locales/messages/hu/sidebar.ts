@@ -127,7 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Információs csomag',
   'sidebar.settings': 'felállítani',
   'sidebar.library': 'könyvtár',
-  'sidebar.clipTeaching': 'Clip teaching',
+  'sidebar.clipTeaching': 'Szeletelt tanítás',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Ügynök {name}',

@@ -127,7 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Информационен пакет',
   'sidebar.settings': 'настроен',
   'sidebar.library': 'библиотека',
-  'sidebar.clipTeaching': 'Clip teaching',
+  'sidebar.clipTeaching': 'Нарязано обучение',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Агент {name}',

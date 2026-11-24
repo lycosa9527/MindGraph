@@ -168,7 +168,7 @@ def main() -> int:
     touched = 0
     for locale in sorted(os.listdir(ROOT)):
         locale_dir = os.path.join(ROOT, locale)
-        if not os.path.isdir(locale_dir) or locale == "__test__":
+        if not os.path.isdir(locale_dir):
             continue
         aliases = [] if locale == "zh" else harvest_aliases(locale, zh)
         for name in sorted(os.listdir(locale_dir)):

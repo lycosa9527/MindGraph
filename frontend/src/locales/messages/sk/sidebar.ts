@@ -127,7 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Informačný balík',
   'sidebar.settings': 'nastaviť',
   'sidebar.library': 'knižnica',
-  'sidebar.clipTeaching': 'Clip teaching',
+  'sidebar.clipTeaching': 'Rozrezané učenie',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Zástupca {name}',

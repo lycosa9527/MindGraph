@@ -127,7 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Informacijski paket',
   'sidebar.settings': 'postaviti',
   'sidebar.library': 'knjižnica',
-  'sidebar.clipTeaching': 'Clip teaching',
+  'sidebar.clipTeaching': 'Sliceed ​​nastava',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',

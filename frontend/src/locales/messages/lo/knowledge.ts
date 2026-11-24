@@ -1,23 +1,23 @@
 /**
  * lo UI — knowledge
- * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'fileCenterLibrary.title': 'Packages',
-  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (Document Summary).',
-  'fileCenterLibrary.openDiagram': 'Open diagram',
-  'fileCenterLibrary.badgeCanvas': 'Canvas',
-  'fileCenterLibrary.badgeExtension': 'Extension',
-  'fileCenterLibrary.badgeUpload': 'Upload',
+  'fileCenterLibrary.title': 'ຊຸດຂໍ້ມູນ',
+  'fileCenterLibrary.subtitle': 'ການເກັບກໍາແຫຼ່ງຂໍ້ມູນຈັດກຸ່ມຕາມແຜນວາດ (ສະຫຼຸບເອກະສານ).',
+  'fileCenterLibrary.openDiagram': 'ເປີດຕາຕະລາງ',
+  'fileCenterLibrary.badgeCanvas': 'ຜ້າໃບ',
+  'fileCenterLibrary.badgeExtension': 'ຂະຫຍາຍ',
+  'fileCenterLibrary.badgeUpload': 'ອັບໂຫຼດ',
   'knowledge.pipelineBadge.rag.label': 'RAG',
-  'knowledge.pipelineBadge.rag.notYet': 'Not yet',
-  'knowledge.pipelineBadge.rag.processing': 'In progress',
-  'knowledge.pipelineBadge.rag.complete': 'Complete',
-  'knowledge.pipelineBadge.rag.failed': 'Failed',
-  'knowledge.pipelineBadge.wiki.label': 'Wiki',
-  'knowledge.pipelineBadge.wiki.disabled': 'Off',
-  'knowledge.pipelineBadge.wiki.notYet': 'Not yet',
-  'knowledge.pipelineBadge.wiki.pending': 'In progress',
-  'knowledge.pipelineBadge.wiki.complete': 'Complete',
+  'knowledge.pipelineBadge.rag.notYet': 'ບໍ່ໄດ້ເລີ່ມຕົ້ນ',
+  'knowledge.pipelineBadge.rag.processing': 'ຢູ່ໃນຄວາມຄືບຫນ້າ',
+  'knowledge.pipelineBadge.rag.complete': 'ສຳເລັດແລ້ວ',
+  'knowledge.pipelineBadge.rag.failed': 'ລົ້ມເຫລວ',
+  'knowledge.pipelineBadge.wiki.label': 'ວິກິພີເດຍ',
+  'knowledge.pipelineBadge.wiki.disabled': 'ປິດ',
+  'knowledge.pipelineBadge.wiki.notYet': 'ບໍ່ໄດ້ເລີ່ມຕົ້ນ',
+  'knowledge.pipelineBadge.wiki.pending': 'ຢູ່ໃນຄວາມຄືບຫນ້າ',
+  'knowledge.pipelineBadge.wiki.complete': 'ສຳເລັດແລ້ວ',
 } as const

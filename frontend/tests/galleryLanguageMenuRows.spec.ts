@@ -8,11 +8,11 @@ import {
 } from '@/i18n/locales'
 
 describe('getGalleryLanguageMenuRows', () => {
-  it('uses the same 44 codes as Settings → Interface language', () => {
+  it('uses the same 47 codes as Settings → Interface language', () => {
     const landing = getGalleryLanguageMenuRows('en', true).map((row) => row.code)
     const settings = getLocalesForInterfaceLanguagePicker('en', true).map((row) => row.code)
-    expect(INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT).toBe(44)
-    expect(landing).toHaveLength(44)
+    expect(INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT).toBe(47)
+    expect(landing).toHaveLength(47)
     expect(new Set(landing)).toEqual(new Set(settings))
     expect(new Set(landing)).toEqual(new Set(INTERFACE_LANGUAGE_PICKER_CODES))
   })
@@ -35,6 +35,11 @@ describe('getGalleryLanguageMenuRows', () => {
     expect(byCode.bg).toBe('Български (保加利亚语)')
     expect(byCode.hr).toBe('Hrvatski (克罗地亚语)')
     expect(byCode.sr).toBe('Српски (塞尔维亚语)')
+    expect(byCode.km).toBe('ខ្មែរ (高棉语)')
+    expect(byCode.lo).toBe('ລາວ (老挝语)')
+    expect(byCode.my).toBe('မြန်မာ (缅甸语)')
+    expect(byCode.tl).toBe('Tagalog (他加禄语)')
+    expect(byCode.vi).toBe('Tiếng Việt (越南语)')
   })
 
   it('hides Simplified Chinese when policy disallows it', () => {

@@ -127,7 +127,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.title': 'Informasjonspakke',
   'sidebar.settings': 'sette opp',
   'sidebar.library': 'bibliotek',
-  'sidebar.clipTeaching': 'Clip teaching',
+  'sidebar.clipTeaching': 'Oppskåret undervisning',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',

@@ -35,7 +35,7 @@ def main() -> int:
     bad: list[str] = []
     for locale in sorted(os.listdir(ROOT)):
         locale_dir = os.path.join(ROOT, locale)
-        if not os.path.isdir(locale_dir) or locale in ("zh", "__test__"):
+        if not os.path.isdir(locale_dir) or locale == "zh":
             continue
         for name in os.listdir(locale_dir):
             if not name.endswith(".ts"):

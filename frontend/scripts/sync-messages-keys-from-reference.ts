@@ -19,11 +19,13 @@ const NS_ORDER = [
   'canvas',
   'clipTeaching',
   'workshop',
+  'training',
   'admin',
   'knowledge',
   'learningSpace',
   'community',
   'showcase',
+  'zhihui',
   'sidebar',
   'auth',
   'notification',
@@ -50,14 +52,33 @@ const TIER_27_EXCEPT_ZH = [
   'it',
   'hi',
   'si',
+  'ta',
+  'te',
+  'kn',
+  'ml',
   'id',
   'tl',
   'vi',
+  'km',
+  'lo',
+  'my',
   'tr',
   'pl',
   'uk',
   'ms',
   'af',
+  'no',
+  'sv',
+  'da',
+  'fi',
+  'cs',
+  'sk',
+  'ro',
+  'hu',
+  'el',
+  'bg',
+  'hr',
+  'sr',
 ] as const
 
 function escapeSq(s: string): string {
@@ -92,7 +113,7 @@ function localeDirsTier27(): string[] {
   return [...TIER_27_EXCEPT_ZH]
 }
 
-const SKIP_LOCALE_DIRS = new Set(['zh', '__test__'])
+const SKIP_LOCALE_DIRS = new Set(['zh'])
 
 function localeDirsAll(): string[] {
   return readdirSync(ROOT)

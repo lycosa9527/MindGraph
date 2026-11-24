@@ -176,7 +176,7 @@ export default {
   'training.builder.glassSheet': '學習單',
   'training.builder.glassSheetHint': '看見學習單二維碼就拍攝',
   'training.builder.glassCapture': '拍攝',
-  'training.builder.glassLine': '台詞',
+  'training.builder.glassLine': '臺詞',
   'training.builder.glassReveal': '播放',
   'training.builder.glassRevealOff': '只朗讀',
   'training.builder.glassRevealClockwise': '順時針出現',

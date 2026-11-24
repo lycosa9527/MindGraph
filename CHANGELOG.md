@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.228] - 2026-11-24
+
+> **Settings adds Khmer, Lao, and Burmese. Picker languages that were still English are filled from Simplified Chinese.**
+
+### Added
+
+- **高棉语、老挝语、缅甸语** — Settings → Interface language lists ខ្មែរ, ລາວ, and မြန်မာ. The picker is 47 languages. Tagalog and Vietnamese were already listed; strings that still matched English were filled the same way. Burmese uses the Burmese on-screen keyboard.
+
+### Fixed
+
+- **English gaps** — Other picker languages were filled from Simplified Chinese where the text was still the English copy. Product names, formulas, and short labels that stay English were left alone.
+- **联想** — Association labels that had come back as Lenovo now use each language's own word.
+- **Serbian placeholders** — Slots such as `{name}` that arrived as Cyrillic `__МГ_` tokens are restored.
+- **繁体中文** — Traditional Chinese strings that were still copied from Simplified were converted.
+
+### Removed
+
+- **`__test__` locale** — The unused invalid-language dump under `messages/__test__` is gone.
+
+### Tests
+
+- [`frontend/tests/interfaceLanguagePicker.spec.ts`](frontend/tests/interfaceLanguagePicker.spec.ts), [`frontend/tests/galleryLanguageMenuRows.spec.ts`](frontend/tests/galleryLanguageMenuRows.spec.ts), [`frontend/tests/diagramDefaultPlaceholders.spec.ts`](frontend/tests/diagramDefaultPlaceholders.spec.ts)
+
 ## [5.180.227] - 2026-11-22
 
 > **The account menu opens a product roadmap instead of the update log. A super admin keeps one shared board.**

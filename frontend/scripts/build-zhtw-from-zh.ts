@@ -16,6 +16,7 @@ const FILES = [
   'admin.ts',
   'auth.ts',
   'canvas.ts',
+  'clipTeaching.ts',
   'common.ts',
   'community.ts',
   'knowledge.ts',
@@ -26,6 +27,7 @@ const FILES = [
   'workshop.ts',
   'showcase.ts',
   'thinkingCoins.ts',
+  'zhihui.ts',
   'training.ts',
 ] as const
 

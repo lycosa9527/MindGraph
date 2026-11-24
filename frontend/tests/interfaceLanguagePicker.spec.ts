@@ -8,9 +8,9 @@ import {
 import { SUPPORTED_UI_LOCALES } from '@/i18n/supportedUiLocales'
 
 describe('interface language picker', () => {
-  it('keeps Settings / landing / mobile on the same 44 translated locales', () => {
-    expect(INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT).toBe(44)
-    expect(INTERFACE_LANGUAGE_PICKER_CODES).toHaveLength(44)
+  it('keeps Settings / landing / mobile on the same 47 translated locales', () => {
+    expect(INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT).toBe(47)
+    expect(INTERFACE_LANGUAGE_PICKER_CODES).toHaveLength(47)
     const rows = getLocalesForInterfaceLanguagePicker()
     expect(new Set(rows.map((entry) => entry.code))).toEqual(
       new Set(INTERFACE_LANGUAGE_PICKER_CODES)
@@ -62,5 +62,20 @@ describe('interface language picker', () => {
     expectRow('bg', 'Български', 'Bulgarian')
     expectRow('hr', 'Hrvatski', 'Croatian')
     expectRow('sr', 'Српски', 'Serbian')
+  })
+
+  it('lists Khmer, Lao, Burmese, Filipino, and Vietnamese', () => {
+    const rows = getLocalesForInterfaceLanguagePicker()
+    const expectRow = (code: string, nativeName: string, englishName: string) => {
+      expect(INTERFACE_LANGUAGE_PICKER_CODES).toContain(code)
+      const row = rows.find((entry) => entry.code === code)
+      expect(row?.nativeName).toBe(nativeName)
+      expect(row?.englishName).toBe(englishName)
+    }
+    expectRow('km', 'ខ្មែរ', 'Khmer')
+    expectRow('lo', 'ລາວ', 'Lao')
+    expectRow('my', 'မြန်မာ', 'Burmese')
+    expectRow('tl', 'Tagalog', 'Tagalog (Filipino)')
+    expectRow('vi', 'Tiếng Việt', 'Vietnamese')
   })
 })
