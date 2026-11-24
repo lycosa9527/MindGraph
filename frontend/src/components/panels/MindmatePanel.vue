@@ -4,7 +4,7 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onScopeDispose, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -24,6 +24,7 @@ import {
   applyThinkingCoinMutation,
   extractThinkingCoinsFooter,
 } from '@/composables/auth/useThinkingCoinSync'
+import { bindCanvasSuggestion } from '@/composables/mindmate/canvasSuggestionRelay'
 import {
   applySeminarGroup,
   bumpSeminarFolderReload,
@@ -349,6 +350,11 @@ const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
 const showHomeModeSwitch = computed(
   () => isFullpageMode.value && showWelcome.value && !isCollabChatroomMode.value
 )
+
+/**
+ * Welcome toolbar「加入教研会」— visible for 开启对话 and 群聊研讨 alike.
+ */
+const showJoinSeminarButton = computed(() => showWelcome.value && !isCollabChatroomMode.value)
 
 const collabSessionTitle = computed(
   () => collabRoomTitle.value || mindMateStore.conversationTitle || t('mindmate.collabPill')
@@ -728,7 +734,10 @@ async function startNewConversation() {
     exitCollabChatroomMode()
   }
   savedSeminar.clear()
-  homeMode.value = 'dialogue'
+  // Keep 群聊研讨 selected when starting fresh from that mode.
+  if (homeMode.value !== 'seminar') {
+    homeMode.value = 'dialogue'
+  }
   mindMate.startNewConversation()
   cancelShareSelect()
   displayTitle.value = defaultMindMateTitle.value
@@ -1174,6 +1183,8 @@ function handleSuggestionSelect(suggestion: string) {
   })
 }
 
+onScopeDispose(bindCanvasSuggestion(handleSuggestionSelect))
+
 // Handle file selection
 async function handleFileSelect(files: FileList) {
   if (!files || files.length === 0) return
@@ -1524,7 +1535,7 @@ function isLastAssistantMessage(messageId: string): boolean {
           />
         </button>
         <el-button
-          v-if="showWelcome && homeMode === 'dialogue' && !isCollabChatroomMode"
+          v-if="showJoinSeminarButton"
           class="join-seminar-btn shrink-0"
           :disabled="!authStore.isAuthenticated"
           @click="openJoinSeminarPanel"

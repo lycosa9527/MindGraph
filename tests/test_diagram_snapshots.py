@@ -8,7 +8,7 @@ from typing import cast
 from sqlalchemy import Table
 
 from models.domain.diagram_snapshots import DiagramSnapshot
-from models.requests.requests_diagram import SnapshotTakeRequest
+from models.requests.requests_diagram import SnapshotRenameRequest, SnapshotTakeRequest
 from models.responses import SnapshotListResponse, SnapshotMetadata
 
 
@@ -36,12 +36,32 @@ def test_snapshot_list_response_roundtrip() -> None:
     data = SnapshotListResponse(
         snapshots=[
             SnapshotMetadata(id=1, version_number=1, created_at=created),
-            SnapshotMetadata(id=2, version_number=2, created_at=created),
+            SnapshotMetadata(
+                id=2,
+                version_number=2,
+                created_at=created,
+                title="Draft before review",
+            ),
         ]
     )
     dumped = data.model_dump(mode="json")
     assert len(dumped["snapshots"]) == 2
     assert dumped["snapshots"][1]["version_number"] == 2
+    assert dumped["snapshots"][1]["title"] == "Draft before review"
+    assert dumped["snapshots"][0]["title"] is None
+
+
+def test_snapshot_rename_request_strips_via_validator_contract() -> None:
+    """Rename body accepts a non-empty title within length limits."""
+    body = SnapshotRenameRequest(title="Before peer review")
+    assert body.title == "Before peer review"
+
+
+def test_diagram_snapshot_has_optional_title_column() -> None:
+    """ORM exposes nullable title for user-facing rename."""
+    table = cast(Table, DiagramSnapshot.__table__)
+    assert "title" in table.c
+    assert table.c.title.nullable is True
 
 
 def test_snapshot_next_version_under_cap_matches_router_logic() -> None:

@@ -11,12 +11,14 @@ import {
   applyThinkingCoinMutation,
   extractThinkingCoinsFooter,
 } from '@/composables/auth/useThinkingCoinSync'
+import { activeSnapshotVersionAfterDelete } from '@/composables/editor/diagramSnapshotVersions'
 import { authFetch } from '@/utils/api'
 
 export interface SnapshotMetadata {
   id: number
   version_number: number
   created_at: string
+  title?: string | null
 }
 
 export type SnapshotTakeResult =
@@ -26,6 +28,9 @@ export type SnapshotRecallResult =
   { ok: true; spec: Record<string, unknown> } | { ok: false; status: number; message: string }
 
 export type SnapshotDeleteResult = { ok: true } | { ok: false; status: number; message: string }
+
+export type SnapshotRenameResult =
+  { ok: true; snapshot: SnapshotMetadata } | { ok: false; status: number; message: string }
 
 interface SnapshotRecallResponse {
   version_number: number
@@ -146,6 +151,8 @@ async function deleteSnapshot(
   versionNumber: number
 ): Promise<SnapshotDeleteResult> {
   try {
+    const previous = snapshots.value
+    const previousActive = activeSnapshotVersion.value
     const res = await authFetch(`/api/diagrams/${diagramId}/snapshots/${versionNumber}`, {
       method: 'DELETE',
     })
@@ -156,12 +163,41 @@ async function deleteSnapshot(
     }
     const data: SnapshotListResponse = await res.json()
     snapshots.value = data.snapshots
-    if (activeSnapshotVersion.value === versionNumber) {
-      activeSnapshotVersion.value = null
-    }
+    activeSnapshotVersion.value = activeSnapshotVersionAfterDelete(
+      previousActive,
+      previous,
+      data.snapshots
+    )
     return { ok: true }
   } catch (err) {
     console.warn('[SnapshotHistory] deleteSnapshot error:', err)
+    return { ok: false, status: 0, message: '' }
+  }
+}
+
+async function renameSnapshot(
+  diagramId: string,
+  versionNumber: number,
+  title: string
+): Promise<SnapshotRenameResult> {
+  try {
+    const res = await authFetch(`/api/diagrams/${diagramId}/snapshots/${versionNumber}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    })
+    if (!res.ok) {
+      const message = await readErrorDetail(res)
+      console.warn('[SnapshotHistory] renameSnapshot failed:', res.status, message)
+      return { ok: false, status: res.status, message }
+    }
+    const snapshot: SnapshotMetadata = await res.json()
+    snapshots.value = snapshots.value.map((row) =>
+      row.id === snapshot.id || row.version_number === versionNumber ? { ...row, ...snapshot } : row
+    )
+    return { ok: true, snapshot }
+  } catch (err) {
+    console.warn('[SnapshotHistory] renameSnapshot error:', err)
     return { ok: false, status: 0, message: '' }
   }
 }
@@ -190,6 +226,7 @@ export function useSnapshotHistory() {
     takeSnapshot,
     recallSnapshot,
     deleteSnapshot,
+    renameSnapshot,
     setActiveVersion,
     setRecallingVersion,
     clearSnapshots,

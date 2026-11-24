@@ -13,6 +13,7 @@ import {
 import { waitForMindMapSlidePlayReady } from '@/composables/mindMap/waitForMindMapSlidePlayReady'
 import { useDiagramStore } from '@/stores'
 import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
+import { buildBraceMapSlides } from '@/utils/braceMapSlides'
 import { buildDoubleBubbleSlides } from '@/utils/doubleBubbleSlides'
 import { buildFlowMapSlides } from '@/utils/flowMapSlides'
 import {
@@ -20,6 +21,7 @@ import {
   type MindMapSlideTraversalMode,
   buildMindMapSlides,
 } from '@/utils/mindMapSlides'
+import { buildTreeMapSlides } from '@/utils/treeMapSlides'
 
 export const MIND_MAP_SLIDE_AUTOPLAY_MS = 4500
 export { MIND_MAP_SLIDE_TRANSITION_MS }
@@ -108,6 +110,10 @@ export function useMindMapSlidePresentation(options: {
       slides.value = buildDoubleBubbleSlides(nodes)
     } else if (diagramStore.type === 'flow_map') {
       slides.value = buildFlowMapSlides(nodes, traversalMode.value)
+    } else if (diagramStore.type === 'tree_map') {
+      slides.value = buildTreeMapSlides(nodes, traversalMode.value)
+    } else if (diagramStore.type === 'brace_map') {
+      slides.value = buildBraceMapSlides(nodes, data.connections ?? [], traversalMode.value)
     } else {
       slides.value = buildMindMapSlides(
         nodes,
@@ -120,11 +126,13 @@ export function useMindMapSlidePresentation(options: {
   }
 
   function emitFitSlide(slide: MindMapSlide): void {
-    // Thinking-map carousels (double-bubble / flow) have no mind-map collapse path.
+    // Thinking-map carousels have no mind-map collapse path.
     if (
       slide.branchNodeId &&
       diagramStore.type !== 'double_bubble_map' &&
-      diagramStore.type !== 'flow_map'
+      diagramStore.type !== 'flow_map' &&
+      diagramStore.type !== 'tree_map' &&
+      diagramStore.type !== 'brace_map'
     ) {
       diagramStore.expandMindMapPathToNode(slide.branchNodeId)
     }

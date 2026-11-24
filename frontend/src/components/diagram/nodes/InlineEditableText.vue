@@ -28,6 +28,14 @@ import {
   clearMindMapPostEditSiblingAnchor,
   setMindMapPostEditSiblingAnchor,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
+import {
+  cancelScheduledDragPracticePick,
+  dragPracticeActive,
+  dragPracticeBlankIds,
+  dragPracticeFilledIds,
+  dragPracticeMarks,
+  dragPracticePicking,
+} from '@/composables/mindMap/useDragPractice'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import {
   trainingDragBlankIds,
@@ -165,7 +173,15 @@ const trainingDragBlanked = computed(
     trainingDragBlankIds.value.includes(props.nodeId) &&
     !trainingDragFilledIds.value.includes(props.nodeId)
 )
+const dragPracticeBlanked = computed(
+  () =>
+    (dragPracticeActive.value || dragPracticePicking.value) &&
+    dragPracticeBlankIds.value.includes(props.nodeId) &&
+    !dragPracticeFilledIds.value.includes(props.nodeId)
+)
 const trainingDragMark = computed((): boolean | null => {
+  const practiceMark = dragPracticeMarks.value[props.nodeId]
+  if (typeof practiceMark === 'boolean') return practiceMark
   const mark = trainingDragMarks.value[props.nodeId]
   return typeof mark === 'boolean' ? mark : null
 })
@@ -666,6 +682,7 @@ function learningSheetBlankSeed(): string | null {
  */
 function startEditing(options?: { replaceContent?: boolean; line?: NodeTextEditLine }): void {
   cancelScheduledLearningSheetPick()
+  cancelScheduledDragPracticePick()
   if (localIsEditing.value || props.readonly) {
     markMindMapInlineEditStage('edit:start-blocked', {
       nodeId: props.nodeId,
@@ -1201,6 +1218,7 @@ watch(localIsEditing, (editing) => {
  */
 function handleDoubleClick(event: MouseEvent): void {
   cancelScheduledLearningSheetPick()
+  cancelScheduledDragPracticePick()
   if (props.readonly) return
   event.preventDefault()
   event.stopPropagation()
@@ -1439,6 +1457,7 @@ onUnmounted(() => {
           bilingualSecondary || (localIsEditing && editLine === 'secondary'),
         'learning-sheet-blanked': learningSheetBlanked,
         'training-drag-blanked': trainingDragBlanked,
+        'drag-practice-blanked': dragPracticeBlanked,
       },
     ]"
     @dblclick="handleDoubleClick"
@@ -1452,6 +1471,12 @@ onUnmounted(() => {
       :class="trainingDragMark ? 'is-ok' : 'is-bad'"
       aria-hidden="true"
       >{{ trainingDragMark ? '✓' : '✕' }}</span
+    >
+    <span
+      v-if="dragPracticeBlanked"
+      class="drag-practice-blank-mark"
+      aria-hidden="true"
+      >?</span
     >
     <MindMapNodeAdornments
       v-if="showThinkingMapAdornments"
@@ -1749,6 +1774,40 @@ onUnmounted(() => {
 .training-drag-blanked :deep(.inline-edit-display),
 .training-drag-blanked .inline-edit-display {
   visibility: hidden;
+}
+.drag-practice-blanked {
+  position: relative;
+}
+.drag-practice-blanked :deep(.inline-edit-display),
+.drag-practice-blanked .inline-edit-display {
+  visibility: hidden;
+}
+/* Dash the node shape's own border, not a second box around the label. */
+:global(.branch-node:has(.drag-practice-blanked)),
+:global(.flow-node:has(.drag-practice-blanked)),
+:global(.flow-substep-node:has(.drag-practice-blanked)),
+:global(.circle-node:has(.drag-practice-blanked)),
+:global(.brace-node:has(.drag-practice-blanked)),
+:global(.concept-node:has(.drag-practice-blanked)),
+:global(.topic-node:has(.drag-practice-blanked)) {
+  border-style: dashed !important;
+}
+:global(.mind-map-underline-node:has(.drag-practice-blanked) .mind-map-underline-line) {
+  height: 0 !important;
+  background: transparent !important;
+  border-bottom: 2px dashed currentColor;
+}
+.drag-practice-blank-mark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 1.15em;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
 }
 .training-drag-mark {
   position: absolute;

@@ -7,6 +7,7 @@ import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagra
 import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { resetDragPracticeUi } from '@/composables/mindMap/useDragPractice'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { teardownMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import {
@@ -47,6 +48,7 @@ function clearEphemeralUiForLibrarySwitch(): void {
   useKittySessionStore().resetSessionUi()
   useCanvasNodeIndicatorsStore().clearAll()
   resetLearningSheetCustomModeUi()
+  resetDragPracticeUi()
   resetMindMapSideToolbarState()
   canvasVirtualKeyboardOpen.value = false
   teardownMindClassroomLecture({ restoreViewport: false })

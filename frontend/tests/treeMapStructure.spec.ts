@@ -7,6 +7,8 @@ import {
   appendTreeMapCategory,
   appendTreeMapChild,
   arrangeTreeMapNodes,
+  insertTreeMapCategoryAt,
+  insertTreeMapChildAt,
   materializeTreeMapGraph,
   removeTreeMapGraphNodes,
 } from '@/stores/diagram/treeMapStructure'
@@ -70,6 +72,40 @@ describe('tree map structure edits', () => {
     const rowY = byText(laidOut, 'Cat A').position?.y
     expect(byText(laidOut, 'Cat C').position?.y).toBe(rowY)
     expect(byText(laidOut, 'Cat C').position?.x).not.toBe(byText(laidOut, 'Cat A').position?.x)
+  })
+
+  it('inserts a category between existing columns', () => {
+    const loaded = sample()
+    const catA = byText(loaded.nodes, 'Cat A')
+    const catB = byText(loaded.nodes, 'Cat B')
+    const next = insertTreeMapCategoryAt(loaded.nodes, 'Cat Mid', 1)
+    if (!next) throw new Error('insert category failed')
+    const mid = byText(next.nodes, 'Cat Mid')
+    expect(isTreeMapCategoryNode(mid)).toBe(true)
+    expect(readTreeCategoryIndex(byText(next.nodes, 'Cat A'))).toBe(0)
+    expect(readTreeCategoryIndex(mid)).toBe(1)
+    expect(readTreeCategoryIndex(byText(next.nodes, 'Cat B'))).toBe(2)
+    expect(byText(next.nodes, 'Cat A').id).toBe(catA.id)
+    expect(byText(next.nodes, 'Cat B').id).toBe(catB.id)
+  })
+
+  it('inserts a leaf in the middle of a column chain', () => {
+    const loaded = sample()
+    const catA = byText(loaded.nodes, 'Cat A')
+    const next = insertTreeMapChildAt(loaded.nodes, catA.id, 'A1.5', 1)
+    if (!next) throw new Error('insert child failed')
+    const added = byText(next.nodes, 'A1.5')
+    const a1 = byText(next.nodes, 'A1')
+    const a2 = byText(next.nodes, 'A2')
+    expect(readTreeParentCategoryId(added)).toBe(catA.id)
+    expect(readTreeLeafIndex(added)).toBe(1)
+    expect(readTreeLeafIndex(a2)).toBe(2)
+    expect(next.connections.some((edge) => edge.source === a1.id && edge.target === added.id)).toBe(
+      true
+    )
+    expect(next.connections.some((edge) => edge.source === added.id && edge.target === a2.id)).toBe(
+      true
+    )
   })
 
   it('chains a new leaf under the previous leaf and stacks it below', () => {

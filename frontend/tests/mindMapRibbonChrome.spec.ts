@@ -189,6 +189,8 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(teachingTab).not.toContain('canvas.ribbon.shareToSeminar')
     expect(researchTab).toContain('canvas.ribbon.shareToSeminar')
     expect(researchTab).toContain('openShareToSeminar')
+    expect(researchTab.indexOf('canvas.ribbon.teachStudents')).toBeGreaterThan(-1)
+    expect(researchTab.indexOf('teachStudents')).toBeLessThan(researchTab.indexOf('toggleMindmate'))
   })
 
   it('puts collaborative drawing on the title row as a global control', () => {

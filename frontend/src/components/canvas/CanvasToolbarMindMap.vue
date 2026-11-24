@@ -16,6 +16,7 @@ import {
   FileText,
   Folder,
   GitBranch,
+  GripHorizontal,
   Keyboard,
   LayoutGrid,
   Lightbulb,
@@ -78,7 +79,9 @@ import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
+import { openDragPractice } from '@/composables/mindMap/useDragPractice'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { requestCanvasSuggestion } from '@/composables/mindmate/canvasSuggestionRelay'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
@@ -185,6 +188,13 @@ const showZhihuiDiagramExport = computed(() => false)
 
 const mindMapV2 = useMindMapV2Chrome()
 const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
+/** Dimension labels only need text styling — hide the shape/fill/border cluster. */
+const showNodeStyleCluster = computed(() => {
+  const ids = diagramStore.selectedNodes
+  if (ids.length !== 1) return true
+  const node = diagramStore.data?.nodes?.find((item) => item.id === ids[0])
+  return node?.type !== 'label'
+})
 const insertActions = computed(() => diagramInsertActions(diagramStore.type))
 const exportMenuItems = computed(() =>
   caps.value.standardExport ? CANVAS_STANDARD_EXPORT_MENU_ITEMS : CANVAS_MINDMAP_EXPORT_MENU_ITEMS
@@ -429,6 +439,13 @@ function openVoiceSummary(): void {
 
 function openClassroom(): void {
   classroomStore.openModal()
+}
+
+function teachStudents(): void {
+  if (!ribbon.isMindmateOpen) {
+    ribbon.toggleMindmate()
+  }
+  requestCanvasSuggestion(t('mindmate.canvasSuggestion1'))
 }
 
 function openShareToSeminar(): void {
@@ -796,11 +813,13 @@ watch(
             <Paintbrush class="w-4 h-4" />
           </button>
         </I18nTooltip>
-        <span class="mm-sep" />
-        <CanvasToolbarMindMapNodeStyle
-          compact
-          :disabled="!ribbon.hasSelection"
-        />
+        <template v-if="showNodeStyleCluster">
+          <span class="mm-sep" />
+          <CanvasToolbarMindMapNodeStyle
+            compact
+            :disabled="!ribbon.hasSelection"
+          />
+        </template>
         <span class="mm-sep" />
         <CanvasToolbarMindMapFormat
           hide-painter
@@ -1093,6 +1112,39 @@ watch(
               <MmToolbarLabel
                 class="mm-btn__label"
                 k="canvas.ribbon.makeLearningSheet"
+              />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            v-if="lsCanvas.showLearningSheet && caps.learningSheetPanel"
+            k="canvas.dragPractice.toolbarTip"
+            placement="bottom"
+            :disabled="shortLabels && !aiBlockedByCollab"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              :class="{ 'is-dimmed': aiBlockedByCollab }"
+              :aria-disabled="aiBlockedByCollab"
+              :aria-label="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabGuestFeatureBlocked')
+                  : t('canvas.dragPractice.toolbar')
+              "
+              @click="
+                () => {
+                  if (aiBlockedByCollab) {
+                    notifyCollabGuestAiBlocked()
+                    return
+                  }
+                  openDragPractice()
+                }
+              "
+            >
+              <GripHorizontal class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.dragPractice.toolbar"
               />
             </button>
           </I18nTooltip>
@@ -1482,6 +1534,45 @@ watch(
 
       <template v-if="ribbonTab === 'research'">
         <div class="mm-btn-group">
+          <I18nTooltip
+            k="canvas.ribbon.teachStudentsTip"
+            placement="bottom"
+            :disabled="shortLabels"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              data-testid="mindmap-ribbon-teach-students"
+              :aria-label="t('canvas.ribbon.teachStudents')"
+              @click="teachStudents"
+            >
+              <svg
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect
+                  x="2.5"
+                  y="3"
+                  width="16"
+                  height="12"
+                  rx="1.5"
+                />
+                <path d="M6 7.5h7M6 11h4.5" />
+                <path d="M4 18.5h12" />
+                <path d="M15.5 12.5 21.5 21" />
+              </svg>
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.ribbon.teachStudents"
+              />
+            </button>
+          </I18nTooltip>
           <ElTooltip
             :content="mindMateLabel"
             placement="bottom"

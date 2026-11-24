@@ -2,13 +2,18 @@
 /**
  * Seminar share sheet: a scrollable long-image preview, then a PNG download.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { ElDialog } from 'element-plus'
 
 import { Download, Star, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  ensureMarkdownRenderer,
+  markdownRendererReady,
+  renderRichMarkdownHtml,
+} from '@/composables/core/lazyMarkdown'
 import { beijingWallClock, parseApiInstant } from '@/utils/beijingClock'
 import { dataUrlToBlob, deliverExportFile } from '@/utils/deliverExportFile'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
@@ -48,6 +53,18 @@ const exportedAt = computed(() => {
 })
 
 const siteUrl = computed(() => (typeof window === 'undefined' ? '' : window.location.origin))
+
+onMounted(() => {
+  void ensureMarkdownRenderer()
+})
+
+const renderedLines = computed(() => {
+  void markdownRendererReady.value
+  return props.lines.map((line) => ({
+    ...line,
+    html: line.content ? renderRichMarkdownHtml(line.content) : '',
+  }))
+})
 
 function formatWhen(iso: string): string {
   const date = parseApiInstant(iso)
@@ -182,7 +199,7 @@ function close(): void {
         </dl>
         <ul class="mm-share-card__list">
           <li
-            v-for="line in lines"
+            v-for="line in renderedLines"
             :key="line.key"
             class="mm-share-card__line"
           >
@@ -217,7 +234,12 @@ function close(): void {
                 >
                   {{ line.badge }}
                 </p>
-                <p class="mm-share-card__copy">{{ line.content }}</p>
+                <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml -->
+                <div
+                  class="mm-share-card__copy markdown-content"
+                  v-html="line.html"
+                />
+                <!-- eslint-enable vue/no-v-html -->
               </div>
               <p
                 v-if="line.highlighted"
@@ -502,8 +524,84 @@ function close(): void {
 
 .mm-share-card__copy {
   margin: 0;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.mm-share-card__copy :where(p, ul, ol, pre, blockquote, h1, h2, h3, h4, table) {
+  margin: 0.35em 0;
+}
+
+.mm-share-card__copy :where(p, ul, ol, pre, blockquote, h1, h2, h3, h4, table):first-child {
+  margin-top: 0;
+}
+
+.mm-share-card__copy :where(p, ul, ol, pre, blockquote, h1, h2, h3, h4, table):last-child {
+  margin-bottom: 0;
+}
+
+.mm-share-card__copy :where(h1, h2, h3, h4) {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.mm-share-card__copy :where(ul, ol) {
+  padding-left: 1.25em;
+}
+
+.mm-share-card__copy li {
+  margin: 0.15em 0;
+}
+
+.mm-share-card__copy :where(code) {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 12px;
+}
+
+.mm-share-card__copy pre {
+  overflow: auto;
+  padding: 8px;
+  border-radius: 8px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mm-share-card__copy pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.mm-share-card__copy blockquote {
+  margin-left: 0;
+  padding-left: 10px;
+  border-left: 3px solid #c4b5fd;
+  color: #57534e;
+}
+
+.mm-share-card__copy a {
+  color: #3b6cff;
+}
+
+.mm-share-card__copy table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.mm-share-card__copy :where(th, td) {
+  border: 1px solid #e7e5e4;
+  padding: 4px 6px;
+  text-align: left;
+}
+
+.mm-share-card__copy th {
+  background: #f5f5f4;
+  font-weight: 700;
 }
 
 .mm-share-card__star {

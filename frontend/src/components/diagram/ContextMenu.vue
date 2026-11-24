@@ -34,6 +34,12 @@ import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
+import {
+  TREE_TOPIC_NODE_ID,
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeParentCategoryId,
+} from '@/utils/treeMapIdentity'
 
 interface MenuItem {
   label?: string
@@ -247,6 +253,42 @@ const menuItems = computed<MenuItem[]>(() => {
           const childText = nodeLabel('diagram.newChild')
           if (diagramStore.addMindMapBranch(undefined, nodeLabel('diagram.newBranch'), childText)) {
             diagramStore.pushHistory(t('diagram.history.addBranch'))
+          }
+          emit('close')
+        },
+      })
+      items.push({ divider: true })
+    }
+
+    if (diagramStore.type === 'tree_map') {
+      const canAddItem =
+        node.id !== TREE_TOPIC_NODE_ID && (isTreeMapCategoryNode(node) || isTreeMapLeafNode(node))
+      if (canAddItem) {
+        items.push({
+          label: t('canvas.toolbar.addTreeItem'),
+          labelKey: 'canvas.toolbar.addTreeItem',
+          action: () => {
+            const categoryId = isTreeMapCategoryNode(node)
+              ? node.id
+              : readTreeParentCategoryId(node)
+            if (
+              categoryId &&
+              diagramStore.addTreeMapChild(categoryId, nodeLabel('diagram.newItem'))
+            ) {
+              notify.successKey('canvas.toolbar.childAdded')
+            } else {
+              notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
+            }
+            emit('close')
+          },
+        })
+      }
+      items.push({
+        label: t('canvas.toolbar.addBranch'),
+        labelKey: 'canvas.toolbar.addBranch',
+        action: () => {
+          if (diagramStore.addTreeMapCategory(nodeLabel('diagram.newCategory'))) {
+            notify.successKey('canvas.toolbar.branchAdded')
           }
           emit('close')
         },

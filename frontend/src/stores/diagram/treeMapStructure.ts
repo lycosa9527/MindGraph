@@ -12,7 +12,6 @@ import {
   isTreeMapCategoryNode,
   isTreeMapLeafNode,
   readTreeCategoryIndex,
-  readTreeLeafIndex,
   stampTreeCategoryData,
   stampTreeLeafData,
   takeTreeMapStableId,
@@ -91,29 +90,79 @@ export function materializeTreeMapGraph(nodes: readonly DiagramNode[]): TreeMapG
   return { nodes: nextNodes, connections, deletedIds: [] }
 }
 
+export function insertTreeMapCategoryAt(
+  nodes: readonly DiagramNode[],
+  label: InsertLabelInput,
+  atIndex: number
+): TreeMapGraphEdit | null {
+  if (!nodes.some((node) => node.id === TREE_TOPIC_NODE_ID)) return null
+  const columns = treeMapColumnsOf(nodes)
+  const index = Math.max(0, Math.min(atIndex, columns.length))
+  const claimed = claimedIds(nodes)
+  const id = takeTreeMapStableId(claimed)
+  const newCategory: DiagramNode = {
+    id,
+    ...insertLabelFields(label),
+    type: 'branch',
+    position: { x: 0, y: 0 },
+    data: stampTreeCategoryData(index, { [TREE_MAP_UID_DATA_KEY]: id }),
+  }
+  const categories = [
+    ...columns.slice(0, index).map((column) => ({
+      id: column.category.id,
+      children: column.leaves.map((leaf) => ({ id: leaf.id })),
+    })),
+    { id, children: [] as { id?: string }[] },
+    ...columns.slice(index).map((column) => ({
+      id: column.category.id,
+      children: column.leaves.map((leaf) => ({ id: leaf.id })),
+    })),
+  ]
+  return materializeTreeMapGraph(arrangeTreeMapNodes([...nodes, newCategory], categories))
+}
+
 export function appendTreeMapCategory(
   nodes: readonly DiagramNode[],
   label: InsertLabelInput
 ): TreeMapGraphEdit | null {
-  if (!nodes.some((node) => node.id === TREE_TOPIC_NODE_ID)) return null
+  return insertTreeMapCategoryAt(nodes, label, treeMapColumnsOf(nodes).length)
+}
+
+export function insertTreeMapChildAt(
+  nodes: readonly DiagramNode[],
+  categoryId: string,
+  label: InsertLabelInput,
+  atIndex: number
+): TreeMapGraphEdit | null {
+  const columns = treeMapColumnsOf(nodes)
+  const column = columns.find((entry) => entry.category.id === categoryId)
+  if (!column?.category.id) return null
+  const leaves = column.leaves
+  const index = Math.max(0, Math.min(atIndex, leaves.length))
   const claimed = claimedIds(nodes)
   const id = takeTreeMapStableId(claimed)
-  const sortLast =
-    nodes.reduce((max, node) => {
-      if (!isTreeMapCategoryNode(node)) return max
-      return Math.max(max, readTreeCategoryIndex(node))
-    }, -1) + 1
-  const draft: DiagramNode[] = [
-    ...nodes,
-    {
-      id,
-      ...insertLabelFields(label),
-      type: 'branch',
-      position: { x: 0, y: 0 },
-      data: stampTreeCategoryData(sortLast, { [TREE_MAP_UID_DATA_KEY]: id }),
-    },
-  ]
-  return materializeTreeMapGraph(draft)
+  const catIndex = readTreeCategoryIndex(column.category)
+  const newLeaf: DiagramNode = {
+    id,
+    ...insertLabelFields(label),
+    type: 'branch',
+    position: { x: 0, y: 0 },
+    data: stampTreeLeafData(catIndex, index, column.category.id, {
+      [TREE_MAP_UID_DATA_KEY]: id,
+    }),
+  }
+  const categories = columns.map((entry) => {
+    if (entry.category.id !== categoryId) {
+      return {
+        id: entry.category.id,
+        children: entry.leaves.map((leaf) => ({ id: leaf.id })),
+      }
+    }
+    const childIds = entry.leaves.map((leaf) => ({ id: leaf.id }))
+    childIds.splice(index, 0, { id })
+    return { id: entry.category.id, children: childIds }
+  })
+  return materializeTreeMapGraph(arrangeTreeMapNodes([...nodes, newLeaf], categories))
 }
 
 export function appendTreeMapChild(
@@ -121,27 +170,9 @@ export function appendTreeMapChild(
   categoryId: string,
   label: InsertLabelInput
 ): TreeMapGraphEdit | null {
-  const category = nodes.find((node) => node.id === categoryId && isTreeMapCategoryNode(node))
-  if (!category?.id) return null
-  const claimed = claimedIds(nodes)
-  const id = takeTreeMapStableId(claimed)
-  const catIndex = readTreeCategoryIndex(category)
   const leaves =
-    treeMapColumnsOf(nodes).find((column) => column.category.id === category.id)?.leaves ?? []
-  const leafIndex = leaves.reduce((max, leaf) => Math.max(max, readTreeLeafIndex(leaf)), -1) + 1
-  const draft: DiagramNode[] = [
-    ...nodes,
-    {
-      id,
-      ...insertLabelFields(label),
-      type: 'branch',
-      position: { x: 0, y: 0 },
-      data: stampTreeLeafData(catIndex, leafIndex, category.id, {
-        [TREE_MAP_UID_DATA_KEY]: id,
-      }),
-    },
-  ]
-  return materializeTreeMapGraph(draft)
+    treeMapColumnsOf(nodes).find((column) => column.category.id === categoryId)?.leaves ?? []
+  return insertTreeMapChildAt(nodes, categoryId, label, leaves.length)
 }
 
 export function removeTreeMapGraphNodes(

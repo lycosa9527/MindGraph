@@ -64,3 +64,27 @@ export function formatSnapshotCreatedAt(iso: string, locale: string): string {
     return formatInBeijing(trimmed)
   }
 }
+
+/** Prefer a user title; otherwise the localized Snapshot {n} label. */
+export function snapshotDisplayLabel(
+  snapshot: Pick<SnapshotMetadata, 'title' | 'version_number'>,
+  fallbackLabel: string
+): string {
+  const title = typeof snapshot.title === 'string' ? snapshot.title.trim() : ''
+  return title || fallbackLabel
+}
+
+/**
+ * After a delete the backend renumbers 1..N. Keep highlighting the same row by id.
+ */
+export function activeSnapshotVersionAfterDelete(
+  previousActiveVersion: number | null,
+  previousSnapshots: readonly SnapshotMetadata[],
+  nextSnapshots: readonly SnapshotMetadata[]
+): number | null {
+  if (previousActiveVersion == null) return null
+  const activeId = previousSnapshots.find((row) => row.version_number === previousActiveVersion)?.id
+  if (activeId == null) return null
+  const stillActive = nextSnapshots.find((row) => row.id === activeId)
+  return stillActive ? stillActive.version_number : null
+}

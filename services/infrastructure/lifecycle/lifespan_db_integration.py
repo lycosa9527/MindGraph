@@ -8,7 +8,6 @@ Proprietary License
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from pathlib import Path
@@ -132,11 +131,14 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
                     logger.warning("Failed to initialize IP Geolocation Service: %s", exc)
                 return False
 
-        cache_result, ip_db_result = await asyncio.gather(
-            load_user_cache(),
-            asyncio.to_thread(load_ip_database),
-            return_exceptions=True,
-        )
+        # Run IP geo on the event-loop thread (not asyncio.to_thread). At startup the
+        # default executor can sit idle while to_thread never runs, leaving lifespan
+        # stuck before Uvicorn binds. Init is cheap when xdb files are absent.
+        cache_result = await load_user_cache()
+        try:
+            ip_db_result = load_ip_database()
+        except BACKGROUND_INFRA_ERRORS as ip_exc:
+            ip_db_result = ip_exc
 
         if isinstance(cache_result, Exception):
             if is_main_worker:

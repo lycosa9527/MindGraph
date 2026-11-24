@@ -87,6 +87,12 @@ import {
 } from '@/composables/kitty/kittyPendingCanvasAction'
 import { MIND_MAP_CANVAS_VARIANT_KEY } from '@/composables/mindMap/mindMapCanvasVariantKey'
 import {
+  dragPracticeDropOnNode,
+  isDragPracticeDropActive,
+  noteDragPracticeWrongDrop,
+  useDragPracticeKeyboard,
+} from '@/composables/mindMap/useDragPractice'
+import {
   useLearningSheetCustomMode,
   useLearningSheetPickKeyboard,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -132,6 +138,7 @@ import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
 
+import BraceMapDirectionalAddOverlay from './BraceMapDirectionalAddOverlay.vue'
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
@@ -141,6 +148,7 @@ import FlowMapDirectionalAddOverlay from './FlowMapDirectionalAddOverlay.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
 import MindMapSummaryOverlay from './MindMapSummaryOverlay.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
+import TreeMapDirectionalAddOverlay from './TreeMapDirectionalAddOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
 import { diagramCanvasEdgeTypesLegacy } from './diagramCanvasEdgeTypesLegacy'
@@ -452,6 +460,7 @@ const hammerCursorOn = computed(
   () => isLearningSheetPickActive.value || trainingDragKnockActive.value
 )
 useLearningSheetPickKeyboard()
+useDragPracticeKeyboard()
 
 watch(
   hammerCursorOn,
@@ -466,22 +475,32 @@ watch(
   { immediate: true }
 )
 
-function onTrainingDragOver(event: DragEvent): void {
-  if (!trainingDragDropActive.value) return
+function onCanvasChipDragOver(event: DragEvent): void {
+  const dropActive = trainingDragDropActive.value || isDragPracticeDropActive()
+  if (!dropActive) return
   const node = event.target instanceof Element ? event.target.closest('.vue-flow__node') : null
   if (!node) return
   event.preventDefault()
   if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
 }
 
-function onTrainingDrop(event: DragEvent): void {
-  if (!trainingDragDropActive.value) return
+function onCanvasChipDrop(event: DragEvent): void {
   const node = event.target instanceof Element ? event.target.closest('.vue-flow__node') : null
   const nodeId = node?.getAttribute('data-id') ?? ''
   if (!nodeId) return
-  event.preventDefault()
-  const matched = trainingDragDropOnNode(nodeId, event.dataTransfer?.getData('text/plain') ?? '')
-  if (!matched) noteTrainingDragWrongDrop(nodeId)
+  const given = event.dataTransfer?.getData('text/plain') ?? ''
+  if (trainingDragDropActive.value) {
+    event.preventDefault()
+    const matched = trainingDragDropOnNode(nodeId, given)
+    if (!matched) noteTrainingDragWrongDrop(nodeId)
+    return
+  }
+  if (isDragPracticeDropActive()) {
+    event.preventDefault()
+    const chipId = event.dataTransfer?.getData('application/x-mg-drag-practice') ?? ''
+    const matched = dragPracticeDropOnNode(nodeId, given, chipId)
+    if (!matched) noteDragPracticeWrongDrop(nodeId)
+  }
 }
 
 const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
@@ -961,8 +980,8 @@ onMounted(() => {
   })
   syncTouchPanPinchLayer()
   cleanupMouseSlash = setupMouseSlash()
-  canvasContainer.value?.addEventListener('dragover', onTrainingDragOver)
-  canvasContainer.value?.addEventListener('drop', onTrainingDrop)
+  canvasContainer.value?.addEventListener('dragover', onCanvasChipDragOver)
+  canvasContainer.value?.addEventListener('drop', onCanvasChipDrop)
 })
 
 watch(
@@ -973,8 +992,8 @@ watch(
 )
 
 onUnmounted(() => {
-  canvasContainer.value?.removeEventListener('dragover', onTrainingDragOver)
-  canvasContainer.value?.removeEventListener('drop', onTrainingDrop)
+  canvasContainer.value?.removeEventListener('dragover', onCanvasChipDragOver)
+  canvasContainer.value?.removeEventListener('drop', onCanvasChipDrop)
   document.documentElement.classList.remove('mg-learning-sheet-pick')
   document.documentElement.classList.remove('mg-export-capturing')
   document.documentElement.style.removeProperty('--mg-hammer-cursor')
@@ -1145,6 +1164,20 @@ defineExpose({
 
     <FlowMapDirectionalAddOverlay
       v-if="diagramStore.type === 'flow_map'"
+      :container-ref="canvasContainer"
+      :teleport-target="presentationTeleportTarget"
+      :edit-locked="presentationDiagramEditLocked"
+    />
+
+    <TreeMapDirectionalAddOverlay
+      v-if="diagramStore.type === 'tree_map'"
+      :container-ref="canvasContainer"
+      :teleport-target="presentationTeleportTarget"
+      :edit-locked="presentationDiagramEditLocked"
+    />
+
+    <BraceMapDirectionalAddOverlay
+      v-if="diagramStore.type === 'brace_map'"
       :container-ref="canvasContainer"
       :teleport-target="presentationTeleportTarget"
       :edit-locked="presentationDiagramEditLocked"

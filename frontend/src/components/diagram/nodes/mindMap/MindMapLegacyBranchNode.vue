@@ -13,6 +13,11 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
+  cancelScheduledDragPracticePick,
+  isDragPracticePicking,
+  scheduleDragPracticePickNodeClick,
+} from '@/composables/mindMap/useDragPractice'
+import {
   cancelScheduledLearningSheetPick,
   isLearningSheetCustomPickActive,
   scheduleLearningSheetPickNodeClick,
@@ -145,7 +150,9 @@ const branchMove = inject<{
   onBranchMovePointerUp: () => void
 }>('branchMove', { onBranchMovePointerDown: () => false, onBranchMovePointerUp: () => {} })
 
-const isSheetPickActive = computed(() => isLearningSheetCustomPickActive())
+const isSheetPickActive = computed(
+  () => isLearningSheetCustomPickActive() || isDragPracticePicking()
+)
 
 function handleBranchMovePointerDown(event: MouseEvent): void {
   if (isSheetPickActive.value) return
@@ -197,6 +204,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   cancelScheduledLearningSheetPick()
+  cancelScheduledDragPracticePick()
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
   if ((props.data.hidden === true && !diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
@@ -213,6 +221,12 @@ function handleBranchNodeClick(event: MouseEvent): void {
     event.stopPropagation()
     event.preventDefault()
     scheduleLearningSheetPickNodeClick(props.id)
+    return
+  }
+  if (isDragPracticePicking()) {
+    event.stopPropagation()
+    event.preventDefault()
+    scheduleDragPracticePickNodeClick(props.id)
   }
 }
 </script>

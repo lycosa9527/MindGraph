@@ -118,7 +118,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     addTreeItemNode,
     addBracePartNode,
     addBraceSubpartNode,
-    addBraceNextLevelNode,
     addDoubleBubbleSimilarityNode,
     addDoubleBubbleDifferenceNode,
   } = createThinkingMapLevelAdds(
@@ -201,6 +200,11 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
+    if (diagramType === 'tree_map') {
+      addTreeCategoryNode()
+      return
+    }
+
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
 
     if (
@@ -262,12 +266,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     } else {
       notify.warningKey('canvas.toolbar.cannotAddChild')
     }
-  }
-
-  function handleAddBraceNextLevel(): void {
-    if (isDiagramPresentationReadOnly(diagramStore)) return
-    if (diagramStore.type !== 'brace_map') return
-    addBraceNextLevelNode()
   }
 
   function handleAddSibling(): void {
@@ -692,7 +690,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     handleDeleteNode,
     handleAddBranch,
     handleAddChild,
-    handleAddBraceNextLevel,
     handleAddSibling,
     handleAddCause,
     handleAddEffect,
