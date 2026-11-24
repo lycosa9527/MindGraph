@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -h | --help)
       echo "Usage: $0 [--backend-only | --frontend-only]"
-      echo "Mirrors .github/workflows/ci.yml locally (conda python313 + frontend npm)."
+      echo "Mirrors .github/workflows/ci.yml locally (conda python313, frontend, chrome-extension, word-addin)."
       exit 0
       ;;
     *)
@@ -100,6 +100,9 @@ run_backend() {
   cd "${REPO_ROOT}"
   activate_python313
   warn_missing_libzbar
+  if [[ -z "${DATABASE_URL:-}" ]]; then
+    export DATABASE_URL="postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
+  fi
 
   log "Ruff (lint + format)"
   ruff check .
@@ -130,7 +133,8 @@ run_backend() {
   PYTHONPATH=. python scripts/check_privacy_policy_crawlable.py
 
   log "Pylint (full Python tree; minimal policy disables)"
-  python -m pylint services routers agents clients config utils scripts tests tasks alembic/env.py \
+  python -m pylint services routers agents clients config utils scripts tests tasks \
+    models uvicorn_config.py alembic/env.py \
     --fail-under=10.0
 
   log "Pytest (focused + collab)"
@@ -323,6 +327,9 @@ run_frontend() {
   log "npm audit (high severity)"
   npm audit --audit-level=high
 
+  log "Typecheck (vue-tsc)"
+  npm run check:types
+
   log "Vitest (workshop reconnect + diagram meta + classroom)"
   npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts \
     tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts \
@@ -424,6 +431,15 @@ run_chrome_extension() {
   npm test
 }
 
+run_word_addin() {
+  log "=== word-addin (manifest checks) ==="
+  activate_frontend_node
+  cd "${REPO_ROOT}/word-addin"
+
+  log "Manifest checks"
+  node scripts/validate-manifest.mjs
+}
+
 if [[ "${RUN_BACKEND}" -eq 1 ]]; then
   run_backend
 fi
@@ -431,6 +447,7 @@ fi
 if [[ "${RUN_FRONTEND}" -eq 1 ]]; then
   run_frontend
   run_chrome_extension
+  run_word_addin
 fi
 
 log "OK — local CI passed (same steps as .github/workflows/ci.yml)"

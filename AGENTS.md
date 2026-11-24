@@ -47,7 +47,7 @@ During development, scoped runs are OK when the diff is clearly one side: `--bac
 
 Follow PEP 8. Fix **all** pylint and basedpyright findings — no inline suppressions.
 
-- **Pylint:** full Python tree with minimal `[tool.pylint.messages_control].disable` (`duplicate-code`, `too-few-public-methods`, `arguments-renamed`, `too-many-positional-arguments`).
+- **Pylint:** application tree (`services`, `routers`, `agents`, `clients`, `config`, `utils`, `scripts`, `tests`, `tasks`, `models`, `uvicorn_config.py`, `alembic/env.py`) with minimal `[tool.pylint.messages_control].disable` (`duplicate-code`, `too-few-public-methods`, `arguments-renamed`, `too-many-positional-arguments`). `prompts/`, `alembic/versions/`, `esp32/`, and `archive/` stay out. `repositories/` and `main.py` stay out: repository modules are still under the docstring bar, and `main.py` imports are ordered around startup side effects.
 - **Four hardening rules** (always on): `global-statement`, `protected-access`, `broad-except`, `import-outside-toplevel`.
 - **Never** use `# pylint: disable`, `# noqa`, or `# type: ignore` — use structural fixes (holder singletons, cycle splits, narrow exception tuples from `services/utils/error_types.py`).
 - Do not add project-wide `report* = "none"` suppressions in `pyproject.toml`.

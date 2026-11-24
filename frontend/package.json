@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.228",
+  "version": "5.180.229",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -19,9 +19,10 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{vue,ts,js,json,css,scss}\"",
     "format:check": "prettier --check \"src/**/*.{vue,ts,js,json,css,scss}\"",
-    "check": "node --max-old-space-size=4096 node_modules/vue-tsc/bin/vue-tsc.js --noEmit && npm run lint && npm run format:check",
+    "check:types": "node --max-old-space-size=4096 node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
+    "check": "npm run check:types && npm run lint && npm run format:check",
     "check:fix": "npm run fix && npm run check",
-    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && node scripts/check-i18n-translated-banners.ts && node scripts/check-lazy-locale-loaders.ts && node scripts/codemod-bilingual-template.mjs --check && node scripts/codemod-bilingual-notify.mjs --check && python3 scripts/_audit_brand_locale_keys.py && npm run check:sidebar-quotes && npm run check:china-geo && npm run check:pwa-workbox && npm run check:pdf-worker",
+    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && node scripts/check-i18n-translated-banners.ts && node scripts/check-lazy-locale-loaders.ts && node scripts/check-i18n-picker-stubs.ts --strict && node scripts/codemod-bilingual-template.mjs --check && node scripts/codemod-bilingual-notify.mjs --check && python3 scripts/_audit_brand_locale_keys.py && python3 ../scripts/check_prompt_output_languages_sync.py && npm run check:sidebar-quotes && npm run check:china-geo && npm run check:pwa-workbox && npm run check:pdf-worker",
     "check:dep0205": "node scripts/check-dep0205.mjs",
     "check:vueuse-pure": "node scripts/check-vueuse-pure-annotations.mjs",
     "postinstall": "node scripts/ensure-cross-platform-native-deps.mjs",
@@ -34,7 +35,7 @@
     "i18n:translate-from-en": "node scripts/translate-ui-locales-from-en.ts",
     "i18n:gap-fill": "node scripts/i18n-gap-fill-via-host.mjs",
     "i18n:check-prompts": "cd .. && python scripts/check_prompt_output_languages_sync.py",
-    "i18n:check": "npm run i18n:check-banners && npm run i18n:check-keys && npm run i18n:check-lazy-loaders && npm run i18n:check-prompts",
+    "i18n:check": "npm run i18n:check-banners && npm run i18n:check-keys && npm run i18n:check-lazy-loaders && npm run i18n:check-picker-stubs -- --strict && npm run i18n:check-prompts",
     "i18n:verify-keyboard": "node scripts/verify-keyboard-layout-map.ts",
     "audit:element-plus": "node scripts/audit-element-plus-usage.ts",
     "import:sidebar-quotes": "node scripts/import-sidebar-quotes/index.ts",

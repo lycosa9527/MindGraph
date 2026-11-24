@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.229] - 2026-11-24
+
+> **CI typechecks the frontend, scores models with pylint, and checks the Word add-in manifest and picker translations.**
+
+### Added
+
+- **Frontend typecheck** — GitHub Actions and [`scripts/ci-local.sh`](scripts/ci-local.sh) run `vue-tsc` (`npm run check:types`) before the curated Vitest list.
+- **Pylint** — [`models/`](models/) and [`uvicorn_config.py`](uvicorn_config.py) are included in the pylint score.
+- **Word add-in** — CI runs [`word-addin/scripts/validate-manifest.mjs`](word-addin/scripts/validate-manifest.mjs).
+- **Locale gates** — `check:scripts` fails when a picker language still has the English stub, or when prompt language codes disagree across JSON, TypeScript, and Python.
+
+### Changed
+
+- **Local CI database URL** — When `DATABASE_URL` is unset, the local script uses the same dummy URL as GitHub.
+- **ESLint ignores** — Generated `frontend/dev-dist/` and `frontend/coverage/` are ignored.
+
 ## [5.180.228] - 2026-11-24
 
 > **Settings adds Khmer, Lao, and Burmese. Picker languages that were still English are filled from Simplified Chinese.**

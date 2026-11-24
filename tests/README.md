@@ -17,7 +17,7 @@ Pytest collects `tests/`. Vitest collects `frontend/tests/`. Both trees stay fla
 | `tests/fixtures/` | Shared JSON fixtures |
 | `frontend/tests/*.spec.ts` | Vue and TypeScript specs |
 
-`tests/conftest.py` sets a local `DATABASE_URL` default and installs the Redis 8 feature stub before models import. Markers include `integration` for tests that need a live LLM or Redis.
+`tests/conftest.py` sets a local `DATABASE_URL` default and installs the Redis 8 feature stub before models import. Markers include `integration` for tests that need a live LLM or Redis. CI runs a curated pytest list because many HTTP tests open the app database.
 
 ## Run
 
