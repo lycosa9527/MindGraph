@@ -25,6 +25,8 @@ from utils.db_rls.policy_builder import (
     MAITE_TASK_REFERENCE_EXPR,
     MINDMATE_COLLAB_FILE_CHECK,
     MINDMATE_COLLAB_FILE_EXPR,
+    MINDMATE_COLLAB_HIGHLIGHT_CHECK,
+    MINDMATE_COLLAB_HIGHLIGHT_EXPR,
     MINDMATE_COLLAB_MEMBER_EXPR,
     USER_OWNED_EXPR,
     all_rls_tables,
@@ -131,6 +133,7 @@ _ONE_OFF_TABLES = (
     "diagram_shares",
     *_CLASSROOM_TABLES,
     "mindmate_seminar_background_files",
+    "mindmate_seminar_highlights",
     "mindmate_seminar_members",
     "organization_expert_bindings",
     *_COIN_TABLES,
@@ -205,6 +208,12 @@ def _reapply_one_off_policies() -> None:
         "mindmate_seminar_background_files_tenant",
         MINDMATE_COLLAB_FILE_EXPR,
         MINDMATE_COLLAB_FILE_CHECK,
+    )
+    _policy_all(
+        "mindmate_seminar_highlights",
+        "mindmate_seminar_highlights_tenant",
+        MINDMATE_COLLAB_HIGHLIGHT_EXPR,
+        MINDMATE_COLLAB_HIGHLIGHT_CHECK,
     )
     _policy_all("diagram_shares", "diagram_shares_all", _SHARE_ACCESS)
     for table in _FOLDER_TABLES:

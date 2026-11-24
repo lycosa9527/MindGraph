@@ -87,8 +87,8 @@ def message_mentions_mindmate(content: str, agent_aliases: Iterable[str] = ()) -
     return False
 
 
-def extract_mindmate_query(content: str, agent_aliases: Iterable[str] = ()) -> str:
-    """Strip @MindMate / agent mentions and return the question for Dify."""
+def strip_mindmate_mentions(content: str, agent_aliases: Iterable[str] = ()) -> str:
+    """Remove @MindMate / alias tokens. Empty when the line was only a mention."""
     text = (content or "").strip()
     if not text:
         return text
@@ -97,4 +97,19 @@ def extract_mindmate_query(content: str, agent_aliases: Iterable[str] = ()) -> s
         pattern = _alias_pattern(alias)
         if pattern:
             text = pattern.sub("", text).strip()
+    return text
+
+
+def extract_mindmate_query(content: str, agent_aliases: Iterable[str] = ()) -> str:
+    """Strip @MindMate / agent mentions and return the question for Dify."""
+    text = strip_mindmate_mentions(content, agent_aliases)
     return text or (content or "").strip()
+
+
+def format_speaker_query(speaker_name: str | None, query: str) -> str:
+    """Prefix the Dify line with who asked, so the room is not one anonymous you."""
+    text = (query or "").strip()
+    name = (speaker_name or "").strip()
+    if not text or not name:
+        return text
+    return f"{name}：{text}"

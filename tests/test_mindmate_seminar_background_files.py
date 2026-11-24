@@ -12,7 +12,10 @@ from services.features.mindmate_seminar.background_files import (
     safe_background_filename,
     store_background_bytes,
 )
-from services.features.mindmate_seminar.message_files import strip_seminar_message_file_tokens
+from services.features.mindmate_seminar.message_files import (
+    extract_seminar_message_file_ids,
+    strip_seminar_message_file_tokens,
+)
 from services.features.mindmate_seminar.seminar_file_storage import (
     delete_seminar_bytes_sync,
     mirror_local_seminar_file_sync,
@@ -23,9 +26,20 @@ from services.features.mindmate_seminar.seminar_file_storage import (
 
 
 def test_strip_seminar_message_file_tokens_keeps_typed_text() -> None:
-    """Chat attachments stay out of the prompt MindMate reads."""
+    """File tokens are removed from the typed question; ids are parsed separately."""
     raw = "看一下这份讲义\n\n[[sf:11111111-1111-1111-1111-111111111111|notes.pdf]]"
     assert strip_seminar_message_file_tokens(raw) == "看一下这份讲义"
+    assert extract_seminar_message_file_ids(raw) == ["11111111-1111-1111-1111-111111111111"]
+    assert not extract_seminar_message_file_ids("no files")
+    duplicated = (
+        "[[sf:11111111-1111-1111-1111-111111111111|a.docx]]\n"
+        "[[sf:22222222-2222-2222-2222-222222222222|b.pdf]]\n"
+        "[[sf:11111111-1111-1111-1111-111111111111|a.docx]]"
+    )
+    assert extract_seminar_message_file_ids(duplicated) == [
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ]
 
 
 def test_safe_background_filename_drops_directories() -> None:

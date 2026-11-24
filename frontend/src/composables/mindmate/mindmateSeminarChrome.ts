@@ -8,7 +8,19 @@ import { clearSeminarGroupRoster } from '@/composables/mindmate/seminarGroupRost
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { pinSeminarRoster } from '@/composables/mindmate/useMindmateSeminarFaces'
 import type { SeminarFace } from '@/utils/mindmateSeminarFaces'
-import type { SeminarBackgroundFile } from '@/utils/mindmateSeminarFolder'
+import {
+  type SeminarBackgroundFile,
+  listSeminarReplyArtifacts,
+} from '@/utils/mindmateSeminarFolder'
+import {
+  MAX_SEMINAR_HIGHLIGHT_TEXT,
+  type SeminarHighlight,
+  createSeminarHighlightApi,
+  deleteSeminarHighlightApi,
+  highlightDedupeKey,
+  listSeminarHighlightsApi,
+  mergeSeminarHighlights,
+} from '@/utils/mindmateSeminarHighlights'
 
 export type SeminarTaskPaneTab = 'members' | 'files' | 'artifacts' | 'highlights'
 
@@ -90,6 +102,12 @@ export const seminarComposerAttachments = ref<SeminarComposerAttachment[]>([])
 
 const DOC_PANE_MIN = 320
 const DOC_PANE_MAX = 1400
+/** Right icon rail in the seminar task pane. */
+export const SEMINAR_TASK_RAIL_PX = 58
+/** Members / files / artifacts / highlights drawer. */
+export const SEMINAR_TASK_DRAWER_PX = 320
+export const SEMINAR_CHAT_MIN_READING_PX = 300
+export const SEMINAR_CHAT_MIN_DEFAULT_PX = 280
 /** Remember which drawer to restore after leaving reading mode. */
 const seminarTaskPaneBeforeDoc = ref<SeminarTaskPaneTab | null>(null)
 
@@ -138,16 +156,7 @@ export function closeSeminarTaskDrawer(): void {
   seminarTaskPaneTab.value = null
 }
 
-export interface SeminarHighlight {
-  id: string
-  text: string
-  authorName: string
-  messageId: number | null
-  createdAt: string
-  createdByUserId?: number | null
-  createdByName?: string
-  messageAt?: string
-}
+export type { SeminarHighlight }
 
 let messageLocator: ((messageId: number) => void) | null = null
 
@@ -172,7 +181,7 @@ export interface SeminarHighlightNotice {
   shelf?: 'resource' | 'artifact'
 }
 
-/** Group highlights pinned from chat (local to this browser until a server API exists). */
+/** Group highlights pinned from chat. Loaded from the seminar API. */
 export const seminarHighlights = ref<SeminarHighlight[]>([])
 /** Set / cancel tips shown in the transcript (local to this browser). */
 export const seminarHighlightNotices = ref<SeminarHighlightNotice[]>([])
@@ -197,65 +206,134 @@ function highlightNoticesStorageKey(sessionId: string): string {
   return `mindmate.seminar.highlightNotices.${sessionId}`
 }
 
-export function loadSeminarHighlights(sessionId: string): void {
+let highlightsLoadToken = 0
+
+function readLocalHighlights(sessionId: string): SeminarHighlight[] {
+  try {
+    const raw = localStorage.getItem(highlightsStorageKey(sessionId))
+    const parsed = raw ? (JSON.parse(raw) as SeminarHighlight[]) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function dropLocalHighlights(sessionId: string): void {
+  try {
+    localStorage.removeItem(highlightsStorageKey(sessionId))
+  } catch {
+    /* private mode */
+  }
+}
+
+export function upsertSeminarHighlight(item: SeminarHighlight): void {
+  const rest = seminarHighlights.value.filter((row) => row.id !== item.id)
+  seminarHighlights.value = [item, ...rest]
+}
+
+export function dropSeminarHighlight(id: string): void {
+  seminarHighlights.value = seminarHighlights.value.filter((row) => row.id !== id)
+}
+
+export function applyRemoteSeminarHighlight(
+  action: 'set' | 'cancel',
+  highlight: SeminarHighlight
+): void {
+  if (action === 'cancel') {
+    dropSeminarHighlight(highlight.id)
+    return
+  }
+  upsertSeminarHighlight(highlight)
+}
+
+export async function loadSeminarHighlights(sessionId: string): Promise<void> {
+  const token = ++highlightsLoadToken
   if (!sessionId) {
     seminarHighlights.value = []
     seminarHighlightNotices.value = []
     return
-  }
-  try {
-    const raw = localStorage.getItem(highlightsStorageKey(sessionId))
-    const parsed = raw ? (JSON.parse(raw) as SeminarHighlight[]) : []
-    seminarHighlights.value = Array.isArray(parsed) ? parsed : []
-  } catch {
-    seminarHighlights.value = []
   }
   try {
     const rawNotices = localStorage.getItem(highlightNoticesStorageKey(sessionId))
     const parsedNotices = rawNotices ? (JSON.parse(rawNotices) as SeminarHighlightNotice[]) : []
-    seminarHighlightNotices.value = Array.isArray(parsedNotices) ? parsedNotices : []
+    if (token === highlightsLoadToken) {
+      seminarHighlightNotices.value = Array.isArray(parsedNotices) ? parsedNotices : []
+    }
   } catch {
-    seminarHighlightNotices.value = []
+    if (token === highlightsLoadToken) {
+      seminarHighlightNotices.value = []
+    }
   }
-}
-
-function persistSeminarHighlights(sessionId: string): void {
-  if (!sessionId) {
-    return
-  }
+  const leftovers = readLocalHighlights(sessionId)
   try {
-    localStorage.setItem(highlightsStorageKey(sessionId), JSON.stringify(seminarHighlights.value))
+    const remote = await listSeminarHighlightsApi(sessionId)
+    if (token !== highlightsLoadToken) {
+      return
+    }
+    seminarHighlights.value = mergeSeminarHighlights(remote, leftovers)
+    let migrateOk = true
+    const remoteKeys = new Set(remote.map(highlightDedupeKey))
+    for (const item of leftovers) {
+      if (!item.text.trim() || remoteKeys.has(highlightDedupeKey(item))) {
+        continue
+      }
+      try {
+        const saved = await createSeminarHighlightApi(sessionId, {
+          text: item.text,
+          authorName: item.authorName,
+          createdByName: item.createdByName,
+          messageId: item.messageId,
+          messageAt: item.messageAt,
+        })
+        if (token !== highlightsLoadToken) {
+          return
+        }
+        upsertSeminarHighlight(saved)
+        remoteKeys.add(highlightDedupeKey(saved))
+      } catch {
+        migrateOk = false
+      }
+    }
+    if (migrateOk) {
+      dropLocalHighlights(sessionId)
+    }
   } catch {
-    /* private mode / quota */
+    if (token === highlightsLoadToken) {
+      seminarHighlights.value = leftovers
+    }
   }
 }
 
-export function addSeminarHighlight(
+export async function addSeminarHighlight(
   sessionId: string,
   entry: Omit<SeminarHighlight, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
-): SeminarHighlight | null {
-  const item: SeminarHighlight = {
-    id: entry.id || `hl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    text: entry.text.trim(),
-    authorName: entry.authorName,
-    messageId: entry.messageId,
-    createdAt: entry.createdAt || new Date().toISOString(),
-    createdByUserId: entry.createdByUserId ?? null,
-    createdByName: entry.createdByName?.trim() || '',
-    messageAt: entry.messageAt || '',
-  }
-  if (!item.text) {
+): Promise<SeminarHighlight | null> {
+  const text = entry.text.trim()
+  if (!sessionId || !text) {
     return null
   }
   const duplicate = seminarHighlights.value.some(
-    (row) => row.text === item.text && row.messageId === item.messageId
+    (row) =>
+      row.text === text &&
+      row.messageId === entry.messageId &&
+      (entry.createdByUserId == null || row.createdByUserId === entry.createdByUserId)
   )
   if (duplicate) {
     return null
   }
-  seminarHighlights.value = [item, ...seminarHighlights.value]
-  persistSeminarHighlights(sessionId)
-  return item
+  try {
+    const saved = await createSeminarHighlightApi(sessionId, {
+      text: text.slice(0, MAX_SEMINAR_HIGHLIGHT_TEXT),
+      authorName: entry.authorName,
+      createdByName: entry.createdByName,
+      messageId: entry.messageId,
+      messageAt: entry.messageAt,
+    })
+    upsertSeminarHighlight(saved)
+    return saved
+  } catch {
+    return null
+  }
 }
 
 function persistHighlightNotices(sessionId: string): void {
@@ -293,9 +371,14 @@ export function pushSeminarHighlightNotice(
   persistHighlightNotices(sessionId)
 }
 
-export function removeSeminarHighlight(sessionId: string, id: string): void {
-  seminarHighlights.value = seminarHighlights.value.filter((row) => row.id !== id)
-  persistSeminarHighlights(sessionId)
+export async function removeSeminarHighlight(sessionId: string, id: string): Promise<void> {
+  const previous = seminarHighlights.value
+  dropSeminarHighlight(id)
+  try {
+    await deleteSeminarHighlightApi(sessionId, id)
+  } catch {
+    seminarHighlights.value = previous
+  }
 }
 
 function enterReadingMode(): void {
@@ -410,6 +493,16 @@ export function clampSeminarDocPaneWidth(width: number): number {
   return Math.min(DOC_PANE_MAX, Math.max(DOC_PANE_MIN, Math.round(width)))
 }
 
+/** Max document-pane width that still leaves chat + rail (+ open drawer) on screen. */
+export function seminarDocPaneBudget(
+  shellWidth: number,
+  options: { drawerOpen: boolean; reading: boolean }
+): number {
+  const chatMin = options.reading ? SEMINAR_CHAT_MIN_READING_PX : SEMINAR_CHAT_MIN_DEFAULT_PX
+  const drawer = options.drawerOpen ? SEMINAR_TASK_DRAWER_PX : 0
+  return Math.max(DOC_PANE_MIN, Math.round(shellWidth - chatMin - SEMINAR_TASK_RAIL_PX - drawer))
+}
+
 export function setSeminarDocPaneWidth(width: number, remember = true): void {
   const next = clampSeminarDocPaneWidth(width)
   seminarDocPaneWidthPx.value = next
@@ -429,6 +522,29 @@ export function replaceSeminarServerArtifacts(rows: SeminarBackgroundFile[]): vo
     (row) => !rows.some((item) => item.id === row.id)
   )
   seminarServerArtifacts.value = [...extras, ...rows]
+}
+
+let artifactLoadToken = 0
+
+export async function loadSeminarServerArtifacts(sessionId: string): Promise<void> {
+  const token = ++artifactLoadToken
+  const id = sessionId.trim()
+  if (!id) {
+    clearSeminarServerArtifacts()
+    return
+  }
+  try {
+    const rows = await listSeminarReplyArtifacts(id)
+    if (token !== artifactLoadToken) {
+      return
+    }
+    replaceSeminarServerArtifacts(rows)
+    seminarArtifactsReady.value = true
+  } catch {
+    if (token === artifactLoadToken) {
+      seminarArtifactsReady.value = true
+    }
+  }
 }
 
 export function upsertSeminarServerArtifact(row: SeminarBackgroundFile): void {
@@ -451,6 +567,8 @@ export function closeSeminarChrome(): void {
   seminarTaskPaneTab.value = null
   clearSeminarCitations()
   clearSeminarServerArtifacts()
+  seminarHighlights.value = []
+  seminarHighlightNotices.value = []
   clearSeminarGroupRoster()
   seminarSpectator.value = false
   seminarMentionRequest.value = null

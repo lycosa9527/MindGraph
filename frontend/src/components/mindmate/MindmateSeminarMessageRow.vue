@@ -11,13 +11,13 @@ import { storeToRefs } from 'pinia'
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import seminarAssistantAvatar from '@/assets/seminar/seminar-assistant.svg'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
-import MindmateSeminarAssistantToolbar from '@/components/mindmate/MindmateSeminarAssistantToolbar.vue'
-import MindmateSeminarMessageStamp from '@/components/mindmate/MindmateSeminarMessageStamp.vue'
 import MindmateMentionMenu from '@/components/mindmate/MindmateMentionMenu.vue'
+import MindmateSeminarAssistantToolbar from '@/components/mindmate/MindmateSeminarAssistantToolbar.vue'
 import MindmateSeminarBubbleActions from '@/components/mindmate/MindmateSeminarBubbleActions.vue'
 import MindmateSeminarDiagramCard from '@/components/mindmate/MindmateSeminarDiagramCard.vue'
 import MindmateSeminarFileCard from '@/components/mindmate/MindmateSeminarFileCard.vue'
 import MindmateSeminarInfoCard from '@/components/mindmate/MindmateSeminarInfoCard.vue'
+import MindmateSeminarMessageStamp from '@/components/mindmate/MindmateSeminarMessageStamp.vue'
 import MindmateSeminarSummaryCard from '@/components/mindmate/MindmateSeminarSummaryCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -34,23 +34,31 @@ import {
   requestSeminarMention,
   seminarArtifactsReady,
   seminarFileDocId,
-  seminarOfficePreviewFileId,
   seminarHighlights,
+  seminarOfficePreviewFileId,
   seminarServerArtifacts,
   seminarSpectator,
   upsertSeminarServerArtifact,
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import { seminarGroupMembers } from '@/composables/mindmate/seminarGroupRoster'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
-import {
-  type SeminarBriefRole,
-  isSeminarBuiltinRole,
-} from '@/utils/mindmateSeminarBrief'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useTeachingDesignExportStore } from '@/stores/teachingDesignExport'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
+import {
+  extractFirstMarkdownImageUrl,
+  extractMindmatePreviewUniqueId,
+  hasGeneratedDiagramImage,
+  parseMindmateDiagramLibraryId,
+} from '@/utils/mindmateDiagramMeta'
+import { type SeminarBriefRole, isSeminarBuiltinRole } from '@/utils/mindmateSeminarBrief'
+import {
+  type SeminarBriefEditPayload,
+  parseSeminarBriefCard,
+  parseSeminarSummaryCard,
+} from '@/utils/mindmateSeminarCards'
 import {
   collabDiagramSaveFailureKey,
   saveCollabDiagramToLibrary,
@@ -63,18 +71,6 @@ import {
   displayMindmateSeminarContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateSeminarDisplay'
-import { type CollabReadCursor, formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
-import {
-  extractFirstMarkdownImageUrl,
-  extractMindmatePreviewUniqueId,
-  hasGeneratedDiagramImage,
-  parseMindmateDiagramLibraryId,
-} from '@/utils/mindmateDiagramMeta'
-import {
-  type SeminarBriefEditPayload,
-  parseSeminarBriefCard,
-  parseSeminarSummaryCard,
-} from '@/utils/mindmateSeminarCards'
 import {
   archiveSeminarReplyDocx,
   fetchSeminarBackgroundBlob,
@@ -82,6 +78,8 @@ import {
   seminarBubblePlainText,
   splitSeminarMessageFiles,
 } from '@/utils/mindmateSeminarFolder'
+import { MAX_SEMINAR_HIGHLIGHT_TEXT } from '@/utils/mindmateSeminarHighlights'
+import { type CollabReadCursor, formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 import {
   TEACHING_INSTRUCTION_KIND,
   stripTeachingDesignFlags,
@@ -333,32 +331,30 @@ const highlightState = computed<'none' | 'mine' | 'other'>(() => {
   return 'other'
 })
 
-function pinHighlight(): void {
+async function pinHighlight(): Promise<void> {
   const sessionId = props.sessionId?.trim()
-  if (!sessionId || highlightState.value === 'other') {
+  if (!sessionId || seminarSpectator.value) {
     return
   }
   if (highlightState.value === 'mine') {
     const mine = messageHighlights.value.filter((item) => item.createdByUserId === selfUserId.value)
-    for (const item of mine) {
-      removeSeminarHighlight(sessionId, item.id)
-    }
+    await Promise.all(mine.map((item) => removeSeminarHighlight(sessionId, item.id)))
     pushSeminarHighlightNotice(sessionId, {
       kind: 'cancel',
-      ownMessage: props.isOwn,
-      authorName: authorLabel(),
+      ownMessage: false,
+      authorName: authStore.user?.username || t('mindmate.highlights.you'),
     })
     return
   }
   const selection = window.getSelection()?.toString().trim() || ''
   const anchor = window.getSelection()?.anchorNode
   const inBubble = Boolean(selection && bubbleEl.value && anchor && bubbleEl.value.contains(anchor))
-  const text = inBubble ? selection : messageBody.value.text
+  const text = inBubble ? selection : seminarBubblePlainText(messageBody.value.text)
   if (!text) {
     return
   }
-  const added = addSeminarHighlight(sessionId, {
-    text: text.slice(0, 2000),
+  const added = await addSeminarHighlight(sessionId, {
+    text: text.slice(0, MAX_SEMINAR_HIGHLIGHT_TEXT),
     authorName: authorLabel(),
     messageId: props.message.id ?? null,
     createdByUserId: selfUserId.value || null,
@@ -370,8 +366,8 @@ function pinHighlight(): void {
   }
   pushSeminarHighlightNotice(sessionId, {
     kind: 'set',
-    ownMessage: props.isOwn,
-    authorName: authorLabel(),
+    ownMessage: false,
+    authorName: authStore.user?.username || t('mindmate.highlights.you'),
   })
   openSeminarTaskPane('highlights')
   notify.successKey('mindmate.highlights.added')

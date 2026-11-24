@@ -21,6 +21,7 @@ from clients.dify_http_errors import (
 from services.diagram.generation_session_registry import register_generation_session
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
+from services.features.mindmate_seminar.cited_files import bind_cited_files_for_dify
 from services.features.mindmate_seminar.config import (
     MINDMATE_COLLAB_STREAM_FLUSH_CHARS,
     MINDMATE_COLLAB_STREAM_FLUSH_MS,
@@ -165,6 +166,8 @@ async def stream_assistant_reply(
     sender_user_id: int,
     conversation_id: Optional[str],
     conversation_server: Optional[int] = None,
+    speaker_name: Optional[str] = None,
+    file_ids: Optional[list[str]] = None,
 ) -> None:
     """Background task: call Dify and fan-out chunks to the room."""
     mgr = get_mindmate_seminar_manager()
@@ -210,14 +213,34 @@ async def stream_assistant_reply(
         if stream_target.notify_backup:
             await broadcast_to_all(code, {"type": "mindmate_failover"})
         collab_inputs: dict[str, Any] = {"mg_dify_user": dify_user}
+        speaker = (speaker_name or "").strip()
+        if speaker:
+            collab_inputs["mg_speaker_name"] = speaker
         if conversation_id:
             collab_inputs["mg_conversation_id"] = conversation_id
         await apply_persona_inputs_for_organization_id(collab_inputs, org_id)
+        query = user_message
+        dify_files = None
+        if file_ids:
+            bound = await bind_cited_files_for_dify(
+                session_id=session_id,
+                file_ids=file_ids,
+                client=client,
+                dify_user=dify_user,
+            )
+            if bound.excerpt:
+                if user_message.strip():
+                    query = f"{user_message}\n\n{bound.excerpt}"
+                else:
+                    query = bound.excerpt
+            if bound.dify_files:
+                dify_files = bound.dify_files
         stream = client.stream_chat(
-            message=user_message,
+            message=query,
             user_id=dify_user,
             conversation_id=stream_target.upstream_conversation_id,
             inputs=collab_inputs,
+            files=dify_files,
         )
         quiet_abort_at = time.monotonic() + _QUIET_UPSTREAM_WAIT_SECONDS
         async for chunk in iter_upstream_with_keepalive(
@@ -363,6 +386,8 @@ def schedule_assistant_reply(
     sender_user_id: int,
     conversation_id: Optional[str],
     conversation_server: Optional[int] = None,
+    speaker_name: Optional[str] = None,
+    file_ids: Optional[list[str]] = None,
 ) -> None:
     """Start a background Dify stream task for the room."""
     norm = normalize_collab_code(code)
@@ -375,6 +400,8 @@ def schedule_assistant_reply(
             sender_user_id=sender_user_id,
             conversation_id=conversation_id,
             conversation_server=conversation_server,
+            speaker_name=speaker_name,
+            file_ids=list(file_ids or []),
         ),
         name=f"mindmate-seminar-dify:{norm}",
     )

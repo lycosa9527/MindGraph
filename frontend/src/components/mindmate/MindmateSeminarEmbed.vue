@@ -3,18 +3,21 @@
  * MindMate collab layout — chat | optional doc viewer | right task pane.
  * Reading mode collapses the task drawer so only chat + document share the row.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import MindmateSeminarRoom from '@/components/mindmate/MindmateSeminarRoom.vue'
 import MindmateDmDrawer from '@/components/mindmate/MindmateDmDrawer.vue'
 import MindmateSeminarDocViewer from '@/components/mindmate/MindmateSeminarDocViewer.vue'
+import MindmateSeminarRoom from '@/components/mindmate/MindmateSeminarRoom.vue'
 import MindmateSeminarTaskPane from '@/components/mindmate/MindmateSeminarTaskPane.vue'
 import {
+  SEMINAR_TASK_RAIL_PX,
   closeSeminarChrome,
   seminarDocFullscreen,
+  seminarDocPaneBudget,
   seminarDocPaneWidthPreferred,
   seminarDocPaneWidthPx,
   seminarDocViewerOpen,
+  seminarTaskPaneOpen,
   setSeminarDocPaneWidth,
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import {
@@ -69,18 +72,31 @@ const emit = defineEmits<{
   (e: 'topicChange', topic: string): void
 }>()
 
-const RAIL_WIDTH = 56
-const CHAT_MIN_READING = 300
-const CHAT_MIN_DEFAULT = 280
-
 const sessionId = ref('')
 const shellRef = ref<HTMLElement | null>(null)
+const shellWidth = ref(0)
 const resizing = ref(false)
+let shellObserver: ResizeObserver | null = null
 
-const viewerStyle = computed(() => ({
-  width: `${seminarDocPaneWidthPx.value}px`,
-  flex: `0 0 ${seminarDocPaneWidthPx.value}px`,
-}))
+const reading = computed(() => seminarDocViewerOpen.value)
+
+const docPaneMaxPx = computed(() =>
+  seminarDocPaneBudget(shellWidth.value || 0, {
+    drawerOpen: seminarTaskPaneOpen.value,
+    reading: reading.value,
+  })
+)
+
+const docPaneWidthPx = computed(() => Math.min(seminarDocPaneWidthPx.value, docPaneMaxPx.value))
+
+const viewerStyle = computed(() => {
+  const width = docPaneWidthPx.value
+  return {
+    width: `${width}px`,
+    maxWidth: `${width}px`,
+    flex: `0 1 ${width}px`,
+  }
+})
 
 watch(
   () => props.roomCode,
@@ -104,21 +120,36 @@ watch(
   }
 )
 
+function measureShell(): void {
+  const width = shellRef.value?.clientWidth ?? 0
+  if (width > 0) {
+    shellWidth.value = width
+  }
+}
+
 watch(seminarDocViewerOpen, (open, wasOpen) => {
+  measureShell()
   if (open && !wasOpen && !seminarDocPaneWidthPreferred.value) {
     fitDocWidthForReading()
   }
+})
+
+watch(seminarTaskPaneOpen, () => {
+  measureShell()
 })
 
 const dmPartnerId = ref<number | null>(null)
 const showDm = ref(false)
 
 function fitDocWidthForReading(): void {
-  const shellWidth = shellRef.value?.clientWidth ?? window.innerWidth
-  const available = Math.max(0, shellWidth - RAIL_WIDTH)
+  measureShell()
+  const available = Math.max(0, (shellWidth.value || window.innerWidth) - SEMINAR_TASK_RAIL_PX)
   // First open only: reading-first split. Later widths come from user preference.
   const ideal = Math.round(available * 0.58)
-  const maxWidth = Math.max(320, available - CHAT_MIN_READING)
+  const maxWidth = seminarDocPaneBudget(shellWidth.value || window.innerWidth, {
+    drawerOpen: seminarTaskPaneOpen.value,
+    reading: true,
+  })
   setSeminarDocPaneWidth(Math.min(maxWidth, Math.max(ideal, 520)), true)
 }
 
@@ -153,12 +184,14 @@ function onSplitPointerDown(event: PointerEvent): void {
   resizing.value = true
   const startX = event.clientX
   const startWidth = seminarDocPaneWidthPx.value
-  const shellWidth = shellRef.value?.clientWidth ?? window.innerWidth
-  const chatMin = seminarDocViewerOpen.value ? CHAT_MIN_READING : CHAT_MIN_DEFAULT
+  measureShell()
 
   const onMove = (ev: PointerEvent): void => {
     const delta = startX - ev.clientX
-    const maxWidth = Math.max(320, shellWidth - chatMin - RAIL_WIDTH)
+    const maxWidth = seminarDocPaneBudget(shellWidth.value || window.innerWidth, {
+      drawerOpen: seminarTaskPaneOpen.value,
+      reading: reading.value,
+    })
     setSeminarDocPaneWidth(Math.min(maxWidth, startWidth + delta))
   }
 
@@ -175,8 +208,21 @@ function onSplitPointerDown(event: PointerEvent): void {
   handle.addEventListener('pointercancel', onUp)
 }
 
+onMounted(() => {
+  measureShell()
+  if (typeof ResizeObserver === 'undefined' || !shellRef.value) {
+    return
+  }
+  shellObserver = new ResizeObserver(() => {
+    measureShell()
+  })
+  shellObserver.observe(shellRef.value)
+})
+
 onBeforeUnmount(() => {
   resizing.value = false
+  shellObserver?.disconnect()
+  shellObserver = null
 })
 </script>
 
@@ -261,6 +307,10 @@ onBeforeUnmount(() => {
   min-width: 280px;
 }
 
+.mindmate-seminar-embed :deep(.mm-task-pane) {
+  z-index: 4;
+}
+
 .mindmate-seminar-embed.is-doc-fullscreen .mindmate-seminar-embed__main,
 .mindmate-seminar-embed.is-doc-fullscreen .mm-split-handle,
 .mindmate-seminar-embed.is-doc-fullscreen :deep(.mm-task-pane) {
@@ -324,6 +374,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-width: 320px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 </style>

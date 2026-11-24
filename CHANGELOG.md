@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.231] - 2026-11-25
+
+> **Seminar rooms read cited documents, keep the live roster on the brief, and show highlights and artifacts to every member.**
+
+### Fixed
+
+- **Cited resources** — Citing a shelf file into chat now sends the file id. MindMate extracts Word / PDF / txt body text and uploads the file to Dify, instead of answering from the filename only.
+- **MindMate in the room** — Any member's `@MindMate` starts the shared reply. The prompt names the speaker so the assistant does not treat everyone as 你.
+- **Artifacts** — Members who join later still load 产物, including diagrams that only have a canvas id.
+- **Document pane** — Opening a file no longer clips the right-hand 引用 / 下载 / 全屏 controls when the task rail and drawer are open.
+- **Highlights** — 群精华 cards stay a short preview; 展开 opens the full text in a centered dialog. Highlights persist across logins and are visible to every member. Migration `0176` adds `mindmate_seminar_highlights`.
+- **Brief roster** — Adding or changing 参与人员 during a live seminar rewrites the pinned 教研信息 people line from the live roster.
+
+### Added
+
+- **Office preview fallback** — When LibreOffice is missing, Word / PowerPoint / Excel still open as extracted text.
+
+### Tests
+
+- [`tests/test_mindmate_seminar_cited_files.py`](tests/test_mindmate_seminar_cited_files.py) loads cited bytes, extracts Word text, and builds Dify file handles.
+- [`tests/test_seminar_message.py`](tests/test_seminar_message.py) passes `[[sf:]]` ids into the MindMate turn.
+- [`frontend/tests/mindmateSeminarHome.spec.ts`](frontend/tests/mindmateSeminarHome.spec.ts) cites shelf files with the same token the backend loads.
+- [`frontend/tests/mindmateSeminarDocPane.spec.ts`](frontend/tests/mindmateSeminarDocPane.spec.ts), [`frontend/tests/mindmateSeminarHighlights.spec.ts`](frontend/tests/mindmateSeminarHighlights.spec.ts), and [`frontend/tests/mindmateSeminarGroup.spec.ts`](frontend/tests/mindmateSeminarGroup.spec.ts) cover the pane budget, highlight preview, and live roster people.
+
 ## [5.180.230] - 2026-11-24
 
 > **Tree and brace maps grow from canvas + handles and walk in the node carousel; drag practice, named snapshots, and “讲给学生” land on the ribbon.**

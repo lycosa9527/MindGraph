@@ -7,9 +7,12 @@ import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  applyRemoteSeminarHighlight,
   applySeminarFileRename,
   bumpSeminarFolderReload,
   dropSeminarServerArtifact,
+  loadSeminarHighlights,
+  loadSeminarServerArtifacts,
   pushSeminarHighlightNotice,
   upsertSeminarServerArtifact,
 } from '@/composables/mindmate/mindmateSeminarChrome'
@@ -45,6 +48,7 @@ import {
   insertMissingCollabMessages,
   streamingCoveredBySaved,
 } from '@/utils/mindmateSeminarGap'
+import { type SeminarHighlightRaw, mapSeminarHighlight } from '@/utils/mindmateSeminarHighlights'
 import { collabFrameCreatedAt } from '@/utils/mindmateSeminarRead'
 import {
   MINDMATE_COLLAB_RECONNECT,
@@ -593,6 +597,31 @@ export function useMindmateSeminar(
       }
       resumeToken.value = String(parsed.resume_token || '') || null
       replaceLocalFaces(parsed.faces)
+      const sessionId = String(parsed.session_id || '')
+      if (sessionId) {
+        void loadSeminarHighlights(sessionId)
+        void loadSeminarServerArtifacts(sessionId)
+      }
+      return
+    }
+    if (type === 'seminar_highlight') {
+      const raw = parsed.highlight as SeminarHighlightRaw | undefined
+      if (!raw || typeof raw !== 'object' || !raw.id) {
+        return
+      }
+      const highlight = mapSeminarHighlight(raw)
+      const action = parsed.action === 'cancel' ? 'cancel' : 'set'
+      applyRemoteSeminarHighlight(action, highlight)
+      const sessionId = room.value?.sessionId ?? ''
+      const actorId = Number(parsed.actor_user_id || 0)
+      const selfId = Number(authStore.user?.id || 0)
+      if (sessionId && actorId > 0 && actorId !== selfId) {
+        pushSeminarHighlightNotice(sessionId, {
+          kind: action,
+          ownMessage: false,
+          authorName: String(parsed.actor_name || highlight.createdByName || highlight.authorName),
+        })
+      }
       return
     }
     if (type === 'user_joined') {
@@ -690,13 +719,12 @@ export function useMindmateSeminar(
         dropSeminarServerArtifact(file.id)
       }
       const sessionId = room.value?.sessionId ?? ''
-      const actorId = Number(parsed.actor_user_id || 0)
       const shelf =
         parsed.shelf === 'resource' || parsed.shelf === 'artifact' ? parsed.shelf : undefined
       if (file && sessionId) {
         pushSeminarHighlightNotice(sessionId, {
           kind: 'shelf',
-          ownMessage: actorId > 0 && actorId === Number(authStore.user?.id || 0),
+          ownMessage: false,
           authorName: String(parsed.actor_name || ''),
           title: file.filename,
           destination,

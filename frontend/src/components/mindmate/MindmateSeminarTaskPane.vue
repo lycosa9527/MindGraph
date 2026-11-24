@@ -118,7 +118,7 @@ const paneTitleKey = computed(() => {
 watch(
   () => props.sessionId,
   (sessionId) => {
-    loadSeminarHighlights(sessionId)
+    void loadSeminarHighlights(sessionId)
   },
   { immediate: true }
 )

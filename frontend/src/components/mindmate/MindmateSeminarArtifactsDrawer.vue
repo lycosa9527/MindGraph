@@ -710,6 +710,7 @@ async function saveDiagram(previewId: string): Promise<void> {
 .mm-artifact-side__row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
 }
@@ -770,6 +771,11 @@ async function saveDiagram(previewId: string): Promise<void> {
   border-radius: 7px;
   background: #fff;
   border: 1px solid #e7e5e4;
+}
+
+.mm-artifact-side__row :deep(.el-button) {
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 .mm-artifact-side__cite {

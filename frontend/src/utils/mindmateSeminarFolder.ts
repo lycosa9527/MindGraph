@@ -92,6 +92,12 @@ export function seminarMessageFileToken(id: string, filename: string): string {
   return `[[sf:${id}|${encoded}]]`
 }
 
+export function seminarCiteMessageBlock(
+  cited: Array<{ fileId: string; filename: string }>
+): string {
+  return cited.map((item) => seminarMessageFileToken(item.fileId, item.filename)).join('\n')
+}
+
 export function splitSeminarMessageFiles(content: string): {
   text: string
   files: SeminarMessageFileRef[]
@@ -538,10 +544,25 @@ export function seminarFilePreviewMode(
   return 'unsupported'
 }
 
-export async function fetchSeminarBackgroundPreviewPdf(
+export type SeminarPreviewPayload =
+  | { kind: 'pdf'; data: Uint8Array }
+  | { kind: 'text'; text: string }
+
+export function seminarPreviewFromResponse(
+  contentType: string,
+  body: Uint8Array
+): SeminarPreviewPayload {
+  const type = (contentType || '').toLowerCase()
+  if (type.includes('text/plain') || type.includes('text/markdown')) {
+    return { kind: 'text', text: new TextDecoder('utf-8').decode(body) }
+  }
+  return { kind: 'pdf', data: body }
+}
+
+export async function fetchSeminarBackgroundPreview(
   sessionId: string,
   fileId: string
-): Promise<Uint8Array> {
+): Promise<SeminarPreviewPayload> {
   const response = await apiGet(
     `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}/preview?session_id=${encodeURIComponent(sessionId)}`
   )
@@ -549,5 +570,17 @@ export async function fetchSeminarBackgroundPreviewPdf(
     const payload = await response.json().catch(() => null)
     throw new Error(parseApiErrorDetail(payload, response.statusText || 'preview_failed'))
   }
-  return new Uint8Array(await response.arrayBuffer())
+  const body = new Uint8Array(await response.arrayBuffer())
+  return seminarPreviewFromResponse(response.headers.get('content-type') || '', body)
+}
+
+export async function fetchSeminarBackgroundPreviewPdf(
+  sessionId: string,
+  fileId: string
+): Promise<Uint8Array> {
+  const preview = await fetchSeminarBackgroundPreview(sessionId, fileId)
+  if (preview.kind !== 'pdf') {
+    throw new Error('preview_failed')
+  }
+  return preview.data
 }

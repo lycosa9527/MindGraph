@@ -7,8 +7,10 @@ from types import SimpleNamespace
 from services.features.mindmate_seminar.mention import (
     collab_message_targets_mindmate,
     extract_mindmate_query,
+    format_speaker_query,
     mention_aliases_from_org,
     message_mentions_mindmate,
+    strip_mindmate_mentions,
 )
 
 
@@ -65,3 +67,12 @@ def test_extract_mindmate_query_strips_tokens() -> None:
     assert extract_mindmate_query("@迈特教研 帮我写教案", ("迈特教研",)) == "帮我写教案"
     assert extract_mindmate_query("@mindmate帮我写教案") == "帮我写教案"
     assert extract_mindmate_query("请@MindMate看一下") == "请看一下"
+    assert strip_mindmate_mentions("@MindMate") == ""
+    assert extract_mindmate_query("@MindMate") == "@MindMate"
+
+
+def test_format_speaker_query_names_the_asker() -> None:
+    """Room replies need the speaker name so Dify does not treat everyone as you."""
+    assert format_speaker_query("林芳", "怎样理解隐性知识显性化") == "林芳：怎样理解隐性知识显性化"
+    assert format_speaker_query("  ", "hello") == "hello"
+    assert format_speaker_query("林芳", "") == ""

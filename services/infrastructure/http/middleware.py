@@ -198,6 +198,16 @@ _EMBEDDABLE_SHOWCASE_SUFFIXES = (".pdf", ".doc", ".docx")
 _STREAMING_STATIC_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".m4a")
 
 
+def gzip_skips_path(path: str) -> bool:
+    """True when gzip would break range-friendly PDF or media bodies."""
+    lower = path.lower()
+    if lower.endswith(_STREAMING_STATIC_SUFFIXES) or lower.endswith(".pdf"):
+        return True
+    if path.startswith("/api/library/documents/") and "/file" in path:
+        return True
+    return "/background-files/" in lower and lower.endswith("/preview")
+
+
 def allows_same_origin_showcase_frame(path: str) -> bool:
     """Showcase teaching attachments may be previewed in same-origin iframes."""
     # Public static mount is blocked; assets are served via authenticated API.
@@ -586,23 +596,13 @@ class SelectiveGZipMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Bypass gzip for PDF/media; otherwise delegate to GZipMiddleware."""
-        if scope["type"] == "http":
-            path = scope.get("path", "")
-            lower_path = path.lower()
-            # PDF and video responses must stay uncompressed for range requests / HTML5 media.
-            is_streaming_static = lower_path.endswith(_STREAMING_STATIC_SUFFIXES)
-            is_pdf_endpoint = (path.startswith("/api/library/documents/") and "/file" in path) or lower_path.endswith(
-                ".pdf"
-            )
-
-            if is_pdf_endpoint or is_streaming_static:
-                # Skip compression for PDF files - pass through directly
-                # This preserves range request support
-                await self.app(scope, receive, send)
-            else:
-                await self._gzip(scope, receive, send)
-        else:
+        if scope["type"] == "http" and gzip_skips_path(str(scope.get("path", ""))):
             await self.app(scope, receive, send)
+            return
+        if scope["type"] == "http":
+            await self._gzip(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
 
 
 async def ensure_pdf_range_support(request: Request, call_next):

@@ -9,15 +9,28 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import or_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.mindmate_seminar import MindmateSeminarMessage, MindmateSeminarSession
+from models.domain.auth import User
+from models.domain.mindmate_seminar import (
+    MindmateSeminarMember,
+    MindmateSeminarMessage,
+    MindmateSeminarSession,
+)
 from services.features.mindmate_seminar.config import MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS
 from services.features.mindmate_seminar.redis_mirror import mirror_live_session_fields
+from services.features.mindmate_seminar.seminar_roles import (
+    SEMINAR_ROLE_LEADER,
+    SEMINAR_ROLE_UNASSIGNED,
+    normalize_seminar_role,
+    resolve_seminar_leader_id,
+)
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from utils.db.session_open import system_rls_session
 
@@ -42,6 +55,27 @@ _LABELS_EN = {
     "files": "Materials",
 }
 _HEADER_TO_SECTION = {label: key for labels in (_LABELS_ZH, _LABELS_EN) for key, label in labels.items()}
+_NUMBERED_LINE = re.compile(r"^\d+\.\s*")
+_ROLE_ZH = {
+    "leader": "组长",
+    "leadPrep": "主备人",
+    "coPrep": "辅备人",
+    "expert": "专家",
+    "researcher": "教研员",
+    "observer": "观摩学习",
+    "none": "",
+}
+_ROLE_EN = {
+    "leader": "Lead",
+    "leadPrep": "Lead planner",
+    "coPrep": "Co-planner",
+    "expert": "Expert",
+    "researcher": "Teaching researcher",
+    "observer": "Observer",
+    "none": "",
+}
+_PENDING_ZH = "待对方同意"
+_PENDING_EN = "Awaiting consent"
 
 
 def normalize_brief_lines(raw: List[str], *, limit: int, max_len: int) -> Optional[List[str]]:
@@ -64,6 +98,7 @@ class SeminarBriefParts:
     marked: bool
     labels: Dict[str, str]
     topic: List[str]
+    goals: List[str]
     people: List[str]
     files: List[str]
 
@@ -98,30 +133,69 @@ def seminar_brief_sections(content: str) -> Optional[SeminarBriefParts]:
         marked=marked,
         labels=labels,
         topic=buckets["topic"],
+        goals=buckets["goals"],
         people=buckets["people"],
         files=buckets["files"],
     )
 
 
+def _plain_goal_lines(lines: List[str]) -> List[str]:
+    """Drop numbering so a rewrite can re-number goals."""
+    cleaned: List[str] = []
+    for line in lines:
+        text = _NUMBERED_LINE.sub("", line).strip()
+        if text:
+            cleaned.append(text)
+    return cleaned
+
+
+def brief_visibility_lines(people: List[str]) -> List[str]:
+    """Keep the school / network tag above the numbered roster."""
+    return [line for line in people if not _NUMBERED_LINE.match(line)]
+
+
+def format_brief_roster_line(
+    index: int,
+    name: str,
+    role: str,
+    pending: bool,
+    language: str,
+) -> str:
+    """One numbered participant line in the brief card language."""
+    labels = _ROLE_EN if language == "en" else _ROLE_ZH
+    pending_label = _PENDING_EN if language == "en" else _PENDING_ZH
+    cleaned_name = " ".join((name or "").split()) or f"User {index}"
+    cleaned_role = normalize_seminar_role(role, default=SEMINAR_ROLE_UNASSIGNED)
+    role_text = labels.get(cleaned_role, cleaned_role)
+    if cleaned_role == SEMINAR_ROLE_UNASSIGNED:
+        role_text = ""
+    role_part = f"（{role_text}）" if role_text else ""
+    pending_part = f"（{pending_label}）" if pending else ""
+    return f"{index}. {cleaned_name}{role_part}{pending_part}"
+
+
 def rewrite_seminar_brief_text(
     content: str,
-    goals: List[str],
+    goals: Optional[List[str]] = None,
     resources: Optional[List[str]] = None,
     topic: Optional[str] = None,
+    people: Optional[List[str]] = None,
 ) -> Optional[str]:
-    """Replace the topic and goals. Participants stay. Materials stay unless replaced."""
+    """Replace topic, goals, or people. Materials stay unless replaced."""
     parsed = seminar_brief_sections(content)
     if parsed is None:
         return None
     topic_text = " ".join(topic.split()) if topic is not None else "\n".join(parsed.topic)
     if not topic_text:
         return None
+    goal_lines = goals if goals is not None else _plain_goal_lines(parsed.goals)
+    people_lines = people if people is not None else parsed.people
     parts = [f"{parsed.labels['topic']}\n{topic_text}"]
-    if goals:
-        numbered = "\n".join(f"{index}. {goal}" for index, goal in enumerate(goals, start=1))
+    if goal_lines:
+        numbered = "\n".join(f"{index}. {goal}" for index, goal in enumerate(goal_lines, start=1))
         parts.append(f"{parsed.labels['goals']}\n{numbered}")
-    if parsed.people:
-        parts.append(f"{parsed.labels['people']}\n" + "\n".join(parsed.people))
+    if people_lines:
+        parts.append(f"{parsed.labels['people']}\n" + "\n".join(people_lines))
     if resources is None:
         if parsed.files:
             parts.append(f"{parsed.labels['files']}\n" + "\n".join(parsed.files))
@@ -234,3 +308,96 @@ async def update_seminar_brief(
         "message_id": message_id,
         "content": rewritten,
     }, None
+
+
+async def _roster_people_lines(
+    db: AsyncSession,
+    session: MindmateSeminarSession,
+    language: str,
+    visibility: List[str],
+) -> List[str]:
+    """Numbered roster for the pinned brief, leader first."""
+    rows = (
+        await db.execute(
+            select(
+                MindmateSeminarMember.user_id,
+                MindmateSeminarMember.seminar_role,
+                MindmateSeminarMember.accepted,
+                MindmateSeminarMember.joined_at,
+                User.name,
+            )
+            .join(User, User.id == MindmateSeminarMember.user_id)
+            .where(MindmateSeminarMember.session_id == session.id)
+        )
+    ).all()
+    roles = {int(user_id): normalize_seminar_role(role) for user_id, role, _accepted, _joined, _name in rows}
+    leader_id = resolve_seminar_leader_id(roles, int(session.owner_user_id))
+    ordered = sorted(
+        rows,
+        key=lambda row: (0 if int(row[0]) == leader_id else 1, row[3] is None, row[3]),
+    )
+    lines = list(visibility)
+    for index, (user_id, role, accepted, _joined, name) in enumerate(ordered, start=1):
+        display_role = SEMINAR_ROLE_LEADER if int(user_id) == leader_id else normalize_seminar_role(role)
+        display_name = str(name or "").strip() or f"User {user_id}"
+        lines.append(format_brief_roster_line(index, display_name, display_role, accepted is False, language))
+    return lines
+
+
+async def sync_seminar_brief_people(session_id: str) -> None:
+    """Rewrite the pinned brief roster after members are added, removed, or reassigned."""
+    try:
+        await _sync_seminar_brief_people(session_id)
+    except SQLAlchemyError as exc:
+        logger.warning("[MindmateSeminar] brief people sync failed session=%s err=%s", session_id, exc)
+
+
+async def _sync_seminar_brief_people(session_id: str) -> None:
+    rewritten = ""
+    message_id = 0
+    code = ""
+    saved_topic = ""
+    saved_title = ""
+    goals: List[str] = []
+    async with system_rls_session() as db:
+        session = (
+            await db.execute(select(MindmateSeminarSession).where(MindmateSeminarSession.id == session_id))
+        ).scalar_one_or_none()
+        if session is None or session.ended_at is not None:
+            return
+        message = await _brief_message(db, session_id)
+        if message is None:
+            return
+        parsed = seminar_brief_sections(message.content)
+        if parsed is None:
+            return
+        language = "en" if parsed.labels["people"] == _LABELS_EN["people"] else "zh"
+        people_lines = await _roster_people_lines(db, session, language, brief_visibility_lines(parsed.people))
+        next_text = rewrite_seminar_brief_text(message.content, people=people_lines)
+        if next_text is None or next_text == message.content:
+            return
+        if len(next_text) > MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS:
+            logger.warning("[MindmateSeminar] brief people sync too long session=%s", session_id)
+            return
+        message.content = next_text
+        rewritten = next_text
+        message_id = int(message.id)
+        code = session.code
+        saved_topic = (session.brief_topic or "").strip()
+        saved_title = session.title
+        goals = _plain_goal_lines(parsed.goals)
+        await db.commit()
+    if not rewritten or not code:
+        return
+    await broadcast_to_all(
+        code,
+        {
+            "type": "brief_updated",
+            "message_id": message_id,
+            "content": rewritten,
+            "brief_goals": goals,
+            "brief_topic": saved_topic,
+            "title": saved_title,
+        },
+    )
+    logger.info("[MindmateSeminar] brief people synced session=%s message=%s", session_id, message_id)

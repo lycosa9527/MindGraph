@@ -1,6 +1,8 @@
 """Pinned seminar brief rewrite: goals and materials can change after start."""
 
 from services.features.mindmate_seminar.brief_edit import (
+    brief_visibility_lines,
+    format_brief_roster_line,
     normalize_brief_lines,
     rewrite_seminar_brief_text,
 )
@@ -77,3 +79,24 @@ def test_normalize_brief_lines_rejects_a_line_past_the_cap() -> None:
     """A single goal cannot exceed the row limit."""
     assert normalize_brief_lines(["ok", "x" * 201], limit=12, max_len=200) is None
     assert normalize_brief_lines(["  one  ", ""], limit=12, max_len=200) == ["one"]
+
+
+def test_rewrite_replaces_people_and_keeps_goals() -> None:
+    """A later invite list overwrites the snapshot without dropping goals."""
+    text = rewrite_seminar_brief_text(
+        _SEED,
+        people=["跨校教研", "1. 吴浪松（组长）", "2. 方健姣（观摩学习）"],
+    )
+    assert text is not None
+    assert "1. 目标1" in text
+    assert "1. 吴浪松（组长）" in text
+    assert "2. 方健姣（观摩学习）" in text
+    assert "王雅萱" not in text
+    assert "董长华" not in text
+    assert "资源准备\n1. 框架.pdf" in text
+
+
+def test_format_brief_roster_line_marks_pending_consent() -> None:
+    """Cross-school invites keep the awaiting-consent tag on the card."""
+    assert format_brief_roster_line(3, "韦老师", "observer", True, "zh") == ("3. 韦老师（观摩学习）（待对方同意）")
+    assert brief_visibility_lines(["跨校教研", "1. 吴浪松（组长）"]) == ["跨校教研"]

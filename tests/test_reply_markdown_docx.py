@@ -37,9 +37,15 @@ def test_markdown_docx_keeps_heading_and_paragraph() -> None:
 
 
 def test_reply_docx_filename_uses_heading() -> None:
-    """The artifact name comes from the first heading."""
+    """A specific first heading still becomes the artifact name."""
     assert reply_docx_filename("# 分数的意义\n正文", "研讨文档") == "分数的意义.docx"
     assert reply_docx_filename("   ", "研讨文档") == "研讨文档.docx"
+
+
+def test_reply_docx_filename_skips_generic_section_heading() -> None:
+    """教学设计 first heading is 基本信息; the lesson title is used instead."""
+    source = "# 基本信息\n\n《勾股定理》教学设计\n学段年级：八年级上册\n"
+    assert reply_docx_filename(source, "研讨文档") == "勾股定理教学设计.docx"
 
 
 def test_empty_markdown_is_rejected() -> None:

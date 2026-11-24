@@ -15,7 +15,7 @@ const props = withDefaults(
   defineProps<{
     /** Keep the cluster on the left of a persistent stamp row. */
     inline?: boolean
-    /** none = can pin; mine = I can cancel; other = already pinned by someone else. */
+    /** none = can pin; mine = I can cancel; other = someone else pinned, I can still add mine. */
     highlightState?: 'none' | 'mine' | 'other'
     /** False for 观摩学习: reply, highlight, and multi-select stay hidden. */
     writeActions?: boolean
@@ -40,16 +40,10 @@ const highlightKey = computed(() => {
   if (props.highlightState === 'mine') {
     return 'mindmate.highlights.cancelMine'
   }
-  if (props.highlightState === 'other') {
-    return 'mindmate.highlights.alreadySet'
-  }
   return 'mindmate.highlights.pin'
 })
 
 function onHighlight(): void {
-  if (props.highlightState === 'other') {
-    return
-  }
   emit('highlight')
 }
 </script>

@@ -35,6 +35,15 @@ export interface SeminarDocumentArtifact {
   backgroundFileId?: string
 }
 
+function firstMarkdownImage(source: string): { label: string; url: string } | null {
+  MARKDOWN_IMAGE_RE.lastIndex = 0
+  const match = MARKDOWN_IMAGE_RE.exec(source)
+  if (!match) {
+    return null
+  }
+  return { label: (match[1] || '').trim(), url: match[2] || '' }
+}
+
 export function collectSeminarDiagramArtifacts(
   messages: ReadonlyArray<{ id?: number; content: string }>
 ): SeminarDiagramArtifact[] {
@@ -45,6 +54,7 @@ export function collectSeminarDiagramArtifacts(
     const diagramId = source.match(DIAGRAM_ID_RE)?.[1]?.toLowerCase() ?? null
     MARKDOWN_IMAGE_RE.lastIndex = 0
     let match: RegExpExecArray | null
+    let matchedPreview = false
     while ((match = MARKDOWN_IMAGE_RE.exec(source)) !== null) {
       const url = match[2] || ''
       const named = TEMP_PREVIEW_RE.exec(url)
@@ -57,6 +67,7 @@ export function collectSeminarDiagramArtifacts(
         continue
       }
       seen.add(previewId)
+      matchedPreview = true
       found.push({
         previewId,
         label: (match[1] || '').trim(),
@@ -65,6 +76,18 @@ export function collectSeminarDiagramArtifacts(
         diagramId,
       })
     }
+    if (matchedPreview || !diagramId || seen.has(diagramId)) {
+      continue
+    }
+    seen.add(diagramId)
+    const image = firstMarkdownImage(source)
+    found.push({
+      previewId: diagramId,
+      label: image?.label || '',
+      messageId: message.id ?? null,
+      imagePath: image?.url ? sameOriginTempImageFetchUrl(image.url) : '',
+      diagramId,
+    })
   }
   return found
 }

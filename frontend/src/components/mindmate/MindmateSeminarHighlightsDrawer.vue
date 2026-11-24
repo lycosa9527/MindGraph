@@ -3,7 +3,7 @@
  * Group highlights, modeled on QQ group essence:
  * whole messages or selected excerpts, with jump-back and host removal.
  */
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
@@ -14,6 +14,12 @@ import MindmateSeminarShareDialog, {
 } from '@/components/mindmate/MindmateSeminarShareDialog.vue'
 import { useLanguage } from '@/composables'
 import {
+  ensureMarkdownRenderer,
+  markdownRendererReady,
+  renderRichMarkdownHtml,
+} from '@/composables/core/lazyMarkdown'
+import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
+import {
   type SeminarHighlight,
   locateSeminarMessage,
   pushSeminarHighlightNotice,
@@ -23,7 +29,9 @@ import {
 import { beijingWallClock, parseApiInstant } from '@/utils/beijingClock'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
+import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
+import { stripMindmateThinkingBlocks } from '@/utils/stripMindmateThinking'
 
 const props = withDefaults(
   defineProps<{
@@ -47,8 +55,11 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const filter = ref<'all' | 'mine'>('all')
-const overflow = ref<Record<string, boolean>>({})
 const preview = ref<SeminarHighlight | null>(null)
+const zoomTextEl = ref<HTMLElement | null>(null)
+const { html: previewHtml } = useRenderedMarkdown(() => preview.value?.text || '', {
+  stripThinkBlocks: true,
+})
 const picking = ref(false)
 const pickedIds = ref<string[]>([])
 
@@ -63,6 +74,23 @@ const visible = computed(() => {
   return seminarHighlights.value
 })
 
+function highlightMarkdown(text: string): string {
+  const cleaned = stripTeachingDesignFlags(stripMindmateThinkingBlocks(text || ''))
+  if (!cleaned) {
+    return ''
+  }
+  return renderRichMarkdownHtml(cleaned)
+}
+
+const cardHtml = computed(() => {
+  void markdownRendererReady.value
+  const out: Record<string, string> = {}
+  for (const item of visible.value) {
+    out[item.id] = highlightMarkdown(item.text)
+  }
+  return out
+})
+
 function canRemove(item: SeminarHighlight): boolean {
   if (props.isLeader) {
     return true
@@ -70,12 +98,12 @@ function canRemove(item: SeminarHighlight): boolean {
   return props.selfUserId > 0 && item.createdByUserId === props.selfUserId
 }
 
-function remove(item: SeminarHighlight): void {
+async function remove(item: SeminarHighlight): Promise<void> {
   if (!canRemove(item)) {
     return
   }
   const self = props.members.find((member) => member.userId === props.selfUserId)
-  removeSeminarHighlight(props.sessionId, item.id)
+  await removeSeminarHighlight(props.sessionId, item.id)
   if (preview.value?.id === item.id) {
     preview.value = null
   }
@@ -121,37 +149,12 @@ function roleLabel(name: string): string {
   return t(`mindmate.home.brief.role.${role}`)
 }
 
-function bindText(id: string, el: unknown): void {
-  if (!(el instanceof HTMLElement)) {
-    return
-  }
-  const style = getComputedStyle(el)
-  const line = Number.parseFloat(style.lineHeight) || 20
-  const probe = document.createElement('div')
-  probe.textContent = el.textContent
-  probe.style.position = 'absolute'
-  probe.style.visibility = 'hidden'
-  probe.style.pointerEvents = 'none'
-  probe.style.boxSizing = 'border-box'
-  probe.style.width = `${el.clientWidth}px`
-  probe.style.font = style.font
-  probe.style.lineHeight = style.lineHeight
-  probe.style.whiteSpace = 'pre-wrap'
-  probe.style.overflowWrap = 'anywhere'
-  document.body.appendChild(probe)
-  const clipped = probe.offsetHeight > line * 4 + 1
-  probe.remove()
-  if (overflow.value[id] === clipped) {
-    return
-  }
-  overflow.value = { ...overflow.value, [id]: clipped }
-}
-
-function openPreview(item: SeminarHighlight): void {
-  if (!overflow.value[item.id]) {
-    return
-  }
+async function openPreview(item: SeminarHighlight): Promise<void> {
   preview.value = item
+  await nextTick()
+  if (zoomTextEl.value) {
+    zoomTextEl.value.scrollTop = 0
+  }
 }
 
 function closePreview(): void {
@@ -221,6 +224,10 @@ watch(preview, (item) => {
     return
   }
   window.removeEventListener('keydown', onPreviewKey)
+})
+
+onMounted(() => {
+  void ensureMarkdownRenderer()
 })
 
 onUnmounted(() => {
@@ -385,19 +392,17 @@ onUnmounted(() => {
             {{ formatWhen(item.messageAt || item.createdAt) }}
           </time>
         </header>
-        <p
-          :ref="(el) => bindText(item.id, el)"
-          class="mm-highlight-card__text"
-          :class="{ 'is-openable': overflow[item.id] }"
+        <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml pipeline -->
+        <div
+          class="mm-highlight-card__text mindmate-seminar-room__markdown"
           @click="openPreview(item)"
-        >
-          {{ item.text }}
-        </p>
+          v-html="cardHtml[item.id]"
+        />
+        <!-- eslint-enable vue/no-v-html -->
         <button
-          v-if="overflow[item.id]"
           type="button"
           class="mm-highlight-card__expand"
-          @click="preview = item"
+          @click="openPreview(item)"
         >
           <I18nText k="mindmate.highlights.expand" />
         </button>
@@ -492,7 +497,13 @@ onUnmounted(() => {
               />
             </button>
           </header>
-          <p class="mm-highlight-zoom__text">{{ preview.text }}</p>
+          <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml pipeline -->
+          <div
+            ref="zoomTextEl"
+            class="mm-highlight-zoom__text mindmate-seminar-room__markdown"
+            v-html="previewHtml"
+          />
+          <!-- eslint-enable vue/no-v-html -->
           <footer class="mm-highlight-card__foot">
             <span
               v-if="preview.createdByName"
@@ -756,19 +767,34 @@ onUnmounted(() => {
 }
 
 .mm-highlight-card__text {
-  display: -webkit-box;
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   color: #18191c;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
+  cursor: pointer;
 }
 
-.mm-highlight-card__text.is-openable {
-  cursor: pointer;
+.mm-highlight-card__text :deep(p) {
+  margin: 0 0 0.55em;
+}
+
+.mm-highlight-card__text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.mm-highlight-card__text :deep(h1),
+.mm-highlight-card__text :deep(h2),
+.mm-highlight-card__text :deep(h3) {
+  margin: 0.7em 0 0.35em;
+  font-size: 1.02em;
+}
+
+.mm-highlight-card__text :deep(ul),
+.mm-highlight-card__text :deep(ol) {
+  margin: 0 0 0.55em;
+  padding-left: 1.25em;
 }
 
 .mm-highlight-card__expand {
@@ -788,9 +814,10 @@ onUnmounted(() => {
   inset: 0;
   z-index: 3000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 24px;
+  overflow: auto;
+  padding: 4vh 24px;
   background: rgba(24, 25, 28, 0.36);
 }
 
@@ -798,8 +825,10 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: min(520px, 100%);
-  max-height: min(72vh, 640px);
+  width: min(720px, 100%);
+  max-height: min(92vh, 920px);
+  margin: auto;
+  overflow: hidden;
   padding: 18px 18px 14px;
   border-radius: 16px;
   background: #fff;
@@ -838,12 +867,35 @@ onUnmounted(() => {
 }
 
 .mm-highlight-zoom__text {
+  flex: 1 1 0;
+  min-height: 0;
   margin: 0;
   overflow: auto;
   color: #18191c;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.7;
   overflow-wrap: anywhere;
+}
+
+.mm-highlight-zoom__text :deep(p) {
+  margin: 0 0 0.7em;
+}
+
+.mm-highlight-zoom__text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.mm-highlight-zoom__text :deep(h1),
+.mm-highlight-zoom__text :deep(h2),
+.mm-highlight-zoom__text :deep(h3) {
+  margin: 0.9em 0 0.4em;
+  font-size: 1.05em;
+}
+
+.mm-highlight-zoom__text :deep(ul),
+.mm-highlight-zoom__text :deep(ol) {
+  margin: 0 0 0.7em;
+  padding-left: 1.3em;
 }
 
 .mm-highlight-card__foot {

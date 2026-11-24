@@ -400,7 +400,7 @@ async def preview_seminar_background_file(
     )
     try:
         session = await load_folder_session(current_user, session_id)
-        pdf_bytes, download_name = await resolve_background_preview_pdf(session.id, file_id)
+        preview = await resolve_background_preview_pdf(session.id, file_id)
     except ValueError as exc:
         detail = str(exc)
         if detail.startswith("LibreOffice") or "LibreOffice" in detail:
@@ -433,7 +433,7 @@ async def preview_seminar_background_file(
             detail="preview_failed",
         ) from None
     return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": _content_disposition("inline", download_name)},
+        content=preview.body,
+        media_type=preview.media_type,
+        headers={"Content-Disposition": _content_disposition("inline", preview.filename)},
     )

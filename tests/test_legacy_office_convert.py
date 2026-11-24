@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from services.knowledge.legacy_office_convert import (
+    _default_soffice_locations,
     convert_legacy_office,
     is_legacy_office_mime,
     resolve_soffice_path,
@@ -62,3 +63,10 @@ def test_resolve_soffice_path_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     binary.write_text("#!/bin/sh\n", encoding="utf-8")
     monkeypatch.setenv("LIBREOFFICE_PATH", str(binary))
     assert resolve_soffice_path() == str(binary)
+
+
+def test_default_soffice_locations_include_wsl_windows_install() -> None:
+    """WSL hosts often have LibreOffice only under /mnt/c/Program Files."""
+    locations = {path.as_posix() for path in _default_soffice_locations()}
+    assert "/mnt/c/Program Files/LibreOffice/program/soffice.exe" in locations
+    assert "/usr/bin/soffice" in locations

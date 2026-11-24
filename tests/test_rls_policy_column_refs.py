@@ -82,6 +82,15 @@ def test_seminar_file_policy_does_not_treat_hidden_members_as_open():
     assert "rls_seminar_session_visible(session_id)" in expr
 
 
+def test_seminar_highlight_policy_matches_session_visibility():
+    """Group highlights are readable by anyone who can see the seminar."""
+    builder = load_rls_policy_builder()
+    expr = builder.MINDMATE_COLLAB_HIGHLIGHT_EXPR
+    check = builder.MINDMATE_COLLAB_HIGHLIGHT_CHECK
+    assert "rls_seminar_session_visible(session_id)" in expr
+    assert "created_by_user_id = rls_current_user_id()" in check
+
+
 def test_knowledge_embeddings_not_document_scoped():
     """The shared embedding cache is readable when signed in and written only by system mode."""
     assert "document_id" not in EMBEDDINGS_READ_EXPR

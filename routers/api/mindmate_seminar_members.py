@@ -17,6 +17,7 @@ from sqlalchemy import select
 
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from services.features.mindmate_seminar.brief_edit import sync_seminar_brief_people
 from services.features.mindmate_seminar.group_members import (
     actor_is_seminar_leader,
     list_group_member_ids,
@@ -222,6 +223,7 @@ async def add_seminar_group_members(
             from_user_id=current_user.id,
             from_name=str(from_name),
         )
+    await sync_seminar_brief_people(session.id)
     return {"success": True, "added_user_ids": poked}
 
 
@@ -252,6 +254,7 @@ async def update_seminar_member_role(
     ok = await set_group_member_role(session.id, body.user_id, role)
     if not ok:
         raise HTTPException(status_code=404, detail="Member not found")
+    await sync_seminar_brief_people(session.id)
     return {"success": True, "user_id": body.user_id, "role": role}
 
 
@@ -281,6 +284,7 @@ async def remove_seminar_group_member(
     ok = await remove_group_member(session.id, body.user_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Member not found")
+    await sync_seminar_brief_people(session.id)
     return {"success": True, "user_id": body.user_id}
 
 
@@ -318,4 +322,5 @@ async def respond_my_seminar_invite(
     result = await respond_seminar_invite(current_user.id, body.session_id, body.accept)
     if result is None:
         raise HTTPException(status_code=404, detail="Invite not found")
+    await sync_seminar_brief_people(body.session_id)
     return result
