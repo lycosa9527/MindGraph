@@ -267,6 +267,7 @@ declare module 'vue' {
     FlowSubstepNode: typeof import('./components/diagram/nodes/FlowSubstepNode.vue')['default']
     GeoLiteNotification: typeof import('./components/common/GeoLiteNotification.vue')['default']
     GlassesBindModal: typeof import('./components/settings/GlassesBindModal.vue')['default']
+    HanddrawnImportManualDialog: typeof import('./components/canvas/HanddrawnImportManualDialog.vue')['default']
     HorizontalStepEdge: typeof import('./components/diagram/edges/HorizontalStepEdge.vue')['default']
     I18nText: typeof import('./components/common/I18nText.vue')['default']
     I18nTooltip: typeof import('./components/common/I18nTooltip.vue')['default']

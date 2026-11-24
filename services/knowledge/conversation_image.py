@@ -16,6 +16,7 @@ from services.knowledge.document_processor import DocumentProcessor
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.knowledge.mindmap_outline_md import mindmap_spec_to_outline_markdown
+from services.knowledge.vision_diagram import detect_and_rebuild_diagram_from_image
 from services.knowledge.vision_mindmap import (
     VISION_MINDMAP_CALL_ERRORS,
     detect_and_rebuild_mindmap_from_image,
@@ -37,6 +38,54 @@ _PERSIST_ERRORS: tuple[type[BaseException], ...] = (
 OCR_EXCERPT_CHARS = 480
 
 
+def _raise_vision_failure(vision_error: str) -> None:
+    """Turn a vision call error into the message the canvas toast already matches."""
+    if "401" in vision_error or "Unauthorized" in vision_error:
+        raise ValueError("DashScope vision API unauthorized (check QWEN_API_KEY)")
+    raise ValueError(f"Vision recognition failed: {vision_error[:240]}")
+
+
+async def _review_canvas_diagram(
+    *,
+    image_bytes: bytes,
+    mime_type: str,
+    language: str,
+) -> Dict[str, Any]:
+    """Name the diagram and return its spec. The user confirms before the canvas loads."""
+    vision_error: Optional[str] = None
+    vision = None
+    try:
+        vision = await detect_and_rebuild_diagram_from_image(
+            image_bytes,
+            mime_type=mime_type,
+            language=language,
+        )
+    except ValueError as exc:
+        vision_error = str(exc).strip() or "Vision configuration error"
+        logger.warning("[ConversationImage] diagram review config failed: %s", vision_error)
+    except VISION_MINDMAP_CALL_ERRORS as exc:
+        vision_error = str(exc).strip() or type(exc).__name__
+        logger.warning("[ConversationImage] diagram review failed: %s", vision_error)
+
+    if vision is not None and vision.recognized and vision.spec is not None:
+        return {
+            "success": True,
+            "mode": "review",
+            "is_mindmap": vision.diagram_type == "mindmap",
+            "diagram_type": vision.diagram_type,
+            "confidence": vision.confidence,
+            "reason": vision.reason,
+            "spec": vision.spec,
+            "topic": vision.topic,
+            "package_id": None,
+            "doc_summary_saved": False,
+            "library": {},
+        }
+    if vision_error:
+        _raise_vision_failure(vision_error)
+    raise ValueError("No hand-drawn mind map detected")
+
+
 async def process_conversation_image(
     *,
     user_id: int,
@@ -48,6 +97,7 @@ async def process_conversation_image(
     diagram_id: str = "",
     diagram_title: Optional[str] = None,
     apply_to_library: bool = True,
+    canvas_review: bool = False,
 ) -> Dict[str, Any]:
     """Classify image and optionally persist extract / rebuild a hand-drawn map.
 
@@ -55,7 +105,10 @@ async def process_conversation_image(
     ``spec`` without Document Summary or library writes. OCR fallback still
     requires a library ``diagram_id``.
 
-    Returns a JSON-serializable result with ``mode`` ``handdrawn`` | ``text``.
+    ``canvas_review`` names the diagram type and returns the spec for a manual
+    confirm dialog. It does not write Document Summary or the library.
+
+    Returns a JSON-serializable result with ``mode`` ``handdrawn`` | ``text`` | ``review``.
     """
     diagram_id = (diagram_id or "").strip()
     canvas_only = not diagram_id
@@ -64,6 +117,12 @@ async def process_conversation_image(
 
     page_title = (filename or "Image").strip()[:200] or "Image"
     language = (language or "zh").strip() or "zh"
+    if canvas_review:
+        return await _review_canvas_diagram(
+            image_bytes=image_bytes,
+            mime_type=mime_type,
+            language=language,
+        )
 
     vision = None
     vision_error: Optional[str] = None
@@ -170,10 +229,7 @@ async def process_conversation_image(
 
     if canvas_only:
         if vision_error:
-            # Prefer actionable API/config errors over a generic "not detected".
-            if "401" in vision_error or "Unauthorized" in vision_error:
-                raise ValueError("DashScope vision API unauthorized (check QWEN_API_KEY)")
-            raise ValueError(f"Vision recognition failed: {vision_error[:240]}")
+            _raise_vision_failure(vision_error)
         raise ValueError("No hand-drawn mind map detected")
 
     ocr_text = _ocr_image_bytes(image_bytes, mime_type=mime_type, filename=filename)

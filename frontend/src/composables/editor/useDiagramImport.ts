@@ -17,6 +17,8 @@ import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'
+import { draftFromSpec, specFromDraft } from '@/utils/handdrawnImportManual'
+import type { HanddrawnManualDraft } from '@/utils/handdrawnImportManual'
 import { MG_FILE_NOT_ENCRYPTED, decodeMgFileToJsonText } from '@/utils/mgInterchange'
 import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
 
@@ -94,6 +96,7 @@ export function useDiagramImport() {
   const notify = useNotifications()
   const { promptLanguage } = useLanguage()
   const handdrawnImportBusy = ref(false)
+  const handdrawnManual = ref<HanddrawnManualDraft | null>(null)
 
   async function parseImportFile(
     file: File,
@@ -203,23 +206,21 @@ export function useDiagramImport() {
         file: prepared.file,
         language: promptLanguage.value,
         applyToLibrary: false,
+        canvasReview: true,
       })
 
-      if (result.mode === 'handdrawn' && result.spec) {
-        const diagramStore = useDiagramStore()
-        const loaded = diagramStore.loadFromSpec(
-          mergeMindMapPresentationExtrasIntoSpec(
-            result.spec,
-            diagramStore.data as Record<string, unknown> | null
-          ),
-          'mindmap'
-        )
-        if (!loaded) {
+      const diagramType = result.diagramType || (result.mode === 'handdrawn' ? 'mindmap' : '')
+      if (
+        (result.mode === 'review' || result.mode === 'handdrawn') &&
+        result.spec &&
+        diagramType
+      ) {
+        const draft = draftFromSpec(diagramType, result.spec)
+        if (!draft) {
           notify.errorKey('canvas.toolbar.importHanddrawnFailed')
           return false
         }
-        useLLMResultsStore().reset()
-        notify.successKey('canvas.toolbar.importHanddrawnSuccess')
+        handdrawnManual.value = draft
         return true
       }
 
@@ -241,6 +242,36 @@ export function useDiagramImport() {
     } finally {
       handdrawnImportBusy.value = false
     }
+  }
+
+  function confirmHanddrawnManual(): void {
+    const draft = handdrawnManual.value
+    if (!draft) return
+    const spec = specFromDraft(draft)
+    if (!spec) {
+      notify.errorKey('canvas.toolbar.importHanddrawnManualEmpty')
+      return
+    }
+    const diagramStore = useDiagramStore()
+    const payload =
+      draft.diagramType === 'mindmap'
+        ? mergeMindMapPresentationExtrasIntoSpec(
+            spec,
+            diagramStore.data as Record<string, unknown> | null
+          )
+        : spec
+    const loaded = diagramStore.loadFromSpec(payload, draft.diagramType)
+    if (!loaded) {
+      notify.errorKey('canvas.toolbar.importHanddrawnFailed')
+      return
+    }
+    useLLMResultsStore().reset()
+    handdrawnManual.value = null
+    notify.successKey('canvas.toolbar.importHanddrawnSuccess')
+  }
+
+  function cancelHanddrawnManual(): void {
+    handdrawnManual.value = null
   }
 
   function triggerHanddrawnImportInPlace(): void {
@@ -281,6 +312,9 @@ export function useDiagramImport() {
 
   return {
     handdrawnImportBusy,
+    handdrawnManual,
+    confirmHanddrawnManual,
+    cancelHanddrawnManual,
     triggerImport,
     triggerImportInPlace,
     triggerConceptMapImportInPlace,

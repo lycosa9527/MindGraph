@@ -51,6 +51,7 @@ import CanvasToolbarMindMapFormat from '@/components/canvas/CanvasToolbarMindMap
 import CanvasToolbarMindMapHistoryVersions from '@/components/canvas/CanvasToolbarMindMapHistoryVersions.vue'
 import CanvasToolbarMindMapInsert from '@/components/canvas/CanvasToolbarMindMapInsert.vue'
 import CanvasToolbarMindMapNodeStyle from '@/components/canvas/CanvasToolbarMindMapNodeStyle.vue'
+import HanddrawnImportManualDialog from '@/components/canvas/HanddrawnImportManualDialog.vue'
 import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
 import MindMapInsertNodeIcon from '@/components/canvas/MindMapInsertNodeIcon.vue'
@@ -133,6 +134,9 @@ const knowledgeOpen = ref(false)
 const { buttonOn: knowledgeButtonOn } = useDiagramKnowledgeSelection()
 const {
   handdrawnImportBusy,
+  handdrawnManual,
+  confirmHanddrawnManual,
+  cancelHanddrawnManual,
   triggerImportInPlace,
   triggerConceptMapImportInPlace,
   triggerHanddrawnImportInPlace,
@@ -1630,6 +1634,11 @@ watch(
     </button>
     <CanvasShareToSeminarDialog v-model="shareSeminarOpen" />
     <CanvasKnowledgeModal v-model:open="knowledgeOpen" />
+    <HanddrawnImportManualDialog
+      v-model:draft="handdrawnManual"
+      @confirm="confirmHanddrawnManual"
+      @cancel="cancelHanddrawnManual"
+    />
   </div>
 </template>
 

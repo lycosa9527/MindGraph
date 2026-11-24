@@ -340,6 +340,7 @@ run_frontend() {
     tests/unloadCanvasForLibrarySwitch.spec.ts \
     tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
     tests/llmResultsTeardown.spec.ts tests/diagramImportLlmSlots.spec.ts \
+    tests/handdrawnImportManual.spec.ts \
     tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
     tests/thinkingMapsIdentity.spec.ts \

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Teach this diagram** — Research tab **讲给学生** sits to the left of MindMate. It opens MindMate and sends the same prompt as the welcome bubble 「这张图示怎么给学生讲?」.
 - **Seminar share Markdown** — **分享消息记录** renders message Markdown (sanitized) in the preview and in the exported image.
 - **Classroom lesson page** — Standalone `classroom/expert-system-vs-neural-network.html` is a four-task high-school lesson (read the double-bubble map, walk an example, match scenarios, drag practice) using the product’s double-bubble layout. It is not wired into the app.
+- **Hand-drawn import confirm** — 图片/手绘图 names the diagram type and opens a confirm dialog before anything lands on the canvas. The teacher can correct the type and the node text, then import.
 
 ### Changed
 
@@ -41,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [`frontend/tests/braceMapAddHandles.spec.ts`](frontend/tests/braceMapAddHandles.spec.ts), [`frontend/tests/braceMapSlides.spec.ts`](frontend/tests/braceMapSlides.spec.ts), [`frontend/tests/braceMapInsert.spec.ts`](frontend/tests/braceMapInsert.spec.ts)
 - [`frontend/tests/dragPractice.spec.ts`](frontend/tests/dragPractice.spec.ts), [`frontend/tests/dragPracticeMatch.spec.ts`](frontend/tests/dragPracticeMatch.spec.ts)
 - Updated [`frontend/tests/diagramInsertActions.spec.ts`](frontend/tests/diagramInsertActions.spec.ts), [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/diagramSnapshotVersions.spec.ts`](frontend/tests/diagramSnapshotVersions.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/thinkingMapNodeShape.spec.ts`](frontend/tests/thinkingMapNodeShape.spec.ts), [`frontend/tests/treeMapStructure.spec.ts`](frontend/tests/treeMapStructure.spec.ts), [`tests/test_diagram_snapshots.py`](tests/test_diagram_snapshots.py)
+- [`frontend/tests/handdrawnImportManual.spec.ts`](frontend/tests/handdrawnImportManual.spec.ts), [`tests/test_vision_diagram.py`](tests/test_vision_diagram.py)
 
 ## [5.180.229] - 2026-11-24
 
