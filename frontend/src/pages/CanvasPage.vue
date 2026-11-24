@@ -52,6 +52,8 @@ import CanvasCachedResultNotice from '@/components/canvas/CanvasCachedResultNoti
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import DiagramShareReadonlyBar from '@/components/canvas/DiagramShareReadonlyBar.vue'
+import DragPracticePanel from '@/components/canvas/DragPracticePanel.vue'
+import DragPracticeSetupModal from '@/components/canvas/DragPracticeSetupModal.vue'
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
 import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
@@ -144,6 +146,7 @@ import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSele
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { requestClassroomStop } from '@/composables/mindMap/classroomCommands'
 import { createSlideRemoteDesktopPlay } from '@/composables/mindMap/createSlideRemoteDesktopPlay'
+import { dragPracticeActive, dragPracticePicking } from '@/composables/mindMap/useDragPractice'
 import {
   learningSheetNeedsPresentationConfirm,
   resumeLearningSheetAfterPresentation,
@@ -677,6 +680,8 @@ const showMindClassroomDialog = computed(
     !isViewer.value
 )
 
+const dragPracticeSplitOpen = computed(() => dragPracticeActive.value || dragPracticePicking.value)
+
 const showLearningSheetExportNudge = computed(
   () =>
     learningAssignmentCanvas.showLearningSheet &&
@@ -1033,6 +1038,7 @@ const {
   handleSnapshotRecall,
   handleRestoreCurrentVersion,
   handleSnapshotDelete,
+  handleSnapshotRename,
 } = useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory, isDiagramOwner })
 
 function normalizedRouteDiagramId(): string | undefined {
@@ -1221,6 +1227,7 @@ registerMindMapRibbonPageBridge({
   handleSaveKey,
   handleSnapshotRecall,
   handleSnapshotDelete,
+  handleSnapshotRename,
   handleRestoreCurrentVersion,
   handleStartPresentationWithTier,
   handleStartSlidesWithTier,
@@ -1532,6 +1539,7 @@ onUnmounted(() => {
     class="canvas-page flex h-full min-h-0 w-full flex-1 flex-col bg-gray-50 relative"
     :class="{
       'canvas-page--mm-ribbon': isMindMapRibbonFamily,
+      'canvas-page--drag-practice': dragPracticeSplitOpen && !mindClassroomSlideDeck,
       'presentation-active': canUsePresentationTools && presentationRailOpen,
       'mind-map-presentation-active': isMindMapPresentationMode,
       'presentation-pointer-mode':
@@ -1685,6 +1693,7 @@ onUnmounted(() => {
 
     <LearningSheetExportNudge v-if="showLearningSheetExportNudge" />
     <LearningSheetFloatBar v-if="showLearningSheetExportNudge" />
+    <DragPracticeSetupModal />
 
     <!-- Collab UI: participant rail, session modal, active-session banner -->
     <CanvasCollabOverlay
@@ -1713,15 +1722,30 @@ onUnmounted(() => {
       :interactive="false"
     />
 
-    <!-- Main canvas area - merged chrome (top bar + toolbar) in CanvasChrome -->
+    <!-- Main canvas area - merged chrome (top bar + toolbar) in CanvasChrome.
+         Drag practice uses an inline grid split (canvas | options), never a fixed overlay. -->
     <div
-      class="flex-1 relative overflow-hidden flex flex-row min-h-0"
-      :class="{ 'mc-slide-lecture-fullscreen': mindClassroomSlideDeck }"
+      class="canvas-page__workspace flex-1 relative overflow-hidden min-h-0"
+      :class="{
+        'mc-slide-lecture-fullscreen': mindClassroomSlideDeck,
+        'flex flex-row': !dragPracticeSplitOpen || mindClassroomSlideDeck,
+      }"
+      :style="
+        dragPracticeSplitOpen && !mindClassroomSlideDeck
+          ? {
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) 320px',
+              gridTemplateRows: 'minmax(0, 1fr)',
+              alignItems: 'stretch',
+            }
+          : undefined
+      "
     >
       <!-- AI brainstorm panel (瀑布流) - left 50%, inset to clear floating toolbars -->
       <Transition name="diagram-brainstorm-slide">
         <div
           v-if="
+            !dragPracticeSplitOpen &&
             panelsStore.diagramBrainstormPanel.isOpen &&
             !isViewer &&
             !useMindMapV2 &&
@@ -1748,12 +1772,18 @@ onUnmounted(() => {
         </div>
       </Transition>
 
-      <!-- Diagram area - takes remaining space; slide lecture splits left map / right PPT -->
+      <!-- Diagram column — fills the left grid cell while drag practice is open -->
       <div
-        class="flex-1 min-w-0 flex flex-row relative min-h-0"
-        :class="{ 'mc-dual-lecture': mindClassroomSlideDeck }"
+        class="canvas-page__diagram min-w-0 relative min-h-0 overflow-hidden"
+        :class="{
+          'mc-dual-lecture flex flex-row flex-1': mindClassroomSlideDeck,
+          'flex flex-row flex-1': !dragPracticeSplitOpen && !mindClassroomSlideDeck,
+          'flex h-full flex-col': dragPracticeSplitOpen && !mindClassroomSlideDeck,
+        }"
       >
-        <div class="mc-dual-lecture__canvas flex-1 min-w-0 flex flex-col relative min-h-0">
+        <div
+          class="mc-dual-lecture__canvas flex-1 min-w-0 flex h-full flex-col relative min-h-0 overflow-hidden"
+        >
           <CanvasCachedResultNotice />
           <DiagramCanvasHost
             v-if="diagramStore.data"
@@ -1783,7 +1813,7 @@ onUnmounted(() => {
           />
 
           <MindMapSidePanel
-            v-if="showMindMapSidePanel && activeTool"
+            v-if="showMindMapSidePanel && activeTool && !dragPracticeSplitOpen"
             :tool="activeTool"
             @close="closeActiveTool"
           />
@@ -1793,10 +1823,14 @@ onUnmounted(() => {
         <MindClassroomSlidePane v-if="mindClassroomSlideDeck" />
       </div>
 
+      <DragPracticePanel v-if="dragPracticeSplitOpen && !mindClassroomSlideDeck" />
+
       <!-- MindMate floating panel - rounded card, inset to clear floating toolbars -->
       <Transition name="mindmate-slide">
         <div
-          v-if="panelsStore.mindmatePanel.isOpen && !mindClassroomSlideDeck"
+          v-if="
+            panelsStore.mindmatePanel.isOpen && !mindClassroomSlideDeck && !dragPracticeSplitOpen
+          "
           class="mindmate-panel-float fixed z-50 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden"
           :style="{
             width: `${PANEL.MINDMATE_WIDTH}px`,
@@ -1853,3 +1887,47 @@ onUnmounted(() => {
 </template>
 
 <style scoped src="./CanvasPage.scoped.css"></style>
+
+<style>
+/* Unscoped hard split — canvas keeps a real height so Vue Flow does not collapse */
+.canvas-page--drag-practice > .canvas-page__workspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 320px !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.canvas-page--drag-practice > .canvas-page__workspace > .canvas-page__diagram {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.canvas-page--drag-practice .canvas-page__diagram > .mc-dual-lecture__canvas,
+.canvas-page--drag-practice .canvas-page__diagram .diagram-canvas,
+.canvas-page--drag-practice .canvas-page__diagram .vue-flow-wrapper {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.canvas-page--drag-practice > .canvas-page__workspace > .drag-practice-pane {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+</style>

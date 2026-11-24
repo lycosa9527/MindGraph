@@ -272,7 +272,7 @@ export default {
   'rootConceptModal.title': 'Root concept',
   'rootConceptModal.titleConceptList': 'Concept list',
   'mindmate.collabPill': 'Online collab',
-  'mindmate.collabJoinChatroom': 'Join chatroom',
+  'mindmate.collabJoinChatroom': 'Join seminar',
   'mindmate.collabJoinOrgSeminar': 'Join school seminar',
   'mindmate.collabJoinPublicSeminar': 'Join cross-school seminar',
   'mindmate.collabStartSession': 'Start session',

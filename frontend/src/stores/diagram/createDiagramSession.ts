@@ -311,7 +311,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     pasteMindMapClipboardBranches,
   } = mindMapOpsSlice
   const { removeBubbleMapNodes } = bubbleMapOpsSlice
-  const { addBraceMapPart, addBraceMapChildren, removeBraceMapNodes } = braceMapOpsSlice
+  const { addBraceMapPart, addBraceMapChildren, insertBraceMapChild, removeBraceMapNodes } =
+    braceMapOpsSlice
   const { addDoubleBubbleMapNode, removeDoubleBubbleMapNodes } = doubleBubbleMapOpsSlice
   const {
     toggleFlowMapOrientation,
@@ -329,7 +330,9 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     getTreeMapDescendantIds,
     moveTreeMapBranch,
     addTreeMapCategory,
+    insertTreeMapCategory,
     addTreeMapChild,
+    insertTreeMapChild,
   } = treeMapOpsSlice
 
   ctx.getMindMapDescendantIds = getMindMapDescendantIds
@@ -631,6 +634,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     removeBubbleMapNodes,
     addBraceMapPart,
     addBraceMapChildren,
+    insertBraceMapChild,
     removeBraceMapNodes,
     addMindMapBranch,
     addMindMapChild,
@@ -707,7 +711,9 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     setFlowMapStructureMode,
     getFlowMapStructureMode,
     addTreeMapCategory,
+    insertTreeMapCategory,
     addTreeMapChild,
+    insertTreeMapChild,
     moveTreeMapBranch,
     getTreeMapDescendantIds,
     removeTreeMapNodes,

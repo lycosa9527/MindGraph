@@ -439,6 +439,9 @@ body {
   z-index: 5400 !important;
 }
 
+/* Worksheet compare ElSelect uses the same 5400 band via
+ * `.worksheet-text-modal-select-popper` in canvas-worksheet-text-modal.css. */
+
 /*
  * Element Plus dialog / message-box: header close uses physical `right: 0`.
  * Use inline-end so the × sits on the trailing edge in RTL (physical left), matching notifications.

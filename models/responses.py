@@ -451,6 +451,10 @@ class SnapshotMetadata(BaseModel):
     id: int = Field(..., description="Snapshot primary key")
     version_number: int = Field(..., description="Version number within the diagram (1–10)")
     created_at: datetime = Field(..., description="When the snapshot was taken")
+    title: Optional[str] = Field(
+        default=None,
+        description="Optional user-facing label; null falls back to Snapshot {n}",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -458,6 +462,7 @@ class SnapshotMetadata(BaseModel):
                 "id": 1,
                 "version_number": 1,
                 "created_at": "2026-03-24T10:00:00",
+                "title": "Draft before review",
             }
         }
     )

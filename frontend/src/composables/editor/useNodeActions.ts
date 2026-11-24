@@ -201,6 +201,11 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
+    if (diagramType === 'tree_map') {
+      addTreeCategoryNode()
+      return
+    }
+
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
 
     if (

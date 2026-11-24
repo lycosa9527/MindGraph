@@ -100,7 +100,7 @@ export function useMindMapRibbonActions() {
 
   function handleAddChildClick(): void {
     const selectedId = diagramStore.selectedNodes[0]
-    if (!selectedId || selectedId === 'topic') {
+    if (!selectedId || selectedId === 'topic' || selectedId === 'tree-topic') {
       handleAddBranch()
       return
     }
@@ -154,6 +154,10 @@ export function useMindMapRibbonActions() {
 
   function deleteSnapshot(versionNumber: number): void {
     eventBus.emit('snapshot:delete_requested', { versionNumber })
+  }
+
+  function renameSnapshot(versionNumber: number): void {
+    eventBus.emit('snapshot:rename_requested', { versionNumber })
   }
 
   function restoreCurrentVersion(): void {
@@ -261,6 +265,7 @@ export function useMindMapRibbonActions() {
     restoreCurrentVersion,
     recallSnapshot,
     deleteSnapshot,
+    renameSnapshot,
     resetTemplate,
     structureMode,
     setStructure,

@@ -136,6 +136,8 @@
   background: #ffffff;
   box-shadow: 0 0 0 1px #d6d3d1 inset;
   gap: 0.35rem;
+  /* These picks are not filterable — avoid text-caret / edit affordance. */
+  cursor: pointer;
 }
 
 .worksheet-text-modal .worksheet-text-modal__select .el-select__wrapper:hover {
@@ -162,8 +164,13 @@
   color: #1c1917;
 }
 
-.worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder {
-  color: #78716c;
+/*
+ * EP greys the filled label (`is-transparent`) while the menu is open so
+ * filterable selects look ready to type. These slot picks are not filterable —
+ * keep the chosen source solid instead of a dimmed/edit look.
+ */
+.worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder.is-transparent {
+  color: #1c1917;
 }
 
 .worksheet-text-modal .worksheet-text-modal__select .el-select__suffix {
@@ -189,6 +196,14 @@
   width: 0;
   min-width: 0;
   padding: 0;
+}
+
+/*
+ * Teleported select menus default near EP ~2000; worksheet dialog overlay is
+ * 5200 (SWISS_GLASS_CANVAS_DIALOG_Z). Keep in sync with index.css coming-soon tip.
+ */
+.el-select__popper.worksheet-text-modal-select-popper.el-popper {
+  z-index: 5400 !important;
 }
 
 .worksheet-text-modal__preview-slots-hint {
@@ -729,8 +744,8 @@
   color: #fafaf9;
 }
 
-.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder {
-  color: #9ca3af;
+.dark .worksheet-text-modal .worksheet-text-modal__select .el-select__placeholder.is-transparent {
+  color: #fafaf9;
 }
 
 .dark .worksheet-text-modal .worksheet-text-modal__select .el-select__caret {

@@ -9,6 +9,7 @@ export function registerMindMapRibbonPageBridge(options: {
   handleSaveKey: (options?: { recordHistory?: boolean }) => void | Promise<void>
   handleSnapshotRecall: (version: number) => void
   handleSnapshotDelete: (version: number) => void
+  handleSnapshotRename: (version: number) => void
   handleRestoreCurrentVersion: () => void
   handleStartPresentationWithTier: () => void | Promise<void>
   handleStartSlidesWithTier: () => void | Promise<void>
@@ -34,6 +35,13 @@ export function registerMindMapRibbonPageBridge(options: {
     'snapshot:delete_requested',
     ({ versionNumber }) => {
       void options.handleSnapshotDelete(versionNumber)
+    },
+    'CanvasPage'
+  )
+  eventBus.onWithOwner(
+    'snapshot:rename_requested',
+    ({ versionNumber }) => {
+      void options.handleSnapshotRename(versionNumber)
     },
     'CanvasPage'
   )

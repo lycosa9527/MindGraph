@@ -5,6 +5,7 @@
 import { resetFormatBrushState } from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { resetDragPracticeUi } from '@/composables/mindMap/useDragPractice'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { teardownMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import {
@@ -36,6 +37,7 @@ export function clearCanvasEphemeralSession(): void {
   useCanvasNodeIndicatorsStore().clearAll()
   useOrgGenerationCacheNoticeStore().hide()
   resetLearningSheetCustomModeUi()
+  resetDragPracticeUi()
   resetMindMapSideToolbarState()
   resetFormatBrushState()
   canvasVirtualKeyboardOpen.value = false

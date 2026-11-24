@@ -141,13 +141,10 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleAddChildKey() {
     if (isTypingInInput()) return
     if (diagramStore.type === 'concept_map') return
-    if (diagramStore.type === 'tree_map') {
-      eventBus.emit('diagram:add_node_requested', {})
-      return
-    }
     if (
       diagramStore.type === 'mindmap' ||
       diagramStore.type === 'mind_map' ||
+      diagramStore.type === 'tree_map' ||
       diagramStore.type === 'brace_map' ||
       diagramStore.type === 'flow_map' ||
       diagramStore.type === 'multi_flow_map' ||

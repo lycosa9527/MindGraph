@@ -103,12 +103,6 @@ export function diagramInsertActions(
         shortcutKeys: ['Tab'],
         needsSelection: false,
       },
-      {
-        id: 'nextLevel',
-        labelKey: 'canvas.toolbar.addNextLevel',
-        insertKind: 'nextLevel',
-        needsSelection: false,
-      },
     ]
   }
   if (type === 'double_bubble_map') {

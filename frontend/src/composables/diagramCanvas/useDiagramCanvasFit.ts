@@ -14,6 +14,7 @@ import {
   type OpenCanvasFrameNode,
   frameNodesInOpenCanvas,
 } from '@/composables/diagramCanvas/openCanvasNodeFrame'
+import { isDragPracticeSplitOpen } from '@/composables/mindMap/useDragPractice'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import type { usePanelsStore } from '@/stores/panels'
@@ -219,6 +220,8 @@ export function useDiagramCanvasFit(options: {
 
   function getRightPanelWidth(): number {
     let width = 0
+    // The practice split already shrinks the Vue Flow pane, so do not pad again.
+    if (isDragPracticeSplitOpen()) return 0
     if (panelsStore.propertyPanel.isOpen) {
       width = PANEL.PROPERTY_WIDTH
     } else if (panelsStore.mindmatePanel.isOpen) {

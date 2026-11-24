@@ -266,8 +266,13 @@ export function useCanvasToolbarFormatting(options?: {
   ) {
     const ids = getTargetNodeIds()
     if (!ids.length) return
+    const editableIds = ids.filter((nodeId) => {
+      const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+      return node && node.type !== 'label' && node.type !== 'boundary'
+    })
+    if (!editableIds.length) return
     diagramStore.pushHistory(t('canvas.toolbar.updateTextStyle'))
-    ids.forEach((nodeId) => {
+    editableIds.forEach((nodeId) => {
       const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
       if (node) {
         diagramStore.updateNode(nodeId, {
@@ -312,11 +317,16 @@ export function useCanvasToolbarFormatting(options?: {
       if (!options?.silent) notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
+    const editableIds = ids.filter((nodeId) => {
+      const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+      return node && node.type !== 'label'
+    })
+    if (!editableIds.length) return
     const baseColor = color ?? backgroundColor.value
     backgroundColor.value = colorToHex(baseColor)
     const value = hexToRgba(colorToHex(baseColor), backgroundOpacity.value)
     diagramStore.pushHistory(t('canvas.toolbar.updateBackground'))
-    ids.forEach((nodeId) => {
+    editableIds.forEach((nodeId) => {
       const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
       if (node) {
         const mergedStyle = { ...(node.style || {}), backgroundColor: value }
@@ -339,11 +349,16 @@ export function useCanvasToolbarFormatting(options?: {
       if (!options?.silent) notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
+    const editableIds = ids.filter((nodeId) => {
+      const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+      return node && node.type !== 'label'
+    })
+    if (!editableIds.length) return
     if (updates.borderColor !== undefined) borderColor.value = updates.borderColor
     if (updates.borderWidth !== undefined) borderWidth.value = updates.borderWidth
     if (updates.borderStyle !== undefined) borderStyle.value = updates.borderStyle
     diagramStore.pushHistory(t('canvas.toolbar.updateBorder'))
-    ids.forEach((nodeId) => {
+    editableIds.forEach((nodeId) => {
       const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
       if (node) {
         const mergedStyle = { ...(node.style || {}), ...updates }

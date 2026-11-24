@@ -15,6 +15,8 @@ import {
   appendTreeMapCategory,
   appendTreeMapChild,
   arrangeTreeMapNodes,
+  insertTreeMapCategoryAt,
+  insertTreeMapChildAt,
   materializeTreeMapGraph,
   removeTreeMapGraphNodes,
 } from './treeMapStructure'
@@ -133,7 +135,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
 
   function moveTreeMapBranch(
     nodeId: string,
-    targetType: 'topic' | 'child' | 'sibling',
+    targetType: 'topic' | 'child' | 'before' | 'after' | 'sibling',
     targetId?: string
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
@@ -141,15 +143,17 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return false
 
+    type TreeLeaf = { id?: string; text: string; textSecondary?: string }
+    type TreeCategory = {
+      id?: string
+      text: string
+      textSecondary?: string
+      children?: TreeLeaf[]
+    }
     const root = spec.root as {
       id?: string
       text: string
-      children?: Array<{
-        id?: string
-        text: string
-        textSecondary?: string
-        children?: Array<{ id?: string; text: string; textSecondary?: string }>
-      }>
+      children?: TreeCategory[]
     }
     const categories = root.children ?? []
 
@@ -167,7 +171,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
 
     let sourceCatIdx: number
     let sourceLeafIdx = -1
-    let sourceItem: { id?: string; text: string; children?: unknown[] } | null
+    let sourceItem: TreeCategory | TreeLeaf | null
 
     if (isCategory(nodeId)) {
       sourceCatIdx = findCategoryIndex(nodeId)
@@ -187,20 +191,16 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     }
     if (!sourceItem) return false
 
-    if (targetType === 'sibling' && targetId) {
+    const insertPlacement = targetType === 'sibling' ? 'before' : targetType
+
+    if ((insertPlacement === 'before' || insertPlacement === 'after') && targetId) {
       if (isCategory(nodeId) && isCategory(targetId)) {
         const targetCatIdx = findCategoryIndex(targetId)
         if (targetCatIdx < 0 || targetCatIdx >= categories.length) return false
         const [removed] = categories.splice(sourceCatIdx, 1)
-        const adj = sourceCatIdx < targetCatIdx ? targetCatIdx - 1 : targetCatIdx
-        const [removedTarget] = categories.splice(adj, 1)
-        if (sourceCatIdx < targetCatIdx) {
-          categories.splice(sourceCatIdx, 0, removedTarget)
-          categories.splice(targetCatIdx, 0, removed)
-        } else {
-          categories.splice(targetCatIdx, 0, removed)
-          categories.splice(sourceCatIdx, 0, removedTarget)
-        }
+        let insertIdx = insertPlacement === 'before' ? targetCatIdx : targetCatIdx + 1
+        if (sourceCatIdx < insertIdx) insertIdx -= 1
+        categories.splice(insertIdx, 0, removed)
       } else if (isLeaf(nodeId) && isLeaf(targetId)) {
         const targetCatIdx = categories.findIndex((cat) =>
           (cat.children ?? []).some((leaf) => leaf.id === targetId)
@@ -208,22 +208,25 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
         const targetLeafIdx = (categories[targetCatIdx]?.children ?? []).findIndex(
           (leaf) => leaf.id === targetId
         )
+        if (targetCatIdx < 0 || targetLeafIdx < 0) return false
         const srcCat = categories[sourceCatIdx]
         const tgtCat = categories[targetCatIdx]
         const srcLeaves = srcCat?.children ?? []
         const tgtLeaves = tgtCat?.children ?? []
-        const srcLeaf = srcLeaves[sourceLeafIdx]
-        const tgtLeaf = tgtLeaves[targetLeafIdx]
-        if (!srcLeaf || !tgtLeaf) return false
-        if (sourceCatIdx === targetCatIdx) {
-          srcLeaves[sourceLeafIdx] = tgtLeaf
-          srcLeaves[targetLeafIdx] = srcLeaf
-        } else {
-          srcLeaves.splice(sourceLeafIdx, 1)
-          tgtLeaves.splice(targetLeafIdx, 1)
-          srcLeaves.splice(sourceLeafIdx, 0, tgtLeaf)
-          tgtLeaves.splice(targetLeafIdx, 0, srcLeaf)
-        }
+        const [removed] = srcLeaves.splice(sourceLeafIdx, 1)
+        let insertIdx = insertPlacement === 'before' ? targetLeafIdx : targetLeafIdx + 1
+        if (sourceCatIdx === targetCatIdx && sourceLeafIdx < insertIdx) insertIdx -= 1
+        tgtLeaves.splice(insertIdx, 0, removed)
+      } else if (isLeaf(nodeId) && isCategory(targetId)) {
+        const targetCatIdx = findCategoryIndex(targetId)
+        if (targetCatIdx < 0) return false
+        const srcCat = categories[sourceCatIdx]
+        const tgtCat = categories[targetCatIdx]
+        const srcLeaves = srcCat?.children ?? []
+        const [removed] = srcLeaves.splice(sourceLeafIdx, 1)
+        if (!tgtCat.children) tgtCat.children = []
+        const insertIdx = insertPlacement === 'before' ? 0 : tgtCat.children.length
+        tgtCat.children.splice(insertIdx, 0, removed)
       } else {
         return false
       }
@@ -277,10 +280,32 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     return true
   }
 
+  function insertTreeMapCategory(label: InsertLabelInput, atIndex: number): boolean {
+    if (isDiagramPresentationReadOnly(ctx)) return false
+    if (type.value !== 'tree_map' || !data.value?.nodes) return false
+    const next = insertTreeMapCategoryAt(data.value.nodes, label, atIndex)
+    if (!next) return false
+    commitTreeMapGraph(next.nodes, next.connections, 'Add tree category', 'add')
+    return true
+  }
+
   function addTreeMapChild(categoryId: string, label: InsertLabelInput): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'tree_map' || !data.value?.nodes) return false
     const next = appendTreeMapChild(data.value.nodes, categoryId, label)
+    if (!next) return false
+    commitTreeMapGraph(next.nodes, next.connections, 'Add tree child', 'add')
+    return true
+  }
+
+  function insertTreeMapChild(
+    categoryId: string,
+    label: InsertLabelInput,
+    atIndex: number
+  ): boolean {
+    if (isDiagramPresentationReadOnly(ctx)) return false
+    if (type.value !== 'tree_map' || !data.value?.nodes) return false
+    const next = insertTreeMapChildAt(data.value.nodes, categoryId, label, atIndex)
     if (!next) return false
     commitTreeMapGraph(next.nodes, next.connections, 'Add tree child', 'add')
     return true
@@ -292,6 +317,8 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     getTreeMapDescendantIds,
     moveTreeMapBranch,
     addTreeMapCategory,
+    insertTreeMapCategory,
     addTreeMapChild,
+    insertTreeMapChild,
   }
 }

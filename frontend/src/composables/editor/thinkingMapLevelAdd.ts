@@ -2,7 +2,7 @@
  * Outer-level and inner-level adds for tree, brace, and double bubble maps.
  * Enter and the first toolbar button add the outer level.
  * Tab and the second toolbar button add the inner level.
- * Brace maps have a third button that adds one level below the selected node.
+ * Brace maps add the next level from the canvas + on the right of the selected node.
  */
 import type { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { InsertLabel } from '@/diagramBilingual/insertLabel'
@@ -125,7 +125,7 @@ export function createThinkingMapLevelAdds(
   notify: LevelAddNotify
 ) {
   function addTreeCategoryNode(): boolean {
-    if (!diagramStore.addTreeMapCategory(label('canvas.toolbar.newBranch'))) return false
+    if (!diagramStore.addTreeMapCategory(label('diagram.newCategory'))) return false
     const columns = treeMapColumnsOf(diagramStore.data?.nodes ?? [])
     selectNode(diagramStore, columns[columns.length - 1]?.category.id)
     notify.successKey('canvas.toolbar.branchAdded')
@@ -143,7 +143,7 @@ export function createThinkingMapLevelAdds(
       notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
       return false
     }
-    if (!diagramStore.addTreeMapChild(categoryId, label('canvas.toolbar.newChild'))) {
+    if (!diagramStore.addTreeMapChild(categoryId, label('diagram.newItem'))) {
       notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
       return false
     }

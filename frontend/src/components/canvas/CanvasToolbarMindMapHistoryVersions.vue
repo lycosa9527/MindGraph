@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { type ComputedRef, computed, inject, ref, watch } from 'vue'
 
-import { ElDropdown } from 'element-plus'
+import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { Check, ChevronDown, Clock } from '@lucide/vue'
+import { Check, ChevronDown, Clock, Edit3, MoreHorizontal, Trash2 } from '@lucide/vue'
 
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
@@ -16,6 +16,7 @@ import {
   canMutateDiagramSnapshots,
   formatSnapshotCreatedAt,
   newestSnapshotIdentity,
+  snapshotDisplayLabel,
   snapshotsNewestFirst,
 } from '@/composables/editor/diagramSnapshotVersions'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
@@ -48,13 +49,18 @@ const canMutateSnapshots = computed(() =>
 )
 
 const historyRows = computed(() =>
-  snapshotsNewestFirst(snapshotHistory.snapshots.value).map((snap) => ({
-    id: snap.id,
-    versionNumber: snap.version_number,
-    timeLabel: formatSnapshotCreatedAt(snap.created_at, currentLanguage.value),
-    isActive: snapshotHistory.activeSnapshotVersion.value === snap.version_number,
-    isRecalling: snapshotHistory.recallingVersion.value === snap.version_number,
-  }))
+  snapshotsNewestFirst(snapshotHistory.snapshots.value).map((snap) => {
+    const fallback = t('canvas.ribbon.historySnapshot', { n: snap.version_number })
+    return {
+      id: snap.id,
+      versionNumber: snap.version_number,
+      title: snap.title?.trim() || '',
+      label: snapshotDisplayLabel(snap, fallback),
+      timeLabel: formatSnapshotCreatedAt(snap.created_at, currentLanguage.value),
+      isActive: snapshotHistory.activeSnapshotVersion.value === snap.version_number,
+      isRecalling: snapshotHistory.recallingVersion.value === snap.version_number,
+    }
+  })
 )
 
 const isBusy = computed(
@@ -80,6 +86,19 @@ function onSelectSnapshot(versionNumber: number): void {
   if (!canMutateSnapshots.value || isBusy.value) return
   if (snapshotHistory.activeSnapshotVersion.value === versionNumber) return
   ribbon.recallSnapshot(versionNumber)
+}
+
+function onRenameSnapshot(versionNumber: number): void {
+  if (!canMutateSnapshots.value || isBusy.value) return
+  closeDropdown()
+  // Let the nested menu finish closing before the prompt mounts above it.
+  void Promise.resolve().then(() => ribbon.renameSnapshot(versionNumber))
+}
+
+function onDeleteSnapshot(versionNumber: number): void {
+  if (!canMutateSnapshots.value || isBusy.value) return
+  closeDropdown()
+  void Promise.resolve().then(() => ribbon.deleteSnapshot(versionNumber))
 }
 
 watch(
@@ -118,6 +137,7 @@ watch(
           v-model:visible="dropdownOpen"
           trigger="click"
           placement="bottom-start"
+          :hide-on-click="false"
           popper-class="mm-toolbar-popper mm-toolbar-popper--history"
         >
           <button
@@ -149,7 +169,7 @@ watch(
               <button
                 v-if="!isCurrentActive"
                 type="button"
-                class="mm-history-versions__item"
+                class="mm-history-versions__item mm-history-versions__item--plain"
                 :class="{ 'is-dimmed': isRestoringCurrent }"
                 :disabled="isBusy"
                 role="menuitem"
@@ -162,25 +182,23 @@ watch(
                   /></span>
                 </span>
               </button>
-              <button
+              <div
                 v-for="row in historyRows"
                 :key="row.id"
-                type="button"
                 class="mm-history-versions__item"
                 :class="{ 'is-active': row.isActive, 'is-dimmed': row.isRecalling }"
-                :disabled="isBusy"
                 role="menuitem"
                 :aria-current="row.isActive ? 'true' : undefined"
                 :data-testid="`mindmap-history-versions-snap-${row.versionNumber}`"
-                @click="onSelectSnapshot(row.versionNumber)"
               >
-                <span class="mm-history-versions__item-row">
+                <button
+                  type="button"
+                  class="mm-history-versions__item-main"
+                  :disabled="isBusy"
+                  @click="onSelectSnapshot(row.versionNumber)"
+                >
                   <span class="mm-history-versions__item-copy">
-                    <span class="mm-history-versions__item-label"
-                      ><I18nText
-                        k="canvas.ribbon.historySnapshot"
-                        :params="{ n: row.versionNumber }"
-                    /></span>
+                    <span class="mm-history-versions__item-label">{{ row.label }}</span>
                     <span
                       v-if="row.timeLabel"
                       class="mm-history-versions__item-time"
@@ -192,8 +210,49 @@ watch(
                     class="mm-history-versions__check"
                     :size="16"
                   />
-                </span>
-              </button>
+                </button>
+                <ElDropdown
+                  trigger="click"
+                  placement="bottom-end"
+                  teleported
+                  popper-class="mm-history-versions-item-more-popper"
+                  @click.stop
+                >
+                  <button
+                    type="button"
+                    class="mm-history-versions__more"
+                    :disabled="isBusy"
+                    :aria-label="t('canvas.ribbon.historySnapshotMore')"
+                    :data-testid="`mindmap-history-versions-more-${row.versionNumber}`"
+                    @click.stop
+                  >
+                    <MoreHorizontal :size="16" />
+                  </button>
+                  <template #dropdown>
+                    <ElDropdownMenu class="diagram-history-more__menu">
+                      <ElDropdownItem
+                        :disabled="isBusy"
+                        @click="onRenameSnapshot(row.versionNumber)"
+                      >
+                        <span class="diagram-history-more__row">
+                          <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
+                          <I18nText k="canvas.ribbon.historyRename" />
+                        </span>
+                      </ElDropdownItem>
+                      <ElDropdownItem
+                        divided
+                        :disabled="isBusy"
+                        @click="onDeleteSnapshot(row.versionNumber)"
+                      >
+                        <span class="diagram-history-more__row diagram-history-more__row--danger">
+                          <Trash2 class="w-4 h-4 shrink-0" />
+                          <I18nText k="canvas.ribbon.historyDelete" />
+                        </span>
+                      </ElDropdownItem>
+                    </ElDropdownMenu>
+                  </template>
+                </ElDropdown>
+              </div>
               <p
                 v-if="!historyRows.length"
                 class="mm-history-versions__empty"

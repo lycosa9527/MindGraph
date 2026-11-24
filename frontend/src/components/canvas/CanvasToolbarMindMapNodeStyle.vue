@@ -2,7 +2,7 @@
 /**
  * Style-tab node chrome — same 28px row metrics as the text-style strip.
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElPopover } from 'element-plus'
 
@@ -13,7 +13,8 @@ import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { type NodeShape, nodeShapeOptionsForDiagram } from '@/utils/nodeShapeStyle'
 
 import FloatingToolbarColorPicker from './FloatingToolbarColorPicker.vue'
 
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<{ compact?: boolean; disabled?: boolean }
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const diagramStore = useDiagramSession()
 const {
   backgroundColor,
   nativeFillColor,
@@ -45,6 +47,24 @@ const shapeLabels: Record<NodeShape, string> = {
   underline: 'canvas.floatingToolbar.shapeUnderline',
 }
 
+const shapeOptions = computed(() => nodeShapeOptionsForDiagram(diagramStore.type))
+
+/** Dimension labels: hide shape / fill / border — text styling lives on the format strip. */
+const selectedIsTextOnlyLabel = computed(() => {
+  const ids = diagramStore.selectedNodes
+  if (ids.length !== 1) return false
+  const node = diagramStore.data?.nodes?.find((item) => item.id === ids[0])
+  return node?.type === 'label'
+})
+const hideNodeShape = computed(() => {
+  const ids = diagramStore.selectedNodes
+  if (ids.length !== 1) return false
+  const node = diagramStore.data?.nodes?.find((item) => item.id === ids[0])
+  return node?.type === 'boundary' || node?.type === 'label'
+})
+const hideNodeFillAndBorder = computed(() => selectedIsTextOnlyLabel.value)
+const showNodeStyleChrome = computed(() => !hideNodeShape.value || !hideNodeFillAndBorder.value)
+
 function pickColor(panel: 'fill' | 'border', color: string): void {
   if (panel === 'fill') {
     handleFillColorPick(color)
@@ -65,6 +85,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
 
 <template>
   <div
+    v-if="showNodeStyleChrome"
     class="mm-style-cluster"
     :class="{ 'is-dimmed': disabled }"
     :aria-disabled="disabled"
@@ -77,6 +98,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       <I18nText k="canvas.ribbon.nodeStyle" />
     </span>
     <ElDropdown
+      v-if="!hideNodeShape"
       trigger="click"
       placement="bottom-start"
       popper-class="node-floating-toolbar-popper"
@@ -105,7 +127,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       <template #dropdown>
         <ElDropdownMenu class="nft-dropdown-menu">
           <ElDropdownItem
-            v-for="shape in NODE_SHAPE_OPTIONS"
+            v-for="shape in shapeOptions"
             :key="shape"
             class="nft-dropdown-item"
             :class="{ 'nft-dropdown-item--active': nodeShape === shape }"
@@ -118,10 +140,11 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     </ElDropdown>
 
     <ElPopover
+      v-if="!hideNodeFillAndBorder"
       v-model:visible="borderOpen"
       trigger="click"
       placement="bottom"
-      :width="176"
+      :width="181"
       popper-class="node-floating-toolbar-popper"
     >
       <template #reference>
@@ -151,10 +174,11 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     </ElPopover>
 
     <ElPopover
+      v-if="!hideNodeFillAndBorder"
       v-model:visible="fillOpen"
       trigger="click"
       placement="bottom"
-      :width="176"
+      :width="181"
       popper-class="node-floating-toolbar-popper"
     >
       <template #reference>

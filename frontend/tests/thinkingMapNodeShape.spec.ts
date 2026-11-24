@@ -5,7 +5,9 @@ import { recalculateBubbleMapLayout } from '@/stores/specLoader/bubbleMap'
 import type { DiagramNode } from '@/types'
 import {
   CIRCLE_MAP_OVAL_WIDTH_RATIO,
+  NODE_SHAPE_OPTIONS,
   defaultDisplayedNodeShape,
+  nodeShapeOptionsForDiagram,
   shapePackHalfExtent,
   shapeRayHitDistance,
 } from '@/utils/nodeShapeStyle'
@@ -95,5 +97,12 @@ describe('thinking map node shape outline', () => {
     expect(defaultDisplayedNodeShape('circle_map', 'boundary')).toBeNull()
     expect(defaultDisplayedNodeShape('tree_map', 'label')).toBeNull()
     expect(defaultDisplayedNodeShape('brace_map', 'label')).toBeNull()
+  })
+
+  it('hides underline shape options on flow maps', () => {
+    expect(nodeShapeOptionsForDiagram('flow_map')).toEqual(['rounded', 'rectangle', 'oval'])
+    expect(nodeShapeOptionsForDiagram('multi_flow_map')).toEqual(['rounded', 'rectangle', 'oval'])
+    expect(nodeShapeOptionsForDiagram('mindmap')).toEqual(NODE_SHAPE_OPTIONS)
+    expect(nodeShapeOptionsForDiagram('mindmap')).toContain('underline')
   })
 })

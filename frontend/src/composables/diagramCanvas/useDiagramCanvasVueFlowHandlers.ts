@@ -10,6 +10,10 @@ import { applyFormatBrushToNode } from '@/composables/canvasToolbar/useCanvasFor
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
+  cancelScheduledDragPracticePick,
+  scheduleDragPracticePickNodeClick,
+} from '@/composables/mindMap/useDragPractice'
+import {
   cancelScheduledLearningSheetPick,
   scheduleLearningSheetPickNodeClick,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -145,12 +149,14 @@ export function useDiagramCanvasVueFlowHandlers(
       return
     }
     if (scheduleLearningSheetPickNodeClick(mindNode.id)) return
+    if (scheduleDragPracticePickNodeClick(mindNode.id)) return
     eventBus.emit('canvas:node_clicked', { nodeId: mindNode.id })
     emit('nodeClick', mindNode)
   })
 
   onNodeDoubleClick(({ node }) => {
     cancelScheduledLearningSheetPick()
+    cancelScheduledDragPracticePick()
     cancelTrainingDragKnock()
     emit('nodeDoubleClick', node as unknown as MindGraphNode)
   })

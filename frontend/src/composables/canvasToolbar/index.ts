@@ -29,6 +29,8 @@ export {
 export { useDoubleBubbleAddPosition } from './useDoubleBubbleAddPosition'
 export { useFlowMapAddPosition } from './useFlowMapAddPosition'
 export { useMindMapDirectionalAddPosition } from './useMindMapDirectionalAddPosition'
+export { useTreeMapAddPosition } from './useTreeMapAddPosition'
+export { useBraceMapAddPosition } from './useBraceMapAddPosition'
 export {
   useNodeFloatingToolbarPosition,
   resolveFloatingToolbarAnchor,

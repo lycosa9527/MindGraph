@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.226] - 2026-11-24
+
+> **Tree and brace maps grow from canvas + handles and walk in the node carousel; drag practice, named snapshots, and “讲给学生” land on the ribbon.**
+
+### Added
+
+- **Tree map add handles** — Selecting the topic, a category, or a leaf shows directional **+** controls. The topic adds the next category below. A category inserts a sibling to the left or right and appends a leaf below. A leaf inserts a sibling above or below in the same column.
+- **Tree map carousel** — Node carousel builds tree slides: overview → each category (**分类**), or overview → each category then each item under it (**项目遍历**).
+- **Tree map context menu** — Right-click a category or leaf to add an item under that category, or add a category from any tree node.
+- **Brace map add handles** — Selecting the whole shows a **+** on the right that appends a part. Selecting a part or any deeper node shows **+** above and below to insert a sibling, and **+** on the right to add the next level (two children when that node is empty, otherwise one more).
+- **Brace map carousel** — Node carousel walks a brace map: overview → each part with everything under it, or overview → every descendant in tree order.
+- **Drag practice** — Teaching tab **拖拽练习** (and the classroom remote) blanks nodes in session state without changing the diagram or the learning-sheet blanks. Choose all blanks, a random set, or click nodes, then drag chips back. Same-column or same-parent answers are interchangeable; sequences and analogy pairs stay on their own slot.
+- **Snapshot titles** — Each history snapshot can have a display name (up to 100 characters). The history menu renames and deletes a snapshot; delete asks for confirmation and keeps the highlight on the same row after versions renumber. Migration `0173` adds `diagram_snapshots.title`.
+- **Teach this diagram** — Research tab **讲给学生** sits to the left of MindMate. It opens MindMate and sends the same prompt as the welcome bubble 「这张图示怎么给学生讲?」.
+- **Seminar share Markdown** — **分享消息记录** renders message Markdown (sanitized) in the preview and in the exported image.
+- **Classroom lesson page** — Standalone `classroom/expert-system-vs-neural-network.html` is a four-task high-school lesson (read the double-bubble map, walk an example, match scenarios, drag practice) using the product’s double-bubble layout. It is not wired into the app.
+
+### Changed
+
+- **Tree map moves** — Dropping a category or leaf inserts it before or after the target instead of swapping. A leaf dropped on a category center is appended under that category. Horizontal rows use left/right hit zones.
+- **Node color picker** — The floating and ribbon palettes use a compact 8×4 document theme (light to dark), with mind-map rainbow fills and lines in a second block.
+- **Node shapes on flow maps** — Flow and multi-flow maps offer rounded, rectangle, and oval. Underline stays off those types.
+- **Dimension labels** — A `label` node (tree or brace dimension) keeps text styling only. Shape, fill, and border controls hide on the floating toolbar and the style tab.
+- **Worksheet export picks** — Diagram-source dropdowns keep the chosen label solid while the menu is open, and the menu stacks above the export dialog.
+- **Join seminar copy** — The English collab chip says **Join seminar**.
+
+### Removed
+
+- **Brace map “添加下一级”** — The ribbon button is gone. The canvas **+** on the right of the selected node adds that next level. **添加部分** (Enter) and **添加子部分** (Tab) stay.
+
+### Tests
+
+- [`frontend/tests/treeMapAddHandles.spec.ts`](frontend/tests/treeMapAddHandles.spec.ts), [`frontend/tests/treeMapSlides.spec.ts`](frontend/tests/treeMapSlides.spec.ts), [`frontend/tests/treeMapMoveInsert.spec.ts`](frontend/tests/treeMapMoveInsert.spec.ts)
+- [`frontend/tests/braceMapAddHandles.spec.ts`](frontend/tests/braceMapAddHandles.spec.ts), [`frontend/tests/braceMapSlides.spec.ts`](frontend/tests/braceMapSlides.spec.ts), [`frontend/tests/braceMapInsert.spec.ts`](frontend/tests/braceMapInsert.spec.ts)
+- [`frontend/tests/dragPractice.spec.ts`](frontend/tests/dragPractice.spec.ts), [`frontend/tests/dragPracticeMatch.spec.ts`](frontend/tests/dragPracticeMatch.spec.ts)
+- Updated [`frontend/tests/diagramInsertActions.spec.ts`](frontend/tests/diagramInsertActions.spec.ts), [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/diagramSnapshotVersions.spec.ts`](frontend/tests/diagramSnapshotVersions.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/thinkingMapNodeShape.spec.ts`](frontend/tests/thinkingMapNodeShape.spec.ts), [`frontend/tests/treeMapStructure.spec.ts`](frontend/tests/treeMapStructure.spec.ts), [`tests/test_diagram_snapshots.py`](tests/test_diagram_snapshots.py)
+
 ## [5.180.225] - 2026-11-19
 
 > **Bound glasses follow the teacher's course, and a learning sheet can print a code for each student.**
