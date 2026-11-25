@@ -3,8 +3,36 @@
  */
 import { apiRequestJson } from '@/utils/apiClient'
 
-/** Matches the seminar API cap so a quoted reply is not cut mid-sentence. */
-export const MAX_SEMINAR_HIGHLIGHT_TEXT = 16000
+/** Matches the seminar chat cap so a teaching-design reply is not cut mid-sentence. */
+export const MAX_SEMINAR_HIGHLIGHT_TEXT = 65536
+
+/**
+ * Expand uses the live bubble when the pin is a truncated prefix of that message.
+ * A selected excerpt that is not a prefix stays as-is.
+ */
+export function resolveSeminarHighlightBodyText(
+  pinned: string,
+  liveContent?: string | null
+): string {
+  const snapshot = pinned || ''
+  const live = liveContent || ''
+  if (!live.trim()) {
+    return snapshot
+  }
+  if (!snapshot.trim()) {
+    return live
+  }
+  if (live.length <= snapshot.length) {
+    return snapshot
+  }
+  const snapStart = snapshot.trim()
+  const liveCompact = live.replace(/\s+/g, '')
+  const snapCompact = snapStart.replace(/\s+/g, '')
+  if (live.startsWith(snapStart) || liveCompact.startsWith(snapCompact)) {
+    return live
+  }
+  return snapshot
+}
 
 export interface SeminarHighlight {
   id: string

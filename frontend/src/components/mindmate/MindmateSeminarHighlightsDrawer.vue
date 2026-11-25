@@ -18,17 +18,19 @@ import {
   markdownRendererReady,
   renderRichMarkdownHtml,
 } from '@/composables/core/lazyMarkdown'
-import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import {
   type SeminarHighlight,
   locateSeminarMessage,
   pushSeminarHighlightNotice,
   removeSeminarHighlight,
   seminarHighlights,
+  seminarLiveMessages,
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import { beijingWallClock, parseApiInstant } from '@/utils/beijingClock'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
+import { seminarBubblePlainText } from '@/utils/mindmateSeminarFolder'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
+import { resolveSeminarHighlightBodyText } from '@/utils/mindmateSeminarHighlights'
 import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 import { stripMindmateThinkingBlocks } from '@/utils/stripMindmateThinking'
@@ -56,10 +58,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const filter = ref<'all' | 'mine'>('all')
 const preview = ref<SeminarHighlight | null>(null)
-const zoomTextEl = ref<HTMLElement | null>(null)
-const { html: previewHtml } = useRenderedMarkdown(() => preview.value?.text || '', {
-  stripThinkBlocks: true,
-})
+const zoomEl = ref<HTMLElement | null>(null)
 const picking = ref(false)
 const pickedIds = ref<string[]>([])
 
@@ -89,6 +88,29 @@ const cardHtml = computed(() => {
     out[item.id] = highlightMarkdown(item.text)
   }
   return out
+})
+
+function liveMessageText(messageId: number | null): string {
+  if (messageId == null || messageId <= 0) {
+    return ''
+  }
+  const row = seminarLiveMessages.value.find((item) => item.id === messageId)
+  if (!row) {
+    return ''
+  }
+  return seminarBubblePlainText(row.content || '')
+}
+
+const previewBodyHtml = computed(() => {
+  void markdownRendererReady.value
+  if (!preview.value) {
+    return ''
+  }
+  const text = resolveSeminarHighlightBodyText(
+    preview.value.text,
+    liveMessageText(preview.value.messageId)
+  )
+  return highlightMarkdown(text)
 })
 
 function canRemove(item: SeminarHighlight): boolean {
@@ -152,8 +174,8 @@ function roleLabel(name: string): string {
 async function openPreview(item: SeminarHighlight): Promise<void> {
   preview.value = item
   await nextTick()
-  if (zoomTextEl.value) {
-    zoomTextEl.value.scrollTop = 0
+  if (zoomEl.value) {
+    zoomEl.value.scrollTop = 0
   }
 }
 
@@ -451,9 +473,13 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="preview"
+        ref="zoomEl"
         class="mm-highlight-zoom"
-        @click.self="closePreview"
       >
+        <div
+          class="mm-highlight-zoom__sizer"
+          @click.self="closePreview"
+        >
         <article
           class="mm-highlight-zoom__card"
           role="dialog"
@@ -499,9 +525,8 @@ onUnmounted(() => {
           </header>
           <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml pipeline -->
           <div
-            ref="zoomTextEl"
             class="mm-highlight-zoom__text mindmate-seminar-room__markdown"
-            v-html="previewHtml"
+            v-html="previewBodyHtml"
           />
           <!-- eslint-enable vue/no-v-html -->
           <footer class="mm-highlight-card__foot">
@@ -544,6 +569,7 @@ onUnmounted(() => {
             </span>
           </footer>
         </article>
+        </div>
       </div>
     </Teleport>
     <MindmateSeminarShareDialog
@@ -768,7 +794,12 @@ onUnmounted(() => {
 
 .mm-highlight-card__text {
   margin: 0;
-  overflow: visible;
+  max-height: calc(1.55em * 4);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   color: #18191c;
   font-size: 13px;
   line-height: 1.55;
@@ -813,22 +844,25 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 3000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   overflow: auto;
-  padding: 4vh 24px;
   background: rgba(24, 25, 28, 0.36);
+}
+
+.mm-highlight-zoom__sizer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 24px;
 }
 
 .mm-highlight-zoom__card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   width: min(720px, 100%);
-  max-height: min(92vh, 920px);
-  margin: auto;
-  overflow: hidden;
+  max-width: 720px;
   padding: 18px 18px 14px;
   border-radius: 16px;
   background: #fff;
@@ -838,8 +872,14 @@ onUnmounted(() => {
 .mm-highlight-zoom__top {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 8px;
   min-width: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 4px;
+  background: #fff;
 }
 
 .mm-highlight-zoom__name {
@@ -867,10 +907,7 @@ onUnmounted(() => {
 }
 
 .mm-highlight-zoom__text {
-  flex: 1 1 0;
-  min-height: 0;
   margin: 0;
-  overflow: auto;
   color: #18191c;
   font-size: 15px;
   line-height: 1.7;
@@ -901,6 +938,7 @@ onUnmounted(() => {
 .mm-highlight-card__foot {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   justify-content: space-between;
   gap: 6px;
   flex-wrap: nowrap;

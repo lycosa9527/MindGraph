@@ -25,7 +25,7 @@ from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from utils.db.session_open import system_rls_session
 
 MAX_HIGHLIGHTS = 200
-MAX_HIGHLIGHT_TEXT = 16000
+MAX_HIGHLIGHT_TEXT = 65536
 MAX_NAME = 80
 
 
