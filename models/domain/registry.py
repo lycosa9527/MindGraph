@@ -129,6 +129,7 @@ from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
 from models.domain.mindmate_seminar import (
     MindmateSeminarBackgroundFile,
+    MindmateSeminarHighlight,
     MindmateSeminarMember,
     MindmateSeminarMessage,
     MindmateSeminarReadCursor,
@@ -223,6 +224,7 @@ __all__ = [
     "MindmateSeminarMessage",
     "MindmateSeminarMember",
     "MindmateSeminarBackgroundFile",
+    "MindmateSeminarHighlight",
     "MindmateSeminarReadCursor",
     "KittyOneSentenceSession",
     "KittyOneSentenceTurn",

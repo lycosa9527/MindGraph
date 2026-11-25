@@ -28,6 +28,29 @@ _TABLE_ROW_RE = re.compile(r"^\s*\|.+\|\s*$")
 _TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$")
 _BOLD_TITLE_RE = re.compile(r"^\*\*(.+)\*\*$")
 _SAFE_NAME = re.compile(r"[^\w\-.\u4e00-\u9fff]+", re.UNICODE)
+_TITLE_BOOK_RE = re.compile(r"[《“\"]([^》”\"]{1,40})[》”\"]\s*教学设计")
+_LESSON_NAME_RE = re.compile(r"(?:课例名称|课题名称|课题|标题)\s*[：:]\s*(.+)$")
+_META_FIELD_RE = re.compile(r"^(学段年级|学科|教材版本|课时说明|教师单位|教师姓名)\s*[：:]")
+GENERIC_DOCX_STEMS = frozenset(
+    {
+        "基本信息",
+        "摘要",
+        "总结",
+        "教学内容分析",
+        "学习者分析",
+        "学习目标及重难点",
+        "学习目标",
+        "思维训练点",
+        "学习活动设计",
+        "课例结构",
+        "板书设计",
+        "作业与拓展学习设计",
+        "作业与拓展",
+        "素材设计",
+        "研讨文档",
+        "教学设计",
+    }
+)
 _MATH_FONT = "Cambria Math"
 _CODE_FONT = "Consolas"
 _ORDERED_HANG_CM = 1.0
@@ -41,16 +64,40 @@ def sanitize_docx_stem(name: str, fallback: str) -> str:
 
 
 def reply_docx_filename(markdown: str, fallback: str) -> str:
-    """Name the file from the first heading, then the first line of text."""
-    for line in (markdown or "").splitlines():
+    """Name the file from a short document title, not a generic first heading."""
+    return f"{summarize_reply_docx_stem(markdown, fallback)}.docx"
+
+
+def summarize_reply_docx_stem(markdown: str, fallback: str) -> str:
+    """Pick a short stem: book-title, lesson name, then a non-generic heading."""
+    text = markdown or ""
+    book = _TITLE_BOOK_RE.search(text)
+    if book:
+        return sanitize_docx_stem(f"{book.group(1).strip()}教学设计", fallback)
+    for line in text.splitlines():
+        named = _LESSON_NAME_RE.search(line.strip())
+        if not named:
+            continue
+        stem = sanitize_docx_stem(inline_plain_text(named.group(1)), fallback)
+        if stem and stem not in GENERIC_DOCX_STEMS:
+            return stem
+    heading_stem = ""
+    for line in text.splitlines():
         heading = _HEADING_RE.match(line.strip())
         if heading:
-            return f"{sanitize_docx_stem(inline_plain_text(heading.group(2)), fallback)}.docx"
-    for line in (markdown or "").splitlines():
+            stem = sanitize_docx_stem(inline_plain_text(heading.group(2)), fallback)
+            if stem and stem not in GENERIC_DOCX_STEMS:
+                return stem
+            if not heading_stem:
+                heading_stem = stem
+            continue
+        if _META_FIELD_RE.match(line.strip()):
+            continue
         plain = inline_plain_text(line.strip())
-        if plain.strip():
-            return f"{sanitize_docx_stem(plain, fallback)}.docx"
-    return f"{fallback}.docx"
+        stem = sanitize_docx_stem(plain, "")
+        if stem and stem not in GENERIC_DOCX_STEMS:
+            return sanitize_docx_stem(plain[:24], fallback)
+    return heading_stem or fallback
 
 
 def build_markdown_docx(markdown: str) -> bytes:

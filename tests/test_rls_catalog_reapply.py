@@ -99,6 +99,7 @@ _FORCED_TABLES = frozenset(
         "mindmate_export_jobs",
         "mindmate_folders",
         "mindmate_seminar_background_files",
+        "mindmate_seminar_highlights",
         "mindmate_seminar_members",
         "mindmate_seminar_messages",
         "mindmate_seminar_read_cursors",

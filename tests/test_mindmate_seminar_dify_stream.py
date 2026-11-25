@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from clients.dify import DifyFile
 from services.dify.org_mindmate_client import MindmateDifyStream
+from services.features.mindmate_seminar.cited_files import CitedFilesBind
 from services.features.mindmate_seminar.dify_identity import (
     mindmate_seminar_dify_user_id,
     read_seminar_dify_conversation,
@@ -127,6 +129,94 @@ async def test_ai_message_end_omits_conversation_id() -> None:
     assert sent["mg_agent_name"] == "MindMate"
     assert sent["mg_school_name"] == "Demo School"
     assert "mg_school_blurb" not in sent
+    assert mock_client.stream_chat.call_args.kwargs.get("files") is None
+
+
+@pytest.mark.asyncio
+async def test_stream_attaches_cited_seminar_files() -> None:
+    """Cited resources are uploaded to Dify and their text is added to the query."""
+    broadcasts: list[dict] = []
+
+    async def _capture(_code: str, message: dict) -> None:
+        broadcasts.append(message)
+
+    mock_client = MagicMock()
+    bound = CitedFilesBind(
+        excerpt="【附件：策略研究.docx】\n家校协同德育要把冲突点做成课堂问题",
+        dify_files=[
+            DifyFile(type="document", transfer_method="local_file", upload_file_id="up-1"),
+        ],
+    )
+
+    with (
+        patch(
+            "services.features.mindmate_seminar.dify_stream.resolve_mindmate_dify_stream_short_lived",
+            AsyncMock(return_value=MindmateDifyStream(mock_client, False, "conv-9", 1)),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.apply_persona_inputs_for_organization_id",
+            AsyncMock(side_effect=_apply_persona),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.is_dify_stream_aborted",
+            AsyncMock(return_value=False),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.broadcast_to_all",
+            side_effect=_capture,
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.release_dify_stream_lock",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.clear_dify_stream_abort",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.clear_dify_stream_task",
+            MagicMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.bind_cited_files_for_dify",
+            AsyncMock(return_value=bound),
+        ) as bind_files,
+        patch(
+            "services.features.mindmate_seminar.dify_stream.org_cache.get_by_id",
+            AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.features.mindmate_seminar.dify_stream.get_mindmate_seminar_manager",
+        ) as mgr_factory,
+    ):
+        mgr = MagicMock()
+        saved = MagicMock()
+        saved.id = 99
+        saved.prev_id = 4
+        mgr.persist_message = AsyncMock(return_value=saved)
+        mgr.set_dify_conversation_id = AsyncMock()
+        mgr_factory.return_value = mgr
+
+        async def _one_chunk_stream(*_args, **_kwargs):
+            yield {"answer": "Hi", "conversation_id": "secret-conv-id"}
+
+        mock_client.stream_chat.return_value = _one_chunk_stream()
+
+        await stream_assistant_reply(
+            code="ABC-DEF",
+            session_id="sess-1",
+            org_id=1,
+            user_message="陈晓：这份报告对我们的教学有什么启示",
+            sender_user_id=7,
+            conversation_id="conv-9",
+            file_ids=["11111111-1111-1111-1111-111111111111"],
+        )
+
+    bind_files.assert_awaited_once()
+    kwargs = mock_client.stream_chat.call_args.kwargs
+    assert "家校协同德育要把冲突点做成课堂问题" in kwargs["message"]
+    assert kwargs["message"].startswith("陈晓：这份报告对我们的教学有什么启示")
+    assert kwargs["files"] == bound.dify_files
 
 
 @pytest.mark.asyncio

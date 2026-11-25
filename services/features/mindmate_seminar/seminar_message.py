@@ -20,6 +20,7 @@ from services.features.mindmate_seminar.config import (
     MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS,
     MINDMATE_COLLAB_MAX_LIVE_SECONDS,
 )
+from services.features.mindmate_seminar.cited_files import DEFAULT_CITED_FILE_QUERY
 from services.features.mindmate_seminar.dify_stream import schedule_assistant_reply
 from services.features.mindmate_seminar.dify_stream_control import acquire_dify_stream_lock
 from services.features.mindmate_seminar.group_members import user_observes_seminar
@@ -27,9 +28,14 @@ from services.features.mindmate_seminar.manager_access import get_mindmate_semin
 from services.features.mindmate_seminar.mention import (
     collab_message_targets_mindmate,
     extract_mindmate_query,
+    format_speaker_query,
     mention_aliases_from_org,
+    strip_mindmate_mentions,
 )
-from services.features.mindmate_seminar.message_files import strip_seminar_message_file_tokens
+from services.features.mindmate_seminar.message_files import (
+    extract_seminar_message_file_ids,
+    strip_seminar_message_file_tokens,
+)
 from services.features.mindmate_seminar.message_history import PersistedCollabMessage
 from services.features.mindmate_seminar.redis_keys import normalize_collab_code, session_meta_key
 from services.features.mindmate_seminar.seminar_cos_sync import schedule_seminar_cos_sync
@@ -127,6 +133,7 @@ async def _start_mindmate(
     content: str,
     sender_user_id: int,
     aliases: tuple[str, ...],
+    speaker_name: Optional[str] = None,
 ) -> Optional[str]:
     """Start the shared AI reply. Returns a warning code when the room is already answering."""
     code = session.code
@@ -141,14 +148,27 @@ async def _start_mindmate(
         code,
         fallback=session.dify_conversation_id,
     )
+    file_ids = extract_seminar_message_file_ids(content)
+    plain = strip_seminar_message_file_tokens(content)
+    question = strip_mindmate_mentions(plain, aliases)
+    if not question:
+        question = DEFAULT_CITED_FILE_QUERY if file_ids else extract_mindmate_query(plain, aliases)
+    logger.info(
+        "[MindmateSeminar] mindmate start session=%s files=%s question_chars=%s",
+        session.id,
+        len(file_ids),
+        len(question),
+    )
     schedule_assistant_reply(
         code=code,
         session_id=session.id,
         org_id=session.organization_id,
-        user_message=extract_mindmate_query(strip_seminar_message_file_tokens(content), aliases),
+        user_message=format_speaker_query(speaker_name, question),
         sender_user_id=sender_user_id,
+        speaker_name=speaker_name,
         conversation_id=conversation_id,
         conversation_server=conversation_server,
+        file_ids=file_ids,
     )
     return None
 
@@ -227,5 +247,5 @@ async def send_seminar_message(
     )
     warning = None
     if asks_mindmate:
-        warning = await _start_mindmate(session, text, user_id, aliases)
+        warning = await _start_mindmate(session, text, user_id, aliases, username)
     return SeminarMessageOutcome(None, saved, role, warning)

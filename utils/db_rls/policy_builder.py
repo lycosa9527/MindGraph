@@ -338,6 +338,12 @@ MINDMATE_COLLAB_FILE_CHECK = (
     + MINDMATE_COLLAB_FILE_EXPR
     + ") AND (uploader_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only())"
 )
+MINDMATE_COLLAB_HIGHLIGHT_EXPR = MINDMATE_COLLAB_FILE_EXPR
+MINDMATE_COLLAB_HIGHLIGHT_CHECK = (
+    "("
+    + MINDMATE_COLLAB_HIGHLIGHT_EXPR
+    + ") AND (created_by_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only())"
+)
 MINDMATE_COLLAB_TABLES = [
     ("mindmate_seminar_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_seminar_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_CHECK),
@@ -660,6 +666,8 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
         rows.append((table, using_expr))
         if check_expr != using_expr:
             rows.append((table, check_expr))
+    rows.append(("mindmate_seminar_highlights", MINDMATE_COLLAB_HIGHLIGHT_EXPR))
+    rows.append(("mindmate_seminar_highlights", MINDMATE_COLLAB_HIGHLIGHT_CHECK))
     rows.append(("users", USERS_EXPR))
     rows.append(("organizations", ORGS_EXPR))
     rows.append(("community_posts", COMMUNITY_READ))

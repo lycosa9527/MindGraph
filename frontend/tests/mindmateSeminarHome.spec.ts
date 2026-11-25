@@ -15,7 +15,11 @@ import {
   parseSeminarSummaryCard,
   seminarSummaryMessage,
 } from '@/utils/mindmateSeminarCards'
-import { seminarMessageFileToken, splitSeminarMessageFiles } from '@/utils/mindmateSeminarFolder'
+import {
+  seminarCiteMessageBlock,
+  seminarMessageFileToken,
+  splitSeminarMessageFiles,
+} from '@/utils/mindmateSeminarFolder'
 import { seminarTitleFromTopic } from '@/utils/mindmateSeminarHome'
 
 describe('seminarTitleFromTopic', () => {
@@ -225,6 +229,20 @@ describe('splitSeminarMessageFiles', () => {
     expect(split.text).toBe('看一下')
     expect(split.files).toEqual([
       { id: '11111111-1111-1111-1111-111111111111', filename: '讲义].pdf' },
+    ])
+  })
+
+  it('cites shelf files with the same token MindMate later loads', () => {
+    const block = seminarCiteMessageBlock([
+      { fileId: '11111111-1111-1111-1111-111111111111', filename: '策略研究.docx' },
+    ])
+    expect(block).toBe(
+      seminarMessageFileToken('11111111-1111-1111-1111-111111111111', '策略研究.docx')
+    )
+    const split = splitSeminarMessageFiles(`这份报告有什么启示\n\n${block}`)
+    expect(split.text).toBe('这份报告有什么启示')
+    expect(split.files).toEqual([
+      { id: '11111111-1111-1111-1111-111111111111', filename: '策略研究.docx' },
     ])
   })
 })

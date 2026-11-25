@@ -55,16 +55,10 @@ const highlightKey = computed(() => {
   if (props.highlightState === 'mine') {
     return 'mindmate.highlights.cancelMine'
   }
-  if (props.highlightState === 'other') {
-    return 'mindmate.highlights.alreadySet'
-  }
   return 'mindmate.highlights.pin'
 })
 
 function onHighlight(): void {
-  if (props.highlightState === 'other') {
-    return
-  }
   emit('highlight')
 }
 </script>

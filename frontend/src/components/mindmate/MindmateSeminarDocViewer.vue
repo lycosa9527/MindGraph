@@ -2,6 +2,7 @@
 /**
  * Doubao-style middle pane: open seminar resources / diagram artifacts.
  * PDF and Office files render via LibreOffice→PDF + pdf.js.
+ * When conversion is unavailable, Office files fall back to extracted text.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -34,7 +35,7 @@ import {
   type SeminarFilePreviewMode,
   downloadSeminarBackgroundFile,
   fetchSeminarBackgroundBlob,
-  fetchSeminarBackgroundPreviewPdf,
+  fetchSeminarBackgroundPreview,
   seminarFilePreviewMode,
 } from '@/utils/mindmateSeminarFolder'
 import { renderPdfFromBytes } from '@/utils/renderPdfPreview'
@@ -51,7 +52,17 @@ const imageOpen = ref(false)
 const converting = ref(false)
 const objectUrl = ref('')
 const textBody = ref('')
+const previewError = ref<'convert' | 'load' | null>(null)
 const previewMode = ref<SeminarFilePreviewMode | 'diagram' | 'canvas'>('unsupported')
+const unsupportedMessageKey = computed(() => {
+  if (previewError.value === 'convert') {
+    return 'mindmate.docViewer.convertFailed'
+  }
+  if (previewError.value === 'load') {
+    return 'mindmate.docViewer.loadFailed'
+  }
+  return 'mindmate.docViewer.unsupported'
+})
 const canvasPreview = ref<SharedCanvasDiagramPreview | null>(null)
 const pdfHost = ref<HTMLElement | null>(null)
 let pdfCleanup: (() => void) | null = null
@@ -100,6 +111,7 @@ async function loadActiveTab(tab: SeminarDocTab | null): Promise<void> {
   imageOpen.value = false
   textBody.value = ''
   converting.value = false
+  previewError.value = null
   canvasPreview.value = null
   if (!tab) {
     previewMode.value = 'unsupported'
@@ -149,12 +161,17 @@ async function loadActiveTab(tab: SeminarDocTab | null): Promise<void> {
       if (mode === 'office' && tab.fileId) {
         seminarOfficePreviewFileId.value = tab.fileId
       }
-      const data = await fetchSeminarBackgroundPreviewPdf(props.sessionId, tab.fileId)
+      const preview = await fetchSeminarBackgroundPreview(props.sessionId, tab.fileId)
       if (abort.signal.aborted) {
         return
       }
       converting.value = false
-      await renderPdfBytes(data, abort.signal)
+      if (preview.kind === 'text') {
+        previewMode.value = 'text'
+        textBody.value = preview.text
+        return
+      }
+      await renderPdfBytes(preview.data, abort.signal)
       return
     }
     previewMode.value = 'unsupported'
@@ -166,8 +183,10 @@ async function loadActiveTab(tab: SeminarDocTab | null): Promise<void> {
     previewMode.value = 'unsupported'
     const message = error instanceof Error ? error.message : ''
     if (message.includes('preview_failed') || message.includes('503')) {
+      previewError.value = 'convert'
       notify.errorKey('mindmate.docViewer.convertFailed')
     } else {
+      previewError.value = 'load'
       notify.errorKey('mindmate.docViewer.loadFailed')
     }
   } finally {
@@ -428,7 +447,7 @@ onBeforeUnmount(() => {
         class="mm-doc-viewer__unsupported"
       >
         <p class="mm-doc-viewer__empty">
-          <I18nText k="mindmate.docViewer.unsupported" />
+          <I18nText :k="unsupportedMessageKey" />
         </p>
         <button
           v-if="activeTab?.kind === 'file' && !seminarSpectator"
@@ -529,11 +548,17 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   flex-shrink: 0;
   min-height: 40px;
-  padding: 0 12px;
+  padding: 4px 12px;
   border-bottom: 1px solid #f0ebe6;
+}
+
+.mm-doc-viewer__crumb {
+  min-width: 0;
+  flex: 1 1 8rem;
 }
 
 .mm-doc-viewer__spectator {
@@ -558,8 +583,10 @@ onBeforeUnmount(() => {
 .mm-doc-viewer__actions {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .mm-doc-viewer__action {
@@ -597,7 +624,7 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: #f7f5f2;
+  background: #fff;
   display: flex;
   flex-direction: column;
 }
@@ -648,6 +675,12 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 100%;
   padding: 12px 10px 24px;
+  background: #fff;
+}
+
+.mm-doc-viewer__pdf :deep(.showcase-pdf-page-wrap) {
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(28, 25, 23, 0.08);
 }
 
 .mm-doc-viewer__canvas {
@@ -657,6 +690,7 @@ onBeforeUnmount(() => {
 }
 
 .mm-doc-viewer__text {
+  flex: 1 1 auto;
   margin: 0;
   padding: 16px 18px;
   font-size: 13px;

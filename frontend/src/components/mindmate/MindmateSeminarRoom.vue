@@ -11,34 +11,27 @@ import { Share2, Sparkles, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateSeminarBreadcrumb from '@/components/mindmate/MindmateSeminarBreadcrumb.vue'
-import MindmateSeminarMessageRow from '@/components/mindmate/MindmateSeminarMessageRow.vue'
 import MindmateSeminarBriefStrip from '@/components/mindmate/MindmateSeminarBriefStrip.vue'
 import MindmateSeminarComposerTools from '@/components/mindmate/MindmateSeminarComposerTools.vue'
 import MindmateSeminarFaceChatCard from '@/components/mindmate/MindmateSeminarFaceChatCard.vue'
 import MindmateSeminarFaceChatSession from '@/components/mindmate/MindmateSeminarFaceChatSession.vue'
 import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
+import MindmateSeminarMessageRow from '@/components/mindmate/MindmateSeminarMessageRow.vue'
 import MindmateSeminarShareDialog from '@/components/mindmate/MindmateSeminarShareDialog.vue'
 import MindmateSeminarSummaryDialog from '@/components/mindmate/MindmateSeminarSummaryDialog.vue'
 import MindmateSoftIcon from '@/components/mindmate/MindmateSoftIcon.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { ensureMarkdownRenderer } from '@/composables/core/lazyMarkdown'
-import { rememberJoinedCollabRoom } from '@/composables/mindmate/mindmateSeminarEmbeddedBridge'
-import {
-  dropLiveCollabRoom,
-  mindmateSeminarLiveCovers,
-  useLiveMindmateSeminar,
-} from '@/composables/mindmate/mindmateSeminarLiveSession'
 import {
   addSeminarComposerAttachments,
   addSeminarHighlight,
   bumpSeminarFolderReload,
   clearSeminarServerArtifacts,
+  loadSeminarServerArtifacts,
   pushSeminarHighlightNotice,
   removeSeminarCitation,
   removeSeminarComposerAttachment,
-  replaceSeminarServerArtifacts,
-  seminarArtifactsReady,
   seminarComposerAttachments,
   seminarComposerCitations,
   seminarHighlightNotices,
@@ -49,12 +42,33 @@ import {
   setSeminarMessageLocator,
   takeSeminarCitations,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { rememberJoinedCollabRoom } from '@/composables/mindmate/mindmateSeminarEmbeddedBridge'
+import {
+  dropLiveCollabRoom,
+  mindmateSeminarLiveCovers,
+  useLiveMindmateSeminar,
+} from '@/composables/mindmate/mindmateSeminarLiveSession'
+import {
+  loadSeminarGroupRoster,
+  seminarGroupMembers as sharedGroupMembers,
+} from '@/composables/mindmate/seminarGroupRoster'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useSeminarMindgraphPrompt } from '@/composables/mindmate/useSeminarMindgraphPrompt'
 import { createMindmateSeminarOrgBackend } from '@/composables/social/createMindmateSeminarOrgBackend'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
+import {
+  hasGeneratedDiagramImage,
+  parseMindmateDiagramLibraryId,
+} from '@/utils/mindmateDiagramMeta'
+import {
+  type MindmateMentionCandidate,
+  appendMention,
+  contentMentionsMindmate,
+  ensureMindmateMention,
+} from '@/utils/mindmateMention'
+import { type SeminarBriefEditPayload, parseSeminarBriefCard } from '@/utils/mindmateSeminarCards'
 import {
   confirmMindmateSeminarLeave,
   confirmMindmateSeminarStop,
@@ -66,8 +80,18 @@ import {
   nextCollabFeedback,
   previousCollabUserPrompt,
 } from '@/utils/mindmateSeminarDisplay'
-import { sameCollabMessageMinute } from '@/utils/mindmateSeminarRead'
+import {
+  seminarBubblePlainText,
+  seminarCiteMessageBlock,
+  seminarFolderErrorKey,
+  seminarMessageFileToken,
+  uploadSeminarBackgroundFile,
+} from '@/utils/mindmateSeminarFolder'
+import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
+import { MAX_SEMINAR_HIGHLIGHT_TEXT } from '@/utils/mindmateSeminarHighlights'
 import { saveFinishedSeminar } from '@/utils/mindmateSeminarLibrarySave'
+import { type SeminarMinutesScope, seminarSummaryRequestLine } from '@/utils/mindmateSeminarMinutes'
+import { sameCollabMessageMinute } from '@/utils/mindmateSeminarRead'
 import {
   clearMindmateSeminarCodeUnjoinable,
   formatMindmateSeminarCode,
@@ -78,39 +102,12 @@ import {
   trackLocalMindmateSeminarSession,
   wasMindmateSeminarCodeRecentlyEnded,
 } from '@/utils/mindmateSeminarSessions'
+import { formatSeminarShareLine } from '@/utils/mindmateSeminarShare'
 import {
   requestMindmateSeminarLeave,
   requestMindmateSeminarStop,
   teardownMindmateSeminarClient,
 } from '@/utils/mindmateSeminarTeardown'
-import {
-  type MindmateMentionCandidate,
-  appendMention,
-  contentMentionsMindmate,
-  ensureMindmateMention,
-} from '@/utils/mindmateMention'
-import { type SeminarBriefEditPayload, parseSeminarBriefCard } from '@/utils/mindmateSeminarCards'
-import {
-  hasGeneratedDiagramImage,
-  parseMindmateDiagramLibraryId,
-} from '@/utils/mindmateDiagramMeta'
-import {
-  listSeminarReplyArtifacts,
-  seminarBubblePlainText,
-  seminarFolderErrorKey,
-  seminarMessageFileToken,
-  uploadSeminarBackgroundFile,
-} from '@/utils/mindmateSeminarFolder'
-import {
-  loadSeminarGroupRoster,
-  seminarGroupMembers as sharedGroupMembers,
-} from '@/composables/mindmate/seminarGroupRoster'
-import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
-import {
-  type SeminarMinutesScope,
-  seminarSummaryRequestLine,
-} from '@/utils/mindmateSeminarMinutes'
-import { formatSeminarShareLine } from '@/utils/mindmateSeminarShare'
 
 const props = withDefaults(
   defineProps<{
@@ -160,8 +157,7 @@ const isSpectator = computed(() => {
   if (!selfId) {
     return false
   }
-  const roster =
-    sharedGroupMembers.value.length > 0 ? sharedGroupMembers.value : props.members
+  const roster = sharedGroupMembers.value.length > 0 ? sharedGroupMembers.value : props.members
   const self = roster.find((member) => member.userId === selfId)
   return self?.role === 'observer'
 })
@@ -377,9 +373,12 @@ async function joinRoomAndConnect(): Promise<void> {
     joining.value = true
   }
   try {
-    const response = await authFetch(`/api/mindmate/seminar/join?code=${encodeURIComponent(code)}`, {
-      method: 'POST',
-    })
+    const response = await authFetch(
+      `/api/mindmate/seminar/join?code=${encodeURIComponent(code)}`,
+      {
+        method: 'POST',
+      }
+    )
     if (generation !== joinGeneration) {
       return
     }
@@ -519,27 +518,15 @@ watch(
   { immediate: true }
 )
 
-let replyArtifactLoad = 0
-
 watch(
   () => room.value?.sessionId,
   (sessionId) => {
-    const ticket = ++replyArtifactLoad
     clearSeminarServerArtifacts()
     if (!sessionId) {
       return
     }
     void mentionRoster.fetchMembers({ limit: 200 })
-    void listSeminarReplyArtifacts(sessionId)
-      .then((rows) => {
-        if (ticket === replyArtifactLoad) {
-          replaceSeminarServerArtifacts(rows)
-          seminarArtifactsReady.value = true
-        }
-      })
-      .catch(() => {
-        /* leave the artifact list empty until the next load */
-      })
+    void loadSeminarServerArtifacts(sessionId)
   }
 )
 
@@ -654,16 +641,17 @@ function selectedRows() {
   return transcript.value.filter((row) => keys.has(row.key))
 }
 
-function pinSelected(): void {
+async function pinSelected(): Promise<void> {
   const sessionId = room.value?.sessionId?.trim()
-  if (!sessionId) {
+  if (!sessionId || seminarSpectator.value) {
     return
   }
+  let addedAny = false
   for (const row of selectedRows()) {
     if (row.kind !== 'message') {
       continue
     }
-    const text = seminarBubblePlainText(row.msg.content).slice(0, 2000)
+    const text = seminarBubblePlainText(row.msg.content).slice(0, MAX_SEMINAR_HIGHLIGHT_TEXT)
     if (!text) {
       continue
     }
@@ -671,7 +659,7 @@ function pinSelected(): void {
       row.msg.role === 'assistant'
         ? mindmateAgentName.value
         : row.msg.username?.trim() || t('mindmate.highlights.you')
-    const added = addSeminarHighlight(sessionId, {
+    const added = await addSeminarHighlight(sessionId, {
       text,
       authorName,
       messageId: row.msg.id ?? null,
@@ -680,14 +668,17 @@ function pinSelected(): void {
       messageAt: row.msg.created_at || '',
     })
     if (added) {
+      addedAny = true
       pushSeminarHighlightNotice(sessionId, {
         kind: 'set',
-        ownMessage: isOwnMessage(row.msg),
-        authorName,
+        ownMessage: false,
+        authorName: authStore.user?.username || t('mindmate.highlights.you'),
       })
     }
   }
-  notify.successKey('mindmate.highlights.added')
+  if (addedAny) {
+    notify.successKey('mindmate.highlights.added')
+  }
   cancelSelect()
 }
 
@@ -956,7 +947,7 @@ async function handleSend() {
     mindmateTagged.value || mindgraphTagged.value
       ? ensureMindmateMention(typed, mindmateAgentName.value)
       : typed
-  const citeBlock = cited.map((item) => `📎 ${item.filename}`).join('\n')
+  const citeBlock = seminarCiteMessageBlock(cited)
   const quote = replyQuote.value
   const quoteBlock = quote
     ? `${t('mindmate.bubble.replying', { name: quote.author })}\n${quote.text}`
@@ -1058,9 +1049,7 @@ const shareLines = computed(() => {
 
 const shareMemberCount = computed(() => {
   const rosterCount =
-    sharedGroupMembers.value.length > 0
-      ? sharedGroupMembers.value.length
-      : props.members.length
+    sharedGroupMembers.value.length > 0 ? sharedGroupMembers.value.length : props.members.length
   if (rosterCount > 0) {
     return rosterCount
   }
@@ -1124,41 +1113,41 @@ const transcript = computed(() => {
 
 function highlightNoticeText(notice: {
   kind: 'set' | 'cancel' | 'shelf'
-  ownMessage: boolean
   authorName: string
   title?: string
   destination?: 'resource' | 'artifact' | 'removed'
   shelf?: 'resource' | 'artifact'
 }): string {
+  const name = notice.authorName.trim()
   if (notice.kind === 'shelf') {
     const title = notice.title || ''
     if (notice.destination === 'resource') {
-      return notice.ownMessage
-        ? t('mindmate.shelf.noticeResourceOwn', { title })
-        : t('mindmate.shelf.noticeResourceOther', { name: notice.authorName, title })
+      return name
+        ? t('mindmate.shelf.noticeResourceOther', { name, title })
+        : t('mindmate.shelf.noticeResourceOwn', { title })
     }
     if (notice.destination === 'removed' && notice.shelf === 'resource') {
-      return notice.ownMessage
-        ? t('mindmate.shelf.noticeRemovedResourceOwn', { title })
-        : t('mindmate.shelf.noticeRemovedResourceOther', { name: notice.authorName, title })
+      return name
+        ? t('mindmate.shelf.noticeRemovedResourceOther', { name, title })
+        : t('mindmate.shelf.noticeRemovedResourceOwn', { title })
     }
     if (notice.destination === 'removed') {
-      return notice.ownMessage
-        ? t('mindmate.shelf.noticeRemovedOwn', { title })
-        : t('mindmate.shelf.noticeRemovedOther', { name: notice.authorName, title })
+      return name
+        ? t('mindmate.shelf.noticeRemovedOther', { name, title })
+        : t('mindmate.shelf.noticeRemovedOwn', { title })
     }
-    return notice.ownMessage
-      ? t('mindmate.shelf.noticeArtifactOwn', { title })
-      : t('mindmate.shelf.noticeArtifactOther', { name: notice.authorName, title })
+    return name
+      ? t('mindmate.shelf.noticeArtifactOther', { name, title })
+      : t('mindmate.shelf.noticeArtifactOwn', { title })
   }
   if (notice.kind === 'set') {
-    return notice.ownMessage
-      ? t('mindmate.highlights.noticeSetOwn')
-      : t('mindmate.highlights.noticeSetOther', { name: notice.authorName })
+    return name
+      ? t('mindmate.highlights.noticeSetOther', { name })
+      : t('mindmate.highlights.noticeSetOwn')
   }
-  return notice.ownMessage
-    ? t('mindmate.highlights.noticeCancelOwn')
-    : t('mindmate.highlights.noticeCancelOther', { name: notice.authorName })
+  return name
+    ? t('mindmate.highlights.noticeCancelOther', { name })
+    : t('mindmate.highlights.noticeCancelOwn')
 }
 
 const messagesScrollEl = ref<HTMLElement | null>(null)

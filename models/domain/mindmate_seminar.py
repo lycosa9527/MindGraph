@@ -12,7 +12,19 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false, true
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+    true,
+)
+from sqlalchemy.sql import text as sa_text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
@@ -157,6 +169,43 @@ class MindmateSeminarBackgroundFile(Base):
             "session_id",
             "source_message_id",
             unique=True,
+        ),
+    )
+
+
+class MindmateSeminarHighlight(Base):
+    """A group highlight (精华) shared with everyone in one seminar."""
+
+    __tablename__ = "mindmate_seminar_highlights"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_seminar_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_by_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    created_by_name: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    author_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_mindmate_seminar_highlights_session_created", "session_id", "created_at"),
+        Index(
+            "uq_mm_seminar_highlight_message_creator",
+            "session_id",
+            "message_id",
+            "created_by_user_id",
+            unique=True,
+            postgresql_where=sa_text("message_id IS NOT NULL"),
         ),
     )
 

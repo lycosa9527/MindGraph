@@ -17,6 +17,7 @@ from services.infrastructure.http.middleware import (
     SelectiveGZipMiddleware,
     auth_context_middleware,
     enforce_streaming_body_limit,
+    gzip_skips_path,
     log_requests,
 )
 from services.infrastructure.utils.spa_handler import is_public_static_path
@@ -242,6 +243,11 @@ def _app_with_selective_gzip() -> FastAPI:
     async def pdf_payload() -> Response:
         return Response(content=b"%PDF-1.4 " + (b"y" * 2000), media_type="application/pdf")
 
+    @app.get("/api/mindmate/seminar/background-files/{file_id}/preview")
+    async def seminar_preview_payload(file_id: str) -> Response:
+        del file_id
+        return Response(content=b"%PDF-1.4 " + (b"y" * 2000), media_type="application/pdf")
+
     return app
 
 
@@ -257,6 +263,24 @@ def test_selective_gzip_middleware_skips_pdf_paths() -> None:
     """PDF paths bypass GZip so range-friendly bodies stay uncompressed."""
     client = TestClient(_app_with_selective_gzip())
     response = client.get("/files/report.pdf", headers={"Accept-Encoding": "gzip"})
+    assert response.status_code == 200
+    assert response.headers.get("content-encoding") is None
+    assert response.content.startswith(b"%PDF-1.4")
+
+
+def test_gzip_skips_seminar_preview_path() -> None:
+    """Seminar preview URLs have no .pdf suffix but still return PDF bytes."""
+    assert gzip_skips_path("/api/mindmate/seminar/background-files/abc/preview") is True
+    assert gzip_skips_path("/api/mindmate/seminar/background-files/abc/content") is False
+
+
+def test_selective_gzip_middleware_skips_seminar_preview() -> None:
+    """Seminar Office/PDF preview must not be gzipped without Content-Encoding."""
+    client = TestClient(_app_with_selective_gzip())
+    response = client.get(
+        "/api/mindmate/seminar/background-files/abc/preview",
+        headers={"Accept-Encoding": "gzip"},
+    )
     assert response.status_code == 200
     assert response.headers.get("content-encoding") is None
     assert response.content.startswith(b"%PDF-1.4")

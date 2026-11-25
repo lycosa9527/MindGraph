@@ -44,22 +44,57 @@ def is_legacy_office_mime(mime_type: str) -> bool:
     return mime_type in LEGACY_MIME_TO_TARGET
 
 
+def _soffice_file(candidate: Path) -> Optional[str]:
+    """Return a usable soffice path when ``candidate`` is a binary or install dir."""
+    if candidate.is_file():
+        return str(candidate)
+    nested = candidate / "soffice"
+    if nested.is_file():
+        return str(nested)
+    nested_bin = candidate / "program" / "soffice"
+    if nested_bin.is_file():
+        return str(nested_bin)
+    nested_exe = candidate / "program" / "soffice.exe"
+    if nested_exe.is_file():
+        return str(nested_exe)
+    nested_com = candidate / "program" / "soffice.com"
+    if nested_com.is_file():
+        return str(nested_com)
+    return None
+
+
+def _default_soffice_locations() -> tuple[Path, ...]:
+    """PATH-independent installs, including Windows LibreOffice seen from WSL."""
+    roots = (
+        Path("/usr/bin/soffice"),
+        Path("/usr/lib/libreoffice/program/soffice"),
+        Path("/mnt/c/Program Files/LibreOffice/program/soffice.com"),
+        Path("/mnt/c/Program Files/LibreOffice/program/soffice.exe"),
+        Path("/mnt/c/Program Files (x86)/LibreOffice/program/soffice.com"),
+        Path("/mnt/c/Program Files (x86)/LibreOffice/program/soffice.exe"),
+        Path(r"C:\Program Files\LibreOffice\program\soffice.com"),
+        Path(r"C:\Program Files\LibreOffice\program\soffice.exe"),
+        Path(r"C:\Program Files (x86)\LibreOffice\program\soffice.com"),
+        Path(r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"),
+    )
+    return roots
+
+
 def resolve_soffice_path() -> Optional[str]:
     """Locate the LibreOffice ``soffice`` binary."""
     env_path = (os.environ.get("LIBREOFFICE_PATH") or "").strip()
     if env_path:
-        candidate = Path(env_path)
-        if candidate.is_file():
-            return str(candidate)
-        nested = candidate / "soffice"
-        if nested.is_file():
-            return str(nested)
-        nested_bin = candidate / "program" / "soffice"
-        if nested_bin.is_file():
-            return str(nested_bin)
+        found = _soffice_file(Path(env_path))
+        if found:
+            return found
 
     for name in ("soffice", "libreoffice"):
         found = shutil.which(name)
+        if found:
+            return found
+
+    for candidate in _default_soffice_locations():
+        found = _soffice_file(candidate)
         if found:
             return found
     return None

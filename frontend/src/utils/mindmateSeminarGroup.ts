@@ -150,6 +150,36 @@ export async function fetchSeminarGroupFaces(sessionId: string): Promise<Seminar
   }))
 }
 
+export function briefCardPeopleFromMembers(
+  members: SeminarGroupMember[],
+  labels: {
+    roleLabel: (role: SeminarBriefRole) => string
+    pendingConsent: string
+  }
+): Array<{ name: string; role: string }> {
+  const sorted = [...members].sort((left, right) => {
+    if (left.isLeader !== right.isLeader) {
+      return left.isLeader ? -1 : 1
+    }
+    return left.name.localeCompare(right.name, 'zh-Hans-CN')
+  })
+  return sorted.map((member) => {
+    const roleKey: SeminarBriefRole = member.isLeader
+      ? 'leader'
+      : member.role === 'none'
+        ? 'observer'
+        : member.role
+    const head = labels.roleLabel(roleKey)
+    const role =
+      member.pending && labels.pendingConsent
+        ? head
+          ? `${head} · ${labels.pendingConsent}`
+          : labels.pendingConsent
+        : head
+    return { name: member.name, role }
+  })
+}
+
 export async function addSeminarGroupMembers(
   sessionId: string,
   userIds: number[],

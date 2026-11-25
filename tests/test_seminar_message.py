@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,6 +12,7 @@ from routers.api.mindmate_seminar_ws import SEMINAR_SOCKET_INGRESS
 from services.features.mindmate_seminar.config import MINDMATE_COLLAB_MAX_LIVE_SECONDS
 from services.features.mindmate_seminar.manager import MindmateSeminarManager
 from services.features.mindmate_seminar.message_history import PersistedCollabMessage
+from services.features.mindmate_seminar.cited_files import DEFAULT_CITED_FILE_QUERY
 from services.features.mindmate_seminar.seminar_message import (
     ensure_live_seminar_room,
     send_seminar_message,
@@ -87,6 +89,53 @@ async def test_send_seminar_message_saves_and_broadcasts_without_a_socket() -> N
     frame = call.args[1]
     assert frame["type"] == "user_message"
     assert frame["content"] == "hello"
+
+
+@pytest.mark.asyncio
+async def test_send_seminar_message_starts_mindmate_for_a_member_mention() -> None:
+    """A non-host @MindMate line still starts the shared room reply."""
+    session = _session()
+    manager = _manager(session)
+    with (
+        patch(
+            "services.features.mindmate_seminar.seminar_message.get_mindmate_seminar_manager",
+            return_value=manager,
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message.user_observes_seminar",
+            AsyncMock(return_value=False),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message.ensure_live_seminar_room",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message.broadcast_to_all",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message._mention_aliases",
+            AsyncMock(return_value=()),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message._start_mindmate",
+            AsyncMock(return_value=None),
+        ) as start_mindmate,
+    ):
+        outcome = await send_seminar_message(
+            session_id="sess-1",
+            user_id=4,
+            username="林芳",
+            content="怎样理解隐性知识显性化 @MindMate",
+            to_mindmate=True,
+            kind="chat",
+        )
+    assert outcome.error is None
+    start_mindmate.assert_awaited_once()
+    called = start_mindmate.await_args
+    assert called is not None
+    assert called.args[2] == 4
+    assert called.args[4] == "林芳"
 
 
 @pytest.mark.asyncio
@@ -238,3 +287,100 @@ async def test_redis_room_ttl_ignores_the_duration_preset() -> None:
     ttl_values = [call.args[1] for call in pipe.expire.call_args_list]
     assert ttl_values
     assert set(ttl_values) == {MINDMATE_COLLAB_MAX_LIVE_SECONDS}
+
+
+def enter_mindmate_send(stack: ExitStack, manager: MagicMock, schedule: MagicMock) -> None:
+    """Patch a member chat line that starts MindMate."""
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message.get_mindmate_seminar_manager",
+            return_value=manager,
+        )
+    )
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message.user_observes_seminar",
+            AsyncMock(return_value=False),
+        )
+    )
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message.ensure_live_seminar_room",
+            AsyncMock(return_value=True),
+        )
+    )
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message.broadcast_to_all",
+            AsyncMock(),
+        )
+    )
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message._mention_aliases",
+            AsyncMock(return_value=()),
+        )
+    )
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message.acquire_dify_stream_lock",
+            AsyncMock(return_value=True),
+        )
+    )
+    stack.enter_context(
+        patch(
+            "services.features.mindmate_seminar.seminar_message.schedule_assistant_reply",
+            schedule,
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_send_seminar_message_passes_cited_file_ids_to_mindmate() -> None:
+    """Cited [[sf:]] tokens are loaded for Dify instead of sending only the filename."""
+    session = _session()
+    manager = _manager(session)
+    manager.resolve_dify_conversation_id = AsyncMock(return_value="conv-9")
+    manager.resolve_dify_conversation_server = AsyncMock(return_value=1)
+    schedule = MagicMock()
+    token = "[[sf:11111111-1111-1111-1111-111111111111|notes.docx]]"
+    with ExitStack() as stack:
+        enter_mindmate_send(stack, manager, schedule)
+        outcome = await send_seminar_message(
+            session_id="sess-1",
+            user_id=4,
+            username="陈晓",
+            content=f"这份报告对我们的教学有什么启示 @MindMate\n\n{token}",
+            to_mindmate=True,
+            kind="chat",
+        )
+    assert outcome.error is None
+    kwargs = schedule.call_args.kwargs
+    assert kwargs["file_ids"] == ["11111111-1111-1111-1111-111111111111"]
+    assert kwargs["user_message"] == "陈晓：这份报告对我们的教学有什么启示"
+    assert "notes.docx" not in kwargs["user_message"]
+
+
+@pytest.mark.asyncio
+async def test_send_seminar_message_asks_to_read_files_when_the_line_is_only_a_mention() -> None:
+    """A cite plus @MindMate with no extra question still asks Dify to read the files."""
+    session = _session()
+    manager = _manager(session)
+    manager.resolve_dify_conversation_id = AsyncMock(return_value=None)
+    manager.resolve_dify_conversation_server = AsyncMock(return_value=None)
+    schedule = MagicMock()
+    token = "[[sf:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa|策略.docx]]"
+    with ExitStack() as stack:
+        enter_mindmate_send(stack, manager, schedule)
+        outcome = await send_seminar_message(
+            session_id="sess-1",
+            user_id=4,
+            username="林芳",
+            content=f"@MindMate\n\n{token}",
+            to_mindmate=True,
+            kind="chat",
+        )
+    assert outcome.error is None
+    kwargs = schedule.call_args.kwargs
+    assert kwargs["file_ids"] == ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
+    assert kwargs["user_message"] == f"林芳：{DEFAULT_CITED_FILE_QUERY}"

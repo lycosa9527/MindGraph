@@ -8,8 +8,15 @@ import { computed, ref } from 'vue'
 import { ChevronDown, GraduationCap, Pencil, Plus, Target, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { SEMINAR_BRIEF_ROW_MAX, SEMINAR_BRIEF_TOPIC_MAX } from '@/utils/mindmateSeminarBrief'
+import { seminarGroupMembers } from '@/composables/mindmate/seminarGroupRoster'
+import {
+  SEMINAR_BRIEF_ROW_MAX,
+  SEMINAR_BRIEF_TOPIC_MAX,
+  type SeminarBriefRole,
+  isSeminarBuiltinRole,
+} from '@/utils/mindmateSeminarBrief'
 import type { SeminarBriefCardModel, SeminarBriefEditPayload } from '@/utils/mindmateSeminarCards'
+import { briefCardPeopleFromMembers } from '@/utils/mindmateSeminarGroup'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
 const props = defineProps<{
@@ -40,9 +47,26 @@ const goalRows = ref<GoalDraft[]>([])
 const showGoals = computed(
   () => editing.value || Boolean(props.editable) || props.model.goals.length > 0
 )
-const hasPeople = computed(
-  () => props.model.participants.length > 0 || Boolean(props.model.visibility)
-)
+
+function roleLabel(role: SeminarBriefRole): string {
+  const key = role === 'none' ? 'observer' : role
+  if (isSeminarBuiltinRole(key) || key === 'observer') {
+    return t(`mindmate.home.brief.role.${key}`)
+  }
+  return role
+}
+
+const people = computed(() => {
+  if (seminarGroupMembers.value.length === 0) {
+    return props.model.participants
+  }
+  return briefCardPeopleFromMembers(seminarGroupMembers.value, {
+    roleLabel,
+    pendingConsent: t('mindmate.home.brief.pendingConsent'),
+  })
+})
+
+const hasPeople = computed(() => people.value.length > 0 || Boolean(props.model.visibility))
 const topicReady = computed(() => topicDraft.value.trim().length > 0)
 
 function nextDraftId(): number {
@@ -272,7 +296,7 @@ function saveEdit(): void {
         class="mm-info-card__people"
       >
         <li
-          v-for="(person, index) in model.participants"
+          v-for="(person, index) in people"
           :key="`${person.name}-${index}`"
         >
           <span
