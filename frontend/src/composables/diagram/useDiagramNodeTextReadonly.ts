@@ -4,14 +4,14 @@
  */
 import { type ComputedRef, computed } from 'vue'
 
-import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 
 import { useDiagramSession } from './useDiagramSession'
 
 export function useDiagramNodeTextReadonly(isHidden: () => boolean): ComputedRef<boolean> {
   const diagramStore = useDiagramSession()
   return computed(() => {
-    if (diagramPresentationReadOnlyRef.value || Boolean(diagramStore.isReadonly)) {
+    if (isDiagramPresentationReadOnly(diagramStore)) {
       return true
     }
     // Learning-sheet blanks are fill-in fields; keep hidden nodes locked only outside worksheet mode.

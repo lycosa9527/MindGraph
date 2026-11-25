@@ -35,6 +35,7 @@ import {
   dragPracticeFilledIds,
   dragPracticeMarks,
   dragPracticePicking,
+  dragPracticePlacedText,
 } from '@/composables/mindMap/useDragPractice'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import {
@@ -630,11 +631,18 @@ const markdownDisplayEnabled = computed(
     !props.truncate
 )
 
+/** Chip text sitting in this blank. Empty when the node still shows its own label. */
+const dragPracticePlacedLabel = computed(() => {
+  if (!dragPracticeFilledIds.value.includes(props.nodeId)) return ''
+  return dragPracticePlacedText.value[props.nodeId]?.trim() ?? ''
+})
+
 /** Icon is leading text, not a separate chip, so it wraps and centers with the label. */
 const displayLabel = computed(() => {
   if (localIsEditing.value) return props.text
+  const source = dragPracticePlacedLabel.value || props.text
   return textWithIconAdornment(
-    props.text,
+    source,
     readNodeAdornment(diagramStore.data, props.nodeId, diagramStore.data?.connections)
   )
 })
@@ -1691,7 +1699,10 @@ onUnmounted(() => {
         >
       </template>
       <div
-        v-if="bilingualSecondary"
+        v-if="
+          bilingualSecondary &&
+          (!dragPracticePlacedLabel || dragPracticePlacedLabel === text.trim())
+        "
         class="bilingual-node-secondary"
         :style="secondaryMaxWidth ? { maxWidth: secondaryMaxWidth } : undefined"
       >

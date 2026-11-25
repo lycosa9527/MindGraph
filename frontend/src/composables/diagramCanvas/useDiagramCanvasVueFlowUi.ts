@@ -1,6 +1,7 @@
 import { type ComputedRef, type Ref, computed } from 'vue'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { isDragPracticeDiagramLocked } from '@/composables/mindMap/dragPracticeMode'
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import { type CanvasInputMode, canvasInputUsesSlash } from '@/config/canvasInputMode'
@@ -149,6 +150,7 @@ export function useDiagramCanvasVueFlowUi(
       !handToolActive.value &&
       !presentationHandPanMode.value &&
       !presentationStrokeToolActive.value &&
+      !isDragPracticeDiagramLocked() &&
       diagramStore.type !== 'mindmap' &&
       diagramStore.type !== 'mind_map' &&
       diagramStore.type !== 'tree_map'

@@ -2,7 +2,7 @@
 /**
  * TopicNodeDiagram — non-mind-map topic node (bubble, tree, flow, brace, multi-flow, etc.).
  */
-import { computed, nextTick, onMounted, ref, toValue, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
 
@@ -21,11 +21,11 @@ import {
   MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useLLMResultsStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -52,10 +52,7 @@ const llmResultsStore = useLLMResultsStore()
 const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 
 const isTextReadonly = computed(
-  () =>
-    props.data.hidden === true ||
-    diagramPresentationReadOnlyRef.value ||
-    toValue(diagramStore.isReadonly)
+  () => props.data.hidden === true || isDiagramPresentationReadOnly(diagramStore)
 )
 
 const { getNodeStyle } = useTheme({

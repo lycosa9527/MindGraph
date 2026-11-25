@@ -9,6 +9,7 @@ import { useLanguage } from '@/composables'
 import { useMindMapDirectionalAddPosition } from '@/composables/canvasToolbar/useMindMapDirectionalAddPosition'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { isDragPracticeDiagramLocked } from '@/composables/mindMap/dragPracticeMode'
 import { effectiveCanvasInputMode } from '@/config/canvasInputMode'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { useUIStore } from '@/stores/ui'
@@ -46,7 +47,11 @@ const selectedNodeId = computed(() => {
 })
 
 const overlayEnabled = computed(
-  () => isMindMap.value && !!selectedNodeId.value && editingNodeId.value !== selectedNodeId.value
+  () =>
+    isMindMap.value &&
+    !!selectedNodeId.value &&
+    editingNodeId.value !== selectedNodeId.value &&
+    !isDragPracticeDiagramLocked()
 )
 
 const containerRef = computed(() => props.containerRef)

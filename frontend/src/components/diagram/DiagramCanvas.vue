@@ -88,6 +88,7 @@ import {
 import { MIND_MAP_CANVAS_VARIANT_KEY } from '@/composables/mindMap/mindMapCanvasVariantKey'
 import {
   dragPracticeDropOnNode,
+  dragPracticePicking,
   isDragPracticeDropActive,
   noteDragPracticeWrongDrop,
   useDragPracticeKeyboard,
@@ -457,7 +458,8 @@ function onCanvasPaste(event: ClipboardEvent): void {
 const { isPickActive: isLearningSheetPickActive } = useLearningSheetCustomMode()
 const hammerPickCursor = LEARNING_SHEET_HAMMER_CURSOR
 const hammerCursorOn = computed(
-  () => isLearningSheetPickActive.value || trainingDragKnockActive.value
+  () =>
+    isLearningSheetPickActive.value || dragPracticePicking.value || trainingDragKnockActive.value
 )
 useLearningSheetPickKeyboard()
 useDragPracticeKeyboard()

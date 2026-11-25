@@ -2,7 +2,7 @@
 /**
  * BranchNodeDiagram — non-mind-map branch node (tree map, bridge map, etc.).
  */
-import { computed, inject, ref, toValue } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -15,12 +15,12 @@ import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImag
 import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { secondaryFontSize } from '@/diagramBilingual/measure'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
@@ -56,7 +56,7 @@ const blankFrame = useLearningSheetBlankFrame(
   () => props.data
 )
 const isTextReadonly = computed(() => {
-  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
+  if (isDiagramPresentationReadOnly(diagramStore)) return true
   return props.data.hidden === true && !diagramStore.isLearningSheet
 })
 const branchNodeRef = ref<HTMLDivElement | null>(null)
@@ -354,7 +354,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   cancelScheduledLearningSheetPick()
-  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
+  if (isDiagramPresentationReadOnly(diagramStore)) return
   if ((props.data.hidden === true && !diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

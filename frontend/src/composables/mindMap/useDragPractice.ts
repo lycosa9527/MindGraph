@@ -6,7 +6,12 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { notify } from '@/composables/core/notifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { dragPracticeSlotGroup } from '@/composables/mindMap/dragPracticeMatch'
+import { dragPracticeResolveDrop } from '@/composables/mindMap/dragPracticeMatch'
+import {
+  dragPracticeActive,
+  dragPracticePicking,
+  isDragPracticeDiagramLocked,
+} from '@/composables/mindMap/dragPracticeMode'
 import type { DiagramSession } from '@/stores/diagram'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { pickLearningSheetRandomNodeIds } from '@/stores/specLoader/utils'
@@ -18,14 +23,15 @@ export type DragPracticeChip = {
   text: string
 }
 
-export const dragPracticeActive = ref(false)
+export { dragPracticeActive, dragPracticePicking }
+
 export const dragPracticeSetupOpen = ref(false)
-/** Teacher is clicking nodes to choose blanks before play. */
-export const dragPracticePicking = ref(false)
 export const dragPracticeBlankIds = ref<string[]>([])
 export const dragPracticeAnswers = ref<Record<string, string>>({})
 export const dragPracticeChips = ref<DragPracticeChip[]>([])
 export const dragPracticeFilledIds = ref<string[]>([])
+/** Chip text actually dropped on a blank. Set matches may differ from the node's own label. */
+export const dragPracticePlacedText = ref<Record<string, string>>({})
 export const dragPracticeUsedChipIds = ref<string[]>([])
 export const dragPracticeMarks = ref<Record<string, boolean>>({})
 export const dragPracticeDraggingId = ref<string | null>(null)
@@ -136,6 +142,7 @@ function enterPlaySession(): boolean {
   dragPracticeAnswers.value = answers
   dragPracticeChips.value = buildChipsFromBlanks()
   dragPracticeFilledIds.value = []
+  dragPracticePlacedText.value = {}
   dragPracticeUsedChipIds.value = []
   dragPracticeMarks.value = {}
   dragPracticeDraggingId.value = null
@@ -160,7 +167,7 @@ export function isDragPracticePicking(): boolean {
 
 /** True while the canvas|options split layout should be active. */
 export function isDragPracticeSplitOpen(): boolean {
-  return dragPracticeActive.value || dragPracticePicking.value
+  return isDragPracticeDiagramLocked()
 }
 
 export const dragPracticeTotalCount = computed(() => dragPracticeChips.value.length)
@@ -301,6 +308,7 @@ export function restartDragPractice(): void {
   clearAllMarkTimers()
   dragPracticeChips.value = buildChipsFromBlanks()
   dragPracticeFilledIds.value = []
+  dragPracticePlacedText.value = {}
   dragPracticeUsedChipIds.value = []
   dragPracticeMarks.value = {}
   dragPracticeDraggingId.value = null
@@ -317,6 +325,7 @@ export function exitDragPractice(): void {
   dragPracticeAnswers.value = {}
   dragPracticeChips.value = []
   dragPracticeFilledIds.value = []
+  dragPracticePlacedText.value = {}
   dragPracticeUsedChipIds.value = []
   dragPracticeMarks.value = {}
   dragPracticeDraggingId.value = null
@@ -350,25 +359,23 @@ export function dragPracticeDropOnNode(nodeId: string, given: string, chipId?: s
   const diagramStore = useDiagramSession()
   const nodes = diagramStore.data?.nodes ?? []
   const connections = diagramStore.data?.connections ?? []
-  const group = dragPracticeSlotGroup(diagramStore.type, nodeId, nodes, connections)
   const text = given.trim()
-  const matchId = dragPracticeBlankIds.value.find((id) => {
-    if (dragPracticeFilledIds.value.includes(id)) return false
-    if (dragPracticeSlotGroup(diagramStore.type, id, nodes, connections) !== group) return false
-    return dragPracticeAnswers.value[id]?.trim() === text
-  })
-  const ok = Boolean(matchId)
-  dragPracticeMarks.value = { ...dragPracticeMarks.value, [nodeId]: ok }
-  scheduleMarkClear(nodeId, ok ? MARK_OK_MS : MARK_BAD_MS)
-  if (!ok || !matchId) return false
+  const resolved = dragPracticeResolveDrop(
+    diagramStore.type,
+    nodeId,
+    text,
+    nodes,
+    connections,
+    dragPracticeBlankIds.value,
+    dragPracticeFilledIds.value,
+    dragPracticeAnswers.value
+  )
+  dragPracticeMarks.value = { ...dragPracticeMarks.value, [nodeId]: Boolean(resolved) }
+  scheduleMarkClear(nodeId, resolved ? MARK_OK_MS : MARK_BAD_MS)
+  if (!resolved) return false
 
-  if (matchId !== nodeId) {
-    const next = { ...dragPracticeAnswers.value }
-    const placed = next[matchId]
-    next[matchId] = next[nodeId]
-    next[nodeId] = placed
-    dragPracticeAnswers.value = next
-  }
+  dragPracticeAnswers.value = resolved.answers
+  dragPracticePlacedText.value = { ...dragPracticePlacedText.value, [nodeId]: text }
   consumeDragPracticeChip(text, chipId)
   dragPracticeFilledIds.value = [...dragPracticeFilledIds.value, nodeId]
   if (dragPracticeFilledIds.value.length >= dragPracticeBlankIds.value.length) {

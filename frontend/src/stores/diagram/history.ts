@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { isDragPracticeDiagramLocked } from '@/composables/mindMap/dragPracticeMode'
 import type { HistoryEntry } from '@/types'
 import { clearLlmExportAttribution } from '@/utils/llmExportWatermark'
 
@@ -57,6 +58,7 @@ export function useHistorySlice(ctx: DiagramContext) {
   }
 
   function undo(): boolean {
+    if (isDragPracticeDiagramLocked()) return false
     if (!canUndo.value) return false
 
     historyIndex.value--
@@ -69,6 +71,7 @@ export function useHistorySlice(ctx: DiagramContext) {
   }
 
   function redo(): boolean {
+    if (isDragPracticeDiagramLocked()) return false
     if (!canRedo.value) return false
 
     historyIndex.value++

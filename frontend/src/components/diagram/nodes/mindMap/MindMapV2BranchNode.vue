@@ -2,7 +2,7 @@
 /**
  * MindMapV2BranchNode — v2 mind map branch node (themes, shapes, underline, subgraph ring).
  */
-import { type WritableComputedRef, computed, inject, onMounted, ref, toValue, watch } from 'vue'
+import { type WritableComputedRef, computed, inject, onMounted, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -33,7 +33,6 @@ import {
   useMindMapExportOutlineWireframeActive,
   wrapMindMapNodeStyleForExport,
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
-import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import {
   MINDMAP_UNDERLINE_STROKE_WIDTH,
   MIND_MAP_GEOMETRY,
@@ -42,6 +41,7 @@ import {
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -66,7 +66,7 @@ const diagramStore = useDiagramSession()
 const mindMapPendingEditNodeId = diagramSessionRef(diagramStore, 'mindMapPendingEditNodeId')
 const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNodeId')
 const isTextReadonly = computed(() => {
-  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
+  if (isDiagramPresentationReadOnly(diagramStore)) return true
   return props.data.hidden === true && !diagramStore.isLearningSheet
 })
 const branchNodeRef = ref<HTMLDivElement | null>(null)
@@ -403,7 +403,7 @@ function handleEditCancel() {
 function handleBranchNodeDoubleClick(): void {
   cancelScheduledLearningSheetPick()
   cancelScheduledDragPracticePick()
-  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
+  if (isDiagramPresentationReadOnly(diagramStore)) return
   if ((props.data.hidden === true && !diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

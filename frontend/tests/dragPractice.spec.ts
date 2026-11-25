@@ -109,8 +109,10 @@ describe('useDragPractice', () => {
     const chipA = mod.dragPracticeChips.value.find((row) => row.text === '预处理')
     expect(mod.dragPracticeDropOnNode('a', '特征提取', chipB?.id)).toBe(true)
     expect(mod.dragPracticeFilledIds.value).toEqual(['a'])
+    expect(mod.dragPracticePlacedText.value.a).toBe('特征提取')
     expect(mod.dragPracticeUsedChipIds.value).toEqual([chipB?.id])
     expect(mod.dragPracticeDropOnNode('b', '预处理', chipA?.id)).toBe(true)
+    expect(mod.dragPracticePlacedText.value.b).toBe('预处理')
     expect(mod.dragPracticeFilledIds.value).toEqual(['a', 'b'])
   })
 

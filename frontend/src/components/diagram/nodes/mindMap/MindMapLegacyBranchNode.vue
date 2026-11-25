@@ -2,7 +2,7 @@
 /**
  * MindMapLegacyBranchNode — classic mind map branch node (pill, per-branch palette).
  */
-import { computed, inject, ref, toValue } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -26,9 +26,9 @@ import {
   useMindMapExportOutlineWireframeActive,
   wrapMindMapNodeStyleForExport,
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
-import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -44,7 +44,7 @@ const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramSession()
 const isTextReadonly = computed(() => {
-  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
+  if (isDiagramPresentationReadOnly(diagramStore)) return true
   return props.data.hidden === true && !diagramStore.isLearningSheet
 })
 const branchNodeRef = ref<HTMLDivElement | null>(null)
@@ -205,7 +205,7 @@ function handleEditCancel() {
 function handleBranchNodeDoubleClick(): void {
   cancelScheduledLearningSheetPick()
   cancelScheduledDragPracticePick()
-  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
+  if (isDiagramPresentationReadOnly(diagramStore)) return
   if ((props.data.hidden === true && !diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

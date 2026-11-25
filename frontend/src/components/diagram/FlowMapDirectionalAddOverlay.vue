@@ -11,6 +11,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { isDragPracticeDiagramLocked } from '@/composables/mindMap/dragPracticeMode'
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { effectiveCanvasInputMode } from '@/config/canvasInputMode'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
@@ -100,6 +101,7 @@ const overlayEnabled = computed(
     editingNodeId.value !== selectedNodeId.value &&
     !props.editLocked &&
     !learningSheetPickActive.value &&
+    !isDragPracticeDiagramLocked() &&
     !overlayBlocksNodeChrome.value &&
     !uiStore.exportWireframeOutline &&
     !isMindgraphHeadlessExportSession()

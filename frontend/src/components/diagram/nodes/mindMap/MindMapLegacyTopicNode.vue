@@ -2,7 +2,7 @@
 /**
  * MindMapLegacyTopicNode — classic mind map topic node only (oval pill, per-branch handles).
  */
-import { computed, ref, toValue } from 'vue'
+import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -23,9 +23,9 @@ import {
   useMindMapExportOutlineWireframeActive,
   wrapMindMapNodeStyleForExport,
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
-import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useLLMResultsStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { buildClassicMindMapTopicHandlePositions } from '@/utils/classicMindMapTopicHandles'
@@ -49,10 +49,7 @@ function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
 }
 
 const isTextReadonly = computed(
-  () =>
-    props.data.hidden === true ||
-    diagramPresentationReadOnlyRef.value ||
-    toValue(diagramStore.isReadonly)
+  () => props.data.hidden === true || isDiagramPresentationReadOnly(diagramStore)
 )
 
 const { getNodeStyle } = useTheme({
